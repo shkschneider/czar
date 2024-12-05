@@ -26,6 +26,9 @@ int main(void) {
     printf("smth: %b\n", strsmth(""));
     printf("pre: %b\n", strpre("this is a test", "this"));
     printf("suf: %b\n", strsuf("this is a test", "test"));
+    printf("err: %s\n", strerr());
+
+    printb((u8) 42);
 
     return EXIT_SUCCESS;
 }

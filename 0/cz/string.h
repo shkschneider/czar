@@ -4,6 +4,7 @@
 // https://github.com/tsoding/skedudle/blob/master/src/s.h
 // https://github.com/antirez/sds/
 
+#include <errno.h>
 #include <string.h>
 
 typedef char* string;
@@ -31,5 +32,18 @@ static inline bool strsuf(string s, string suf) {
     size_t l2 = strlen(suf);
     return (l1 >= l2) && (!memcmp(s + l1 - l2, suf, l2));
 }
+
+static inline string strerr() {
+    return strerror(errno);
+}
+
+// https://stackoverflow.com/a/24460085
+#define printb(x) \
+    do { \
+        for (int i = sizeof(x) * 8 - 1; i >= 0; i--) { \
+            putchar((x & (1 << i)) ? '1' : '0'); \
+        } \
+        putchar('\n'); \
+    } while (0)
 
 #endif

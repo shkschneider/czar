@@ -27,4 +27,23 @@ typedef uint64_t f64; // double
 
 typedef long double f128;
 
+#ifndef SPC
+# define SPC ' ' // space
+#endif
+#ifndef TAB
+# define TAB '\t' // horizontal tab
+#endif
+#ifndef LF
+# define LF '\n' // newline
+#endif
+#ifndef VT
+# define VT '\v' // vertical tab
+#endif
+#ifndef FF
+# define FF '\f' // feed
+#endif
+#ifndef CR
+# define CR '\r' // carriage return
+#endif
+
 #endif
