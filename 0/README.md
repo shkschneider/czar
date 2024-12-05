@@ -9,6 +9,7 @@
 - unused, nothing
 - defer: autofree autoclose autofclose
 - unused, file, line, function, todo
+- string
 
 ## TODO
 
