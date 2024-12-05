@@ -4,38 +4,32 @@
 // https://github.com/tsoding/skedudle/blob/master/src/s.h
 // https://github.com/antirez/sds/
 
-#include <ctype.h>
-#include <stdlib.h>
 #include <string.h>
 
 typedef char* string;
 
-static inline string string_of(const char *cstr) {
-    char *s = malloc(sizeof(char) * strlen(cstr));
-    memcpy(s, cstr, strlen(cstr));
-    return s;
+static inline bool streq(string a, string b) {
+    if (a == NULL && b == NULL) return true;
+    if (a == NULL || b == NULL) return false;
+    return strlen(a) == strlen(b) && memcmp(a, b, strlen(a)) == 0;
 }
 
-static inline bool string_is_empty(string str) {
-    return strlen(str) == 0;
+static inline bool strsmth(string s) {
+    return s != NULL && strlen(s) > 0;
 }
 
-static inline int string_equal(string a, string b) {
-    if (strlen(a) != strlen(b)) {
-        return 0;
-    }
-    return memcmp(a, b, strlen(a)) == 0;
+static inline bool strpre(string s, string pre) {
+    if (s == NULL && pre != NULL) return false;
+    if (s != NULL && pre == NULL) return true;
+    return strncmp(pre, s, strlen(pre)) == 0;
 }
 
-
-static inline bool string_has_prefix(string str, string prefix) {
-    return strncmp(prefix, str, strlen(prefix)) == 0;
-}
-
-static inline bool string_has_suffix(string str, string suffix) {
-    size_t l1 = strlen(str);
-    size_t l2 = strlen(suffix);
-    return (l1 >= l2) && (!memcmp(str + l1 - l2, suffix, l2));
+static inline bool strsuf(string s, string suf) {
+    if (s == NULL && suf != NULL) return false;
+    if (s != NULL && suf == NULL) return true;
+    size_t l1 = strlen(s);
+    size_t l2 = strlen(suf);
+    return (l1 >= l2) && (!memcmp(s + l1 - l2, suf, l2));
 }
 
 #endif

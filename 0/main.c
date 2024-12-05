@@ -22,9 +22,10 @@ int main(void) {
 
     printf("%s:%d %s()\n", __FILE__, __LINE__, __FUNC__);
 
-    string str = "this is a test";
-    printf("string: %s\n", str);
-    printf("empty:%b prefix:%b suffix:%b\n", string_is_empty(str), string_has_prefix(str, "this"), string_has_suffix(str, "test"));
+    printf("eq: %b\n", streq("42", "0"));
+    printf("smth: %b\n", strsmth(""));
+    printf("pre: %b\n", strpre("this is a test", "this"));
+    printf("suf: %b\n", strsuf("this is a test", "test"));
 
     return EXIT_SUCCESS;
 }

@@ -9,7 +9,7 @@
 - unused, nothing
 - defer: autofree autoclose autofclose
 - unused, file, line, function, todo
-- string
+- string helpers
 
 ## TODO
 
@@ -23,7 +23,7 @@
 - myenum :: enum {} -> enum myenum {}
 - x := ... -> auto x = ...
 - import("whatever", param...) -> import "whatever" + whatever.init(param...)
-- string (sized, not 0-terminated)
+- string struct (sized, not 0-terminated)
 - helper library: string, defer...
 - (true) defer -> defer(); return;
 - array ([...])
