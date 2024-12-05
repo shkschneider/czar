@@ -1,5 +1,5 @@
-#ifndef CZAR_STD_LIB_H_
-#define CZAR_STD_LIB_H_
+#ifndef CZ_STANDARD_H_
+#define CZ_STANDARD_H_
 
 #include <assert.h>
 #include <complex.h>
@@ -10,6 +10,8 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
