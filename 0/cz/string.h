@@ -9,6 +9,10 @@
 
 typedef char* string;
 
+static inline string str(const char* str) { // alloc
+    return strdup(str);
+}
+
 static inline bool streq(string s1, string s2) {
     if (s1 == NULL && s2 == NULL) return true;
     if (s1 == NULL || s2 == NULL) return false;
@@ -34,11 +38,50 @@ static inline bool strsuf(string s, string suf) {
 }
 
 // https://stackoverflow.com/a/123724
-static inline string strtrmc(string s) {
+static inline string strtrmc(string s) { // alloc
     int l = strlen(s);
     while (isspace(s[l - 1])) --l;
     while (*s && isspace(*s)) ++s, --l;
     return strndup(s, l);
+}
+
+string* strdiv(string s, string c) { // alloc
+    string* strings = malloc(sizeof(string) * strlen(s));
+    string d = strdup(s);
+    string p = strtok(d, c);
+    unsigned int i;
+    for (i = 0; p != NULL; i++) {
+        strings[i] = strdup(p);
+        p = strtok(NULL, c);
+    }
+    strings[i] = NULL;
+    free(d);
+    return strings;
+}
+
+string strrpl(string s, unsigned char from, unsigned char to) {
+    for (unsigned int i = 0; i < strlen(s); i++) {
+        if (s[i] == from) {
+            s[i] = to;
+        }
+    }
+    return s;
+}
+
+string strdrp(string s, unsigned char c) { // alloc
+    string d = strdup(s);
+    while (*d == c) {
+        memmove(d, &d[1], strlen(&d[1]));
+        d[strlen(d) - 1] = '\0';
+    }
+    for (unsigned int i = 1; i < strlen(d); i++) {
+        if (d[i] == c) {
+            unsigned int n = strlen(&d[i + 1]);
+            memmove(&d[i], &d[i + 1], n);
+            d[i + n] = '\0';
+        }
+    }
+    return d;
 }
 
 static inline string strerr() {

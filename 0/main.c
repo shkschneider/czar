@@ -1,9 +1,10 @@
 #include "cz/standard.h"
 #include "cz/extended.h"
 #include "cz/types.h"
-#include "cz/defer.h"
+#include "cz/memory.h"
 #include "cz/misc.h"
 #include "cz/string.h"
+#include "cz/case.h"
 
 int main(void) {
     #ifdef __GNUC__
@@ -27,10 +28,27 @@ int main(void) {
     printf("pre: '%b'\n", strpre("this is a test", "this"));
     printf("suf: '%b'\n", strsuf("this is a test", "test"));
     printf("err: %s\n", strerr());
-    printf("trm: '%s' '%s'\n", strtrm(" trimme "), strtrm(""));
+    string s1 = " trimme ";
+    printf("trm: '%s' '%s'\n", strtrmc(s1), strtrmc(""));
+    printf("rpl: o->0 '%s'\n", strrpl(str("Hello, world!"), 'o', '0'));
+    printf("drp: '%s'\n", strdrp(str("oHello, world!"), 'o'));
 
     printb((u8) 42);
     assert(((uintptr_t) malloc(1) & 0x0F) == 0);
+
+    string s2 = str("upper");
+    printf("upper: '%s'\n", case_upper(s2));
+    printf("lower: '%s'\n", case_lower(s2));
+    printf("title: '%s'\n", case_title(s2));
+    string s3 = str(" sOmE WeIrD cAsE");
+    string* ss = strdiv(s3, " ");
+    for (int i = 0; ss[i]; i++) {
+        printf("ss[%d]='%s'\n", i, ss[i]);
+    }
+    free2(ss);
+    printf("camel: '%s'\n", case_camel(s3));
+    printf("pascal: '%s'\n", case_pascal(s3));
+    printf("snake: '%s'\n", case_snake(s3));
 
     return EXIT_SUCCESS;
 }
