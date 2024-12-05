@@ -9,10 +9,10 @@
 
 typedef char* string;
 
-static inline bool streq(string a, string b) {
-    if (a == NULL && b == NULL) return true;
-    if (a == NULL || b == NULL) return false;
-    return strlen(a) == strlen(b) && memcmp(a, b, strlen(a)) == 0;
+static inline bool streq(string s1, string s2) {
+    if (s1 == NULL && s2 == NULL) return true;
+    if (s1 == NULL || s2 == NULL) return false;
+    return strlen(s1) == strlen(s2) && memcmp(s1, s2, strlen(s1)) == 0;
 }
 
 static inline bool strsmth(string s) {
@@ -31,6 +31,14 @@ static inline bool strsuf(string s, string suf) {
     size_t l1 = strlen(s);
     size_t l2 = strlen(suf);
     return (l1 >= l2) && (!memcmp(s + l1 - l2, suf, l2));
+}
+
+// https://stackoverflow.com/a/123724
+static inline string strtrmc(string s) {
+    int l = strlen(s);
+    while (isspace(s[l - 1])) --l;
+    while (*s && isspace(*s)) ++s, --l;
+    return strndup(s, l);
 }
 
 static inline string strerr() {

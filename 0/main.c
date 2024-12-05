@@ -24,11 +24,13 @@ int main(void) {
 
     printf("eq: %b\n", streq("42", "0"));
     printf("smth: %b\n", strsmth(""));
-    printf("pre: %b\n", strpre("this is a test", "this"));
-    printf("suf: %b\n", strsuf("this is a test", "test"));
+    printf("pre: '%b'\n", strpre("this is a test", "this"));
+    printf("suf: '%b'\n", strsuf("this is a test", "test"));
     printf("err: %s\n", strerr());
+    printf("trm: '%s' '%s'\n", strtrm(" trimme "), strtrm(""));
 
     printb((u8) 42);
+    assert(((uintptr_t) malloc(1) & 0x0F) == 0);
 
     return EXIT_SUCCESS;
 }
