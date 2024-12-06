@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "cz/array.h"
+#include "cz/misc.h"
 
 typedef struct map_s {
     void* key;

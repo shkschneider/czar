@@ -1,14 +1,4 @@
-#include "cz/standard.h"
-#include "cz/extended.h"
-#include "cz/types.h"
-#include "cz/memory.h"
-#include "cz/misc.h"
-#include "cz/string.h"
-#include "cz/case.h"
-#include "cz/array.h" // single-list
-#include "cz/list.h" // double-list
-#include "cz/map.h" // hash-map (single-list)
-#include "cz/log.h"
+#include "cz.h"
 
 int main(void) {
     #ifdef __GNUC__

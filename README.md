@@ -6,16 +6,18 @@
 - manual memory mangement -- with defer
 - namespaces
 
-## [0 - C-like](0/)
+## [0 - C-improved](0/)
 
-- preprocessor
 - header files
 
-## [1 - New features](1/)
+## [1 - C-like](1/)
 
 - preprocessor
+
+## [2 - New features](2/)
+
 - transpiler
 
-## [2 - Custom Compiler](2/)
+## [3 - Custom Compiler](3/)
 
 - llvm/qbe/asm?

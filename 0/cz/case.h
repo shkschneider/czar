@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "cz/standard.h"
+#include "cz/memory.h"
 #include "cz/string.h"
 
 // UPPER CASE
