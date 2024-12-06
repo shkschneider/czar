@@ -8,23 +8,26 @@
 #include "cz/array.h" // single-list
 #include "cz/list.h" // double-list
 #include "cz/map.h" // hash-map (single-list)
+#include "cz/log.h"
 
 int main(void) {
     #ifdef __GNUC__
-    fprintf(stdout, "GCC v%d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+    LOG_DEBUG("GCC", "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+    LOG_WARNING("GCC", "no Clang");
     #elifdef __llvm__
-    fprintf(stdout, "Clang v%s\n", __llvm__);
+    LOG_DEBUG("Clang", "%s", __llvm__);
+    LOG_WARNING("Clang", "no GCC");
     #endif
 
     byte b = 0x42;
     UNUSED(b);
 
     autofree int *i = malloc(sizeof(int));
-    printf("%p = %d\n", i, *i);
+    printf("%p = %d\n", (any*)i, *i);
     autofclose FILE *f = fopen("./README.md", "r");
     NOTHING();
 
-    printf("%s:%d %s()\n", __FILE__, __LINE__, __FUNC__);
+    printf("%s:%d %s()\n", _FILE_, _LINE_, _FUNC_);
 
     printf("eq: %b\n", streq("42", "0"));
     printf("smth: %b\n", strsmth(""));

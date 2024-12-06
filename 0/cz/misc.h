@@ -12,10 +12,8 @@ static inline void TODO() {
     abort();
 }
 
-// __FILE__
-// __LINE__
-#ifndef __FUNC__
-#define __FUNC__ __func__
-#endif
+#define _FILE_ strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__
+#define _LINE_ __LINE__
+#define _FUNC_ __func__
 
 #endif

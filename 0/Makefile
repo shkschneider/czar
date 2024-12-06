@@ -2,8 +2,8 @@ NAME = a.out
 CC ?= gcc
 CINC = -I.
 CSTD = -std=c23
-CFLAGS = #-Wall -Werror -pedantic
-LDFLAGS = -static -lc -lcsptr
+CFLAGS = -Wall -Werror -pedantic
+LDFLAGS = -static -lc
 
 all: $(NAME)
 
