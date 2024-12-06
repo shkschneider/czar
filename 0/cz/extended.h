@@ -1,5 +1,5 @@
-#ifndef CZ_EXTENDED_H_
-#define CZ_EXTENDED_H_
+#ifndef CZ_EXTENDED_H
+#define CZ_EXTENDED_H
 
 #include <locale.h>
 #include <sys/stat.h>

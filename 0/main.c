@@ -5,6 +5,9 @@
 #include "cz/misc.h"
 #include "cz/string.h"
 #include "cz/case.h"
+#include "cz/array.h" // single-list
+#include "cz/list.h" // double-list
+#include "cz/map.h" // hash-map (single-list)
 
 int main(void) {
     #ifdef __GNUC__
@@ -43,8 +46,9 @@ int main(void) {
     string s3 = str(" sOmE WeIrD cAsE");
     string* ss = strdiv(s3, " ");
     for (int i = 0; ss[i]; i++) {
-        printf("ss[%d]='%s'\n", i, ss[i]);
+        printf("%d='%s' ", i, ss[i]);
     }
+    printf("\n");
     free2(ss);
     printf("camel: '%s'\n", case_camel(s3));
     printf("pascal: '%s'\n", case_pascal(s3));

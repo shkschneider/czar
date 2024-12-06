@@ -1,5 +1,5 @@
-#ifndef CZ_MISC_H_
-#define CZ_MISC_H_
+#ifndef CZ_MISC_H
+#define CZ_MISC_H
 
 #define UNUSED(x) ((void)x)
 

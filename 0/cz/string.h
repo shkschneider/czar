@@ -1,5 +1,5 @@
-#ifndef CZ_STRING_H_
-#define CZ_STRING_H_
+#ifndef CZ_STRING_H
+#define CZ_STRING_H
 
 // https://github.com/tsoding/skedudle/blob/master/src/s.h
 // https://github.com/antirez/sds/

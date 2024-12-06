@@ -1,5 +1,5 @@
-#ifndef CZ_TYPES_H_
-#define CZ_TYPES_H_
+#ifndef CZ_TYPES_H
+#define CZ_TYPES_H
 
 #include <stdbool.h>
 #include <stddef.h>

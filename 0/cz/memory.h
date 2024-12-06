@@ -1,5 +1,5 @@
-#ifndef CZ_MEMORY_H_
-#define CZ_MEMORY_H_
+#ifndef CZ_MEMORY_H
+#define CZ_MEMORY_H
 
 // https://fdiv.net/2015/10/08/emulating-defer-c-clang-or-gccblocks
 // https://stackoverflow.com/a/69336439

@@ -1,5 +1,5 @@
-#ifndef CZ_CASE_H_
-#define CZ_CASE_H_
+#ifndef CZ_CASE_H
+#define CZ_CASE_H
 
 #include <stdlib.h>
 #include <string.h>

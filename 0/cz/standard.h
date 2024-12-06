@@ -1,5 +1,5 @@
-#ifndef CZ_STANDARD_H_
-#define CZ_STANDARD_H_
+#ifndef CZ_STANDARD_H
+#define CZ_STANDARD_H
 
 #include <assert.h>
 #include <complex.h>

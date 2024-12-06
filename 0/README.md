@@ -10,6 +10,7 @@
 - defer: autofree autoclose autofclose
 - unused, file, line, function, todo
 - string helpers
+- array list map
 
 ## TODO
 
