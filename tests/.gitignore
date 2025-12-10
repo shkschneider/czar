@@ -18,6 +18,8 @@ mut_params
 mut_test
 void_heap
 void_test
+comprehensive
+comprehensive_test
 
 # Generated C files
 *.c
