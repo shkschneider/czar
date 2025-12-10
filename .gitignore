@@ -46,3 +46,25 @@ libczar.a
 *.su
 *.idb
 *.pdb
+
+# Test binaries
+tests/arithmetic
+tests/bindings
+tests/comments
+tests/comparison
+tests/comprehensive
+tests/error_as_value
+tests/extension_methods
+tests/field_assignment
+tests/functions
+tests/if_else
+tests/logical_operators
+tests/methods
+tests/new_types
+tests/no_semicolons
+tests/null_pointer
+tests/pointers
+tests/structs
+tests/types
+tests/while
+example
