@@ -12,7 +12,17 @@ end
 local function is_type_token(tok)
     if not tok then return false end
     if tok.type == "IDENT" then return true end
-    if tok.type == "KEYWORD" and (tok.value == "i32" or tok.value == "bool" or tok.value == "void") then
+    local type_keywords = {
+        ["i32"] = true,
+        ["i64"] = true,
+        ["u32"] = true,
+        ["u64"] = true,
+        ["f32"] = true,
+        ["f64"] = true,
+        ["bool"] = true,
+        ["void"] = true,
+    }
+    if tok.type == "KEYWORD" and type_keywords[tok.value] then
         return true
     end
     return false

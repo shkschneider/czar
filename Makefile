@@ -96,7 +96,8 @@ EXPECTED_RESULTS = \
 	no_semicolons:15 \
 	logical_operators:1 \
 	null_pointer:42 \
-	field_assignment:20
+	field_assignment:20 \
+	new_types:1
 
 # Run the test suite
 test: build

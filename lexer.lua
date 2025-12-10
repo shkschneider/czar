@@ -18,6 +18,11 @@ local keywords = {
     ["false"] = true,
     ["null"] = true,
     ["i32"] = true,
+    ["i64"] = true,
+    ["u32"] = true,
+    ["u64"] = true,
+    ["f32"] = true,
+    ["f64"] = true,
     ["bool"] = true,
     ["void"] = true,
 }
