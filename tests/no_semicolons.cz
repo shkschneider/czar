@@ -1,15 +1,15 @@
 // Test optional semicolons
 struct Point {
-    x: i32
-    y: i32
+    i32 x
+    i32 y
 }
 
-fn add(a: i32, b: i32) -> i32 {
+fn add(i32 a, i32 b) -> i32 {
     return a + b
 }
 
 fn main() -> i32 {
-    var p: Point = Point { x: 5, y: 10 }
-    val sum: i32 = add(p.x, p.y)
+    var Point p = Point { x: 5, y: 10 }
+    val i32 sum = add(p.x, p.y)
     return sum  // should return 15
 }

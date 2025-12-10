@@ -1,18 +1,18 @@
 // Test struct definitions and struct literals
 struct Point {
-    x: i32
-    y: i32
+    i32 x
+    i32 y
 }
 
 struct Rect {
-    top_left: Point
-    width: i32
-    height: i32
+    Point top_left
+    i32 width
+    i32 height
 }
 
 fn main() -> i32 {
-    var p: Point = Point { x: 5, y: 10 }
-    val r: Rect = Rect { 
+    var Point p = Point { x: 5, y: 10 }
+    val Rect r = Rect { 
         top_left: Point { x: 0, y: 0 },
         width: 100,
         height: 200

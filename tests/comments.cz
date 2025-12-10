@@ -1,14 +1,14 @@
 // Test comments: single-line // and multi-line /* */
 fn main() -> i32 {
     // This is a single-line comment
-    val x: i32 = 10
+    val i32 x = 10
     
     /* This is a 
        multi-line
        block comment */
-    val y: i32 = 20
+    val i32 y = 20
     
-    /* Inline block comment */ val z: i32 = 30
+    /* Inline block comment */ val i32 z = 30
     
     return x + y + z  // inline comment - should return 60
 }
