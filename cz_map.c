@@ -60,12 +60,12 @@ int main(void) {
     assert(map_get(map, key2) == NULL);
     assert(map_size(map) == 2);
 
-    // Test map_clear
+    // Test map_clear - clears all entries except the root node
     map_clear(map);
     assert(map->key == NULL);
     assert(map->value == NULL);
     assert(map->next == NULL);
-    assert(map_size(map) == 1); // Size is 1 because the first entry still exists but is cleared
+    assert(map_size(map) == 1); // Root entry still exists but is empty
 
     free(map);
     return 0;

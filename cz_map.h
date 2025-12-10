@@ -69,14 +69,16 @@ static inline void map_delete(Map* map, void* key) {
 
 static inline void map_clear(Map* map) {
     assert(map);
+    // First clear the root node's key and value to avoid dangling pointers
+    map->key = NULL;
+    map->value = NULL;
+    // Then free all subsequent nodes
     Map* m = map->next;
     while (m != NULL) {
         Map* next = m->next;
         free(m);
         m = next;
     }
-    map->key = NULL;
-    map->value = NULL;
     map->next = NULL;
 }
 

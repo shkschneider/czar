@@ -180,7 +180,7 @@ The library provides automatic cleanup attributes for RAII-style memory manageme
 
 // autoclose - automatically close file descriptors
 {
-    autoclose int fd = open("file.txt", O_RDONLY);
+    autoclose int fd = open("file.txt", O_RDONLY);  // Requires: #include <fcntl.h>
     // ... use fd ...
     // fd is automatically closed here
 }

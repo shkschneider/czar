@@ -115,13 +115,13 @@ void demo_memory_features() {
     }
     LOG_INFO("Memory automatically freed!");
     
-    // free2 - free array of strings
-    string* words = strdiv("one,two,three", ",");
+    // free2 - free array of strings (allocates)
+    string* allocated_words = strdiv("one,two,three", ",");
     LOG_INFO("Split result:");
-    for (int i = 0; words[i] != NULL; i++) {
-        LOG_INFO("  %s", words[i]);
+    for (int i = 0; allocated_words[i] != NULL; i++) {
+        LOG_INFO("  %s", allocated_words[i]);
     }
-    free2(words);
+    free2(allocated_words);
 }
 
 void demo_logging() {
