@@ -1,0 +1,26 @@
+// Test error-as-value pattern
+struct ParseIntResult {
+    ok: bool
+    value: i32
+    error_code: i32
+}
+
+fn parse_int(input: i32) -> ParseIntResult {
+    if input < 0 {
+        return ParseIntResult { ok: false, value: 0, error_code: 1 }
+    }
+    return ParseIntResult { ok: true, value: input, error_code: 0 }
+}
+
+fn main() -> i32 {
+    val result1: ParseIntResult = parse_int(42)
+    val result2: ParseIntResult = parse_int(-5)
+    
+    if result1.ok {
+        if result2.ok == false {
+            return result1.value  // should return 42
+        }
+    }
+    
+    return 0
+}
