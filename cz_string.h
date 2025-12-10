@@ -4,6 +4,7 @@
 // https://github.com/tsoding/skedudle/blob/master/src/s.h
 // https://github.com/antirez/sds/
 
+#include <ctype.h>
 #include <errno.h>
 #include <string.h>
 
@@ -24,12 +25,14 @@ static inline bool strsmth(string s) {
 }
 
 static inline bool strpre(string s, string pre) {
+    if (s == NULL && pre == NULL) return true;
     if (s == NULL && pre != NULL) return false;
     if (s != NULL && pre == NULL) return true;
     return strncmp(pre, s, strlen(pre)) == 0;
 }
 
 static inline bool strsuf(string s, string suf) {
+    if (s == NULL && suf == NULL) return true;
     if (s == NULL && suf != NULL) return false;
     if (s != NULL && suf == NULL) return true;
     size_t l1 = strlen(s);
