@@ -48,7 +48,7 @@ static inline string strtrmc(string s) { // alloc
     return strndup(s, l);
 }
 
-string* strdiv(string s, string c) { // alloc
+static inline string* strdiv(string s, string c) { // alloc
     string* strings = malloc(sizeof(string) * strlen(s));
     string d = strdup(s);
     string p = strtok(d, c);
@@ -62,7 +62,7 @@ string* strdiv(string s, string c) { // alloc
     return strings;
 }
 
-string strrpl(string s, unsigned char from, unsigned char to) {
+static inline string strrpl(string s, unsigned char from, unsigned char to) {
     for (unsigned int i = 0; i < strlen(s); i++) {
         if (s[i] == from) {
             s[i] = to;
@@ -71,7 +71,7 @@ string strrpl(string s, unsigned char from, unsigned char to) {
     return s;
 }
 
-string strdrp(string s, unsigned char c) { // alloc
+static inline string strdrp(string s, unsigned char c) { // alloc
     string d = strdup(s);
     string result = d;
     // Remove leading instances of c
