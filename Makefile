@@ -6,8 +6,7 @@ CFLAGS = -std=c2x -I . -W -Werror -Wall -Wstrict-prototypes -g -funroll-loops -O
 LDFLAGS = -lc -lm -static
 
 # Output binaries
-MAIN_BIN = cz
-DEMO_BIN = demo
+OUT = demo
 
 # Test files
 TEST_DIR = test
@@ -18,30 +17,25 @@ TEST_BINS = $(TEST_SOURCES:.c=)
 .PHONY: all clean test help
 
 # Default target
-all: $(MAIN_BIN) $(DEMO_BIN)
+all:
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(OUT) demo.c
+	./$(OUT)
+	@rm -f ./$(OUT)
 
 # Help message
 help:
-	@echo "czar C extension library - Makefile targets:"
-	@echo "  make          - Build main program and demo"
+	@echo "Czar -- C extension library:"
+	@echo "  make [all]    - Build demo program"
 	@echo "  make test     - Build and run all tests"
 	@echo "  make clean    - Remove all build artifacts"
 	@echo "  make help     - Show this help message"
-
-# Build main program
-$(MAIN_BIN): main.c cz*.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ main.c
-
-# Build demo program
-$(DEMO_BIN): demo.c cz*.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ demo.c
 
 # Test target - build and run all tests
 test: $(TEST_BINS)
 	@echo "Running tests from $(TEST_DIR)/ directory..."
 	@for test in $(TEST_BINS); do \
 		echo "  $$(basename $$test)..."; \
-		./$$test || exit 1; \
+		./$$test && rm -f ./$$test || exit 1; \
 	done
 	@echo "All tests passed!"
 
@@ -51,7 +45,7 @@ $(TEST_DIR)/%_test: $(TEST_DIR)/%_test.c cz*.h
 
 # Clean target
 clean:
-	rm -f $(MAIN_BIN) $(DEMO_BIN) $(TEST_BINS)
+	rm -f $(MAIN_BIN) $(OUT)
 	@echo "Cleaned all build artifacts"
 
 # EOF
