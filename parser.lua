@@ -139,6 +139,10 @@ function Parser:parse_statement()
         return { kind = "return", value = expr }
     elseif self:check("KEYWORD", "var") or self:check("KEYWORD", "val") then
         return self:parse_var_decl()
+    elseif self:check("KEYWORD", "if") then
+        return self:parse_if()
+    elseif self:check("KEYWORD", "while") then
+        return self:parse_while()
     else
         local expr = self:parse_expression()
         self:expect("SEMICOLON")
@@ -158,6 +162,29 @@ function Parser:parse_var_decl()
     end
     self:expect("SEMICOLON")
     return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init }
+end
+
+function Parser:parse_if()
+    self:expect("KEYWORD", "if")
+    local condition = self:parse_expression()
+    local then_block = self:parse_block()
+    local else_block = nil
+    if self:match("KEYWORD", "else") then
+        if self:check("KEYWORD", "if") then
+            -- else if - parse as nested if statement
+            else_block = { kind = "block", statements = { self:parse_if() } }
+        else
+            else_block = self:parse_block()
+        end
+    end
+    return { kind = "if", condition = condition, then_block = then_block, else_block = else_block }
+end
+
+function Parser:parse_while()
+    self:expect("KEYWORD", "while")
+    local condition = self:parse_expression()
+    local body = self:parse_block()
+    return { kind = "while", condition = condition, body = body }
 end
 
 -- Expression parsing
@@ -236,11 +263,20 @@ function Parser:parse_postfix()
             end
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
-        elseif expr.kind == "identifier" and self:check("LBRACE") then
-            expr = self:parse_struct_literal(expr)
         elseif self:match("DOT") then
             local field = self:expect("IDENT").value
             expr = { kind = "field", object = expr, field = field }
+        elseif expr.kind == "identifier" and self:check("LBRACE") then
+            -- Struct literal: only parse if we're not in a context where { starts a block
+            -- We can check if the previous tokens/context suggests this is a struct literal
+            -- For v0, let's be conservative: only parse as struct literal if identifier looks like a type
+            -- (starts with uppercase) or if we're sure it's not a block context
+            local name = expr.name
+            if name:match("^[A-Z]") then
+                expr = self:parse_struct_literal(expr)
+            else
+                break
+            end
         else
             break
         end
@@ -267,8 +303,8 @@ function Parser:parse_primary()
         self:advance()
         return { kind = "null" }
     elseif tok.type == "IDENT" then
-        self:advance()
-        return { kind = "identifier", name = tok.value }
+        local ident = self:advance()
+        return { kind = "identifier", name = ident.value }
     elseif tok.type == "LPAREN" then
         self:advance()
         local expr = self:parse_expression()
