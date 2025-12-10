@@ -74,19 +74,30 @@ This is the minimal coherent slice to bootstrap the compiler.
 
 ### 2. Bindings
 
-```
-val x: i32 = 1;   // immutable
-var y: i32 = 2;   // mutable
+Variables are immutable by default. Use `mut` for mutable variables.
 
-var z: i32;       // declared, must be assigned before first read
+```
+x: i32 = 1;       // immutable (default)
+mut y: i32 = 2;   // mutable
+
+mut z: i32;       // declared, must be assigned before first read
 z = 10;
 ```
 
-### 3. Pointers
+### 3. Heap Allocation
+
+Use `new` keyword to allocate on the heap. Memory is automatically freed at scope exit.
 
 ```
-var v: Vec2 = Vec2 { x: 1, y: 2 };
-var p: *Vec2 = &v;
+p: *Vec2 = new Vec2 { x: 1, y: 2 };  // heap allocation
+// p is automatically freed when it goes out of scope
+```
+
+### 4. Pointers
+
+```
+mut v: Vec2 = Vec2 { x: 1, y: 2 };
+p: *Vec2 = &v;
 
 p.x = 10;        // auto-deref on .
 (*p).y = 20;     // explicit deref if desired
@@ -96,8 +107,9 @@ p.x = 10;        // auto-deref on .
 
 - Param type T → passed by value.
 - Param type *T → passed by pointer (allowing mutation of caller data).
+- Use `mut` prefix on parameters to mark them as mutable within the function.
 
-### 4. Structs
+### 5. Structs
 
 ```
 struct Vec2 {
@@ -109,10 +121,10 @@ struct Vec2 {
 **Struct literals:**
 
 ```
-val v: Vec2 = Vec2 { x: 3, y: 4 };
+v: Vec2 = Vec2 { x: 3, y: 4 };
 ```
 
-### 5. Functions
+### 6. Functions
 
 ```
 fn add(a: i32, b: i32) -> i32 {
@@ -125,7 +137,7 @@ fn add(a: i32, b: i32) -> i32 {
 - No generics in v0.
 - No interfaces in v0.
 
-### 6. Methods (v0: sugar built later)
+### 7. Methods (v0: sugar built later)
 
 Internally, methods are just functions with an explicit receiver:
 
@@ -135,11 +147,11 @@ fn length(self: *Vec2) -> i32 {
 }
 ```
 
-v0 might require calling like: `val L: i32 = length(&v);`
+v0 might require calling like: `L: i32 = length(&v);`
 
-Later (v1), this becomes: `val L: i32 = v.length();` with auto-addressing and auto-deref.
+Later (v1), this becomes: `L: i32 = v.length();` with auto-addressing and auto-deref.
 
-### 7. Extension Methods (v1+)
+### 8. Extension Methods (v1+)
 
 Any function whose first parameter is self: T or self: *T becomes callable as a method:
 
@@ -151,7 +163,7 @@ v.clamp(0, 10);
 
 Works across modules. No inheritance required.
 
-### 8. Overloading (v1)
+### 9. Overloading (v1)
 
 Overloading resolution is exact-match only:
 
@@ -160,7 +172,7 @@ Overloading resolution is exact-match only:
 - Return type alone cannot differentiate overloads.
 - Ambiguous calls are a compiler error.
 
-### 9. Error-as-Value (v0)
+### 10. Error-as-Value (v0)
 
 No generics yet. Users define result wrappers manually:
 
@@ -173,7 +185,7 @@ struct ParseIntResult {
 
 Later (v2+), this may become: `Result<T, E>` with monomorphization.
 
-### 10. Control Flow
+### 11. Control Flow
 
 ```
 if x > 0 {
@@ -189,7 +201,7 @@ while x < 10 {
 
 Parentheses optional depending on taste; grammar supports both.
 
-### 11. Evaluation Order
+### 12. Evaluation Order
 
 - Strict left-to-right for all expression evaluation.
 - `&&` and `||` are short-circuiting.
@@ -380,7 +392,8 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - Comments: Both `//` single-line and `/* */` multi-line comments are supported
 - Optional semicolons: Semicolons are now optional in all contexts (statements and struct fields)
 - Types: i32, bool, void, structs, pointers (*T)
-- Variables: val (immutable) and var (mutable)
+- Variables: Immutable by default, use `mut` keyword for mutable variables
+- **Heap allocation**: `new` keyword with automatic scope-based cleanup
 - Functions with parameters and return values
 - Control flow: if/else and while loops
 - Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (&&, ||)
@@ -448,7 +461,7 @@ The project includes a comprehensive test suite in the `tests/` directory coveri
 
 **v0 Tests:**
 - types.cz - Basic types (i32, bool, void)
-- bindings.cz - val/var bindings
+- bindings.cz - Immutable/mutable bindings with `mut`
 - structs.cz - Struct definitions and literals
 - pointers.cz - Pointer operations
 - functions.cz - Function calls
@@ -468,6 +481,10 @@ The project includes a comprehensive test suite in the `tests/` directory coveri
 - extension_methods.cz - Extension methods with self parameter
 - error_as_value.cz - Error-as-value pattern
 - comprehensive.cz - Integration test combining all v1 features
+- **heap_allocation.cz** - Heap allocation with `new` keyword
+- **nested_heap.cz** - Nested scope cleanup
+- **mut_params.cz** - Mutable function parameters
+- **void_heap.cz** - Heap allocation in void functions
 
 Run all tests with: `make test` from the root directory.
 
