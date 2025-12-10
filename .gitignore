@@ -1,5 +1,7 @@
+# Czar build artifacts
 cz
 a.out
+bytecode.c
 
 # Object files
 *.o
