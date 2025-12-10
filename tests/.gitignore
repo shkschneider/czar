@@ -1,6 +1,15 @@
-# Compiled test binaries
-test_*
-!test_*.cz
+# Compiled test binaries (executables without extension)
+arithmetic
+bindings
+comments
+comparison
+functions
+if_else
+no_semicolons
+pointers
+structs
+types
+while
 
 # Generated C files
 *.c
