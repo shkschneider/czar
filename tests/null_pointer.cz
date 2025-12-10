@@ -1,0 +1,17 @@
+// Test null pointer literal
+struct Node {
+    value: i32
+}
+
+fn main() -> i32 {
+    var p: *Node = null
+    
+    // Check if we can assign null and non-null
+    if p == null {
+        var n: Node = Node { value: 42 }
+        p = &n
+        return p.value
+    }
+    
+    return 0
+}
