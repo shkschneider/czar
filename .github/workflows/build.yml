@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y luajit libluajit-5.1-dev gcc make
+        
+    - name: Build cz binary
+      run: make build
+      
+    - name: Verify binary was created
+      run: |
+        ls -lh cz
+        file cz
+        ./cz --help || ./cz 2>&1 | head -5
+        
+    - name: Upload cz binary as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cz-binary
+        path: cz
+        retention-days: 30
