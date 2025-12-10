@@ -101,7 +101,15 @@ end
 
 function Parser:parse_function()
     self:expect("KEYWORD", "fn")
+    local receiver_type = nil
     local name = self:expect("IDENT").value
+    
+    -- Check if this is a method definition (Type.method_name syntax)
+    if self:match("DOT") then
+        receiver_type = name  -- The first identifier is the type
+        name = self:expect("IDENT").value  -- The second identifier is the method name
+    end
+    
     self:expect("LPAREN")
     local params = {}
     if not self:check("RPAREN") then
@@ -116,7 +124,7 @@ function Parser:parse_function()
     self:expect("ARROW")
     local return_type = self:parse_type()
     local body = self:parse_block()
-    return { kind = "function", name = name, params = params, return_type = return_type, body = body }
+    return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body }
 end
 
 function Parser:parse_type()
