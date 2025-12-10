@@ -108,7 +108,11 @@ EXPECTED_RESULTS = \
 	comprehensive:1 \
 	underscore:23 \
 	underscore_edge_cases:172 \
-	underscore_example:117
+	underscore_example:117 \
+	compound_assign:8 \
+	compound_assign_comprehensive:250 \
+	compound_assign_fields:55 \
+	compound_assign_pointers:55
 
 # Run the test suite
 test: build

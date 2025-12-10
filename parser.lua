@@ -224,6 +224,18 @@ function Parser:parse_assignment()
     if self:match("EQUAL") then
         local value = self:parse_assignment()
         return { kind = "assign", target = expr, value = value }
+    elseif self:match("PLUSEQUAL") then
+        local value = self:parse_assignment()
+        return { kind = "compound_assign", target = expr, operator = "+", value = value }
+    elseif self:match("MINUSEQUAL") then
+        local value = self:parse_assignment()
+        return { kind = "compound_assign", target = expr, operator = "-", value = value }
+    elseif self:match("STAREQUAL") then
+        local value = self:parse_assignment()
+        return { kind = "compound_assign", target = expr, operator = "*", value = value }
+    elseif self:match("SLASHEQUAL") then
+        local value = self:parse_assignment()
+        return { kind = "compound_assign", target = expr, operator = "/", value = value }
     end
     return expr
 end
