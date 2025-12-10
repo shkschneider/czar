@@ -220,12 +220,16 @@ function Parser:parse_expression()
 end
 
 function Parser:parse_assignment()
-    local expr = self:parse_binary_or()
+    local expr = self:parse_null_coalesce()
     if self:match("EQUAL") then
         local value = self:parse_assignment()
         return { kind = "assign", target = expr, value = value }
     end
     return expr
+end
+
+function Parser:parse_null_coalesce()
+    return self:parse_binary_chain(self.parse_binary_or, { NULLCOALESCE = true })
 end
 
 function Parser:parse_binary_or()
@@ -289,9 +293,16 @@ function Parser:parse_postfix()
             end
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
+        elseif self:match("SAFENAV") then
+            -- Safe navigation operator: a?.b
+            local field = self:expect("IDENT").value
+            expr = { kind = "safe_nav", object = expr, field = field }
         elseif self:match("DOT") then
             local field = self:expect("IDENT").value
             expr = { kind = "field", object = expr, field = field }
+        elseif self:match("BANGBANG") then
+            -- Null check operator: a!!
+            expr = { kind = "null_check", operand = expr }
         elseif expr.kind == "identifier" and self:check("LBRACE") then
             -- Struct literal: only parse if we're not in a context where { starts a block
             -- We can check if the previous tokens/context suggests this is a struct literal
