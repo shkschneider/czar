@@ -1,0 +1,7 @@
+// Test variable bindings: val (immutable) and var (mutable)
+fn main() -> i32 {
+    val x: i32 = 10      // immutable
+    var y: i32 = 20      // mutable
+    y = y + x
+    return y             // should return 30
+}
