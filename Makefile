@@ -93,7 +93,10 @@ EXPECTED_RESULTS = \
 	if_else:50 \
 	while:55 \
 	comments:60 \
-	no_semicolons:15
+	no_semicolons:15 \
+	logical_operators:1 \
+	null_pointer:42 \
+	field_assignment:20
 
 # Run the test suite
 test: build
