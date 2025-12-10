@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Comprehensive test combining all v1 features
 struct Point {
     x: i32
@@ -66,4 +67,44 @@ fn main() -> i32 {
     }
     
     return 0
+=======
+// Comprehensive test showcasing new language features:
+// 1. Immutable-by-default with mut keyword
+// 2. Heap allocation with new keyword
+// 3. Automatic scope-based cleanup
+
+struct Person {
+    age: i32
+    score: i32
+}
+
+fn update_score(mut p: *Person, delta: i32) -> void {
+    p.score = p.score + delta
+}
+
+fn calculate_total() -> i32 {
+    // Immutable by default
+    base: i32 = 10
+    
+    // Mutable variable
+    mut total: i32 = 0
+    
+    // Heap allocation with automatic cleanup
+    person: *Person = new Person { age: 25, score: 50 }
+    
+    // Modify through pointer
+    update_score(person, 15)
+    
+    // Calculate result
+    total = base + person.age + person.score
+    
+    // person is automatically freed here
+    return total
+}
+
+fn main() -> i32 {
+    result: i32 = calculate_total()
+    // result = 10 + 25 + 65 = 100
+    return result
+>>>>>>> 180a6bb (Add comprehensive test showcasing all new features)
 }
