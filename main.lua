@@ -116,18 +116,24 @@ local function compile_and_link(source_path, output_path)
     c_file:write(c_source)
     c_file:close()
 
-    -- Compile C to binary with escaped paths
-    local cc_cmd = string.format("cc %s -o %s 2>&1", shell_escape(c_temp), shell_escape(output_path))
+    -- Compile C to binary with escaped paths, capture exit code properly
+    local cc_cmd = string.format("cc %s -o %s 2>&1; echo \"EXIT_CODE:$?\"", shell_escape(c_temp), shell_escape(output_path))
     local cc_output = io.popen(cc_cmd)
     local cc_result = cc_output:read("*a")
-    local success = cc_output:close()
+    cc_output:close()
+    
+    -- Extract exit code from output
+    local exit_code = cc_result:match("EXIT_CODE:(%d+)")
+    local compilation_output = cc_result:gsub("EXIT_CODE:%d+%s*$", "")
 
     -- Clean up temporary file
     os.remove(c_temp)
 
-    if not success then
+    if exit_code and tonumber(exit_code) ~= 0 then
         io.stderr:write("C compilation failed:\n")
-        io.stderr:write(cc_result)
+        if compilation_output and compilation_output ~= "" then
+            io.stderr:write(compilation_output)
+        end
         return false
     end
 
