@@ -1,44 +1,44 @@
 // Comprehensive test of null-safety operators
 
 struct Node {
-    value: i32
-    next: *Node
+    i32 value
+    Node* next
 }
 
-fn create_node(v: i32) -> *Node {
-    var n: Node = Node { value: v, next: null }
+fn create_node(i32 v) -> Node* {
+    var Node n = Node { value: v, next: null }
     return &n
 }
 
 fn main() -> i32 {
     // Test 1: Null coalescing with integer literals
-    val test1: i32 = 0 ?? 10  // Since 0 is falsy, this should be 10
+    val i32 test1 = 0 ?? 10  // Since 0 is falsy, this should be 10
     
     // Test 2: Null coalescing with pointers
-    var null_ptr: *Node = null
-    var n1: Node = Node { value: 5, next: null }
-    var valid_ptr: *Node = &n1
-    var result_ptr: *Node = null_ptr ?? valid_ptr
+    var Node* null_ptr = null
+    var Node n1 = Node { value: 5, next: null }
+    var Node* valid_ptr = &n1
+    var Node* result_ptr = null_ptr ?? valid_ptr
     
     // Test 3: Safe navigation on null pointer
-    var n2: *Node = null
-    val safe1: i32 = n2?.value ?? 100  // Should be 100
+    var Node* n2 = null
+    val i32 safe1 = n2?.value ?? 100  // Should be 100
     
     // Test 4: Safe navigation on valid pointer
-    var n3: Node = Node { value: 25, next: null }
-    var p3: *Node = &n3
-    val safe2: i32 = p3?.value ?? 0   // Should be 25
+    var Node n3 = Node { value: 25, next: null }
+    var Node* p3 = &n3
+    val i32 safe2 = p3?.value ?? 0   // Should be 25
     
     // Test 5: Null check on valid pointer (should not crash)
-    var n4: Node = Node { value: 15, next: null }
-    var p4: *Node = &n4
-    var checked: *Node = p4!!  // Should succeed
+    var Node n4 = Node { value: 15, next: null }
+    var Node* p4 = &n4
+    var Node* checked = p4!!  // Should succeed
     
     // Test 6: Safe navigation on pointer field
-    var n5: Node = Node { value: 30, next: null }
-    var p5: *Node = &n5
-    var n6: Node = Node { value: 40, next: p5 }
-    var p6: *Node = &n6
+    var Node n5 = Node { value: 30, next: null }
+    var Node* p5 = &n5
+    var Node n6 = Node { value: 40, next: p5 }
+    var Node* p6 = &n6
     
     // Return sum (test1=10, safe1=100, safe2=25)
     return test1 + safe1 + safe2  // 10 + 100 + 25 = 135

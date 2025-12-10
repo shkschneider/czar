@@ -1,11 +1,11 @@
 // Test error-as-value pattern
 struct ParseIntResult {
-    ok: bool
-    value: i32
-    error_code: i32
+    bool ok
+    i32 value
+    i32 error_code
 }
 
-fn parse_int(input: i32) -> ParseIntResult {
+fn parse_int(i32 input) -> ParseIntResult {
     if input < 0 {
         return ParseIntResult { ok: false, value: 0, error_code: 1 }
     }
@@ -13,8 +13,8 @@ fn parse_int(input: i32) -> ParseIntResult {
 }
 
 fn main() -> i32 {
-    val result1: ParseIntResult = parse_int(42)
-    val result2: ParseIntResult = parse_int(-5)
+    val ParseIntResult result1 = parse_int(42)
+    val ParseIntResult result2 = parse_int(-5)
     
     if result1.ok {
         if result2.ok == false {

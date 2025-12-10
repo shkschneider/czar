@@ -2,22 +2,22 @@
 // This file shows how to use !!, ??, and ?. operators
 
 struct Config {
-    timeout: i32
-    retries: i32
+    i32 timeout
+    i32 retries
 }
 
 struct Service {
-    name: i32
-    config: *Config
+    i32 name
+    Config* config
 }
 
 // Returns null if flag is true
-fn maybe_service(should_fail: bool) -> *Service {
+fn maybe_service(bool should_fail) -> Service* {
     if should_fail {
         return null
     } else {
-        var cfg: Config = Config { timeout: 30, retries: 3 }
-        var svc: Service = Service { name: 100, config: &cfg }
+        var Config cfg = Config { timeout: 30, retries: 3 }
+        var Service svc = Service { name: 100, config: &cfg }
         return &svc
     }
 }
@@ -25,38 +25,38 @@ fn maybe_service(should_fail: bool) -> *Service {
 fn main() -> i32 {
     // Example 1: Null-coalescing operator (??)
     // Provides a default value when the left side is null (or falsy)
-    var service1: *Service = null
-    var cfg1: Config = Config { timeout: 10, retries: 1 }
-    var svc1: Service = Service { name: 200, config: &cfg1 }
-    var fallback: *Service = &svc1
-    var result1: *Service = service1 ?? fallback  // Uses fallback
+    var Service* service1 = null
+    var Config cfg1 = Config { timeout: 10, retries: 1 }
+    var Service svc1 = Service { name: 200, config: &cfg1 }
+    var Service* fallback = &svc1
+    var Service* result1 = service1 ?? fallback  // Uses fallback
     
     // Example 2: Safe navigation operator (?.)
     // Accesses a field only if the pointer is not null
-    var service2: *Service = null
-    val timeout1: i32 = service2?.name ?? 5  // Returns 5 (service2 is null)
+    var Service* service2 = null
+    val i32 timeout1 = service2?.name ?? 5  // Returns 5 (service2 is null)
     
-    var cfg2: Config = Config { timeout: 20, retries: 2 }
-    var svc2: Service = Service { name: 300, config: &cfg2 }
-    var service3: *Service = &svc2
-    val timeout2: i32 = service3?.name ?? 5  // Returns 300 (service3 is not null)
+    var Config cfg2 = Config { timeout: 20, retries: 2 }
+    var Service svc2 = Service { name: 300, config: &cfg2 }
+    var Service* service3 = &svc2
+    val i32 timeout2 = service3?.name ?? 5  // Returns 300 (service3 is not null)
     
     // Example 3: Null-check operator (!!)
     // Crashes the program if the value is null
-    var cfg3: Config = Config { timeout: 15, retries: 4 }
-    var svc3: Service = Service { name: 400, config: &cfg3 }
-    var service4: *Service = &svc3
-    var checked: *Service = service4!!  // Succeeds, service4 is not null
+    var Config cfg3 = Config { timeout: 15, retries: 4 }
+    var Service svc3 = Service { name: 400, config: &cfg3 }
+    var Service* service4 = &svc3
+    var Service* checked = service4!!  // Succeeds, service4 is not null
     
     // Example 4: Chaining operators
     // You can combine ?. and ?? to safely access fields with defaults
-    var service5: *Service = null
-    val chained_timeout: i32 = service5?.name ?? 99  // Returns 99
+    var Service* service5 = null
+    val i32 chained_timeout = service5?.name ?? 99  // Returns 99
     
-    var cfg4: Config = Config { timeout: 25, retries: 5 }
-    var svc4: Service = Service { name: 500, config: &cfg4 }
-    var service6: *Service = &svc4
-    val chained_timeout2: i32 = service6?.name ?? 99  // Returns 500
+    var Config cfg4 = Config { timeout: 25, retries: 5 }
+    var Service svc4 = Service { name: 500, config: &cfg4 }
+    var Service* service6 = &svc4
+    val i32 chained_timeout2 = service6?.name ?? 99  // Returns 500
     
     // Calculate result
     // timeout1=5, timeout2=300, chained_timeout=99, chained_timeout2=500

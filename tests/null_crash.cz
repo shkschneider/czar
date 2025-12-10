@@ -1,11 +1,11 @@
 // Test that !! crashes on null
 
 struct Data {
-    value: i32
+    i32 value
 }
 
 fn main() -> i32 {
-    var ptr: *Data = null
-    var checked: *Data = ptr!!  // This should crash
+    var Data* ptr = null
+    var Data* checked = ptr!!  // This should crash
     return 0
 }
