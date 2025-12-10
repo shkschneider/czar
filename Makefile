@@ -1,5 +1,28 @@
-.PHONY: all build clean test install
+.PHONY: all build clean test install help
 OUT = cz
+
+# Help target
+help:
+	@echo "Czar Compiler Build System"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make build        - Build the cz compiler binary (default: dynamic linking)"
+	@echo "  make test         - Run the test suite"
+	@echo "  make all          - Build and run tests"
+	@echo "  make clean        - Remove all build artifacts"
+	@echo "  make install      - Install cz to /usr/local/bin (requires sudo)"
+	@echo ""
+	@echo "Options:"
+	@echo "  make STATIC=1     - Build with static linking (requires static libluajit-5.1.a)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make build        - Build with dynamic linking"
+	@echo "  make STATIC=1 build - Build with static linking"
+	@echo ""
+	@echo "Features:"
+	@echo "  - Optimized with -O2"
+	@echo "  - Stripped with -s flag (minimal binary size)"
+	@echo "  - Optional static linking for portability"
 
 # Compiler paths
 CC = cc
@@ -10,8 +33,27 @@ AR = ar
 LUAJIT_CFLAGS := $(shell pkg-config --cflags luajit 2>/dev/null || echo "-I/usr/include/luajit-2.1")
 LUAJIT_LIBS := $(shell pkg-config --libs luajit 2>/dev/null || echo "-lluajit-5.1")
 
-CFLAGS = $(LUAJIT_CFLAGS)
-LDFLAGS = -L. -Wl,--whole-archive -lczar -Wl,--no-whole-archive -Wl,-E $(LUAJIT_LIBS) -lm -ldl
+# Check if static linking is requested
+ifdef STATIC
+    # Try to find static library
+    LUAJIT_STATIC := $(shell pkg-config --variable=libdir luajit 2>/dev/null)/libluajit-5.1.a
+    ifneq ($(wildcard $(LUAJIT_STATIC)),)
+        LUAJIT_LIBS := $(LUAJIT_STATIC)
+        LDFLAGS_EXTRA := -static
+    else
+        # Fallback to default static library path
+        LUAJIT_STATIC := /usr/lib/x86_64-linux-gnu/libluajit-5.1.a
+        ifneq ($(wildcard $(LUAJIT_STATIC)),)
+            LUAJIT_LIBS := $(LUAJIT_STATIC)
+            LDFLAGS_EXTRA := -static
+        else
+            $(warning Static LuaJIT library not found, falling back to dynamic linking)
+        endif
+    endif
+endif
+
+CFLAGS = $(LUAJIT_CFLAGS) -O2
+LDFLAGS = -L. -Wl,--whole-archive -lczar -Wl,--no-whole-archive -Wl,-E $(LUAJIT_LIBS) -lm -ldl $(LDFLAGS_EXTRA) -s
 
 # Lua source files
 LUA_SOURCES = lexer.lua parser.lua codegen.lua main.lua
