@@ -1,0 +1,16 @@
+// Test heap allocation cleanup in void function without explicit return
+struct Node {
+    value: i32
+}
+
+fn process() -> void {
+    // Allocate on heap in void function
+    n: *Node = new Node { value: 42 }
+    n.value = 100
+    // n is automatically freed when function ends (no explicit return)
+}
+
+fn main() -> i32 {
+    process()
+    return 0
+}

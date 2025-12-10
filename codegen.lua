@@ -184,9 +184,12 @@ function Codegen:gen_block(block)
     for _, stmt in ipairs(block.statements) do
         self:emit("    " .. self:gen_statement(stmt))
     end
-    -- Note: Cleanup is handled in return statements
-    -- Only generate cleanup here if there's no return in this block
-    -- For now, we rely on return statements to handle cleanup
+    -- Generate cleanup code for heap-allocated variables at end of block
+    -- This handles non-return paths (e.g., void functions, fall-through)
+    local heap_vars = self:get_heap_vars()
+    for i = #heap_vars, 1, -1 do  -- cleanup in reverse order
+        self:emit(string.format("    free(%s);", heap_vars[i]))
+    end
     self:emit("}")
     self:pop_scope()
 end
@@ -434,18 +437,17 @@ function Codegen:gen_expr(expr)
         return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
     elseif expr.kind == "new" then
         -- Generate: (TypeName*)malloc(sizeof(TypeName))
+        -- NOTE: Requires GNU C for statement expressions when initializing
+        -- TODO: Add NULL check for malloc failure in production code
         local malloc_expr = string.format("(%s*)malloc(sizeof(%s))", expr.type_name, expr.type_name)
         if expr.init then
-            -- If there's an initializer, we need to handle it in statement context
-            -- For now, we'll use a compound expression with assignment
-            -- This is a limitation - initialization should ideally be done separately
-            -- We'll generate: ({ TypeName* _tmp = malloc(...); *_tmp = {...}; _tmp; })
+            -- Use GNU C statement expression to allocate and initialize
+            -- Syntax: ({ Type* tmp = malloc(sizeof(Type)); *tmp = (Type){...}; tmp; })
             local parts = {}
             for _, f in ipairs(expr.init.fields) do
                 table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
             end
             local init_literal = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
-            -- Use GNU C statement expression
             self.cleanup_counter = self.cleanup_counter + 1
             local tmp_name = string.format("_tmp_%d", self.cleanup_counter)
             return string.format("({ %s* %s = %s; *%s = %s; %s; })",
