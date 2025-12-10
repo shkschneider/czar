@@ -6,7 +6,7 @@
 
 - loop
 - nullability `?`
-- error as value `!`
+- error as value `!` (setjmp/longjmp?)
 - mutability `*`
 - no semicolon
 - packages/namespaces
