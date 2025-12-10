@@ -1,0 +1,16 @@
+// Test basic types: i32, bool, void
+fn test_i32() -> i32 {
+    val x: i32 = 42
+    return x
+}
+
+fn test_bool() -> bool {
+    val t: bool = true
+    val f: bool = false
+    return t
+}
+
+fn main() -> i32 {
+    val result: i32 = test_i32()
+    return result
+}

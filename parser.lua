@@ -82,7 +82,7 @@ function Parser:parse_struct()
         local field_name = self:expect("IDENT").value
         self:expect("COLON")
         local field_type = self:parse_type()
-        self:expect("SEMICOLON")
+        self:match("SEMICOLON")  -- semicolons are optional
         table.insert(fields, { name = field_name, type = field_type })
     end
     self:expect("RBRACE")
@@ -135,7 +135,7 @@ function Parser:parse_statement()
     if self:check("KEYWORD", "return") then
         self:advance()
         local expr = self:parse_expression()
-        self:expect("SEMICOLON")
+        self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "return", value = expr }
     elseif self:check("KEYWORD", "var") or self:check("KEYWORD", "val") then
         return self:parse_var_decl()
@@ -145,7 +145,7 @@ function Parser:parse_statement()
         return self:parse_while()
     else
         local expr = self:parse_expression()
-        self:expect("SEMICOLON")
+        self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "expr_stmt", expression = expr }
     end
 end
@@ -160,7 +160,7 @@ function Parser:parse_var_decl()
     if self:match("EQUAL") then
         init = self:parse_expression()
     end
-    self:expect("SEMICOLON")
+    self:match("SEMICOLON")  -- semicolons are optional
     return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init }
 end
 
