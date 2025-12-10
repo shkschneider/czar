@@ -19,6 +19,7 @@ function Codegen.new(ast)
     local self = {
         ast = ast,
         structs = {},
+        functions = {},  -- Store function/method info
         out = {},
         scope_stack = {},
     }
@@ -29,10 +30,38 @@ function Codegen:emit(line)
     table.insert(self.out, line)
 end
 
-function Codegen:collect_structs()
+function Codegen:collect_structs_and_functions()
     for _, item in ipairs(self.ast.items or {}) do
         if item.kind == "struct" then
             self.structs[item.name] = item
+        elseif item.kind == "function" then
+            -- Store function info for method call resolution
+            local func_name = item.name
+            if item.receiver_type then
+                -- This is a method, store it by receiver type and method name
+                if not self.functions[item.receiver_type] then
+                    self.functions[item.receiver_type] = {}
+                end
+                self.functions[item.receiver_type][item.name] = item
+            else
+                -- Regular function, also check if it's an extension method
+                if #item.params > 0 and item.params[1].name == "self" then
+                    -- Extension method: first param is self
+                    local self_type = item.params[1].type
+                    local receiver_type_name = nil
+                    if self_type.kind == "pointer" and self_type.to.kind == "named_type" then
+                        receiver_type_name = self_type.to.name
+                    elseif self_type.kind == "named_type" then
+                        receiver_type_name = self_type.name
+                    end
+                    if receiver_type_name then
+                        if not self.functions[receiver_type_name] then
+                            self.functions[receiver_type_name] = {}
+                        end
+                        self.functions[receiver_type_name][func_name] = item
+                    end
+                end
+            end
         end
     end
 end
@@ -188,6 +217,62 @@ function Codegen:gen_expr(expr)
     elseif expr.kind == "assign" then
         return string.format("(%s = %s)", self:gen_expr(expr.target), self:gen_expr(expr.value))
     elseif expr.kind == "call" then
+        -- Check if this is a method call (callee is a field expression)
+        if expr.callee.kind == "field" then
+            local obj = expr.callee.object
+            local method_name = expr.callee.field
+            
+            -- Determine the type of the object
+            local obj_type = nil
+            if obj.kind == "identifier" then
+                obj_type = self:get_var_type(obj.name)
+            end
+            
+            -- Get the receiver type name
+            local receiver_type_name = nil
+            if obj_type then
+                if obj_type.kind == "pointer" and obj_type.to.kind == "named_type" then
+                    receiver_type_name = obj_type.to.name
+                elseif obj_type.kind == "named_type" then
+                    receiver_type_name = obj_type.name
+                end
+            end
+            
+            -- Look up the method
+            local method = nil
+            if receiver_type_name and self.functions[receiver_type_name] then
+                method = self.functions[receiver_type_name][method_name]
+            end
+            
+            if method then
+                -- This is a method call, transform to function call with object as first arg
+                local args = {}
+                
+                -- Add the object as the first argument
+                -- Check if we need to address it
+                local first_param_type = method.params[1].type
+                local obj_expr = self:gen_expr(obj)
+                
+                if first_param_type.kind == "pointer" then
+                    -- Method expects a pointer
+                    if obj_type and obj_type.kind ~= "pointer" then
+                        -- Object is a value, add &
+                        obj_expr = "&" .. obj_expr
+                    end
+                end
+                
+                table.insert(args, obj_expr)
+                
+                -- Add the rest of the arguments
+                for _, a in ipairs(expr.args) do
+                    table.insert(args, self:gen_expr(a))
+                end
+                
+                return string.format("%s(%s)", method_name, join(args, ", "))
+            end
+        end
+        
+        -- Regular function call
         local callee = self:gen_expr(expr.callee)
         local args = {}
         for _, a in ipairs(expr.args) do
@@ -246,7 +331,7 @@ function Codegen:gen_wrapper(has_main)
 end
 
 function Codegen:generate()
-    self:collect_structs()
+    self:collect_structs_and_functions()
     self:emit("#include <stdint.h>")
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")

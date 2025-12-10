@@ -97,7 +97,11 @@ EXPECTED_RESULTS = \
 	logical_operators:1 \
 	null_pointer:42 \
 	field_assignment:20 \
-	new_types:1
+	new_types:1 \
+	extension_methods:10 \
+	methods:10 \
+	error_as_value:42 \
+	comprehensive:1
 
 # Run the test suite
 test: build
