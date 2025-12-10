@@ -149,9 +149,9 @@ syntax-check: build
 
 # Clean build artifacts
 clean:
-	rm -f ./$(OUT) ./a.out ./*.o ./*.a ./$(OUT) ./$(LUA_LIBRARY) ./main.h
-	find ./tests -type f -name '*.c' -delete
-	find ./tests -type f -executable -delete
+	@rm -vf ./$(OUT) ./a.out ./*.o ./*.a ./$(OUT) ./$(LUA_LIBRARY) ./main.h
+	@find ./tests -type f -name '*.c' -print | xargs rm -vf
+	@find ./tests -type f -executable -print | xargs rm -vf
 
 # Install the cz compiler (requires root/sudo for system-wide install)
 install: build
