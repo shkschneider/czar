@@ -1,0 +1,11 @@
+// This is a line comment
+fn test() -> i32 {
+    /* This is a block comment */
+    return 42; // inline comment
+}
+
+/* Multi-line
+   block comment */
+fn main() -> i32 {
+    return 0;
+}
