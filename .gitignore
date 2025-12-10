@@ -1,9 +1,5 @@
-# Czar build artifacts
 cz
 a.out
-my_program
-example.c
-bytecode_sizes.c
 
 # Object files
 *.o
