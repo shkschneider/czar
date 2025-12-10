@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cz_map.h"
-#include "cz_test.h"
+#include "../cz_map.h"
+#include "../cz_test.h"
 
 int main(void) {
     // Test map_new

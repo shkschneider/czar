@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "cz_pair.h"
-#include "cz_test.h"
+#include "../cz_pair.h"
+#include "../cz_test.h"
 
 int main(void) {
     // Test pair_new

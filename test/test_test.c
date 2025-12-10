@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cz_case.h"
-#include "cz_test.h"
+#include "../cz_case.h"
+#include "../cz_test.h"
 
 int main(void) {
     char *s = malloc(sizeof(char) * (strlen("hello world") + 1));
