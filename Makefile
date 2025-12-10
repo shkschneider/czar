@@ -103,7 +103,8 @@ EXPECTED_RESULTS = \
 	error_as_value:42 \
 	comprehensive:1 \
 	underscore:23 \
-	underscore_edge_cases:172
+	underscore_edge_cases:172 \
+	underscore_example:117
 
 # Run the test suite
 test: build

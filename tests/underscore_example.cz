@@ -1,0 +1,43 @@
+// Comprehensive example showcasing underscore _ feature
+
+struct Result {
+    ok: bool
+    value: i32
+    error: i32
+}
+
+// Function with unused callback parameter (common pattern)
+fn process_data(data: i32, _: i32) -> i32 {
+    return data * 2
+}
+
+// Extension method that ignores self (utility method on type)
+fn Result.is_error(_: *Result) -> bool {
+    // Static method-like behavior - always returns false in this example
+    return false
+}
+
+// Multiple unused parameters
+fn complex_api(_: i32, _: bool, important: i32, _: i32) -> i32 {
+    return important + 100
+}
+
+fn returns_result() -> Result {
+    return Result { ok: true, value: 42, error: 0 }
+}
+
+fn main() -> i32 {
+    // Discard return values when we don't care about result
+    _ = process_data(10, 20)
+    _ = returns_result()
+    
+    // Use functions with unused parameters
+    val x: i32 = process_data(5, 999)  // Second param ignored
+    val y: i32 = complex_api(1, true, 7, 99)  // Most params ignored
+    
+    // Method with ignored self
+    var r: Result = Result { ok: true, value: 0, error: 0 }
+    _ = r.is_error()
+    
+    return x + y  // 10 + 107 = 117
+}
