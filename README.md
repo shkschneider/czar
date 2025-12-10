@@ -56,6 +56,29 @@ Czar is “C with sane defaults”:
 
 Compiler produces straightforward portable C.
 
+## Syntax
+
+Czar uses a **type-first syntax** where types come before names:
+
+```czar
+val i32 x = 42                // immutable variable
+var Vec2 v = Vec2 { x: 1, y: 2 }  // mutable variable
+fn add(i32 a, i32 b) -> i32   // function parameters
+struct Point {
+    i32 x                      // struct fields
+    i32 y
+}
+```
+
+**Pointers** are denoted with `*` after the type name:
+
+```czar
+var Vec2* p = &v              // pointer to Vec2
+fn modify(Vec2* p) -> void    // function taking pointer
+```
+
+The `*` indicates both that it's a pointer and that the data can be modified through it.
+
 ## v0 Language Features
 
 This is the minimal coherent slice to bootstrap the compiler.
@@ -66,57 +89,57 @@ This is the minimal coherent slice to bootstrap the compiler.
 - bool
 - void
 - struct types
-- Pointer types: *T
-- Nullable pointers: *T (null allowed)
+- Pointer types: T*
+- Nullable pointers: T* (null allowed)
 - Casts exist but are explicit:
 
-> val x: i32 = (i32) someExpr;
+> val i32 x = (i32) someExpr
 
 ### 2. Bindings
 
 ```
-val x: i32 = 1;   // immutable
-var y: i32 = 2;   // mutable
+val i32 x = 1   // immutable
+var i32 y = 2   // mutable
 
-var z: i32;       // declared, must be assigned before first read
-z = 10;
+var i32 z       // declared, must be assigned before first read
+z = 10
 ```
 
 ### 3. Pointers
 
 ```
-var v: Vec2 = Vec2 { x: 1, y: 2 };
-var p: *Vec2 = &v;
+var Vec2 v = Vec2 { x: 1, y: 2 }
+var Vec2* p = &v
 
-p.x = 10;        // auto-deref on .
-(*p).y = 20;     // explicit deref if desired
+p.x = 10        // auto-deref on .
+(*p).y = 20     // explicit deref if desired
 ```
 
 **Semantics:**
 
 - Param type T → passed by value.
-- Param type *T → passed by pointer (allowing mutation of caller data).
+- Param type T* → passed by pointer (allowing mutation of caller data).
 
 ### 4. Structs
 
 ```
 struct Vec2 {
-    x: i32;
-    y: i32;
+    i32 x
+    i32 y
 }
 ```
 
 **Struct literals:**
 
 ```
-val v: Vec2 = Vec2 { x: 3, y: 4 };
+val Vec2 v = Vec2 { x: 3, y: 4 }
 ```
 
 ### 5. Functions
 
 ```
-fn add(a: i32, b: i32) -> i32 {
-    return a + b;
+fn add(i32 a, i32 b) -> i32 {
+    return a + b
 }
 ```
 
@@ -130,23 +153,23 @@ fn add(a: i32, b: i32) -> i32 {
 Internally, methods are just functions with an explicit receiver:
 
 ```
-fn length(self: *Vec2) -> i32 {
-    return self.x * self.x + self.y * self.y;
+fn length(Vec2* self) -> i32 {
+    return self.x * self.x + self.y * self.y
 }
 ```
 
-v0 might require calling like: `val L: i32 = length(&v);`
+v0 might require calling like: `val i32 L = length(&v)`
 
-Later (v1), this becomes: `val L: i32 = v.length();` with auto-addressing and auto-deref.
+Later (v1), this becomes: `val i32 L = v.length()` with auto-addressing and auto-deref.
 
 ### 7. Extension Methods (v1+)
 
-Any function whose first parameter is self: T or self: *T becomes callable as a method:
+Any function whose first parameter is T* self or T self becomes callable as a method:
 
 ```
-fn clamp(self: *Vec2, min: i32, max: i32) -> void { ... }
+fn clamp(Vec2* self, i32 min, i32 max) -> void { ... }
 
-v.clamp(0, 10);
+v.clamp(0, 10)
 ```
 
 Works across modules. No inheritance required.
@@ -166,8 +189,8 @@ No generics yet. Users define result wrappers manually:
 
 ```
 struct ParseIntResult {
-    ok: bool;
-    value: i32;
+    bool ok
+    i32 value
 }
 ```
 
@@ -249,8 +272,8 @@ Overload resolution (v1)
 error: no overload of `print` matches argument types (`bool`)
   --> main.my:7:5
 note: candidates:
-  fn print(x: i32) -> void
-  fn print(x: *char) -> void
+  fn print(i32 x) -> void
+  fn print(char* x) -> void
 ```
 
 Type mismatch
@@ -379,7 +402,7 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 **v0 Features (Complete):**
 - Comments: Both `//` single-line and `/* */` multi-line comments are supported
 - Optional semicolons: Semicolons are now optional in all contexts (statements and struct fields)
-- Types: i32, bool, void, structs, pointers (*T)
+- Types: i32, bool, void, structs, pointers (T*)
 - Variables: val (immutable) and var (mutable)
 - Functions with parameters and return values
 - Control flow: if/else and while loops
@@ -389,7 +412,7 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 
 **v1 Features (Halfway Complete):**
 - ✅ **Expanded types**: i64, u32, u64, f32, f64 in addition to i32
-- ✅ **Method syntax**: Define methods as `fn Type.method(self: *Type) -> ReturnType`
+- ✅ **Method syntax**: Define methods as `fn Type.method(Type* self) -> ReturnType`
 - ✅ **Extension methods**: Any function with first parameter named `self` is callable as a method
 - ✅ **Auto-addressing**: Methods automatically convert values to pointers when needed
 - ✅ **Error-as-value**: Pattern demonstrated with Result-style structs
@@ -476,26 +499,26 @@ Run all tests with: `make test` from the root directory.
 ```czar
 // Example demonstrating v1 features
 struct Vec2 {
-    x: i32
-    y: i32
+    i32 x
+    i32 y
 }
 
 // Method syntax: Type.method(self, ...)
-fn Vec2.length(self: *Vec2) -> i32 {
+fn Vec2.length(Vec2* self) -> i32 {
     return self.x * self.x + self.y * self.y
 }
 
 // Extension method
-fn scale(self: *Vec2, factor: i32) -> void {
+fn scale(Vec2* self, i32 factor) -> void {
     self.x = self.x * factor
     self.y = self.y * factor
 }
 
 fn main() -> i32 {
-    var v: Vec2 = Vec2 { x: 3, y: 4 }
+    var Vec2 v = Vec2 { x: 3, y: 4 }
 
     // Call methods with auto-addressing
-    val l: i32 = v.length()  // No need for &v
+    val i32 l = v.length()  // No need for &v
     v.scale(2)
 
     return l  // returns 25
