@@ -293,6 +293,14 @@ Good diagnostics for:
 
 Output: You can write a small C-like program in Czar and get a native binary.
 
+**Bonus:**
+
+- tests
+- standard library
+  - log
+  - print
+  - debug/assert/macros...
+
 ### v1 — Ergonomics & Expressiveness
 
 Goal: make the language comfortable
@@ -304,6 +312,11 @@ Goal: make the language comfortable
 - Nullable pointers with null literal
 - Simple dead-store warnings
 - Basic IR for future optimizations
+
+**Bonus:**
+
+- i/o: open/read/write/close file
+- net: tcp/udp/http
 
 ### v2 — Power Features
 
@@ -318,6 +331,10 @@ Goal: add the fun stuff without breaking the philosophy
 - Basic compile-time evaluation (constants)
 - More numeric types (u32, i64, f64, etc.)
 
+**Bonus:**
+
+- coroutines
+
 ### v3 — Serious Compiler Stuff
 
 Goal: industrialize the toolchain
@@ -329,6 +346,11 @@ Goal: industrialize the toolchain
 - Borrow-checker-lite for pointer safety (optional mode)
 - Escape analysis
 - Static analysis tools
+
+**Bonus:**
+
+- memory management
+- packager/libraries
 
 ## Why C as the Backend?
 
