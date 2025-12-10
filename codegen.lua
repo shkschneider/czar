@@ -276,21 +276,62 @@ function Codegen:gen_expr(expr)
         return string.format("({ __auto_type _obj = %s; _obj ? _obj%s%s : 0; })", obj_expr, accessor, expr.field)
     elseif expr.kind == "assign" then
         return string.format("(%s = %s)", self:gen_expr(expr.target), self:gen_expr(expr.value))
+    elseif expr.kind == "static_method_call" then
+        -- Static method call: Type.method(obj, args...)
+        local type_name = expr.type_name
+        local method_name = expr.method
+
+        -- Look up the method
+        local method = nil
+        if self.functions[type_name] then
+            method = self.functions[type_name][method_name]
+        end
+
+        if method then
+            -- Generate function call with auto-addressing if needed
+            local args = {}
+            for i, a in ipairs(expr.args) do
+                local arg_expr = self:gen_expr(a)
+
+                -- Handle auto-addressing for first parameter (self)
+                if i == 1 and #method.params > 0 then
+                    local first_param_type = method.params[1].type
+                    if first_param_type.kind == "pointer" then
+                        -- Method expects a pointer, check if arg is a value
+                        local arg_type = nil
+                        if a.kind == "identifier" then
+                            arg_type = self:get_var_type(a.name)
+                        end
+
+                        if arg_type and arg_type.kind ~= "pointer" then
+                            -- Arg is a value, add &
+                            arg_expr = "&" .. arg_expr
+                        end
+                    end
+                end
+
+                table.insert(args, arg_expr)
+            end
+            return string.format("%s(%s)", method_name, join(args, ", "))
+        else
+            error(string.format("Unknown method %s on type %s", method_name, type_name))
+        end
     elseif expr.kind == "compound_assign" then
         -- Compound assignment: x += y becomes x = x + y
         return string.format("(%s = %s %s %s)", self:gen_expr(expr.target), self:gen_expr(expr.target), expr.operator, self:gen_expr(expr.value))
     elseif expr.kind == "call" then
-        -- Check if this is a method call (callee is a field expression)
-        if expr.callee.kind == "field" then
+        -- Check if this is a method call (callee is a method_ref or field expression)
+        if expr.callee.kind == "method_ref" then
+            -- Method call using colon: obj:method()
             local obj = expr.callee.object
-            local method_name = expr.callee.field
-            
+            local method_name = expr.callee.method
+
             -- Determine the type of the object
             local obj_type = nil
             if obj.kind == "identifier" then
                 obj_type = self:get_var_type(obj.name)
             end
-            
+
             -- Get the receiver type name
             local receiver_type_name = nil
             if obj_type then
@@ -300,22 +341,22 @@ function Codegen:gen_expr(expr)
                     receiver_type_name = obj_type.name
                 end
             end
-            
+
             -- Look up the method
             local method = nil
             if receiver_type_name and self.functions[receiver_type_name] then
                 method = self.functions[receiver_type_name][method_name]
             end
-            
+
             if method then
                 -- This is a method call, transform to function call with object as first arg
                 local args = {}
-                
+
                 -- Add the object as the first argument
                 -- Check if we need to address it
                 local first_param_type = method.params[1].type
                 local obj_expr = self:gen_expr(obj)
-                
+
                 if first_param_type.kind == "pointer" then
                     -- Method expects a pointer
                     if obj_type and obj_type.kind ~= "pointer" then
@@ -323,18 +364,72 @@ function Codegen:gen_expr(expr)
                         obj_expr = "&" .. obj_expr
                     end
                 end
-                
+
                 table.insert(args, obj_expr)
-                
+
                 -- Add the rest of the arguments
                 for _, a in ipairs(expr.args) do
                     table.insert(args, self:gen_expr(a))
                 end
-                
+
+                return string.format("%s(%s)", method_name, join(args, ", "))
+            else
+                error(string.format("Unknown method %s on type %s", method_name, receiver_type_name or "unknown"))
+            end
+        elseif expr.callee.kind == "field" then
+            local obj = expr.callee.object
+            local method_name = expr.callee.field
+
+            -- Determine the type of the object
+            local obj_type = nil
+            if obj.kind == "identifier" then
+                obj_type = self:get_var_type(obj.name)
+            end
+
+            -- Get the receiver type name
+            local receiver_type_name = nil
+            if obj_type then
+                if obj_type.kind == "pointer" and obj_type.to.kind == "named_type" then
+                    receiver_type_name = obj_type.to.name
+                elseif obj_type.kind == "named_type" then
+                    receiver_type_name = obj_type.name
+                end
+            end
+
+            -- Look up the method
+            local method = nil
+            if receiver_type_name and self.functions[receiver_type_name] then
+                method = self.functions[receiver_type_name][method_name]
+            end
+
+            if method then
+                -- This is a method call, transform to function call with object as first arg
+                local args = {}
+
+                -- Add the object as the first argument
+                -- Check if we need to address it
+                local first_param_type = method.params[1].type
+                local obj_expr = self:gen_expr(obj)
+
+                if first_param_type.kind == "pointer" then
+                    -- Method expects a pointer
+                    if obj_type and obj_type.kind ~= "pointer" then
+                        -- Object is a value, add &
+                        obj_expr = "&" .. obj_expr
+                    end
+                end
+
+                table.insert(args, obj_expr)
+
+                -- Add the rest of the arguments
+                for _, a in ipairs(expr.args) do
+                    table.insert(args, self:gen_expr(a))
+                end
+
                 return string.format("%s(%s)", method_name, join(args, ", "))
             end
         end
-        
+
         -- Regular function call
         local callee = self:gen_expr(expr.callee)
         local args = {}
@@ -379,7 +474,7 @@ function Codegen:gen_function(fn)
     self:emit(sig)
     self:push_scope()
     self:emit("{")
-    
+
     -- Add unused parameter suppressions for underscore parameters
     for i, param in ipairs(fn.params) do
         if param.name == "_" then
@@ -390,7 +485,7 @@ function Codegen:gen_function(fn)
             self:add_var(param.name, param.type)
         end
     end
-    
+
     -- Generate function body statements
     for _, stmt in ipairs(fn.body.statements) do
         self:emit("    " .. self:gen_statement(stmt))

@@ -311,9 +311,29 @@ function Parser:parse_postfix()
             -- Safe navigation operator: a?.b
             local field = self:expect("IDENT").value
             expr = { kind = "safe_nav", object = expr, field = field }
+        elseif self:match("COLON") then
+            -- Method call using colon: obj:method()
+            local method_name = self:expect("IDENT").value
+            expr = { kind = "method_ref", object = expr, method = method_name }
         elseif self:match("DOT") then
+            -- Could be field access or static method call Type.method(obj)
             local field = self:expect("IDENT").value
-            expr = { kind = "field", object = expr, field = field }
+            -- Check if this is followed by LPAREN for static method call
+            if self:check("LPAREN") and expr.kind == "identifier" and expr.name:match("^[A-Z]") then
+                -- This looks like Type.method(args) - static method call
+                self:advance()  -- consume LPAREN
+                local args = {}
+                if not self:check("RPAREN") then
+                    repeat
+                        table.insert(args, self:parse_expression())
+                    until not self:match("COMMA")
+                end
+                self:expect("RPAREN")
+                expr = { kind = "static_method_call", type_name = expr.name, method = field, args = args }
+            else
+                -- Regular field access
+                expr = { kind = "field", object = expr, field = field }
+            end
         elseif self:match("BANGBANG") then
             -- Null check operator: a!!
             expr = { kind = "null_check", operand = expr }
