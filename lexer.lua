@@ -57,6 +57,9 @@ local compound_tokens = {
     [">="] = "GTE",
     ["&&"] = "AND",
     ["||"] = "OR",
+    ["!!"] = "BANGBANG",
+    ["??"] = "NULLCOALESCE",
+    ["?."] = "SAFENAV",
 }
 
 local function is_alpha(c)
