@@ -173,7 +173,7 @@ function Parser:parse_var_decl()
     if not mutable then self:expect("KEYWORD", "val") end
     local name = self:expect("IDENT").value
     
-    -- Check if this is a discard statement: _ = expr (without type annotation)
+    -- Special case: val _ = expr or var _ = expr (discard statement with explicit val/var)
     if name == "_" and self:match("EQUAL") then
         local init = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
