@@ -1,5 +1,6 @@
-a.out
-*.c
+# ---> C
+# Prerequisites
+*.d
 
 # Object files
 *.o
@@ -41,3 +42,17 @@ a.out
 *.su
 *.idb
 *.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Czar-specific
+a.out
+my_program
+example.c
