@@ -1,0 +1,9 @@
+# Compiled test binaries
+test_*
+!test_*.cz
+
+# Generated C files
+*.c
+
+# Other artifacts
+*.out
