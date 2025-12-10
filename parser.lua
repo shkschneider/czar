@@ -236,11 +236,35 @@ function Parser:parse_null_coalesce()
 end
 
 function Parser:parse_binary_or()
-    return self:parse_binary_chain(self.parse_binary_and, { OR = true })
+    local left = self:parse_binary_and()
+    while true do
+        local tok = self:current()
+        if tok and ((tok.type == "KEYWORD" and tok.value == "or") or tok.type == "NULLCOALESCE") then
+            self:advance()
+            local right = self:parse_binary_and()
+            -- Map 'or' keyword and ?? to 'or' operator
+            local op_value = (tok.type == "KEYWORD" and tok.value == "or") and "or" or "or"
+            left = { kind = "binary", op = op_value, left = left, right = right }
+        else
+            break
+        end
+    end
+    return left
 end
 
 function Parser:parse_binary_and()
-    return self:parse_binary_chain(self.parse_equality, { AND = true })
+    local left = self:parse_equality()
+    while true do
+        local tok = self:current()
+        if tok and tok.type == "KEYWORD" and tok.value == "and" then
+            self:advance()
+            local right = self:parse_equality()
+            left = { kind = "binary", op = "and", left = left, right = right }
+        else
+            break
+        end
+    end
+    return left
 end
 
 function Parser:parse_equality()
