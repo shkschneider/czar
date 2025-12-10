@@ -4,15 +4,25 @@ This document provides examples of using the czar C extension library.
 
 ## Building and Running
 
+### Build everything
+```bash
+make
+```
+
 ### Build the demo
 ```bash
-cc -std=c2x -I . demo.c -o demo
+make demo
 ./demo
 ```
 
 ### Build and run tests
 ```bash
-./test.sh
+make test
+```
+
+### Clean build artifacts
+```bash
+make clean
 ```
 
 ## String Operations

@@ -22,22 +22,26 @@ Each test file focuses on a specific module or feature:
 
 ### Run all tests
 ```bash
-./test.sh
+make test
 ```
 
 ### Run a specific test
 ```bash
-cc -std=c2x -I . test/map_test.c -o test/map_test
+# Build a specific test
+make test/map_test
+
+# Run it
 ./test/map_test
 ```
 
-### Run with different optimization levels
+### Build with make
 ```bash
-# Debug build
-cc -std=c2x -I . -g test/map_test.c -o test/map_test
+# Build all tests (without running)
+make test/array_test test/map_test test/string_test
 
-# Optimized build
-cc -std=c2x -I . -O3 test/map_test.c -o test/map_test
+# Clean all test binaries
+make clean
+```
 ```
 
 ## Test Structure
@@ -73,7 +77,8 @@ int main(void) {
 3. Write test cases using `assert()` for conditions
 4. Use `TEST()` macro for value comparisons (when appropriate)
 5. Return 0 on success
-6. The test.sh script will automatically discover and run your test
+6. The Makefile will automatically discover and compile your test
+7. Run `make test` to build and execute all tests
 
 ## Test Conventions
 
