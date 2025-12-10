@@ -343,12 +343,81 @@ Goal: industrialize the toolchain
 
 ## Status
 
-This README describes the design contract for v0 → v3.
-Implementation starts with:
+### Current Implementation (v0)
 
-- lexer.lua
-- parser.lua
-- ast.lua
-- typechecker.lua
-- codegen.lua
-- driver.lua
+The v0 compiler is now feature-complete with:
+
+**Implemented:**
+- ✅ lexer.lua - Full lexer with comment support (// and /* */)
+- ✅ parser.lua - Complete parser with **optional semicolons**
+- ✅ codegen.lua - C code generator
+- ✅ main.lua - Compiler driver
+- ✅ **cz** - Standalone compiler binary
+
+**Features:**
+- Comments: Both `//` single-line and `/* */` multi-line comments are supported
+- Optional semicolons: Semicolons are now optional in all contexts (statements and struct fields)
+- Types: i32, bool, void, structs, pointers (*T)
+- Variables: val (immutable) and var (mutable)
+- Functions with parameters and return values
+- Control flow: if/else and while loops
+- Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (&&, ||)
+- Struct literals and field access
+
+### Usage
+
+**Using the `cz` compiler binary:**
+
+```bash
+# Compile a .cz file to a.out
+./cz program.cz
+
+# Compile with custom output name
+./cz program.cz -o my_program
+
+# Run the compiled binary
+./a.out
+```
+
+**Using make:**
+
+```bash
+# Compile and run the example
+make
+
+# Run the test suite (all tests in tests/*.cz)
+make test
+
+# Clean build artifacts
+make clean
+
+# Install cz to /usr/local/bin (requires sudo)
+sudo make install
+```
+
+### Testing
+
+The project includes a comprehensive test suite in the `tests/` directory covering all v0 features:
+
+- test_types.cz - Basic types
+- test_bindings.cz - val/var bindings
+- test_structs.cz - Struct definitions and literals
+- test_pointers.cz - Pointer operations
+- test_functions.cz - Function calls
+- test_arithmetic.cz - Arithmetic operators
+- test_comparison.cz - Comparison operators
+- test_if_else.cz - Conditional statements
+- test_while.cz - While loops
+- test_comments.cz - Comment support
+- test_no_semicolons.cz - Optional semicolons
+
+Run all tests with: `make test` from the root directory.
+
+### Next Steps
+
+Future work (v1+) includes:
+- ~~ast.lua~~ (represented as tables currently)
+- typechecker.lua - Type checking and semantic analysis
+- Method syntax and extension methods
+- Overloading
+- More types and optimizations
