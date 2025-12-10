@@ -14,8 +14,10 @@ inline void cz_auto_free(void* ptr) {
 #include <unistd.h>
 #define autoclose __attribute__((cleanup(cz_auto_close)))
 __attribute__ ((always_inline))
-inline void cz_auto_close(int fd) {
-    close(fd);
+inline void cz_auto_close(int *fd) {
+    if (*fd >= 0) {
+        close(*fd);
+    }
 }
 
 #include <stdio.h>

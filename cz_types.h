@@ -22,8 +22,8 @@ typedef uint16_t u16; // short int
 typedef uint32_t u32; // long int
 typedef uint64_t u64; // long long
 
-typedef uint32_t f32; // float
-typedef uint64_t f64; // double
+typedef float f32;
+typedef double f64;
 
 typedef long double f128;
 

@@ -1,6 +1,7 @@
 #ifndef CZ_MAP_H
 #define CZ_MAP_H
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "cz_array.h"
@@ -68,21 +69,15 @@ void map_delete(Map* map, void* key) {
 
 void map_clear(Map* map) {
     assert(map);
-    Map* m = map;
+    Map* m = map->next;
     while (m != NULL) {
-        TODO();
-        m = m->next;
+        Map* next = m->next;
+        free(m);
+        m = next;
     }
-}
-
-void map_keys(Map* map) {
-    assert(map);
-    TODO();
-}
-
-void map_values(Map* map) {
-    assert(map);
-    TODO();
+    map->key = NULL;
+    map->value = NULL;
+    map->next = NULL;
 }
 
 size_t map_size(Map* map) {
@@ -92,6 +87,34 @@ size_t map_size(Map* map) {
         i++;
     }
     return i;
+}
+
+void** map_keys(Map* map) { // alloc
+    assert(map);
+    size_t size = map_size(map);
+    void** keys = malloc(sizeof(void*) * (size + 1));
+    size_t i = 0;
+    for (Map *m = map; m != NULL; m = m->next) {
+        if (m->key != NULL) {
+            keys[i++] = m->key;
+        }
+    }
+    keys[i] = NULL;
+    return keys;
+}
+
+void** map_values(Map* map) { // alloc
+    assert(map);
+    size_t size = map_size(map);
+    void** values = malloc(sizeof(void*) * (size + 1));
+    size_t i = 0;
+    for (Map *m = map; m != NULL; m = m->next) {
+        if (m->key != NULL) {
+            values[i++] = m->value;
+        }
+    }
+    values[i] = NULL;
+    return values;
 }
 
 #define map_foreach(map, entry) \
