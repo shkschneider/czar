@@ -61,17 +61,17 @@ local function main()
     end
 
     local tokens = lexer(source)
-    print("Tokens:")
-    for _, tok in ipairs(tokens) do
-        print(format_token(tok))
-    end
+    -- print("Tokens:")
+    -- for _, tok in ipairs(tokens) do
+    --     print(format_token(tok))
+    -- end
 
     local ast = parser(tokens)
-    print("\nAST:")
-    print(dump(ast))
+    -- print("\nAST:")
+    -- print(dump(ast))
 
     local c_source = codegen(ast)
-    print("\nGenerated C:\n")
+    -- print("\nGenerated C:\n")
     print(c_source)
 end
 
