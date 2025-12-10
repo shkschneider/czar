@@ -125,9 +125,39 @@ function Codegen:gen_statement(stmt)
         return decl .. ";"
     elseif stmt.kind == "expr_stmt" then
         return self:gen_expr(stmt.expression) .. ";"
+    elseif stmt.kind == "if" then
+        return self:gen_if(stmt)
+    elseif stmt.kind == "while" then
+        return self:gen_while(stmt)
     else
         error("unknown statement kind: " .. tostring(stmt.kind))
     end
+end
+
+function Codegen:gen_if(stmt)
+    local parts = {}
+    table.insert(parts, "if (" .. self:gen_expr(stmt.condition) .. ") {")
+    for _, s in ipairs(stmt.then_block.statements) do
+        table.insert(parts, "    " .. self:gen_statement(s))
+    end
+    if stmt.else_block then
+        table.insert(parts, "} else {")
+        for _, s in ipairs(stmt.else_block.statements) do
+            table.insert(parts, "    " .. self:gen_statement(s))
+        end
+    end
+    table.insert(parts, "}")
+    return join(parts, "\n    ")
+end
+
+function Codegen:gen_while(stmt)
+    local parts = {}
+    table.insert(parts, "while (" .. self:gen_expr(stmt.condition) .. ") {")
+    for _, s in ipairs(stmt.body.statements) do
+        table.insert(parts, "    " .. self:gen_statement(s))
+    end
+    table.insert(parts, "}")
+    return join(parts, "\n    ")
 end
 
 function Codegen:gen_expr(expr)
