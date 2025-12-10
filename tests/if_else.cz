@@ -1,5 +1,5 @@
 // Test if-else statements
-fn max(a: i32, b: i32) -> i32 {
+fn max(i32 a, i32 b) -> i32 {
     if a > b {
         return a
     } else {
@@ -8,7 +8,7 @@ fn max(a: i32, b: i32) -> i32 {
 }
 
 fn main() -> i32 {
-    val x: i32 = max(15, 20)
-    val y: i32 = max(30, 25)
+    val i32 x = max(15, 20)
+    val i32 y = max(30, 25)
     return x + y  // 20 + 30 = 50
 }

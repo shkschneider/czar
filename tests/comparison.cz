@@ -1,7 +1,7 @@
 // Test comparison and logical operators
 fn main() -> i32 {
-    val a: i32 = 10
-    val b: i32 = 20
+    val i32 a = 10
+    val i32 b = 20
     
     if a < b {
         if a + 10 == b {

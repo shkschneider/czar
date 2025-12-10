@@ -1,19 +1,19 @@
 // Test underscore _ as "don't care" value
 
 struct Result {
-    ok: bool
-    value: i32
+    bool ok
+    i32 value
 }
 
 fn returns_result() -> Result {
     return Result { ok: true, value: 42 }
 }
 
-fn takes_unused_param(_: i32, used: i32) -> i32 {
+fn takes_unused_param(i32 _, i32 used) -> i32 {
     return used * 2
 }
 
-fn takes_multiple_unused(_: i32, _: bool, x: i32) -> i32 {
+fn takes_multiple_unused(i32 _, bool _, i32 x) -> i32 {
     return x + 10
 }
 
@@ -22,10 +22,10 @@ fn main() -> i32 {
     _ = returns_result()
     
     // Use function with unused params
-    val a: i32 = takes_unused_param(100, 5)
+    val i32 a = takes_unused_param(100, 5)
     
     // Multiple unused params
-    val b: i32 = takes_multiple_unused(1, true, 3)
+    val i32 b = takes_multiple_unused(1, true, 3)
     
     return a + b  // 10 + 13 = 23
 }

@@ -1,14 +1,14 @@
 // Test null pointer literal
 struct Node {
-    value: i32
+    i32 value
 }
 
 fn main() -> i32 {
-    var p: *Node = null
+    var Node* p = null
     
     // Check if we can assign null and non-null
     if p == null {
-        var n: Node = Node { value: 42 }
+        var Node n = Node { value: 42 }
         p = &n
         return p.value
     }
