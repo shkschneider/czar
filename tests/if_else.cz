@@ -8,7 +8,7 @@ fn max(a: i32, b: i32) -> i32 {
 }
 
 fn main() -> i32 {
-    val x: i32 = max(15, 20)
-    val y: i32 = max(30, 25)
+    x: i32 = max(15, 20)
+    y: i32 = max(30, 25)
     return x + y  // 20 + 30 = 50
 }

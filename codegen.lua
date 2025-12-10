@@ -25,6 +25,7 @@ function Codegen.new(ast)
         functions = {},  -- Store function/method definitions indexed by receiver type for method call resolution
         out = {},
         scope_stack = {},
+        cleanup_counter = 0,  -- for generating unique cleanup variable names
     }
     return setmetatable(self, Codegen)
 end
@@ -128,7 +129,7 @@ function Codegen:gen_struct(item)
 end
 
 function Codegen:push_scope()
-    table.insert(self.scope_stack, {})
+    table.insert(self.scope_stack, { vars = {}, heap_vars = {} })
 end
 
 function Codegen:pop_scope()
@@ -137,18 +138,31 @@ end
 
 function Codegen:add_var(name, type_node)
     if #self.scope_stack > 0 then
-        self.scope_stack[#self.scope_stack][name] = type_node
+        self.scope_stack[#self.scope_stack].vars[name] = type_node
+    end
+end
+
+function Codegen:add_heap_var(name)
+    if #self.scope_stack > 0 then
+        table.insert(self.scope_stack[#self.scope_stack].heap_vars, name)
     end
 end
 
 function Codegen:get_var_type(name)
     for i = #self.scope_stack, 1, -1 do
-        local type_node = self.scope_stack[i][name]
+        local type_node = self.scope_stack[i].vars[name]
         if type_node then
             return type_node
         end
     end
     return nil
+end
+
+function Codegen:get_heap_vars()
+    if #self.scope_stack > 0 then
+        return self.scope_stack[#self.scope_stack].heap_vars
+    end
+    return {}
 end
 
 function Codegen:gen_params(params)
@@ -170,22 +184,48 @@ function Codegen:gen_block(block)
     for _, stmt in ipairs(block.statements) do
         self:emit("    " .. self:gen_statement(stmt))
     end
+    -- Note: Cleanup is handled in return statements
+    -- Only generate cleanup here if there's no return in this block
+    -- For now, we rely on return statements to handle cleanup
     self:emit("}")
     self:pop_scope()
 end
 
 function Codegen:gen_statement(stmt)
     if stmt.kind == "return" then
-        return "return " .. self:gen_expr(stmt.value) .. ";"
+        -- Generate cleanup code before return
+        local cleanup_lines = {}
+        local heap_vars = self:get_heap_vars()
+        for i = #heap_vars, 1, -1 do
+            table.insert(cleanup_lines, string.format("free(%s);", heap_vars[i]))
+        end
+        if #cleanup_lines > 0 then
+            -- Generate as a compound statement with cleanup
+            local parts = {}
+            for _, line in ipairs(cleanup_lines) do
+                table.insert(parts, line)
+            end
+            table.insert(parts, "return " .. self:gen_expr(stmt.value) .. ";")
+            return join(parts, " ")
+        else
+            return "return " .. self:gen_expr(stmt.value) .. ";"
+        end
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
         self:add_var(stmt.name, stmt.type)
-        local prefix = stmt.mutable and "" or "const "
+        -- Pointers should not be const even if the variable is immutable
+        local is_pointer = self:is_pointer_type(stmt.type)
+        local prefix = (stmt.mutable or is_pointer) and "" or "const "
         local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
         if stmt.init then
-            decl = decl .. " = " .. self:gen_expr(stmt.init)
+            local init_expr = self:gen_expr(stmt.init)
+            -- Check if init is a heap allocation (new expression)
+            if stmt.init and stmt.init.kind == "new" then
+                self:add_heap_var(stmt.name)
+            end
+            decl = decl .. " = " .. init_expr
         end
         return decl .. ";"
     elseif stmt.kind == "expr_stmt" then
@@ -208,14 +248,32 @@ end
 function Codegen:gen_if(stmt)
     local parts = {}
     table.insert(parts, "if (" .. self:gen_expr(stmt.condition) .. ") {")
+
+    -- Push scope for then block
+    self:push_scope()
     for _, s in ipairs(stmt.then_block.statements) do
         table.insert(parts, "    " .. self:gen_statement(s))
     end
+    -- Generate cleanup for then block (only if no return)
+    local heap_vars = self:get_heap_vars()
+    for i = #heap_vars, 1, -1 do
+        table.insert(parts, "    free(" .. heap_vars[i] .. ");")
+    end
+    self:pop_scope()
+
     if stmt.else_block then
         table.insert(parts, "} else {")
+        -- Push scope for else block
+        self:push_scope()
         for _, s in ipairs(stmt.else_block.statements) do
             table.insert(parts, "    " .. self:gen_statement(s))
         end
+        -- Generate cleanup for else block (only if no return)
+        local heap_vars_else = self:get_heap_vars()
+        for i = #heap_vars_else, 1, -1 do
+            table.insert(parts, "    free(" .. heap_vars_else[i] .. ");")
+        end
+        self:pop_scope()
     end
     table.insert(parts, "}")
     return join(parts, "\n    ")
@@ -224,9 +282,19 @@ end
 function Codegen:gen_while(stmt)
     local parts = {}
     table.insert(parts, "while (" .. self:gen_expr(stmt.condition) .. ") {")
+
+    -- Push scope for while body
+    self:push_scope()
     for _, s in ipairs(stmt.body.statements) do
         table.insert(parts, "    " .. self:gen_statement(s))
     end
+    -- Generate cleanup for while body (only if no return)
+    local heap_vars = self:get_heap_vars()
+    for i = #heap_vars, 1, -1 do
+        table.insert(parts, "    free(" .. heap_vars[i] .. ");")
+    end
+    self:pop_scope()
+
     table.insert(parts, "}")
     return join(parts, "\n    ")
 end
@@ -281,13 +349,13 @@ function Codegen:gen_expr(expr)
         if expr.callee.kind == "field" then
             local obj = expr.callee.object
             local method_name = expr.callee.field
-            
+
             -- Determine the type of the object
             local obj_type = nil
             if obj.kind == "identifier" then
                 obj_type = self:get_var_type(obj.name)
             end
-            
+
             -- Get the receiver type name
             local receiver_type_name = nil
             if obj_type then
@@ -297,22 +365,22 @@ function Codegen:gen_expr(expr)
                     receiver_type_name = obj_type.name
                 end
             end
-            
+
             -- Look up the method
             local method = nil
             if receiver_type_name and self.functions[receiver_type_name] then
                 method = self.functions[receiver_type_name][method_name]
             end
-            
+
             if method then
                 -- This is a method call, transform to function call with object as first arg
                 local args = {}
-                
+
                 -- Add the object as the first argument
                 -- Check if we need to address it
                 local first_param_type = method.params[1].type
                 local obj_expr = self:gen_expr(obj)
-                
+
                 if first_param_type.kind == "pointer" then
                     -- Method expects a pointer
                     if obj_type and obj_type.kind ~= "pointer" then
@@ -320,18 +388,18 @@ function Codegen:gen_expr(expr)
                         obj_expr = "&" .. obj_expr
                     end
                 end
-                
+
                 table.insert(args, obj_expr)
-                
+
                 -- Add the rest of the arguments
                 for _, a in ipairs(expr.args) do
                     table.insert(args, self:gen_expr(a))
                 end
-                
+
                 return string.format("%s(%s)", method_name, join(args, ", "))
             end
         end
-        
+
         -- Regular function call
         local callee = self:gen_expr(expr.callee)
         local args = {}
@@ -364,6 +432,26 @@ function Codegen:gen_expr(expr)
             table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
         end
         return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+    elseif expr.kind == "new" then
+        -- Generate: (TypeName*)malloc(sizeof(TypeName))
+        local malloc_expr = string.format("(%s*)malloc(sizeof(%s))", expr.type_name, expr.type_name)
+        if expr.init then
+            -- If there's an initializer, we need to handle it in statement context
+            -- For now, we'll use a compound expression with assignment
+            -- This is a limitation - initialization should ideally be done separately
+            -- We'll generate: ({ TypeName* _tmp = malloc(...); *_tmp = {...}; _tmp; })
+            local parts = {}
+            for _, f in ipairs(expr.init.fields) do
+                table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
+            end
+            local init_literal = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+            -- Use GNU C statement expression
+            self.cleanup_counter = self.cleanup_counter + 1
+            local tmp_name = string.format("_tmp_%d", self.cleanup_counter)
+            return string.format("({ %s* %s = %s; *%s = %s; %s; })",
+                expr.type_name, tmp_name, malloc_expr, tmp_name, init_literal, tmp_name)
+        end
+        return malloc_expr
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
@@ -376,7 +464,7 @@ function Codegen:gen_function(fn)
     self:emit(sig)
     self:push_scope()
     self:emit("{")
-    
+
     -- Add unused parameter suppressions for underscore parameters
     for i, param in ipairs(fn.params) do
         if param.name == "_" then
@@ -387,7 +475,7 @@ function Codegen:gen_function(fn)
             self:add_var(param.name, param.type)
         end
     end
-    
+
     -- Generate function body statements
     for _, stmt in ipairs(fn.body.statements) do
         self:emit("    " .. self:gen_statement(stmt))

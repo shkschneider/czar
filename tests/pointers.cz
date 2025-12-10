@@ -10,7 +10,7 @@ fn modify(p: *Vec2) -> void {
 }
 
 fn main() -> i32 {
-    var v: Vec2 = Vec2 { x: 1, y: 2 }
+    mut v: Vec2 = Vec2 { x: 1, y: 2 }
     modify(&v)
     return v.x + v.y     // should return 30
 }

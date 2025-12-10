@@ -114,10 +114,11 @@ function Parser:parse_function()
     local params = {}
     if not self:check("RPAREN") then
         repeat
+            local mutable = self:match("KEYWORD", "mut") ~= nil
             local param_name = self:expect("IDENT").value
             self:expect("COLON")
             local param_type = self:parse_type()
-            table.insert(params, { name = param_name, type = param_type })
+            table.insert(params, { name = param_name, type = param_type, mutable = mutable })
         until not self:match("COMMA")
     end
     self:expect("RPAREN")
@@ -155,12 +156,16 @@ function Parser:parse_statement()
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "return", value = expr }
-    elseif self:check("KEYWORD", "var") or self:check("KEYWORD", "val") then
+    elseif self:check("KEYWORD", "mut") then
+        -- mut x: type = value
         return self:parse_var_decl()
     elseif self:check("KEYWORD", "if") then
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then
         return self:parse_while()
+    elseif self:check("IDENT") and self:peek_ahead_for_colon() then
+        -- x: type = value (immutable by default)
+        return self:parse_var_decl()
     else
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
@@ -168,9 +173,28 @@ function Parser:parse_statement()
     end
 end
 
+function Parser:peek_ahead_for_colon()
+    -- Look ahead to see if this is a variable declaration (name: type)
+    -- Save current position
+    local saved_pos = self.pos
+    local is_decl = false
+    
+    -- Skip identifier
+    if self:check("IDENT") then
+        self:advance()
+        -- Check for colon
+        if self:check("COLON") then
+            is_decl = true
+        end
+    end
+    
+    -- Restore position
+    self.pos = saved_pos
+    return is_decl
+end
+
 function Parser:parse_var_decl()
-    local mutable = self:match("KEYWORD", "var") ~= nil
-    if not mutable then self:expect("KEYWORD", "val") end
+    local mutable = self:match("KEYWORD", "mut") ~= nil
     local name = self:expect("IDENT").value
     
     -- Special case: val _ = expr or var _ = expr (discard statement with explicit val/var)
@@ -273,7 +297,18 @@ end
 
 function Parser:parse_unary()
     local tok = self:current()
-    if tok and (tok.type == "MINUS" or tok.type == "BANG" or tok.type == "AMPERSAND" or tok.type == "STAR") then
+    if tok and tok.type == "KEYWORD" and tok.value == "new" then
+        self:advance()
+        -- Parse: new TypeName or new TypeName { fields }
+        local type_name = self:expect("IDENT").value
+        local init = nil
+        if self:check("LBRACE") then
+            -- Struct literal initialization
+            local type_ident = { kind = "identifier", name = type_name }
+            init = self:parse_struct_literal(type_ident)
+        end
+        return { kind = "new", type_name = type_name, init = init }
+    elseif tok and (tok.type == "MINUS" or tok.type == "BANG" or tok.type == "AMPERSAND" or tok.type == "STAR") then
         self:advance()
         local operand = self:parse_unary()
         return { kind = "unary", op = tok.value, operand = operand }
