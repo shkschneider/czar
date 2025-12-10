@@ -36,6 +36,12 @@ local function read_file(path)
     return content
 end
 
+local function shell_escape(str)
+    -- Escape shell metacharacters by wrapping in single quotes
+    -- and escaping any single quotes in the string
+    return "'" .. str:gsub("'", "'\\''") .. "'"
+end
+
 local function is_directory(path)
     local ok, err, code = os.rename(path, path)
     if not ok then
@@ -45,7 +51,7 @@ local function is_directory(path)
         return false
     end
     -- Check if path ends with separator
-    local handle = io.popen("test -d " .. path .. " && echo yes || echo no")
+    local handle = io.popen("test -d " .. shell_escape(path) .. " && echo yes || echo no")
     local result = handle:read("*a")
     handle:close()
     return result:match("yes") ~= nil
@@ -55,7 +61,7 @@ local function find_cz_files(path)
     local files = {}
     if is_directory(path) then
         -- Find all .cz files in directory
-        local handle = io.popen("find " .. path .. " -name '*.cz' -type f 2>/dev/null")
+        local handle = io.popen("find " .. shell_escape(path) .. " -name '*.cz' -type f 2>/dev/null")
         for file in handle:lines() do
             table.insert(files, file)
         end
@@ -110,8 +116,8 @@ local function compile_and_link(source_path, output_path)
     c_file:write(c_source)
     c_file:close()
 
-    -- Compile C to binary
-    local cc_cmd = string.format("cc %s -o %s 2>&1", c_temp, output_path)
+    -- Compile C to binary with escaped paths
+    local cc_cmd = string.format("cc %s -o %s 2>&1", shell_escape(c_temp), shell_escape(output_path))
     local cc_output = io.popen(cc_cmd)
     local cc_result = cc_output:read("*a")
     local success = cc_output:close()
@@ -161,8 +167,8 @@ local function cmd_run(args)
 
     io.stderr:write(string.format("Successfully compiled %s to %s\n", source_path, output_path))
 
-    -- Run and capture exit code
-    local run_cmd = "./" .. output_path .. "; echo $?"
+    -- Run and capture exit code with escaped path
+    local run_cmd = shell_escape("./" .. output_path) .. "; echo $?"
     local handle = io.popen(run_cmd)
     local output = handle:read("*a")
     handle:close()
