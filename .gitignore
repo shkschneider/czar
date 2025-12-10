@@ -6,7 +6,7 @@ main.h
 bytecode.c
 libczar.a
 
-# Test executables
+# Test executables in tests/ directory
 tests/arithmetic
 tests/bindings
 tests/comments
@@ -22,6 +22,10 @@ tests/heap_allocation
 tests/heap_test
 tests/nested_heap
 tests/nested_test
+tests/mut_params
+tests/mut_test
+tests/void_heap
+tests/void_test
 
 # Object files
 *.o

@@ -10,6 +10,14 @@ pointers
 structs
 types
 while
+heap_allocation
+heap_test
+nested_heap
+nested_test
+mut_params
+mut_test
+void_heap
+void_test
 
 # Generated C files
 *.c
