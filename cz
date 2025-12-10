@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+[[ $# -gt 0 ]] || { echo "Usage: cz <*.cz>" >&2 ; exit 1 ; }
+
+srcs=()
+out="a.out"
+[[ -n "$out" ]] || exit 2
+
+# transpile
+for src in $@ ; do
+    c=${src/.cz/.c}
+    echo "$src -> $c"
+    lua main.lua "$src" > "$c" || exit 3
+    srcs+=($c)
+done
+echo ${#srcs}
+[[ ${#srcs} -gt 0 ]] || exit 4
+
+# compile
+echo "${src[@]} -> $out"
+cc ${srcs[@]} -o $out
+[[ -e $out ]] || exit 5
+rm -f ${srcs[@]}
+
+# run
+echo "./$out"
+[[ -x "$out" ]] || exit 6
+./$out
+if [[ $? -eq 0 ]] ; then
+    echo "SUCCESS"
+    rm -f ./$out
+    exit 0
+else
+    echo "FAILURE: $?" >&2
+    rm -f ./$out
+    exit 7
+fi
+
+# EOF
