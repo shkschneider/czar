@@ -157,7 +157,7 @@ local function test_example_cz()
     
     -- Basic sanity checks
     assert_eq(tokens[#tokens].type, "EOF", "EOF token at end")
-    assert_eq(#tokens > 10, true, "Has multiple tokens")
+    assert(#tokens > 10, "Expected more than 10 tokens")
     
     -- Check that we have the expected keywords
     local has_struct = false

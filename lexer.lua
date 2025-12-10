@@ -66,7 +66,8 @@ Lexer.TokenType = {
     
     -- Special
     EOF = "EOF",
-    NEWLINE = "NEWLINE",
+    -- Note: NEWLINE token type is reserved for future use if needed
+    -- Currently, whitespace including newlines is skipped during tokenization
 }
 
 -- Keywords mapping
@@ -355,25 +356,31 @@ function Lexer.new(source)
 end
 
 -- Main entry point for command-line usage
--- Check if this file is being run directly (not required as a module)
-if pcall(debug.getlocal, 4, 1) == false and arg and #arg >= 1 then
-    local filename = arg[1]
-    local file = io.open(filename, "r")
-    if not file then
-        print("Error: Could not open file " .. filename)
-        os.exit(1)
-    end
-    
-    local source = file:read("*all")
-    file:close()
-    
-    local lexer = Lexer.new(source)
-    local tokens = lexer:tokenize()
-    
-    -- Print tokens
-    for i, token in ipairs(tokens) do
-        print(string.format("%3d: %-15s '%s' at %d:%d", 
-            i, token.type, token.value, token.line, token.column))
+-- Detect if this script is being run directly (not required as a module)
+if arg and arg[0] and #arg >= 1 then
+    -- Check if we're at the main chunk level (not inside a require call)
+    local info = debug.getinfo(2, 'S')
+    -- When run directly: info is nil or info.what is 'C' or 'main'
+    -- When required: info.what is 'Lua'
+    if not info or info.what ~= 'Lua' then
+        local filename = arg[1]
+        local file = io.open(filename, "r")
+        if not file then
+            print("Error: Could not open file " .. filename)
+            os.exit(1)
+        end
+        
+        local source = file:read("*all")
+        file:close()
+        
+        local lexer = Lexer.new(source)
+        local tokens = lexer:tokenize()
+        
+        -- Print tokens
+        for i, token in ipairs(tokens) do
+            print(string.format("%3d: %-15s '%s' at %d:%d", 
+                i, token.type, token.value, token.line, token.column))
+        end
     end
 end
 
