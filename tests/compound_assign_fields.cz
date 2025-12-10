@@ -1,0 +1,15 @@
+// Test compound assignment operators with struct fields
+struct Point {
+    x: i32
+    y: i32
+}
+
+fn main() -> i32 {
+    var p: Point = Point { x: 10, y: 20 }
+    
+    // Test compound assignments on struct fields
+    p.x += 5   // p.x should be 15
+    p.y *= 2   // p.y should be 40
+    
+    return p.x + p.y  // should return 55
+}

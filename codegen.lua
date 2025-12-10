@@ -276,6 +276,9 @@ function Codegen:gen_expr(expr)
         return string.format("({ __auto_type _obj = %s; _obj ? _obj%s%s : 0; })", obj_expr, accessor, expr.field)
     elseif expr.kind == "assign" then
         return string.format("(%s = %s)", self:gen_expr(expr.target), self:gen_expr(expr.value))
+    elseif expr.kind == "compound_assign" then
+        -- Compound assignment: x += y becomes x = x + y
+        return string.format("(%s = %s %s %s)", self:gen_expr(expr.target), self:gen_expr(expr.target), expr.operator, self:gen_expr(expr.value))
     elseif expr.kind == "call" then
         -- Check if this is a method call (callee is a field expression)
         if expr.callee.kind == "field" then

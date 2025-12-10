@@ -60,6 +60,10 @@ local compound_tokens = {
     ["!!"] = "BANGBANG",
     ["??"] = "NULLCOALESCE",
     ["?."] = "SAFENAV",
+    ["+="] = "PLUSEQUAL",
+    ["-="] = "MINUSEQUAL",
+    ["*="] = "STAREQUAL",
+    ["/="] = "SLASHEQUAL",
 }
 
 local function is_alpha(c)
