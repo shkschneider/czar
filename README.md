@@ -14,5 +14,3 @@ This is a toy language I'm trying to make to learn more about languages and comp
     is a transpiler from .cz to .c first written in lua then self-hosted
 
 **This is a pet project and will probably never be used.**
-
-`<3` C, Lua, Jai, Kotlin/Go/Zig...
