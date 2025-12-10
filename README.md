@@ -343,18 +343,18 @@ Goal: industrialize the toolchain
 
 ## Status
 
-### Current Implementation (v0)
+### Current Implementation (v0 → v1 in progress)
 
-The v0 compiler is now feature-complete with:
+The compiler has completed v0 and is now halfway to v1 with core ergonomic features:
 
 **Implemented:**
 - ✅ lexer.lua - Full lexer with comment support (// and /* */)
-- ✅ parser.lua - Complete parser with **optional semicolons**
-- ✅ codegen.lua - C code generator
+- ✅ parser.lua - Complete parser with **optional semicolons** and **method syntax**
+- ✅ codegen.lua - C code generator with **method call resolution**
 - ✅ main.lua - Compiler driver
 - ✅ **cz** - Standalone compiler binary
 
-**Features:**
+**v0 Features (Complete):**
 - Comments: Both `//` single-line and `/* */` multi-line comments are supported
 - Optional semicolons: Semicolons are now optional in all contexts (statements and struct fields)
 - Types: i32, bool, void, structs, pointers (*T)
@@ -363,6 +363,15 @@ The v0 compiler is now feature-complete with:
 - Control flow: if/else and while loops
 - Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (&&, ||)
 - Struct literals and field access
+
+**v1 Features (Halfway Complete):**
+- ✅ **Expanded types**: i64, u32, u64, f32, f64 in addition to i32
+- ✅ **Method syntax**: Define methods as `fn Type.method(self: *Type) -> ReturnType`
+- ✅ **Extension methods**: Any function with first parameter named `self` is callable as a method
+- ✅ **Auto-addressing**: Methods automatically convert values to pointers when needed
+- ✅ **Error-as-value**: Pattern demonstrated with Result-style structs
+- ⏳ **Overloading**: Not yet implemented (planned)
+- ⏳ **Nullable pointers with explicit null checks**: Partially supported
 
 ### Usage
 
@@ -412,27 +421,71 @@ make help
 
 ### Testing
 
-The project includes a comprehensive test suite in the `tests/` directory covering all v0 features:
+The project includes a comprehensive test suite in the `tests/` directory covering v0 and v1 features:
 
-- test_types.cz - Basic types
-- test_bindings.cz - val/var bindings
-- test_structs.cz - Struct definitions and literals
-- test_pointers.cz - Pointer operations
-- test_functions.cz - Function calls
-- test_arithmetic.cz - Arithmetic operators
-- test_comparison.cz - Comparison operators
-- test_if_else.cz - Conditional statements
-- test_while.cz - While loops
-- test_comments.cz - Comment support
-- test_no_semicolons.cz - Optional semicolons
+**v0 Tests:**
+- types.cz - Basic types (i32, bool, void)
+- bindings.cz - val/var bindings
+- structs.cz - Struct definitions and literals
+- pointers.cz - Pointer operations
+- functions.cz - Function calls
+- arithmetic.cz - Arithmetic operators
+- comparison.cz - Comparison operators
+- if_else.cz - Conditional statements
+- while.cz - While loops
+- comments.cz - Comment support
+- no_semicolons.cz - Optional semicolons
+- logical_operators.cz - Logical operators (&&, ||)
+- null_pointer.cz - Null pointer literal
+- field_assignment.cz - Struct field assignment
+
+**v1 Tests:**
+- new_types.cz - New numeric types (i64, u32, u64, f32, f64)
+- methods.cz - Method syntax (Type.method)
+- extension_methods.cz - Extension methods with self parameter
+- error_as_value.cz - Error-as-value pattern
+- comprehensive.cz - Integration test combining all v1 features
 
 Run all tests with: `make test` from the root directory.
 
+### Example
+
+```czar
+// Example demonstrating v1 features
+struct Vec2 {
+    x: i32
+    y: i32
+}
+
+// Method syntax: Type.method(self, ...)
+fn Vec2.length(self: *Vec2) -> i32 {
+    return self.x * self.x + self.y * self.y
+}
+
+// Extension method
+fn scale(self: *Vec2, factor: i32) -> void {
+    self.x = self.x * factor
+    self.y = self.y * factor
+}
+
+fn main() -> i32 {
+    var v: Vec2 = Vec2 { x: 3, y: 4 }
+    
+    // Call methods with auto-addressing
+    val l: i32 = v.length()  // No need for &v
+    v.scale(2)
+    
+    return l  // returns 25
+}
+```
+
 ### Next Steps
 
-Future work (v1+) includes:
+Future work (v1 completion and v2) includes:
 - ~~ast.lua~~ (represented as tables currently)
 - typechecker.lua - Type checking and semantic analysis
-- Method syntax and extension methods
-- Overloading
-- More types and optimizations
+- ~~Method syntax and extension methods~~ ✅ (Complete)
+- Overloading (exact-match only)
+- ~~More numeric types~~ ✅ (Complete)
+- Nullable pointers with null literal (partially done)
+- IR lowering and optimization passes
