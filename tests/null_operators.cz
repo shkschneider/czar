@@ -1,0 +1,37 @@
+// Test null-safety operators: !!, ??, ?.
+
+struct Node {
+    value: i32
+    next: *Node
+}
+
+fn maybe_null(should_be_null: bool) -> *Node {
+    if should_be_null {
+        return null
+    } else {
+        var n: Node = Node { value: 10, next: null }
+        return &n
+    }
+}
+
+fn main() -> i32 {
+    // Test null coalescing operator ??
+    var p1: *Node = null
+    val result1: i32 = 0 ?? 5  // Should be 5
+    
+    // Test with pointer
+    var n1: Node = Node { value: 20, next: null }
+    var p2: *Node = &n1
+    
+    // Safe navigation test - pointer is not null
+    var n2: Node = Node { value: 15, next: null }
+    var p3: *Node = &n2
+    val safe_value: i32 = p3?.value ?? 0  // Should be 15
+    
+    // Safe navigation test - pointer is null
+    var p4: *Node = null
+    val safe_null: i32 = p4?.value ?? 100  // Should be 100 (p4 is null)
+    
+    // Return combination of tests
+    return result1 + safe_value + safe_null  // 5 + 15 + 100 = 120
+}
