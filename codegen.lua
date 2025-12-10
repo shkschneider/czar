@@ -138,13 +138,11 @@ end
 
 function Codegen:gen_params(params)
     local parts = {}
-    local underscore_count = 0
-    for _, p in ipairs(params) do
+    for i, p in ipairs(params) do
         local param_name = p.name
         -- Generate unique name for underscore parameters
         if param_name == "_" then
-            underscore_count = underscore_count + 1
-            param_name = "_unused_" .. underscore_count
+            param_name = "_unused_" .. i
         end
         table.insert(parts, string.format("%s %s", self:c_type(p.type), param_name))
     end
@@ -337,11 +335,9 @@ function Codegen:gen_function(fn)
     self:emit("{")
     
     -- Add unused parameter suppressions for underscore parameters
-    local underscore_count = 0
-    for _, param in ipairs(fn.params) do
+    for i, param in ipairs(fn.params) do
         if param.name == "_" then
-            underscore_count = underscore_count + 1
-            local param_name = "_unused_" .. underscore_count
+            local param_name = "_unused_" .. i
             self:emit("    (void)" .. param_name .. ";")
         else
             -- Add regular parameters to scope
