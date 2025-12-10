@@ -382,18 +382,33 @@ The v0 compiler is now feature-complete with:
 **Using make:**
 
 ```bash
-# Compile and run the example
-make
+# Build the compiler (dynamic linking, optimized and stripped)
+make build
+
+# Build with static linking (portable, no runtime dependencies)
+make STATIC=1 build
 
 # Run the test suite (all tests in tests/*.cz)
 make test
+
+# Build and run tests
+make all
 
 # Clean build artifacts
 make clean
 
 # Install cz to /usr/local/bin (requires sudo)
 sudo make install
+
+# Show help with all options
+make help
 ```
+
+**Build Features:**
+- Optimized with `-O2` for better performance
+- Stripped with `-s` for minimal binary size (~31KB dynamically linked)
+- Optional static linking with `STATIC=1` (~1.7MB, fully portable)
+- Dynamic linking by default (smaller binary, requires libluajit-5.1.so)
 
 ### Testing
 
