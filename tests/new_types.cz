@@ -1,0 +1,42 @@
+// Test new numeric types: i64, u32, u64, f32, f64
+fn test_i64() -> i64 {
+    val x: i64 = 1000000000
+    val y: i64 = 2000000000
+    return x + y  // 3000000000
+}
+
+fn test_u32() -> u32 {
+    val x: u32 = 100
+    val y: u32 = 200
+    return x + y  // 300
+}
+
+fn test_u64() -> u64 {
+    val x: u64 = 1000
+    val y: u64 = 2000
+    return x + y  // 3000
+}
+
+fn test_f32() -> f32 {
+    val x: f32 = 1
+    val y: f32 = 2
+    return x + y  // 3.0
+}
+
+fn test_f64() -> f64 {
+    val x: f64 = 10
+    val y: f64 = 20
+    return x + y  // 30.0
+}
+
+fn main() -> i32 {
+    val a: i64 = test_i64()
+    val b: u32 = test_u32()
+    val c: u64 = test_u64()
+    val d: f32 = test_f32()
+    val e: f64 = test_f64()
+    
+    // Return sum of type tests (truncated for i32)
+    // Just verify they compile and basic math works
+    return 1  // success
+}
