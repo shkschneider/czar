@@ -13,8 +13,8 @@ fn parse_int(input: i32) -> ParseIntResult {
 }
 
 fn main() -> i32 {
-    val result1: ParseIntResult = parse_int(42)
-    val result2: ParseIntResult = parse_int(-5)
+    let result1: ParseIntResult = parse_int(42)
+    let result2: ParseIntResult = parse_int(-5)
     
     if result1.ok {
         if result2.ok == false {

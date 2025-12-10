@@ -5,7 +5,7 @@ struct Point {
 }
 
 fn main() -> i32 {
-    var p: Point = Point { x: 10, y: 20 }
+    mut p: Point = Point { x: 10, y: 20 }
     
     // Modify fields
     p.x = 5

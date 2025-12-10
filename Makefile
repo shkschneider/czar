@@ -105,7 +105,7 @@ EXPECTED_RESULTS = \
 	extension_methods:10 \
 	methods:10 \
 	error_as_value:42 \
-	comprehensive:1 \
+	comprehensive:100 \
 	underscore:23 \
 	underscore_edge_cases:172 \
 	underscore_example:117

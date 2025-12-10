@@ -1,74 +1,4 @@
-<<<<<<< HEAD
-// Comprehensive test combining all v1 features
-struct Point {
-    x: i32
-    y: i32
-}
-
-struct Rect {
-    top_left: Point
-    width: u32
-    height: u32
-}
-
-// Method syntax on Point
-fn Point.distance_squared(self: *Point) -> i32 {
-    return self.x * self.x + self.y * self.y
-}
-
-// Extension method on Rect
-fn area(self: *Rect) -> u64 {
-    val w: u64 = self.width
-    val h: u64 = self.height
-    return w * h
-}
-
-// Error-as-value for validation
-struct ValidateResult {
-    ok: bool
-    error_msg: i32
-}
-
-fn validate_point(p: *Point) -> ValidateResult {
-    if p.x < 0 {
-        return ValidateResult { ok: false, error_msg: 1 }
-    }
-    if p.y < 0 {
-        return ValidateResult { ok: false, error_msg: 2 }
-    }
-    return ValidateResult { ok: true, error_msg: 0 }
-}
-
-fn main() -> i32 {
-    var p: Point = Point { x: 3, y: 4 }
-    
-    // Test method call with auto-addressing
-    val dist: i32 = p.distance_squared()
-    
-    // Test with different numeric types
-    var r: Rect = Rect {
-        top_left: Point { x: 0, y: 0 },
-        width: 10,
-        height: 5
-    }
-    
-    // Test extension method
-    val a: u64 = r.area()
-    
-    // Test error-as-value
-    val result: ValidateResult = validate_point(&p)
-    
-    if result.ok {
-        if dist == 25 {
-            if a == 50 {
-                return 1  // success
-            }
-        }
-    }
-    
-    return 0
-=======
-// Comprehensive test showcasing new language features:
+// Comprehensive test showcasing language features:
 // 1. let (immutable) and mut (mutable) keywords
 // 2. Heap allocation with new keyword
 // 3. Automatic scope-based cleanup
@@ -106,5 +36,4 @@ fn main() -> i32 {
     let result: i32 = calculate_total()
     // result = 10 + 25 + 65 = 100
     return result
->>>>>>> 180a6bb (Add comprehensive test showcasing all new features)
 }
