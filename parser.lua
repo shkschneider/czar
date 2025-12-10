@@ -172,6 +172,14 @@ function Parser:parse_var_decl()
     local mutable = self:match("KEYWORD", "var") ~= nil
     if not mutable then self:expect("KEYWORD", "val") end
     local name = self:expect("IDENT").value
+    
+    -- Check if this is a discard statement: _ = expr (without type annotation)
+    if name == "_" and self:match("EQUAL") then
+        local init = self:parse_expression()
+        self:match("SEMICOLON")  -- semicolons are optional
+        return { kind = "discard", value = init }
+    end
+    
     self:expect("COLON")
     local type_ = self:parse_type()
     local init = nil
