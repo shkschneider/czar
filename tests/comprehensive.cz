@@ -1,34 +1,34 @@
 // Comprehensive test combining all v1 features
 struct Point {
-    x: i32
-    y: i32
+    i32 x
+    i32 y
 }
 
 struct Rect {
-    top_left: Point
-    width: u32
-    height: u32
+    Point top_left
+    u32 width
+    u32 height
 }
 
 // Method syntax on Point
-fn Point.distance_squared(self: *Point) -> i32 {
+fn Point.distance_squared(Point* self) -> i32 {
     return self.x * self.x + self.y * self.y
 }
 
 // Extension method on Rect
-fn area(self: *Rect) -> u64 {
-    val w: u64 = self.width
-    val h: u64 = self.height
+fn area(Rect* self) -> u64 {
+    val u64 w = self.width
+    val u64 h = self.height
     return w * h
 }
 
 // Error-as-value for validation
 struct ValidateResult {
-    ok: bool
-    error_msg: i32
+    bool ok
+    i32 error_msg
 }
 
-fn validate_point(p: *Point) -> ValidateResult {
+fn validate_point(Point* p) -> ValidateResult {
     if p.x < 0 {
         return ValidateResult { ok: false, error_msg: 1 }
     }
@@ -39,23 +39,23 @@ fn validate_point(p: *Point) -> ValidateResult {
 }
 
 fn main() -> i32 {
-    var p: Point = Point { x: 3, y: 4 }
+    var Point p = Point { x: 3, y: 4 }
     
     // Test method call with auto-addressing
-    val dist: i32 = p.distance_squared()
+    val i32 dist = p.distance_squared()
     
     // Test with different numeric types
-    var r: Rect = Rect {
+    var Rect r = Rect {
         top_left: Point { x: 0, y: 0 },
         width: 10,
         height: 5
     }
     
     // Test extension method
-    val a: u64 = r.area()
+    val u64 a = r.area()
     
     // Test error-as-value
-    val result: ValidateResult = validate_point(&p)
+    val ValidateResult result = validate_point(&p)
     
     if result.ok {
         if dist == 25 {

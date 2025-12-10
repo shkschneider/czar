@@ -1,15 +1,15 @@
 // Test function definitions and calls
-fn add(a: i32, b: i32) -> i32 {
+fn add(i32 a, i32 b) -> i32 {
     return a + b
 }
 
-fn multiply(a: i32, b: i32) -> i32 {
+fn multiply(i32 a, i32 b) -> i32 {
     return a * b
 }
 
-fn compute(x: i32, y: i32) -> i32 {
-    val sum: i32 = add(x, y)
-    val product: i32 = multiply(x, y)
+fn compute(i32 x, i32 y) -> i32 {
+    val i32 sum = add(x, y)
+    val i32 product = multiply(x, y)
     return sum + product
 }
 

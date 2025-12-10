@@ -1,11 +1,11 @@
 // Test struct field assignment
 struct Point {
-    x: i32
-    y: i32
+    i32 x
+    i32 y
 }
 
 fn main() -> i32 {
-    var p: Point = Point { x: 10, y: 20 }
+    var Point p = Point { x: 10, y: 20 }
     
     // Modify fields
     p.x = 5

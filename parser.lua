@@ -89,9 +89,8 @@ function Parser:parse_struct()
     self:expect("LBRACE")
     local fields = {}
     while not self:check("RBRACE") do
-        local field_name = self:expect("IDENT").value
-        self:expect("COLON")
         local field_type = self:parse_type()
+        local field_name = self:expect("IDENT").value
         self:match("SEMICOLON")  -- semicolons are optional
         table.insert(fields, { name = field_name, type = field_type })
     end
@@ -114,9 +113,8 @@ function Parser:parse_function()
     local params = {}
     if not self:check("RPAREN") then
         repeat
-            local param_name = self:expect("IDENT").value
-            self:expect("COLON")
             local param_type = self:parse_type()
+            local param_name = self:expect("IDENT").value
             table.insert(params, { name = param_name, type = param_type })
         until not self:match("COMMA")
     end
@@ -128,13 +126,15 @@ function Parser:parse_function()
 end
 
 function Parser:parse_type()
-    if self:match("STAR") then
-        return { kind = "pointer", to = self:parse_type() }
-    end
     local tok = self:current()
     if is_type_token(tok) then
         self:advance()
-        return { kind = "named_type", name = tok.value }
+        local base_type = { kind = "named_type", name = tok.value }
+        -- Check if this is a pointer type (Type*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        return base_type
     end
     error(string.format("expected type but found %s", token_label(tok)))
 end
@@ -171,17 +171,19 @@ end
 function Parser:parse_var_decl()
     local mutable = self:match("KEYWORD", "var") ~= nil
     if not mutable then self:expect("KEYWORD", "val") end
-    local name = self:expect("IDENT").value
     
-    -- Special case: val _ = expr or var _ = expr (discard statement with explicit val/var)
-    if name == "_" and self:match("EQUAL") then
-        local init = self:parse_expression()
-        self:match("SEMICOLON")  -- semicolons are optional
-        return { kind = "discard", value = init }
+    -- Check for special case: val _ = expr or var _ = expr (discard statement)
+    if self:check("IDENT") and self:current().value == "_" then
+        local name = self:advance().value
+        if self:match("EQUAL") then
+            local init = self:parse_expression()
+            self:match("SEMICOLON")  -- semicolons are optional
+            return { kind = "discard", value = init }
+        end
     end
     
-    self:expect("COLON")
     local type_ = self:parse_type()
+    local name = self:expect("IDENT").value
     local init = nil
     if self:match("EQUAL") then
         init = self:parse_expression()
