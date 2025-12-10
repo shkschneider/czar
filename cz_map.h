@@ -21,7 +21,7 @@ Map* map_new() { // alloc
     return m;
 }
 
-void map_put(Map* map, void* key, void* value) { // alloc
+static inline void map_put(Map* map, void* key, void* value) { // alloc
     assert(map);
     if (map->key == NULL) {
         map->key = key;
@@ -39,7 +39,7 @@ void map_put(Map* map, void* key, void* value) { // alloc
     m->next = e;
 }
 
-void* map_get(Map* map, void* key) {
+static inline void* map_get(Map* map, void* key) {
     assert(map);
     Map* m = map;
     while (m != NULL) {
@@ -51,7 +51,7 @@ void* map_get(Map* map, void* key) {
     return NULL;
 }
 
-void map_delete(Map* map, void* key) {
+static inline void map_delete(Map* map, void* key) {
     assert(map);
     Map* m = map;
     Map* p = NULL;
@@ -67,7 +67,7 @@ void map_delete(Map* map, void* key) {
     }
 }
 
-void map_clear(Map* map) {
+static inline void map_clear(Map* map) {
     assert(map);
     Map* m = map->next;
     while (m != NULL) {
@@ -80,7 +80,7 @@ void map_clear(Map* map) {
     map->next = NULL;
 }
 
-size_t map_size(Map* map) {
+static inline size_t map_size(Map* map) {
     assert(map);
     size_t i = 0;
     for (Map *m = map; m != NULL; m = m->next) {
@@ -89,7 +89,7 @@ size_t map_size(Map* map) {
     return i;
 }
 
-void** map_keys(Map* map) { // alloc
+static inline void** map_keys(Map* map) { // alloc
     assert(map);
     size_t size = map_size(map);
     void** keys = malloc(sizeof(void*) * (size + 1));
@@ -103,7 +103,7 @@ void** map_keys(Map* map) { // alloc
     return keys;
 }
 
-void** map_values(Map* map) { // alloc
+static inline void** map_values(Map* map) { // alloc
     assert(map);
     size_t size = map_size(map);
     void** values = malloc(sizeof(void*) * (size + 1));

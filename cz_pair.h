@@ -17,7 +17,7 @@ Pair* pair_new() { // alloc
     return p;
 }
 
-void pair_clear(Pair* pair) {
+static inline void pair_clear(Pair* pair) {
     assert(pair);
     pair->key = NULL;
     pair->value = NULL;

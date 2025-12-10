@@ -9,7 +9,7 @@
 #include "cz_string.h"
 
 // UPPER CASE
-string case_upper(string s) {
+static inline string case_upper(string s) {
     for (string p = s; *p; p++) {
         *p = toupper(*p);
     }
@@ -17,7 +17,7 @@ string case_upper(string s) {
 }
 
 // lower case
-string case_lower(string s) {
+static inline string case_lower(string s) {
     for (string p = s; *p; p++) {
         *p = tolower(*p);
     }
@@ -25,14 +25,14 @@ string case_lower(string s) {
 }
 
 // Title case
-string case_title(string s) {
+static inline string case_title(string s) {
     s = case_lower(s);
     *s = toupper(*s);
     return s;
 }
 
 // PascalCase
-string case_pascal(string s) { // alloc
+static inline string case_pascal(string s) { // alloc
     string d = strdup(s);
     string* strings = strdiv(s, " _.-");
     unsigned int p = 0;
@@ -45,14 +45,14 @@ string case_pascal(string s) { // alloc
 }
 
 // camelCase
-string case_camel(string s) { // alloc
+static inline string case_camel(string s) { // alloc
     string d = case_pascal(s);
     *d = tolower(*d);
     return d;
 }
 
 // snake_case
-string case_snake(string s) { // alloc
+static inline string case_snake(string s) { // alloc
     string d = strdup(s);
     string* strings = strdiv(s, " _.-");
     unsigned int n;
