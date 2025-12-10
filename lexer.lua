@@ -6,20 +6,20 @@ local Lexer = {}
 Lexer.__index = Lexer
 
 local keywords = {
-    struct = true,
-    fn = true,
-    return = true,
-    var = true,
-    val = true,
-    if = true,
-    else = true,
-    while = true,
-    true = true,
-    false = true,
-    null = true,
-    i32 = true,
-    bool = true,
-    void = true,
+    ["struct"] = true,
+    ["fn"] = true,
+    ["return"] = true,
+    ["var"] = true,
+    ["val"] = true,
+    ["if"] = true,
+    ["else"] = true,
+    ["while"] = true,
+    ["true"] = true,
+    ["false"] = true,
+    ["null"] = true,
+    ["i32"] = true,
+    ["bool"] = true,
+    ["void"] = true,
 }
 
 local simple_tokens = {

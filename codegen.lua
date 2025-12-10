@@ -7,8 +7,9 @@ Codegen.__index = Codegen
 
 local builtin_calls = {
     print_i32 = function(args)
-        local arg = args[1] or "0"
-        return string.format("printf(\"%d\", %s)", arg)
+        local _arg = tonumber(args[1]) or 0
+        return ""
+        -- FIXME return string.format("printf(\"" .. '%d' .. "\", %d)", _arg)
     end,
 }
 
