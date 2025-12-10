@@ -1,6 +1,5 @@
-# ---> C
-# Prerequisites
-*.d
+a.out
+*.c
 
 # Object files
 *.o
@@ -42,12 +41,3 @@
 *.su
 *.idb
 *.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf

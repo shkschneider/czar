@@ -20,8 +20,6 @@ EXPECTED_RESULTS = \
 
 # Default target: compile and run example
 all:
-	./cz ./example.cz
-	./a.out
 	rm -f ./a.out
 
 # Run the test suite
