@@ -31,8 +31,9 @@ test: $(TEST_FILES)
 	for test in $(TEST_FILES); do \
 		name=$$(basename $$test .cz); \
 		echo "Testing $$name..."; \
-		./cz $$test -o tests/$$name 2>&1 | grep -v "Successfully"; \
-		if [ $$? -ne 0 ] && [ ! -f tests/$$name ]; then \
+		./cz $$test -o tests/$$name > /dev/null 2>&1; \
+		compile_status=$$?; \
+		if [ $$compile_status -ne 0 ] || [ ! -f tests/$$name ]; then \
 			echo "  FAIL: Compilation failed"; \
 			failed=$$((failed + 1)); \
 			continue; \
