@@ -10,13 +10,13 @@
 extern const char luaJIT_BC_lexer[];
 extern const char luaJIT_BC_parser[];
 extern const char luaJIT_BC_codegen[];
-extern const char luaJIT_BC_cz[];
+extern const char luaJIT_BC_main[];
 
 // Declare external size symbols (defined in bytecode_sizes.c)
 extern const size_t luaJIT_BC_lexer_size;
 extern const size_t luaJIT_BC_parser_size;
 extern const size_t luaJIT_BC_codegen_size;
-extern const size_t luaJIT_BC_cz_size;
+extern const size_t luaJIT_BC_main_size;
 
 // Helper to load bytecode into package.preload
 static int load_module(lua_State *L, const char *name, const char *bytecode, size_t size) {
@@ -68,8 +68,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     
-    // Load and run the main cz script
-    if (luaL_loadbuffer(L, luaJIT_BC_cz, luaJIT_BC_cz_size, "cz") != 0) {
+    // Load and run the main script
+    if (luaL_loadbuffer(L, luaJIT_BC_main, luaJIT_BC_main_size, "main") != 0) {
         const char *err = lua_tostring(L, -1);
         if (err) {
             fprintf(stderr, "Failed to load main script: %s\n", err);
