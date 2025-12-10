@@ -69,7 +69,7 @@ fn main() -> i32 {
     return 0
 =======
 // Comprehensive test showcasing new language features:
-// 1. Immutable-by-default with mut keyword
+// 1. let (immutable) and mut (mutable) keywords
 // 2. Heap allocation with new keyword
 // 3. Automatic scope-based cleanup
 
@@ -83,14 +83,14 @@ fn update_score(mut p: *Person, delta: i32) -> void {
 }
 
 fn calculate_total() -> i32 {
-    // Immutable by default
-    base: i32 = 10
+    // Immutable with let
+    let base: i32 = 10
     
     // Mutable variable
     mut total: i32 = 0
     
     // Heap allocation with automatic cleanup
-    person: *Person = new Person { age: 25, score: 50 }
+    let person: *Person = new Person { age: 25, score: 50 }
     
     // Modify through pointer
     update_score(person, 15)
@@ -103,7 +103,7 @@ fn calculate_total() -> i32 {
 }
 
 fn main() -> i32 {
-    result: i32 = calculate_total()
+    let result: i32 = calculate_total()
     // result = 10 + 25 + 65 = 100
     return result
 >>>>>>> 180a6bb (Add comprehensive test showcasing all new features)

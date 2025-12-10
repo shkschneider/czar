@@ -1,12 +1,12 @@
 // Test arithmetic operators
 fn main() -> i32 {
-    a: i32 = 10
-    b: i32 = 3
+    let a: i32 = 10
+    let b: i32 = 3
     
-    sum: i32 = a + b        // 13
-    diff: i32 = a - b       // 7
-    prod: i32 = a * b       // 30
-    quot: i32 = a / b       // 3
+    let sum: i32 = a + b        // 13
+    let diff: i32 = a - b       // 7
+    let prod: i32 = a * b       // 30
+    let quot: i32 = a / b       // 3
     
     return sum + diff + prod + quot  // 13 + 7 + 30 + 3 = 53
 }

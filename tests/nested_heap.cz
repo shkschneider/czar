@@ -8,7 +8,7 @@ fn main() -> i32 {
     
     if x > 5 {
         // Allocate in nested scope
-        d: *Data = new Data { value: 20 }
+        let d: *Data = new Data { value: 20 }
         x = d.value
         // d is freed when this scope exits
     }

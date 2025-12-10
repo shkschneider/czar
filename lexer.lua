@@ -9,6 +9,7 @@ local keywords = {
     ["struct"] = true,
     ["fn"] = true,
     ["return"] = true,
+    ["let"] = true,
     ["mut"] = true,
     ["new"] = true,
     ["if"] = true,

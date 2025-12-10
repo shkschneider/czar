@@ -5,7 +5,7 @@ struct Node {
 
 fn process() -> void {
     // Allocate on heap in void function
-    n: *Node = new Node { value: 42 }
+    let n: *Node = new Node { value: 42 }
     n.value = 100
     // n is automatically freed when function ends (no explicit return)
 }

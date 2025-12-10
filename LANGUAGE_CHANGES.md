@@ -5,7 +5,7 @@
 This PR implements two major language enhancements to the Czar compiler:
 
 1. **Heap Allocation with `new` Keyword**: Automatic memory management with scope-based cleanup
-2. **Immutable-by-Default Syntax**: Dropped `val`/`var` keywords in favor of `mut` prefix
+2. **let/mut Syntax**: Explicit `let` (immutable) and `mut` (mutable) keywords
 
 ## 1. Heap Allocation with `new` Keyword
 
@@ -13,10 +13,10 @@ This PR implements two major language enhancements to the Czar compiler:
 
 ```czar
 // Allocate on heap
-p: *Point = new Point { x: 10, y: 20 }
+let p: *Point = new Point { x: 10, y: 20 }
 
 // Use the pointer
-result: i32 = p.x + p.y
+let result: i32 = p.x + p.y
 
 // p is automatically freed at scope exit
 ```
@@ -47,7 +47,7 @@ fn main() -> i32 {
     
     if x > 5 {
         // Allocate in nested scope
-        d: *Data = new Data { value: 20 }
+        let d: *Data = new Data { value: 20 }
         x = d.value
         // d is automatically freed here
     }
@@ -56,7 +56,7 @@ fn main() -> i32 {
 }
 ```
 
-## 2. Immutable-by-Default with `mut` Keyword
+## 2. let/mut Syntax
 
 ### Old Syntax (Removed)
 
@@ -68,7 +68,7 @@ var y: i32 = 20      // mutable
 ### New Syntax
 
 ```czar
-x: i32 = 10          // immutable by default
+let x: i32 = 10      // immutable
 mut y: i32 = 20      // mutable
 ```
 
@@ -88,9 +88,9 @@ fn increment(mut c: *Counter) -> void {
 
 ### Benefits
 
-- **Clearer Intent**: Immutability is the default, mutability is explicit
-- **Less Verbose**: Most variables are immutable, so less typing
-- **Better Defaults**: Encourages immutable programming style
+- **Clearer Intent**: Both immutable and mutable are explicit with keywords
+- **No Ambiguity**: Always clear whether a variable is `let` or `mut`
+- **Familiar**: Similar to Rust's syntax
 - **Consistent**: Same keyword (`mut`) for both variables and parameters
 
 ## Code Generation
@@ -99,7 +99,7 @@ fn increment(mut c: *Counter) -> void {
 
 ```c
 // Input Czar code:
-p: *Point = new Point { x: 10, y: 20 }
+let p: *Point = new Point { x: 10, y: 20 }
 
 // Generated C code:
 Point* p = ({ 
@@ -117,13 +117,13 @@ free(p);
 return result;
 ```
 
-### C Output for Immutable Variables
+### C Output for let/mut Variables
 
 ```c
-// Immutable (default)
+// Immutable (let)
 const int32_t x = 10;
 
-// Mutable
+// Mutable (mut)
 int32_t y = 20;
 
 // Note: Pointers are never const even if immutable
@@ -141,7 +141,7 @@ Point* p = ...;  // not const Point* p
 All existing tests have been updated to use the new syntax:
 
 - ✅ types.cz - Basic types
-- ✅ bindings.cz - Variable bindings with mut
+- ✅ bindings.cz - Variable bindings with let/mut
 - ✅ structs.cz - Struct definitions
 - ✅ pointers.cz - Pointer operations
 - ✅ functions.cz - Function calls
@@ -184,7 +184,7 @@ if p == null {
 
 ### For Existing Code
 
-1. Replace `val` with nothing (immutable is now default)
+1. Replace `val` with `let`
 2. Replace `var` with `mut`
 3. Use `new TypeName { fields }` for heap allocation
 
@@ -199,9 +199,9 @@ val p: *Point = &stackPoint
 
 **After:**
 ```czar
-x: i32 = 10
+let x: i32 = 10
 mut y: i32 = 20
-p: *Point = new Point { x: 1, y: 2 }  // or &stackPoint
+let p: *Point = new Point { x: 1, y: 2 }  // or &stackPoint
 ```
 
 ## Compatibility

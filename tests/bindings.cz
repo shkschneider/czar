@@ -1,6 +1,6 @@
-// Test variable bindings: immutable (default) and mut (mutable)
+// Test variable bindings: let (immutable) and mut (mutable)
 fn main() -> i32 {
-    x: i32 = 10          // immutable
+    let x: i32 = 10      // immutable
     mut y: i32 = 20      // mutable
     y = y + x
     return y             // should return 30

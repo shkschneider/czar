@@ -1,16 +1,16 @@
 // Test basic types: i32, bool, void
 fn test_i32() -> i32 {
-    x: i32 = 42
+    let x: i32 = 42
     return x
 }
 
 fn test_bool() -> bool {
-    t: bool = true
-    f: bool = false
+    let t: bool = true
+    let f: bool = false
     return t
 }
 
 fn main() -> i32 {
-    result: i32 = test_i32()
+    let result: i32 = test_i32()
     return result
 }

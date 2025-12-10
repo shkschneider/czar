@@ -1,7 +1,7 @@
 // Test comparison and logical operators
 fn main() -> i32 {
-    a: i32 = 10
-    b: i32 = 20
+    let a: i32 = 10
+    let b: i32 = 20
     
     if a < b {
         if a + 10 == b {

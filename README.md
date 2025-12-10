@@ -74,13 +74,13 @@ This is the minimal coherent slice to bootstrap the compiler.
 
 ### 2. Bindings
 
-Variables are immutable by default. Use `mut` for mutable variables.
+Use `let` for immutable variables and `mut` for mutable variables.
 
 ```
-x: i32 = 1;       // immutable (default)
-mut y: i32 = 2;   // mutable
+let x: i32 = 1;    // immutable
+mut y: i32 = 2;    // mutable
 
-mut z: i32;       // declared, must be assigned before first read
+mut z: i32;        // declared, must be assigned before first read
 z = 10;
 ```
 
@@ -89,7 +89,7 @@ z = 10;
 Use `new` keyword to allocate on the heap. Memory is automatically freed at scope exit.
 
 ```
-p: *Vec2 = new Vec2 { x: 1, y: 2 };  // heap allocation
+let p: *Vec2 = new Vec2 { x: 1, y: 2 };  // heap allocation
 // p is automatically freed when it goes out of scope
 ```
 
@@ -97,7 +97,7 @@ p: *Vec2 = new Vec2 { x: 1, y: 2 };  // heap allocation
 
 ```
 mut v: Vec2 = Vec2 { x: 1, y: 2 };
-p: *Vec2 = &v;
+let p: *Vec2 = &v;
 
 p.x = 10;        // auto-deref on .
 (*p).y = 20;     // explicit deref if desired
@@ -121,7 +121,7 @@ struct Vec2 {
 **Struct literals:**
 
 ```
-v: Vec2 = Vec2 { x: 3, y: 4 };
+let v: Vec2 = Vec2 { x: 3, y: 4 };
 ```
 
 ### 6. Functions
@@ -147,9 +147,9 @@ fn length(self: *Vec2) -> i32 {
 }
 ```
 
-v0 might require calling like: `L: i32 = length(&v);`
+v0 might require calling like: `let L: i32 = length(&v);`
 
-Later (v1), this becomes: `L: i32 = v.length();` with auto-addressing and auto-deref.
+Later (v1), this becomes: `let L: i32 = v.length();` with auto-addressing and auto-deref.
 
 ### 8. Extension Methods (v1+)
 
@@ -392,7 +392,7 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - Comments: Both `//` single-line and `/* */` multi-line comments are supported
 - Optional semicolons: Semicolons are now optional in all contexts (statements and struct fields)
 - Types: i32, bool, void, structs, pointers (*T)
-- Variables: Immutable by default, use `mut` keyword for mutable variables
+- Variables: `let` (immutable) and `mut` (mutable) keywords
 - **Heap allocation**: `new` keyword with automatic scope-based cleanup
 - Functions with parameters and return values
 - Control flow: if/else and while loops
@@ -461,7 +461,7 @@ The project includes a comprehensive test suite in the `tests/` directory coveri
 
 **v0 Tests:**
 - types.cz - Basic types (i32, bool, void)
-- bindings.cz - Immutable/mutable bindings with `mut`
+- bindings.cz - `let` (immutable) and `mut` (mutable) bindings
 - structs.cz - Struct definitions and literals
 - pointers.cz - Pointer operations
 - functions.cz - Function calls

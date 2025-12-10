@@ -128,6 +128,40 @@ function Codegen:gen_struct(item)
     self:emit("")
 end
 
+-- Scope Management for Automatic Memory Cleanup
+-- =============================================
+-- 
+-- The compiler implements a defer-like mechanism for automatic memory cleanup
+-- at scope exit. This works similarly to Zig's defer or Go's defer, but is
+-- implemented at compile-time by tracking heap allocations and inserting
+-- free() calls at the right places.
+--
+-- How it works:
+-- 1. Each scope (block, if/else, while) maintains a list of heap-allocated variables
+-- 2. When a variable is assigned with "new TypeName", we track it in the current scope
+-- 3. At scope exit (either via return or block end), we insert free() calls
+-- 4. Cleanup happens in reverse order of allocation (LIFO - stack-like)
+--
+-- Example:
+--   fn process() -> i32 {
+--       let a: *Data = new Data { value: 1 }
+--       let b: *Data = new Data { value: 2 }
+--       if condition {
+--           let c: *Data = new Data { value: 3 }
+--           // c is freed here when if-block exits
+--       }
+--       // b is freed, then a is freed here when function exits
+--       return result
+--   }
+--
+-- Limitations:
+-- - Only tracks variables directly assigned with "new"
+-- - Does not handle re-assignment (p = new X; p = new Y; // first X leaks)
+-- - Does not work with arrays, linked lists, or complex data structures
+-- - No alias tracking (p = q; // if q was from new, both point to same memory)
+-- - Manual management needed for: strings, arrays, recursive structures
+--
+
 function Codegen:push_scope()
     table.insert(self.scope_stack, { vars = {}, heap_vars = {} })
 end

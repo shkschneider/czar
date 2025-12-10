@@ -8,8 +8,8 @@ fn multiply(a: i32, b: i32) -> i32 {
 }
 
 fn compute(x: i32, y: i32) -> i32 {
-    sum: i32 = add(x, y)
-    product: i32 = multiply(x, y)
+    let sum: i32 = add(x, y)
+    let product: i32 = multiply(x, y)
     return sum + product
 }
 

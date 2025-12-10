@@ -156,16 +156,14 @@ function Parser:parse_statement()
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "return", value = expr }
-    elseif self:check("KEYWORD", "mut") then
-        -- mut x: type = value
+    elseif self:check("KEYWORD", "let") or self:check("KEYWORD", "mut") then
+        -- let x: type = value (immutable)
+        -- mut x: type = value (mutable)
         return self:parse_var_decl()
     elseif self:check("KEYWORD", "if") then
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then
         return self:parse_while()
-    elseif self:check("IDENT") and self:peek_ahead_for_colon() then
-        -- x: type = value (immutable by default)
-        return self:parse_var_decl()
     else
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
@@ -173,28 +171,9 @@ function Parser:parse_statement()
     end
 end
 
-function Parser:peek_ahead_for_colon()
-    -- Look ahead to see if this is a variable declaration (name: type)
-    -- Save current position
-    local saved_pos = self.pos
-    local is_decl = false
-    
-    -- Skip identifier
-    if self:check("IDENT") then
-        self:advance()
-        -- Check for colon
-        if self:check("COLON") then
-            is_decl = true
-        end
-    end
-    
-    -- Restore position
-    self.pos = saved_pos
-    return is_decl
-end
-
 function Parser:parse_var_decl()
     local mutable = self:match("KEYWORD", "mut") ~= nil
+    if not mutable then self:expect("KEYWORD", "let") end
     local name = self:expect("IDENT").value
     
     -- Special case: val _ = expr or var _ = expr (discard statement with explicit val/var)
