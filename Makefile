@@ -4,12 +4,17 @@
 CC = cc
 LUAJIT = luajit
 AR = ar
-CFLAGS = -I/usr/include/luajit-2.1
-LDFLAGS = -L. -Wl,--whole-archive -lczar -Wl,--no-whole-archive -Wl,-E -lluajit-5.1 -lm -ldl
+
+# Use pkg-config to get LuaJIT flags if available, otherwise use defaults
+LUAJIT_CFLAGS := $(shell pkg-config --cflags luajit 2>/dev/null || echo "-I/usr/include/luajit-2.1")
+LUAJIT_LIBS := $(shell pkg-config --libs luajit 2>/dev/null || echo "-lluajit-5.1")
+
+CFLAGS = $(LUAJIT_CFLAGS)
+LDFLAGS = -L. -Wl,--whole-archive -lczar -Wl,--no-whole-archive -Wl,-E $(LUAJIT_LIBS) -lm -ldl
 
 # Lua source files
-LUA_SOURCES = lexer.lua parser.lua codegen.lua cz
-LUA_OBJECTS = lexer.o parser.o codegen.o cz.o
+LUA_SOURCES = lexer.lua parser.lua codegen.lua main.lua
+LUA_OBJECTS = lexer.o parser.o codegen.o main.o
 LUA_LIBRARY = libczar.a
 
 # Find all test .cz files
@@ -28,12 +33,12 @@ EXPECTED_RESULTS = \
 	no_semicolons:15
 
 # Build the cz binary from Lua bytecode
-build: cz.bin
-	@echo "Build complete: cz.bin"
+build: cz
+	@echo "Build complete: cz"
 
 # Compile Lua files to object files and create static library
 $(LUA_LIBRARY): $(LUA_OBJECTS)
-	$(AR) rcus $@ $^
+	$(AR) rcs $@ $^
 
 # Compile individual Lua files to bytecode object files
 lexer.o: lexer.lua
@@ -45,7 +50,7 @@ parser.o: parser.lua
 codegen.o: codegen.lua
 	$(LUAJIT) -b $< $@
 
-cz.o: cz
+main.o: main.lua
 	$(LUAJIT) -b $< $@
 
 # Generate sizes file from object files
@@ -59,7 +64,7 @@ bytecode_sizes.c: $(LUA_OBJECTS)
 	done
 
 # Link the C main file with the Lua library to create the binary
-cz.bin: cz_main.c bytecode_sizes.c $(LUA_LIBRARY)
+cz: cz_main.c bytecode_sizes.c $(LUA_LIBRARY)
 	$(CC) $(CFLAGS) -o $@ cz_main.c bytecode_sizes.c $(LDFLAGS)
 
 # Default target: build and run tests
@@ -72,7 +77,7 @@ test: build
 	for test in $(TEST_FILES); do \
 		name=$$(basename $$test .cz); \
 		echo "Testing $$name..."; \
-		./cz.bin $$test -o tests/$$name > /dev/null 2>&1; \
+		./cz $$test -o tests/$$name > /dev/null 2>&1; \
 		compile_status=$$?; \
 		if [ $$compile_status -ne 0 ] || [ ! -f tests/$$name ]; then \
 			echo "  FAIL: Compilation failed"; \
@@ -102,14 +107,14 @@ test: build
 # Clean build artifacts
 clean:
 	rm -f ./example.c ./a.out ./my_program
-	rm -f *.o *.a cz.bin $(LUA_LIBRARY) bytecode_sizes.c
-	rm -f tests/*.c tests/test_types tests/test_bindings tests/test_structs tests/test_pointers \
-		tests/test_functions tests/test_arithmetic tests/test_comparison tests/test_if_else \
-		tests/test_while tests/test_comments tests/test_no_semicolons
+	rm -f *.o *.a cz $(LUA_LIBRARY) bytecode_sizes.c
+	rm -f tests/*.c tests/types tests/bindings tests/structs tests/pointers \
+		tests/functions tests/arithmetic tests/comparison tests/if_else \
+		tests/while tests/comments tests/no_semicolons
 
 # Install the cz compiler (requires root/sudo for system-wide install)
 install: build
-	@echo "Installing cz.bin to /usr/local/bin/cz"
+	@echo "Installing cz to /usr/local/bin/cz"
 	@echo "You may need to run this with sudo"
-	install -m 755 cz.bin /usr/local/bin/cz
+	install -m 755 cz /usr/local/bin/cz
 	@echo "Installation complete. You can now use 'cz' from anywhere."
