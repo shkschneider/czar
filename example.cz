@@ -1,0 +1,15 @@
+struct Vec2 {
+    x: i32;
+    y: i32;
+}
+
+fn length(self: *Vec2) -> i32 {
+    return self.x * self.x + self.y * self.y;
+}
+
+fn main() -> i32 {
+    var v: Vec2 = Vec2 { x: 3, y: 4 };
+    val l: i32 = length(&v);
+    print_i32(l);
+    return 0;
+}

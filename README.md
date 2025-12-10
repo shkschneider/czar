@@ -1,191 +1,354 @@
-# C Is Awesome
+# Czar
 
-> https://www.ibm.com/docs/en/i/7.5.0?topic=extensions-standard-c-library-functions-table-by-name
-> http://www.crasseux.com/books/ctutorial/index.html
-> https://github.com/oz123/awesome-c
+> A small, explicit, low-level, statically typed systems language.
 
-```sh
-make -B && make run ; make clean >/dev/null
+Czar is a personal “better C” project, inspired by C, Zig, Jai, Go, and Kotlin extension ergonomics, but with its own philosophy:
+
+- Explicit over magical
+- Static types
+- Value semantics by default
+- Pointers when needed
+- Method extensions
+- Error-as-value
+- C-level performance
+- No GC
+- Simple, friendly compiler errors
+
+The compiler is written in Lua, and transpiles to portable C as the primary backend.
+
+## Goals
+
+### Primary Goals
+
+- Learn how compilers work: parsing, semantic analysis, type-checking, lowering, optimization.
+- Produce a small, predictable systems language with:
+    - value semantics,
+    - pointers,
+    - static typing,
+    - clear errors,
+    - minimal implicit behavior.
+
+### Secondary Goals
+
+- Enable ergonomic method calls and extension methods.
+- Allow overloading (strict, no implicit conversions).
+- Introduce generics and interfaces later, once the core is solid.
+- Build optimization passes (constant folding, basic dead-store elimination, inlining).
+
+### Non-Goals
+
+- No exceptions.
+- No inheritance.
+- No implicit conversions between unrelated types.
+- No hidden memory behaviors.
+- No GC or reference counting runtime in the language core.
+- No trying to replace C++ or Rust.
+
+## Language Philosophy
+
+Czar is “C with sane defaults”:
+
+- Memory is explicit.
+- Mutability is explicit.
+- Control flow is simple.
+- Nothing implicit unless explicitly listed.
+- Zero magic conversions.
+
+Compiler produces straightforward portable C.
+
+## v0 Language Features
+
+This is the minimal coherent slice to bootstrap the compiler.
+
+### 1. Types (v0)
+
+- i32
+- bool
+- void
+- struct types
+- Pointer types: *T
+- Nullable pointers: *T (null allowed)
+- Casts exist but are explicit:
+
+> val x: i32 = (i32) someExpr;
+
+### 2. Bindings
+
+```
+val x: i32 = 1;   // immutable
+var y: i32 = 2;   // mutable
+
+var z: i32;       // declared, must be assigned before first read
+z = 10;
 ```
 
-## Standards
+### 3. Pointers
 
-> Portable Operating System Interface
+```
+var v: Vec2 = Vec2 { x: 1, y: 2 };
+var p: *Vec2 = &v;
 
-- widely supported
-- manual memory management is powerful
-- no operator overloading is great
-- verbose is good for clarity
-- throwing exceptions is arguably bad
-- portable (with efforts)
+p.x = 10;        // auto-deref on .
+(*p).y = 20;     // explicit deref if desired
+```
 
-**C89**
+**Semantics:**
 
-> ANSI X3.159-1989
+- Param type T → passed by value.
+- Param type *T → passed by pointer (allowing mutation of caller data).
 
-**C99**
+### 4. Structs
 
-> ISO/IEC 9899:1999
+```
+struct Vec2 {
+    x: i32;
+    y: i32;
+}
+```
 
-- inline functions
-- single-line comments `//`
-- `stdbool.h` `inttypes.h`
-- designated initializers `{ . }`
+**Struct literals:**
 
-**C11 (c1x)**
+```
+val v: Vec2 = Vec2 { x: 3, y: 4 };
+```
 
-> ISO/IEC 9899:2011
-> __STDC_VERSION__ 201112L
+### 5. Functions
 
-- unicode: `char16_t`/`char32_t`
+```
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+```
 
-**C17**
+- Single return value.
+- No multiple returns in v0.
+- No generics in v0.
+- No interfaces in v0.
 
-> ISO/IEC 9899:2018
-> __STDC_VERSION__ 201710L
+### 6. Methods (v0: sugar built later)
 
-**C23 (c2x)**
+Internally, methods are just functions with an explicit receiver:
 
-> ISO/IEC 9899:2024
-> __STDC_VERSION__ 202311L
+```
+fn length(self: *Vec2) -> i32 {
+    return self.x * self.x + self.y * self.y;
+}
+```
 
-- `nullptr`/`nullptr_t`
-- `bool`: `true`/`false`
-- digit separator `'`
+v0 might require calling like: `val L: i32 = length(&v);`
 
-## Files
+Later (v1), this becomes: `val L: i32 = v.length();` with auto-addressing and auto-deref.
 
-- Headers `.h`
-- Sources `.c` -> Object `.o`
-- Makefile?
+### 7. Extension Methods (v1+)
 
-    > Someone had good intentions at each step along the way, but nobody stopped to ask why.
+Any function whose first parameter is self: T or self: *T becomes callable as a method:
 
-## Compilation
+```
+fn clamp(self: *Vec2, min: i32, max: i32) -> void { ... }
 
-Enable all warnings and treat them as errors: `-Wall -Werror`.
+v.clamp(0, 10);
+```
 
-Static executable: `-static`.
+Works across modules. No inheritance required.
 
-The build system / toolchain of C is kinda complicated though:
-Makefile, CMake, Meson...
+### 8. Overloading (v1)
 
-**Step**
+Overloading resolution is exact-match only:
 
-- Pre-Processing: macros...
-- Compiling: `*.c` -> assembly `.s`
-- Assembling: `*.s` -> objects `.o`
-- Linking: `*.o` -> executable
+- Same name allowed if parameter types differ.
+- No implicit conversions.
+- Return type alone cannot differentiate overloads.
+- Ambiguous calls are a compiler error.
 
-## Macros
+### 9. Error-as-Value (v0)
 
-Macros are powerful but should be limited.
+No generics yet. Users define result wrappers manually:
 
-## Data Types
+```
+struct ParseIntResult {
+    ok: bool;
+    value: i32;
+}
+```
 
-**Pointer**
+Later (v2+), this may become: `Result<T, E>` with monomorphization.
 
-Memory address of _something_.
-Native strings are null-terminated array of `char` (so "string" = `char *`).
+### 10. Control Flow
 
-**Struct**
+```
+if x > 0 {
+    ...
+} else {
+    ...
+}
 
-Pointer to multiple values (memory-aligned):
+while x < 10 {
+    ...
+}
+```
 
-- `s = struct { char a, int b } ; s.a` = address `s` offset by 0
-- `s = struct { char a, int b } ; s.b` = address `s` offset by 1 (`sizeof(char)`)
-- `s = struct { char a, int b, float c } ; s.b` = address `s` offset by 2 (`sizeof(char) + sizeof(int)`)
+Parentheses optional depending on taste; grammar supports both.
 
-**Union**
+### 11. Evaluation Order
 
-Pointer to only one data from a list of possible types:
+- Strict left-to-right for all expression evaluation.
+- `&&` and `||` are short-circuiting.
+- Compiler may introduce temporaries in generated C to preserve these guarantees.
 
-- `u = union { char a, int b } ; u.a` = address `u` as `char`
-- `u = union { char a, int b } ; u.b` = address `u` as `int`
+## Compiler Architecture
 
-**Array**
+Written in Lua, producing portable C.
 
-Pointer which can be offset:
+**Pipeline:**
 
-- `array[0]` = address `array` offset by 0
-- `array[1]` = address `array` offset by 1 (`sizeof(*array) * 1`)
-- `array[2]` = address `array` offset by 2 (`sizeof(*array) * 2`)
+```
+source.my
+   ↓
+lexer.lua        → tokens
+   ↓
+parser.lua       → AST
+   ↓
+typechecker.lua  → typed AST (with mutability rules, overload checks later)
+   ↓
+c_codegen.lua    → .c output
+   ↓
+clang/gcc/msvc   → native binary
+```
 
-**List**
+**Later Pipelines**
 
-Pointer to element that links to other elements.
-Like a dynamic array.
+You can add:
 
-- `l = struct { char a, struct *next }`
-- `ll = l->next`
+- IR lowering
+- optimization passes (constant folding, dead-store elimination)
+- alternative backends (Zig, LLVM IR) for experiments
 
-**Pair**
+But C stays the reference backend.
 
-Key-Value storage.
-Like a Vector(2).
+## Diagnostics Philosophy
 
-**Map**
+Czar's compiler prioritizes clear, specific error messages.
 
-List of Key-Value pairs, with unique keys.
-Like a dictionary.
+**Examples:**
 
-**Set**
+Mutability mismatch
 
-List of strictly unique items.
+```
+error: cannot pass immutable value to function requiring a mutable pointer
+  --> main.my:12:9
+   |
+12 |     v.translate(1, 2);
+   |     ^ immutable binding
+note: `translate` requires parameter of type `*Vec2`
+  --> vec2.my:1:1
+```
 
-**Queue**
+Overload resolution (v1)
 
-First-In First-Out (FIFO) -- rarely Last-In Last-Out (LILO).
+```
+error: no overload of `print` matches argument types (`bool`)
+  --> main.my:7:5
+note: candidates:
+  fn print(x: i32) -> void
+  fn print(x: *char) -> void
+```
 
-**Stack**
+Type mismatch
 
-Last-In First-Out list (LIFO).
+```
+error: mismatched types: expected i32, found bool
+  --> main.my:5:22
+```
 
-**Custom (examples)**
+## Roadmap
 
-- Vector2: a pair of X, Y values
-- String: a length/capacity struct of chars
-- Result: success/failure return values
-- ...: only limited by your imagination
+### v0 — Walking Compiler (Foundations)
 
-## Libraries
+Goal: compile trivial programs to C and run them
 
-- `unique_ptr`/`shared_ptr`: https://github.com/Snaipe/libcsptr
-- `arena`:
-    - https://github.com/thejefflarson/arena
-    - https://github.com/tsoding/arena
-- `string`:
-    - https://github.com/tsoding/sv
-    - https://github.com/maxim2266/str
-    - https://github.com/sheredom/utf8.h
-- `log`: https://github.com/HardySimpson/zlog
-- OOP: https://github.com/small-c/obj.h
-- (no)build: https://github.com/tsoding/nob.h
-- flags:
-    - https://github.com/tsoding/flag.h
-    - https://github.com/jibsen/parg
-    - https://github.com/docopt/docopt.c
-- configuration:
-    - https://github.com/libconfuse/libconfuse
-    - https://github.com/tjol/ckdl
-- extended standard library:
-    - https://github.com/tezc/sc
-    - https://github.com/srdja/Collections-C
-    - https://github.com/LeoVen/C-Macro-Collections
-- https://github.com/troglobit/libCello
-- script: https://github.com/ryanmjacobs/c
-- ...: https://github.com/clibs/clib/wiki/Packages
+- Lexer
+- Parser (structs, functions, vars, blocks, if/while)
+- AST shape finalized
+- Types: i32, bool, void, structs, pointers
+- Bindings: val / var
 
-## Lack of features
+C code generation for:
 
-Ackchyually...
-Yes language is old, but available everywhere, and battle-tested.
-Libraries are available for decades which greatly extend the language.
+- struct definitions
+- simple functions
+- variable declarations
+- arithmetic
+- conditionals, loops
 
-What I'm trying to say is that many downsides of the language can actually, depending on the situation and people involved, be upsides.
+Good diagnostics for:
 
-What I'm saying is: we should all write more C.
+- type mismatch
+- mutability mismatch
+- undeclared identifier
+- missing return
+- No methods yet (call them as plain functions)
+- No overloading
+- No generics
+- No interfaces
 
-- You need to manually manage your memory, which can appear hard and bug-prone, but done right, is actually very powerful.
-- No objects... kinda. Is that a bad thing?
-- No packages... prefixes for the win.
+Output: You can write a small C-like program in Czar and get a native binary.
+
+### v1 — Ergonomics & Expressiveness
+
+Goal: make the language comfortable
+
+- Method syntax (obj.method(args))
+- Auto-deref for field access and methods
+- Extension methods
+- Overloading (exact-match only)
+- Nullable pointers with null literal
+- Simple dead-store warnings
+- Basic IR for future optimizations
+
+### v2 — Power Features
+
+Goal: add the fun stuff without breaking the philosophy
+
+- Generics (monomorphized):
+    - Option<T>
+    - Result<T, E>
+- Basic interfaces (nominal)
+- Module visibility / exports
+- Inline functions
+- Basic compile-time evaluation (constants)
+- More numeric types (u32, i64, f64, etc.)
+
+### v3 — Serious Compiler Stuff
+
+Goal: industrialize the toolchain
+
+- IR-level optimizations
+- Register allocation if going native
+- Alternative backends (LLVM IR, Zig IR)
+- Link-time optimizations
+- Borrow-checker-lite for pointer safety (optional mode)
+- Escape analysis
+- Static analysis tools
+
+## Why C as the Backend?
+
+- Portable and stable ABI
+- Extremely predictable semantics
+- Best route for a “better C”
+- Easy interop with existing systems
+- Gives your compiler maximum responsibility (you learn more)
+- Enables very small runtime
+- Lets clang/GCC do heavy optimizations
+- Later you can add secondary backends (Zig, LLVM IR) as experiments.
+
+## Status
+
+This README describes the design contract for v0 → v3.
+Implementation starts with:
+
+- lexer.lua
+- parser.lua
+- ast.lua
+- typechecker.lua
+- codegen.lua
+- driver.lua
