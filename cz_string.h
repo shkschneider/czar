@@ -70,18 +70,24 @@ string strrpl(string s, unsigned char from, unsigned char to) {
 
 string strdrp(string s, unsigned char c) { // alloc
     string d = strdup(s);
-    while (*d == c) {
-        memmove(d, &d[1], strlen(&d[1]));
-        d[strlen(d) - 1] = '\0';
+    string result = d;
+    // Remove leading instances of c
+    while (*d == c && *d != '\0') {
+        d++;
     }
-    for (unsigned int i = 1; i < strlen(d); i++) {
-        if (d[i] == c) {
-            unsigned int n = strlen(&d[i + 1]);
-            memmove(&d[i], &d[i + 1], n);
-            d[i + n] = '\0';
+    // Shift the string to the beginning
+    if (d != result) {
+        memmove(result, d, strlen(d) + 1);
+    }
+    // Remove all other instances of c
+    size_t write_pos = 0;
+    for (size_t read_pos = 0; result[read_pos] != '\0'; read_pos++) {
+        if (result[read_pos] != c) {
+            result[write_pos++] = result[read_pos];
         }
     }
-    return d;
+    result[write_pos] = '\0';
+    return result;
 }
 
 static inline string strerr() {

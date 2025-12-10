@@ -18,9 +18,9 @@
     } \
 } while (0)
 
-#define list_prepend(lst, node) do \
+#define list_prepend(lst, node) do { \
     if (lst) { \
-        node->next = list; \
+        node->next = lst; \
         lst->prev = node; \
     } \
     lst = node; \
