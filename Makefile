@@ -13,19 +13,19 @@ LUA_OBJECTS = lexer.o parser.o codegen.o cz.o
 LUA_LIBRARY = libczar.a
 
 # Find all test .cz files
-TEST_FILES = $(wildcard tests/test_*.cz)
+TEST_FILES = $(wildcard tests/*.cz)
 EXPECTED_RESULTS = \
-	test_types:42 \
-	test_bindings:30 \
-	test_structs:15 \
-	test_pointers:30 \
-	test_functions:19 \
-	test_arithmetic:53 \
-	test_comparison:1 \
-	test_if_else:50 \
-	test_while:55 \
-	test_comments:60 \
-	test_no_semicolons:15
+	types:42 \
+	bindings:30 \
+	structs:15 \
+	pointers:30 \
+	functions:19 \
+	arithmetic:53 \
+	comparison:1 \
+	if_else:50 \
+	while:55 \
+	comments:60 \
+	no_semicolons:15
 
 # Build the cz binary from Lua bytecode
 build: cz.bin
