@@ -142,8 +142,8 @@ test: build
 # Clean build artifacts
 clean:
 	rm -f ./$(OUT) ./a.out ./*.o ./*.a ./$(OUT) ./$(LUA_LIBRARY) ./main.h
-	find ./tests/*.c -delete
-	find ./tests/* -executable -delete
+	find ./tests -type f -name '*.c' -delete
+	find ./tests -type f -executable -delete
 
 # Install the cz compiler (requires root/sudo for system-wide install)
 install: build
