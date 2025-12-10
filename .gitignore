@@ -53,6 +53,7 @@ tests/bindings
 tests/comments
 tests/comparison
 tests/comprehensive
+tests/comprehensive_null
 tests/error_as_value
 tests/extension_methods
 tests/field_assignment
@@ -62,13 +63,15 @@ tests/logical_operators
 tests/methods
 tests/new_types
 tests/no_semicolons
+tests/null_check
+tests/null_crash
+tests/null_operators
+tests/null_operators_example
 tests/null_pointer
 tests/pointers
 tests/structs
 tests/types
-tests/while
 tests/underscore
 tests/underscore_edge_cases
 tests/underscore_example
-example
-test_functions
+tests/while
