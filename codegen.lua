@@ -138,8 +138,15 @@ end
 
 function Codegen:gen_params(params)
     local parts = {}
+    local underscore_count = 0
     for _, p in ipairs(params) do
-        table.insert(parts, string.format("%s %s", self:c_type(p.type), p.name))
+        local param_name = p.name
+        -- Generate unique name for underscore parameters
+        if param_name == "_" then
+            underscore_count = underscore_count + 1
+            param_name = "_unused_" .. underscore_count
+        end
+        table.insert(parts, string.format("%s %s", self:c_type(p.type), param_name))
     end
     return join(parts, ", ")
 end
@@ -157,6 +164,9 @@ end
 function Codegen:gen_statement(stmt)
     if stmt.kind == "return" then
         return "return " .. self:gen_expr(stmt.value) .. ";"
+    elseif stmt.kind == "discard" then
+        -- Discard statement: _ = expr becomes (void)expr;
+        return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
         self:add_var(stmt.name, stmt.type)
         local prefix = stmt.mutable and "" or "const "
@@ -166,6 +176,12 @@ function Codegen:gen_statement(stmt)
         end
         return decl .. ";"
     elseif stmt.kind == "expr_stmt" then
+        -- Check if this is an underscore assignment in expression form
+        local expr = stmt.expression
+        if expr.kind == "assign" and expr.target.kind == "identifier" and expr.target.name == "_" then
+            -- Discard assignment: _ = expr becomes (void)expr;
+            return "(void)(" .. self:gen_expr(expr.value) .. ");"
+        end
         return self:gen_expr(stmt.expression) .. ";"
     elseif stmt.kind == "if" then
         return self:gen_if(stmt)
@@ -318,11 +334,26 @@ function Codegen:gen_function(fn)
     local sig = string.format("%s %s(%s)", self:c_type(fn.return_type), c_name, self:gen_params(fn.params))
     self:emit(sig)
     self:push_scope()
-    -- Add function parameters to scope
+    self:emit("{")
+    
+    -- Add unused parameter suppressions for underscore parameters
+    local underscore_count = 0
     for _, param in ipairs(fn.params) do
-        self:add_var(param.name, param.type)
+        if param.name == "_" then
+            underscore_count = underscore_count + 1
+            local param_name = "_unused_" .. underscore_count
+            self:emit("    (void)" .. param_name .. ";")
+        else
+            -- Add regular parameters to scope
+            self:add_var(param.name, param.type)
+        end
     end
-    self:gen_block(fn.body)
+    
+    -- Generate function body statements
+    for _, stmt in ipairs(fn.body.statements) do
+        self:emit("    " .. self:gen_statement(stmt))
+    end
+    self:emit("}")
     self:pop_scope()
     self:emit("")
 end
