@@ -1,7 +1,10 @@
-# Czar build artifacts
 cz
+*.o
+*.a
 a.out
+main.h
 bytecode.c
+libczar.a
 
 # Object files
 *.o
