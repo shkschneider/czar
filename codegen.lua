@@ -103,10 +103,25 @@ function Codegen:c_type(type_node)
     end
 end
 
+function Codegen:c_type_in_struct(type_node, struct_name)
+    if not type_node then return "void" end
+    if type_node.kind == "pointer" then
+        local base_type = type_node.to
+        if base_type.kind == "named_type" and base_type.name == struct_name then
+            -- Self-referential pointer, use "struct Name*"
+            return "struct " .. base_type.name .. "*"
+        else
+            return self:c_type(base_type) .. "*"
+        end
+    else
+        return self:c_type(type_node)
+    end
+end
+
 function Codegen:gen_struct(item)
     self:emit("typedef struct " .. item.name .. " {")
     for _, field in ipairs(item.fields) do
-        self:emit(string.format("    %s %s;", self:c_type(field.type), field.name))
+        self:emit(string.format("    %s %s;", self:c_type_in_struct(field.type, item.name), field.name))
     end
     self:emit("} " .. item.name .. ";")
     self:emit("")
@@ -228,9 +243,37 @@ function Codegen:gen_expr(expr)
     elseif expr.kind == "identifier" then
         return expr.name
     elseif expr.kind == "binary" then
-        return string.format("(%s %s %s)", self:gen_expr(expr.left), expr.op, self:gen_expr(expr.right))
+        -- Handle null coalescing operator
+        if expr.op == "??" then
+            local left = self:gen_expr(expr.left)
+            local right = self:gen_expr(expr.right)
+            -- For null coalescing, we use a statement expression with a temporary
+            -- This works for pointer types primarily
+            return string.format("({ __auto_type _tmp = %s; _tmp ? _tmp : (%s); })", left, right)
+        else
+            return string.format("(%s %s %s)", self:gen_expr(expr.left), expr.op, self:gen_expr(expr.right))
+        end
     elseif expr.kind == "unary" then
         return string.format("(%s%s)", expr.op, self:gen_expr(expr.operand))
+    elseif expr.kind == "null_check" then
+        -- Null check operator: expr!!
+        local operand = self:gen_expr(expr.operand)
+        -- Generate: assert-like behavior
+        return string.format("({ __auto_type _tmp = %s; if (!_tmp) { fprintf(stderr, \"null check failed\\n\"); abort(); } _tmp; })", operand)
+    elseif expr.kind == "safe_nav" then
+        -- Safe navigation: expr?.field
+        local obj_expr = self:gen_expr(expr.object)
+        -- Determine if we need -> or .
+        local use_arrow = false
+        if expr.object.kind == "identifier" then
+            local var_type = self:get_var_type(expr.object.name)
+            if var_type and self:is_pointer_type(var_type) then
+                use_arrow = true
+            end
+        end
+        local accessor = use_arrow and "->" or "."
+        -- For safe navigation, return the field or a default value (0 for numbers, NULL for pointers)
+        return string.format("({ __auto_type _obj = %s; _obj ? _obj%s%s : 0; })", obj_expr, accessor, expr.field)
     elseif expr.kind == "assign" then
         return string.format("(%s = %s)", self:gen_expr(expr.target), self:gen_expr(expr.value))
     elseif expr.kind == "call" then
@@ -365,6 +408,7 @@ function Codegen:generate()
     self:emit("#include <stdint.h>")
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")
+    self:emit("#include <stdlib.h>")
     self:emit("")
 
     for _, item in ipairs(self.ast.items) do

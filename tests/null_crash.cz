@@ -1,0 +1,11 @@
+// Test that !! crashes on null
+
+struct Data {
+    value: i32
+}
+
+fn main() -> i32 {
+    var ptr: *Data = null
+    var checked: *Data = ptr!!  // This should crash
+    return 0
+}

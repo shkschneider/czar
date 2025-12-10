@@ -1,0 +1,45 @@
+// Comprehensive test of null-safety operators
+
+struct Node {
+    value: i32
+    next: *Node
+}
+
+fn create_node(v: i32) -> *Node {
+    var n: Node = Node { value: v, next: null }
+    return &n
+}
+
+fn main() -> i32 {
+    // Test 1: Null coalescing with integer literals
+    val test1: i32 = 0 ?? 10  // Since 0 is falsy, this should be 10
+    
+    // Test 2: Null coalescing with pointers
+    var null_ptr: *Node = null
+    var n1: Node = Node { value: 5, next: null }
+    var valid_ptr: *Node = &n1
+    var result_ptr: *Node = null_ptr ?? valid_ptr
+    
+    // Test 3: Safe navigation on null pointer
+    var n2: *Node = null
+    val safe1: i32 = n2?.value ?? 100  // Should be 100
+    
+    // Test 4: Safe navigation on valid pointer
+    var n3: Node = Node { value: 25, next: null }
+    var p3: *Node = &n3
+    val safe2: i32 = p3?.value ?? 0   // Should be 25
+    
+    // Test 5: Null check on valid pointer (should not crash)
+    var n4: Node = Node { value: 15, next: null }
+    var p4: *Node = &n4
+    var checked: *Node = p4!!  // Should succeed
+    
+    // Test 6: Safe navigation on pointer field
+    var n5: Node = Node { value: 30, next: null }
+    var p5: *Node = &n5
+    var n6: Node = Node { value: 40, next: p5 }
+    var p6: *Node = &n6
+    
+    // Return sum (test1=10, safe1=100, safe2=25)
+    return test1 + safe1 + safe2  // 10 + 100 + 25 = 135
+}
