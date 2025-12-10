@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y luajit libluajit-5.1-dev gcc make
+        
+    - name: Build cz binary
+      run: make build
+      
+    - name: Run test suite
+      run: make test
+      
+    - name: Display test results
+      if: always()
+      run: |
+        echo "Test execution completed"
+        if [ -f tests/arithmetic ]; then
+          echo "Test binaries were generated"
+        fi
