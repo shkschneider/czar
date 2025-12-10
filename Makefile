@@ -34,7 +34,7 @@ LUA_SOURCES = main.lua lexer.lua parser.lua codegen.lua
 LUA_OBJECTS = main.o lexer.o parser.o codegen.o
 LUA_LIBRARY = libczar.a
 
-.PHONY: all build clean test install help
+.PHONY: all build clean test syntax-check install help
 
 # Default target: build and run tests
 all: build test
@@ -42,8 +42,12 @@ all: build test
 # Helper
 help:
 	@echo "Czar Compiler Build System"
-	@echo "make [STATIC=1] build"
-	@make -qp | grep -oP '^[a-z]+:( [a-z]+)?' | cut -d':' -f1 | sort
+	@echo "Commands:"
+	@echo "  make build         - Build the cz compiler"
+	@echo "  make test          - Run full test suite with exit code validation"
+	@echo "  make syntax-check  - Quick syntax check of all test files"
+	@echo "  make clean         - Clean build artifacts"
+	@echo "  make install       - Install cz to /usr/local/bin"
 
 # Build the cz binary from Lua bytecode
 build: $(OUT)
@@ -113,7 +117,7 @@ test: build
 	for test in $(TEST_FILES); do \
 		name=$$(basename $$test .cz); \
 		echo -n "Testing $$name..."; \
-		./cz $$test -o tests/$$name > /dev/null 2>&1; \
+		./cz build $$test -o tests/$$name > /dev/null 2>&1; \
 		compile_status=$$?; \
 		if [ $$compile_status -ne 0 ] || [ ! -f tests/$$name ]; then \
 			echo " FAIL: Compilation failed"; \
@@ -138,6 +142,10 @@ test: build
 	done; \
 	echo "Results: $$passed passed, $$failed failed"; \
 	if [ $$failed -gt 0 ]; then exit 1; fi
+
+# Quick syntax check using cz test command
+syntax-check: build
+	@./cz test tests/
 
 # Clean build artifacts
 clean:
