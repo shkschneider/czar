@@ -1,6 +1,12 @@
-# ---> C
-# Prerequisites
-*.d
+cz
+a.out
+my_program
+example.c
+*.o
+*.a
+cz.bin
+libczar.a
+bytecode_sizes.c
 
 # Object files
 *.o
@@ -42,22 +48,3 @@
 *.su
 *.idb
 *.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# Czar-specific
-a.out
-my_program
-example.c
-*.o
-*.a
-cz.bin
-libczar.a
-bytecode_sizes.c
