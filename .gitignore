@@ -57,3 +57,5 @@ cz
 cz_case
 cz_test
 demo
+test/*_test
+!test/*_test.c
