@@ -384,6 +384,7 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - Functions with parameters and return values
 - Control flow: if/else and while loops
 - Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (&&, ||)
+- Null-safety operators: `!!` (null-check), `??` (null-coalescing), `?.` (safe navigation)
 - Struct literals and field access
 
 **v1 Features (Halfway Complete):**
@@ -492,11 +493,11 @@ fn scale(self: *Vec2, factor: i32) -> void {
 
 fn main() -> i32 {
     var v: Vec2 = Vec2 { x: 3, y: 4 }
-    
+
     // Call methods with auto-addressing
     val l: i32 = v.length()  // No need for &v
     v.scale(2)
-    
+
     return l  // returns 25
 }
 ```
