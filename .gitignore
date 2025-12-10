@@ -71,3 +71,4 @@ tests/underscore
 tests/underscore_edge_cases
 tests/underscore_example
 example
+test_functions
