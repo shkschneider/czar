@@ -5,6 +5,9 @@
 local Codegen = {}
 Codegen.__index = Codegen
 
+-- Constants
+local SELF_PARAM_NAME = "self"
+
 local builtin_calls = {
     print_i32 = function(args)
         return string.format('printf("%%d\\n", %s)', args[1])
@@ -19,7 +22,7 @@ function Codegen.new(ast)
     local self = {
         ast = ast,
         structs = {},
-        functions = {},  -- Store function/method info
+        functions = {},  -- Store function/method definitions indexed by receiver type for method call resolution
         out = {},
         scope_stack = {},
     }
@@ -45,7 +48,7 @@ function Codegen:collect_structs_and_functions()
                 self.functions[item.receiver_type][item.name] = item
             else
                 -- Regular function, also check if it's an extension method
-                if #item.params > 0 and item.params[1].name == "self" then
+                if #item.params > 0 and item.params[1].name == SELF_PARAM_NAME then
                     -- Extension method: first param is self
                     local self_type = item.params[1].type
                     local receiver_type_name = nil
