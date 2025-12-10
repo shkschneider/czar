@@ -5,6 +5,7 @@
 #include <luajit.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#include "main.h"
 
 // Declare external bytecode symbols
 extern const char luaJIT_BC_lexer[];
@@ -23,7 +24,7 @@ static int load_module(lua_State *L, const char *name, const char *bytecode, siz
     // Get package.preload table
     lua_getglobal(L, "package");
     lua_getfield(L, -1, "preload");
-    
+
     // Load the bytecode
     if (luaL_loadbuffer(L, bytecode, size, name) != 0) {
         const char *err = lua_tostring(L, -1);
@@ -34,11 +35,11 @@ static int load_module(lua_State *L, const char *name, const char *bytecode, siz
         }
         return -1;
     }
-    
+
     // Set package.preload[name] = loaded_chunk
     lua_setfield(L, -2, name);
     lua_pop(L, 2); // pop preload and package tables
-    
+
     return 0;
 }
 
@@ -48,10 +49,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to create Lua state\n");
         return 1;
     }
-    
+
     // Open standard libraries
     luaL_openlibs(L);
-    
+
     // Set up arg table for Lua (arg[0] = program name, arg[1] = first argument, etc.)
     lua_newtable(L);
     for (int i = 0; i < argc; i++) {
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
         lua_rawseti(L, -2, i);
     }
     lua_setglobal(L, "arg");
-    
+
     // Load modules into package.preload
     if (load_module(L, "lexer", luaJIT_BC_lexer, luaJIT_BC_lexer_size) != 0 ||
         load_module(L, "parser", luaJIT_BC_parser, luaJIT_BC_parser_size) != 0 ||
@@ -67,7 +68,7 @@ int main(int argc, char **argv) {
         lua_close(L);
         return 1;
     }
-    
+
     // Load and run the main script
     if (luaL_loadbuffer(L, luaJIT_BC_main, luaJIT_BC_main_size, "main") != 0) {
         const char *err = lua_tostring(L, -1);
@@ -79,7 +80,7 @@ int main(int argc, char **argv) {
         lua_close(L);
         return 1;
     }
-    
+
     if (lua_pcall(L, 0, 0, 0) != 0) {
         const char *err = lua_tostring(L, -1);
         if (err) {
@@ -90,7 +91,7 @@ int main(int argc, char **argv) {
         lua_close(L);
         return 1;
     }
-    
+
     lua_close(L);
     return 0;
 }
