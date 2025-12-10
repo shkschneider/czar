@@ -1,0 +1,24 @@
+// Test heap allocation with 'new' keyword and automatic cleanup
+struct Point {
+    x: i32
+    y: i32
+}
+
+fn modify_point(p: *Point) -> void {
+    p.x = 50
+    p.y = 25
+}
+
+fn main() -> i32 {
+    // Allocate on heap using 'new'
+    p: *Point = new Point { x: 10, y: 20 }
+    
+    // Modify through pointer
+    modify_point(p)
+    
+    // Access fields
+    result: i32 = p.x + p.y
+    
+    // p is automatically freed at scope exit
+    return result  // should return 75
+}
