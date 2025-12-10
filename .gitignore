@@ -56,3 +56,8 @@ dkms.conf
 a.out
 my_program
 example.c
+*.o
+*.a
+cz.bin
+libczar.a
+bytecode_sizes.c
