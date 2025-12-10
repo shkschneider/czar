@@ -1,0 +1,68 @@
+// Example demonstrating null-safety operators in Czar
+// This file shows how to use !!, ??, and ?. operators
+
+struct Config {
+    timeout: i32
+    retries: i32
+}
+
+struct Service {
+    name: i32
+    config: *Config
+}
+
+// Returns null if flag is true
+fn maybe_service(should_fail: bool) -> *Service {
+    if should_fail {
+        return null
+    } else {
+        var cfg: Config = Config { timeout: 30, retries: 3 }
+        var svc: Service = Service { name: 100, config: &cfg }
+        return &svc
+    }
+}
+
+fn main() -> i32 {
+    // Example 1: Null-coalescing operator (??)
+    // Provides a default value when the left side is null (or falsy)
+    var service1: *Service = null
+    var cfg1: Config = Config { timeout: 10, retries: 1 }
+    var svc1: Service = Service { name: 200, config: &cfg1 }
+    var fallback: *Service = &svc1
+    var result1: *Service = service1 ?? fallback  // Uses fallback
+    
+    // Example 2: Safe navigation operator (?.)
+    // Accesses a field only if the pointer is not null
+    var service2: *Service = null
+    val timeout1: i32 = service2?.name ?? 5  // Returns 5 (service2 is null)
+    
+    var cfg2: Config = Config { timeout: 20, retries: 2 }
+    var svc2: Service = Service { name: 300, config: &cfg2 }
+    var service3: *Service = &svc2
+    val timeout2: i32 = service3?.name ?? 5  // Returns 300 (service3 is not null)
+    
+    // Example 3: Null-check operator (!!)
+    // Crashes the program if the value is null
+    var cfg3: Config = Config { timeout: 15, retries: 4 }
+    var svc3: Service = Service { name: 400, config: &cfg3 }
+    var service4: *Service = &svc3
+    var checked: *Service = service4!!  // Succeeds, service4 is not null
+    
+    // Example 4: Chaining operators
+    // You can combine ?. and ?? to safely access fields with defaults
+    var service5: *Service = null
+    val chained_timeout: i32 = service5?.name ?? 99  // Returns 99
+    
+    var cfg4: Config = Config { timeout: 25, retries: 5 }
+    var svc4: Service = Service { name: 500, config: &cfg4 }
+    var service6: *Service = &svc4
+    val chained_timeout2: i32 = service6?.name ?? 99  // Returns 500
+    
+    // Calculate result
+    // timeout1=5, timeout2=300, chained_timeout=99, chained_timeout2=500
+    // Total would be 904, but we'll return a smaller value for testing
+    // Let's return: (timeout1 + timeout2) - (chained_timeout + chained_timeout2) / 10
+    // = (5 + 300) - (99 + 500) / 10 = 305 - 59 = 246 (still too big)
+    // Just return a simple sum that's < 256
+    return timeout1 + chained_timeout  // 5 + 99 = 104
+}
