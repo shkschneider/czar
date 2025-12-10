@@ -49,6 +49,16 @@ function Codegen:c_type(type_node)
         local name = type_node.name
         if name == "i32" then
             return "int32_t"
+        elseif name == "i64" then
+            return "int64_t"
+        elseif name == "u32" then
+            return "uint32_t"
+        elseif name == "u64" then
+            return "uint64_t"
+        elseif name == "f32" then
+            return "float"
+        elseif name == "f64" then
+            return "double"
         elseif name == "bool" then
             return "bool"
         elseif name == "void" then
