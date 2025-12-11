@@ -471,18 +471,29 @@ function Codegen:gen_expr(expr)
             error("Cannot determine type for clone operation")
         end
         
-        local target_type_str = self:c_type(target_type)
+        -- In implicit pointer model, struct variables are pointers
+        -- We need to dereference them to clone the value
+        local actual_type = target_type
+        local needs_deref = false
         
-        -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type)expr; _ptr; })
+        if target_type.kind == "pointer" then
+            -- Source is a pointer, need to dereference it
+            actual_type = target_type.to
+            needs_deref = true
+        end
+        
+        local target_type_str = self:c_type(actual_type)
+        local source_expr = needs_deref and ("*" .. expr_str) or expr_str
+        
+        -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = *source_ptr; _ptr; })
         if expr.target_type and source_type then
             -- With cast
-            local source_type_str = self:c_type(source_type)
             return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = (%s)%s; _ptr; })", 
-                target_type_str, target_type_str, target_type_str, expr_str)
+                target_type_str, target_type_str, target_type_str, source_expr)
         else
             -- Without cast
             return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = %s; _ptr; })", 
-                target_type_str, target_type_str, expr_str)
+                target_type_str, target_type_str, source_expr)
         end
     elseif expr.kind == "binary" then
         -- Handle null coalescing operator
