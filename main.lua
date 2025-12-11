@@ -145,6 +145,12 @@ local function cmd_generator(args)
 
     local source_path = args[1]
     
+    -- Validate that the source file has a .cz extension
+    if not source_path:match("%.cz$") then
+        io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
+        os.exit(1)
+    end
+    
     -- Generate C code
     local c_source, err = generator.generate_c(source_path)
     if not c_source then
@@ -154,10 +160,6 @@ local function cmd_generator(args)
 
     -- Determine output path (.cz -> .c)
     local output_path = source_path:gsub("%.cz$", ".c")
-    if output_path == source_path then
-        -- No .cz extension, just append .c
-        output_path = source_path .. ".c"
-    end
 
     -- Write C file
     local ok, err = generator.write_c_file(c_source, output_path)
@@ -188,6 +190,9 @@ local function cmd_build(args)
                 usage()
             end
             output_path = args[i]
+        else
+            io.stderr:write(string.format("Error: unknown option '%s'\n", args[i]))
+            usage()
         end
         i = i + 1
     end
