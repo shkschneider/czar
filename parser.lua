@@ -119,6 +119,14 @@ function Parser:parse_function()
     
     self:expect("LPAREN")
     local params = {}
+    
+    -- For methods (Type.method_name), add implicit mutable self parameter
+    if receiver_type then
+        local self_type = { kind = "named_type", name = receiver_type }
+        local self_param_type = { kind = "pointer", to = self_type, is_mut = true }
+        table.insert(params, { name = "self", type = self_param_type })
+    end
+    
     if not self:check("RPAREN") then
         repeat
             local is_mut = self:match("KEYWORD", "mut") ~= nil
