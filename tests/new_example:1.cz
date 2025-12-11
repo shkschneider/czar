@@ -2,8 +2,8 @@
 // Demonstrates the new keyword for heap allocation with scope-based cleanup
 
 struct Person {
-    mut i32 age
-    mut i32 score
+    i32 age
+    i32 score
 }
 
 fn update_age(mut Person p) -> void {

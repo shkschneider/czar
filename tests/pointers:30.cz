@@ -1,7 +1,7 @@
 // Test pointers and address-of operator
 struct Vec2 {
-    mut i32 x
-    mut i32 y
+    i32 x
+    i32 y
 }
 
 fn not_modify(Vec2 p) -> void {
@@ -16,7 +16,7 @@ fn modify(mut Vec2 p) -> void {
 }
 
 fn main() -> i32 {
-    Vec2 v = Vec2 { x: 1, y: 2 }
+    mut Vec2 v = Vec2 { x: 1, y: 2 }
     not_modify(v)
     modify(mut v)
     return v.x + v.y     // should return 30

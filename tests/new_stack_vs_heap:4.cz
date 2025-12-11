@@ -4,7 +4,7 @@
 // Both are copied when passed to functions unless mut is used
 
 struct Node {
-    mut i32 value
+    i32 value
 }
 
 fn modify_by_copy(Node n) -> void {
@@ -29,7 +29,7 @@ fn main() -> i32 {
     modify_by_copy(heap_node)
     
     // Both should still have original values (10 and 20)
-    mut i32 result = 0
+    i32 result = 0
     if stack_node.value == 10 {
         result = result + 1  // Pass
     }
