@@ -167,6 +167,18 @@ function Codegen:c_type_in_struct(type_node, struct_name)
         else
             return self:c_type(base_type) .. "*"
         end
+    elseif type_node.kind == "named_type" then
+        -- In implicit pointer model, struct-typed fields should be pointers
+        if self:is_struct_type(type_node) then
+            -- Check for self-referential (non-pointer) - treat as pointer
+            if type_node.name == struct_name then
+                return "struct " .. type_node.name .. "*"
+            else
+                return self:c_type(type_node) .. "*"
+            end
+        else
+            return self:c_type(type_node)
+        end
     else
         return self:c_type(type_node)
     end
@@ -286,7 +298,19 @@ function Codegen:gen_params(params)
         if param_name == "_" then
             param_name = "_unused_" .. i
         end
-        table.insert(parts, string.format("%s %s", self:c_type(p.type), param_name))
+        
+        local type_str = self:c_type(p.type)
+        
+        -- For parameters, check if this is a mutable pointer (mut parameter)
+        -- If it's a pointer type with is_mut flag, it should be non-const
+        -- Otherwise, struct pointers should be const (for pass-by-value semantics with implicit pointers)
+        if p.type.kind == "pointer" and p.type.is_mut then
+            -- Mutable parameter - no const
+            table.insert(parts, string.format("%s %s", type_str, param_name))
+        else
+            -- For other parameters, leave as-is (c_type handles it)
+            table.insert(parts, string.format("%s %s", type_str, param_name))
+        end
     end
     return join(parts, ", ")
 end
