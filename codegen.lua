@@ -38,6 +38,15 @@ function Codegen:collect_structs_and_functions()
         if item.kind == "struct" then
             self.structs[item.name] = item
         elseif item.kind == "function" then
+            -- Check if this function returns null (making return type a pointer)
+            if item.return_type and item.return_type.kind == "named_type" then
+                local returns_null = self:function_returns_null(item)
+                if returns_null and self.structs[item.return_type.name] then
+                    -- Convert return type to pointer
+                    item.return_type = { kind = "pointer", to = item.return_type }
+                end
+            end
+            
             -- Store function info for method call resolution
             local func_name = item.name
             if item.receiver_type then
@@ -72,6 +81,34 @@ function Codegen:collect_structs_and_functions()
             end
         end
     end
+end
+
+function Codegen:function_returns_null(fn)
+    -- Recursively check if function body contains return null
+    local function check_stmt(stmt)
+        if stmt.kind == "return" then
+            if stmt.value and stmt.value.kind == "null" then
+                return true
+            end
+        elseif stmt.kind == "if" then
+            if check_stmt(stmt.then_block) then return true end
+            if stmt.else_block and check_stmt(stmt.else_block) then return true end
+        elseif stmt.kind == "while" then
+            if check_stmt(stmt.body) then return true end
+        end
+        return false
+    end
+    
+    local function check_block(block)
+        for _, stmt in ipairs(block.statements or {}) do
+            if check_stmt(stmt) then
+                return true
+            end
+        end
+        return false
+    end
+    
+    return check_block(fn.body)
 end
 
 function Codegen:is_pointer_type(type_node)
@@ -253,17 +290,23 @@ function Codegen:gen_statement(stmt)
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
-        -- Check if initializer is a clone or new_heap expression
+        -- Check if initializer is a clone, new_heap expression, or null
         local is_clone = stmt.init and stmt.init.kind == "clone"
         local is_new_heap = stmt.init and stmt.init.kind == "new_heap"
+        local is_null = stmt.init and stmt.init.kind == "null"
         
-        if is_clone or is_new_heap then
-            -- For clone/new, store as pointer type internally but present as value type
+        if is_clone or is_new_heap or is_null then
+            -- For clone/new/null, store as pointer type internally
             local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
             self:add_var(stmt.name, ptr_type, stmt.mutable)
-            local prefix = stmt.mutable and "" or "const "
+            -- For struct types, don't use const even if not mutable
+            -- Field mutability is checked at compile time instead
+            local is_struct_type = self:is_struct_type(stmt.type)
+            local prefix = (stmt.mutable or is_struct_type) and "" or "const "
             local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
-            decl = decl .. " = " .. self:gen_expr(stmt.init)
+            if stmt.init then
+                decl = decl .. " = " .. self:gen_expr(stmt.init)
+            end
             return decl .. ";"
         else
             self:add_var(stmt.name, stmt.type, stmt.mutable)
