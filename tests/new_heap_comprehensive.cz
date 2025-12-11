@@ -1,0 +1,52 @@
+// Test new keyword for heap allocation - comprehensive test
+
+struct Person {
+    i32 age
+    i32 score
+}
+
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() -> i32 {
+    // Test 1: Basic heap allocation with new keyword
+    // Note: Variables declared as types, not pointers - compiler handles internally
+    mut Person person = new Person { age: 25, score: 50 }
+    
+    // Test 2: Multiple heap allocations
+    mut Point p1 = new Point { x: 10, y: 20 }
+    mut Point p2 = new Point { x: 5, y: 15 }
+    
+    // Test 3: Access and modify fields (compiler handles pointer dereferencing)
+    person.age = 30
+    person.score = 45
+    
+    p1.x = 100
+    p2.y = 200
+    
+    // Test 4: Verify values
+    mut i32 result = 0
+    if person.age == 30 {
+        result = result + 1
+    }
+    if person.score == 45 {
+        result = result + 1
+    }
+    if p1.x == 100 {
+        result = result + 1
+    }
+    if p1.y == 20 {
+        result = result + 1
+    }
+    if p2.x == 5 {
+        result = result + 1
+    }
+    if p2.y == 200 {
+        result = result + 1
+    }
+    
+    // Should return 6 if all checks pass
+    return result
+}
