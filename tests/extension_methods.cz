@@ -1,7 +1,7 @@
 // Test extension methods (old style: fn with self parameter)
 struct Vec2 {
-    i32 x
-    i32 y
+    mut i32 x
+    mut i32 y
 }
 
 fn length(Vec2 self) -> i32 {
