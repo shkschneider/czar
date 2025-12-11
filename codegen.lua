@@ -351,6 +351,26 @@ function Codegen:infer_type(expr)
             if func_info then
                 return func_info.return_type
             end
+        elseif expr.callee.kind == "method_ref" then
+            -- Handle method calls: obj:method()
+            local obj_type = self:infer_type(expr.callee.object)
+            if obj_type then
+                local type_name = self:type_name(obj_type)
+                if type_name and self.functions[type_name] then
+                    local method_info = self.functions[type_name][expr.callee.method]
+                    if method_info then
+                        return method_info.return_type
+                    end
+                end
+            end
+        end
+    elseif expr.kind == "static_method_call" then
+        -- Handle static method calls: Type.method(args)
+        if self.functions[expr.type_name] then
+            local method_info = self.functions[expr.type_name][expr.method]
+            if method_info then
+                return method_info.return_type
+            end
         end
     end
     return nil
@@ -367,6 +387,9 @@ function Codegen:types_match(type1, type2)
     elseif type1.kind == "pointer" and type1.is_clone and type2.kind == "named_type" then
         -- Special case: clone types match their base type
         return self:types_match(type1.to, type2)
+    elseif type2.kind == "pointer" and type2.is_clone and type1.kind == "named_type" then
+        -- Special case: clone types match their base type (symmetric)
+        return self:types_match(type2.to, type1)
     end
     return false
 end
@@ -645,12 +668,18 @@ function Codegen:gen_expr(expr)
         -- Handle 'is' keyword for type checking
         -- This is a compile-time check that always returns true or false
         local expr_type = self:infer_type(expr.expr)
+        if not expr_type then
+            error("Cannot infer type for 'is' check expression")
+        end
         local target_type = expr.type
         local matches = self:types_match(expr_type, target_type)
         return matches and "true" or "false"
     elseif expr.kind == "type_of" then
         -- Handle 'type' built-in that returns a const string
         local expr_type = self:infer_type(expr.expr)
+        if not expr_type then
+            error("Cannot infer type for 'type' built-in expression")
+        end
         local type_name = self:type_name_string(expr_type)
         return string.format("\"%s\"", type_name)
     elseif expr.kind == "unary" then
