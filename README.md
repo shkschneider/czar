@@ -1,10 +1,27 @@
 # Czar
 
+<<<<<<< HEAD
 > Caesar: "Veni. Vidi. Vici."
+=======
+> A small, often explicit, low-level, statically typed systems language.
+>>>>>>> c5ce96c (readme)
 
 *Just kidding.*
 
+<<<<<<< HEAD
 This is a toy language I'm trying to make to learn more about languages and compilation.
+=======
+- Explicit over magical
+- Static types
+- Value semantics by default
+- Explicit `mut`ability
+- Implicit pointers (no `&` nor `*`)
+- Stack/Heap allocations + defer free (no GC)
+- Structs with methods and static functions + extensions
+- Error-as-value
+- C-level performance
+- Goal: Simple, friendly compiler errors
+>>>>>>> c5ce96c (readme)
 
 > Someone had good intentions at each step along the way, but nobody stopped to ask why
 
@@ -41,7 +58,7 @@ This is a toy language I'm trying to make to learn more about languages and comp
 
 ## Language Philosophy
 
-Czar is “C with sane defaults”:
+Czar is "C with sane defaults" with some of my own "twists":
 
 - Memory is explicit.
 - Mutability is explicit.
