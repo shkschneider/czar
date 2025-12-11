@@ -64,6 +64,11 @@ function Codegen:collect_structs_and_functions()
                         self.functions[receiver_type_name][func_name] = item
                     end
                 end
+                -- Store all regular functions by name for warning checks
+                if not self.functions["__global__"] then
+                    self.functions["__global__"] = {}
+                end
+                self.functions["__global__"][func_name] = item
             end
         end
     end
@@ -478,9 +483,39 @@ function Codegen:gen_expr(expr)
         -- Regular function call
         local callee = self:gen_expr(expr.callee)
         local args = {}
-        for _, a in ipairs(expr.args) do
-            table.insert(args, self:gen_expr(a))
+        
+        -- Check for mut argument warnings and handle properly
+        if expr.callee.kind == "identifier" and self.functions["__global__"] then
+            local func_def = self.functions["__global__"][expr.callee.name]
+            if func_def then
+                for i, a in ipairs(expr.args) do
+                    if a.kind == "mut_arg" and func_def.params[i] then
+                        local param = func_def.params[i]
+                        -- Check if parameter is not a pointer (not mut)
+                        if param.type.kind ~= "pointer" or not param.type.is_mut then
+                            io.stderr:write(string.format("Warning: passing mut argument %d to function '%s' but parameter '%s' is not mut. Modifications will not affect caller.\n", 
+                                i, expr.callee.name, param.name))
+                            -- Generate without & since parameter is not mut
+                            table.insert(args, self:gen_expr(a.expr))
+                        else
+                            -- Parameter is mut, generate with &
+                            table.insert(args, self:gen_expr(a))
+                        end
+                    else
+                        table.insert(args, self:gen_expr(a))
+                    end
+                end
+            else
+                for _, a in ipairs(expr.args) do
+                    table.insert(args, self:gen_expr(a))
+                end
+            end
+        else
+            for _, a in ipairs(expr.args) do
+                table.insert(args, self:gen_expr(a))
+            end
         end
+        
         if builtin_calls[callee] then
             return builtin_calls[callee](args)
         end
