@@ -626,23 +626,28 @@ function Codegen:gen_expr(expr)
         end
 
         if method then
-            -- Generate function call with auto-addressing if needed
+            -- Generate function call with caller-controlled mutability semantics
             local args = {}
             for i, a in ipairs(expr.args) do
                 local arg_expr = self:gen_expr(a)
 
-                -- Handle auto-addressing for first parameter (self)
-                if i == 1 and #method.params > 0 then
-                    local first_param_type = method.params[1].type
-                    if first_param_type.kind == "pointer" then
-                        -- Method expects a pointer, check if arg is a value
-                        local arg_type = nil
-                        if a.kind == "identifier" then
-                            arg_type = self:get_var_type(a.name)
-                        end
-
-                        if arg_type and arg_type.kind ~= "pointer" then
-                            -- Arg is a value, add &
+                -- Apply caller-controlled mutability semantics
+                if #method.params >= i then
+                    local param = method.params[i]
+                    local param_is_mut = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
+                    
+                    if a.kind == "identifier" then
+                        local arg_type = self:get_var_type(a.name)
+                        
+                        -- If arg is a struct pointer and param is NOT mut (expects value), dereference
+                        if arg_type and arg_type.kind == "pointer" and not param_is_mut then
+                            local base_type = arg_type.to
+                            if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
+                                -- Dereference to pass by value
+                                arg_expr = "*" .. arg_expr
+                            end
+                        elseif arg_type and arg_type.kind ~= "pointer" and param_is_mut then
+                            -- Arg is a value but param expects pointer, add &
                             arg_expr = "&" .. arg_expr
                         end
                     end
