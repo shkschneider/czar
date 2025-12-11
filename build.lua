@@ -31,7 +31,7 @@ local function run_binary(binary_path)
     local ret = os.execute(run_cmd)
     
     -- In LuaJIT, os.execute returns the raw system return value
-    -- The exit code is in the high byte, so we need to shift right by 8
+    -- The exit code is in the high byte (shifted left by 8), so we need to shift right by 8
     if type(ret) == "number" then
         -- LuaJIT/Lua 5.1 behavior: return value contains exit code shifted left by 8
         local exit_code = math.floor(ret / 256)
