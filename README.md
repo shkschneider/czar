@@ -1,18 +1,19 @@
 # Czar
 
-> A small, explicit, low-level, statically typed systems language.
+> A small, often explicit, low-level, statically typed systems language.
 
 Czar is a personal “better C” project, inspired by C, Zig, Jai, Go, and Kotlin extension ergonomics, but with its own philosophy:
 
 - Explicit over magical
 - Static types
 - Value semantics by default
-- Pointers when needed
-- Method extensions
+- Explicit `mut`ability
+- Implicit pointers (no `&` nor `*`)
+- Stack/Heap allocations + defer free (no GC)
+- Structs with methods and static functions + extensions
 - Error-as-value
 - C-level performance
-- No GC
-- Simple, friendly compiler errors
+- Goal: Simple, friendly compiler errors
 
 The compiler is written in Lua, and transpiles to portable C as the primary backend.
 
@@ -46,7 +47,7 @@ The compiler is written in Lua, and transpiles to portable C as the primary back
 
 ## Language Philosophy
 
-Czar is “C with sane defaults”:
+Czar is "C with sane defaults" with some of my own "twists":
 
 - Memory is explicit.
 - Mutability is explicit.
@@ -61,23 +62,21 @@ Compiler produces straightforward portable C.
 Czar uses a **type-first syntax** where types come before names:
 
 ```czar
-val i32 x = 42                // immutable variable
-var Vec2 v = Vec2 { x: 1, y: 2 }  // mutable variable
-fn add(i32 a, i32 b) -> i32   // function parameters
+i32 x = 42                        // immutable variable
+mut Vec2 v = Vec2 { x: 1, y: 2 }  // mutable variable
+fn add(i32 a, i32 b) -> i32       // function parameters
 struct Point {
-    i32 x                      // struct fields
+    i32 x                         // struct fields
     i32 y
 }
 ```
 
-**Pointers** are denoted with `*` after the type name:
+**Pointers** are automatic; no `*`:
 
 ```czar
-var Vec2* p = &v              // pointer to Vec2
-fn modify(Vec2* p) -> void    // function taking pointer
+Vec2 p = Vec2 {}              // pointer to Vec2
+fn modify(mut Vec2 p) -> void // function modifying p
 ```
-
-The `*` indicates both that it's a pointer and that the data can be modified through it.
 
 ## v0 Language Features
 
@@ -93,32 +92,31 @@ This is the minimal coherent slice to bootstrap the compiler.
 - Nullable pointers: T* (null allowed)
 - Casts exist but are explicit:
 
-> val i32 x = (i32) someExpr
+> i32 x = cast<i32> someExpr
 
 ### 2. Bindings
 
 ```
-val i32 x = 1   // immutable
-var i32 y = 2   // mutable
+i32 x = 1       // immutable
+mut i32 y = 2   // mutable
 
-var i32 z       // declared, must be assigned before first read
+i32 z           // declared, must be assigned before first read
 z = 10
 ```
 
 ### 3. Pointers
 
 ```
-var Vec2 v = Vec2 { x: 1, y: 2 }
-var Vec2* p = &v
+mut Vec2 v = Vec2 { x: 1, y: 2 }
+mut Vec2 p = v  // implicit pointer
 
 p.x = 10        // auto-deref on .
-(*p).y = 20     // explicit deref if desired
 ```
 
 **Semantics:**
 
-- Param type T → passed by value.
-- Param type T* → passed by pointer (allowing mutation of caller data).
+- Param type `T` → passed by value.
+- Param type `mut T` → passed by pointer.
 
 ### 4. Structs
 
@@ -132,7 +130,7 @@ struct Vec2 {
 **Struct literals:**
 
 ```
-val Vec2 v = Vec2 { x: 3, y: 4 }
+Vec2 v = Vec2 { x: 3, y: 4 }
 ```
 
 ### 5. Functions
@@ -153,23 +151,23 @@ fn add(i32 a, i32 b) -> i32 {
 Internally, methods are just functions with an explicit receiver:
 
 ```
-fn length(Vec2* self) -> i32 {
+fn Vec2:length() -> i32 { // implicit (mutable) self
     return self.x * self.x + self.y * self.y
 }
 ```
 
-v0 might require calling like: `val i32 L = length(&v)`
+v0 might require calling like: `i32 L = Vec2.length(v)`
 
-Later (v1), this becomes: `val i32 L = v.length()` with auto-addressing and auto-deref.
+Later (v1), this becomes: `i32 L = v:length()` with auto-addressing and auto-deref.
 
 ### 7. Extension Methods (v1+)
 
 Any function whose first parameter is T* self or T self becomes callable as a method:
 
 ```
-fn clamp(Vec2* self, i32 min, i32 max) -> void { ... }
+fn Vec2:clamp(i32 min, i32 max) -> void { ... }
 
-v.clamp(0, 10)
+v:clamp(0, 10)
 ```
 
 Works across modules. No inheritance required.
@@ -225,15 +223,15 @@ Written in Lua, producing portable C.
 **Pipeline:**
 
 ```
-source.my
+source.cz
    ↓
 lexer.lua        → tokens
    ↓
 parser.lua       → AST
    ↓
-typechecker.lua  → typed AST (with mutability rules, overload checks later)
+typechecker.lua  → typed AST
    ↓
-c_codegen.lua    → .c output
+codegen.lua      → source.c output
    ↓
 clang/gcc/msvc   → native binary
 ```
@@ -248,44 +246,9 @@ You can add:
 
 But C stays the reference backend.
 
-## Diagnostics Philosophy
-
-Czar's compiler prioritizes clear, specific error messages.
-
-**Examples:**
-
-Mutability mismatch
-
-```
-error: cannot pass immutable value to function requiring a mutable pointer
-  --> main.my:12:9
-   |
-12 |     v.translate(1, 2);
-   |     ^ immutable binding
-note: `translate` requires parameter of type `*Vec2`
-  --> vec2.my:1:1
-```
-
-Overload resolution (v1)
-
-```
-error: no overload of `print` matches argument types (`bool`)
-  --> main.my:7:5
-note: candidates:
-  fn print(i32 x) -> void
-  fn print(char* x) -> void
-```
-
-Type mismatch
-
-```
-error: mismatched types: expected i32, found bool
-  --> main.my:5:22
-```
-
 ## Roadmap
 
-### v0 — Walking Compiler (Foundations)
+### v0 — Working Compiler (Foundations)
 
 Goal: compile trivial programs to C and run them
 
@@ -421,42 +384,9 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 
 ### Usage
 
-**Using the `cz` compiler binary:**
-
-```bash
-# Compile a .cz file to a.out
-./cz program.cz
-
-# Compile with custom output name
-./cz program.cz -o my_program
-
-# Run the compiled binary
-./a.out
 ```
-
-**Using make:**
-
-```bash
-# Build the compiler (dynamic linking, optimized and stripped)
-make build
-
-# Build with static linking (portable, no runtime dependencies)
-make STATIC=1 build
-
-# Run the test suite (all tests in tests/*.cz)
-make test
-
-# Build and run tests
-make all
-
-# Clean build artifacts
-make clean
-
-# Install cz to /usr/local/bin (requires sudo)
-sudo make install
-
-# Show help with all options
-make help
+./build.sh
+./cz ...
 ```
 
 **Build Features:**
@@ -469,69 +399,4 @@ make help
 
 The project includes a comprehensive test suite in the `tests/` directory covering v0 and v1 features:
 
-**v0 Tests:**
-- types.cz - Basic types (i32, bool, void)
-- bindings.cz - val/var bindings
-- structs.cz - Struct definitions and literals
-- pointers.cz - Pointer operations
-- functions.cz - Function calls
-- arithmetic.cz - Arithmetic operators
-- comparison.cz - Comparison operators
-- if_else.cz - Conditional statements
-- while.cz - While loops
-- comments.cz - Comment support
-- no_semicolons.cz - Optional semicolons
-- logical_operators.cz - Logical operators (&&, ||)
-- null_pointer.cz - Null pointer literal
-- field_assignment.cz - Struct field assignment
-
-**v1 Tests:**
-- new_types.cz - New numeric types (i64, u32, u64, f32, f64)
-- methods.cz - Method syntax (Type.method)
-- extension_methods.cz - Extension methods with self parameter
-- error_as_value.cz - Error-as-value pattern
-- comprehensive.cz - Integration test combining all v1 features
-
-Run all tests with: `make test` from the root directory.
-
-### Example
-
-```czar
-// Example demonstrating v1 features
-struct Vec2 {
-    i32 x
-    i32 y
-}
-
-// Method syntax: Type.method(self, ...)
-fn Vec2.length(Vec2* self) -> i32 {
-    return self.x * self.x + self.y * self.y
-}
-
-// Extension method
-fn scale(Vec2* self, i32 factor) -> void {
-    self.x = self.x * factor
-    self.y = self.y * factor
-}
-
-fn main() -> i32 {
-    var Vec2 v = Vec2 { x: 3, y: 4 }
-
-    // Call methods with auto-addressing
-    val i32 l = v.length()  // No need for &v
-    v.scale(2)
-
-    return l  // returns 25
-}
-```
-
-### Next Steps
-
-Future work (v1 completion and v2) includes:
-- ~~ast.lua~~ (represented as tables currently)
-- typechecker.lua - Type checking and semantic analysis
-- ~~Method syntax and extension methods~~ ✅ (Complete)
-- Overloading (exact-match only)
-- ~~More numeric types~~ ✅ (Complete)
-- Nullable pointers with null literal (partially done)
-- IR lowering and optimization passes
+Run all tests with: `./check.sh` from the root directory.
