@@ -9,11 +9,11 @@ ko=0
 for f in $@ ; do
     n=$f
     n=${n##*/}
-    n=${n%.*}
+    n=${n%:*}
     r=$f
     r=${r##*:}
     r=${r%.*}
-    echo -n "tests/${n%_*}..."
+    echo -n "tests/$n..."
     if [[ ! $r =~ ^[0-9]+$ ]] ; then
         r=0
     fi
