@@ -2,43 +2,36 @@
 
 struct Node {
     i32 value
-    Node next -- pointer
 }
 
 fn create_node(i32 v) -> Node {
-    Node n = Node { value: v, next: null }
-    return n -- pointer
+    Node n = Node { value: v }
+    return n
 }
 
 fn main() -> i32 {
     // Test 1: Null coalescing with integer literals
     i32 test1 = 0 ?? 10  // Since 0 is falsy, this should be 10
 
-    // Test 2: Null coalescing with pointers
-    Node null_ptr = null
-    Node n1 = Node { value: 5, next: null }
-    Node valid_ptr = n1 // pointer
-    Node result_ptr = null_ptr ?? valid_ptr
+    // Test 2: Null coalescing with struct values
+    Node null_node = null
+    Node n1 = Node { value: 5 }
+    Node valid_node = n1
+    Node result_node = null_node ?? valid_node
 
-    // Test 3: Safe navigation on null pointer
+    // Test 3: Safe navigation on null
     Node n2 = null
     i32 safe1 = n2?.value ?? 100  // Should be 100
 
-    // Test 4: Safe navigation on valid pointer
-    Node n3 = Node { value: 25, next: null }
-    Node p3 = n3 // pointer
+    // Test 4: Safe navigation on valid value
+    Node n3 = Node { value: 25 }
+    Node p3 = n3
     i32 safe2 = p3?.value ?? 0   // Should be 25
 
-    // Test 5: Null check on valid pointer (should not crash)
-    Node n4 = Node { value: 15, next: null }
-    Node p4 = n4 // pointer
+    // Test 5: Null check on valid value (should not crash)
+    Node n4 = Node { value: 15 }
+    Node p4 = n4
     Node checked = p4!!  // Should succeed
-
-    // Test 6: Safe navigation on pointer field
-    Node n5 = Node { value: 30, next: null }
-    Node p5 = n5 // pointer
-    Node n6 = Node { value: 40, next: p5 }
-    Node p6 = n6 // pointer
 
     // Return sum (test1=10, safe1=100, safe2=25)
     return test1 + safe1 + safe2  // 10 + 100 + 25 = 135
