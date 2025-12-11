@@ -9,7 +9,7 @@ struct Node {
 
 fn modify_by_copy(Node n) -> void {
     // This modifies the copy, not the original
-    n.value = 999
+    // ERROR n.value = 999
 }
 
 fn modify_by_mut(mut Node n) -> void {
@@ -20,27 +20,27 @@ fn modify_by_mut(mut Node n) -> void {
 fn main() -> i32 {
     // Stack allocation
     mut Node stack_node = Node { value: 10 }
-    
+
     // Heap allocation (compiler handles pointer internally)
     mut Node heap_node = new Node { value: 20 }
-    
+
     // Test 1: Copy semantics (no mut)
     modify_by_copy(stack_node)
     modify_by_copy(heap_node)
-    
+
     // Both should still have original values (10 and 20)
-    i32 result = 0
+    mut i32 result = 0
     if stack_node.value == 10 {
         result = result + 1  // Pass
     }
     if heap_node.value == 20 {
         result = result + 1  // Pass
     }
-    
+
     // Test 2: Reference semantics (with mut)
     modify_by_mut(mut stack_node)
     modify_by_mut(mut heap_node)
-    
+
     // Both should be modified to 100
     if stack_node.value == 100 {
         result = result + 1  // Pass
@@ -48,7 +48,7 @@ fn main() -> i32 {
     if heap_node.value == 100 {
         result = result + 1  // Pass
     }
-    
+
     // Should return 4 if all checks pass
     return result
 }
