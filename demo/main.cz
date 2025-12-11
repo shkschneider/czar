@@ -1,0 +1,34 @@
+struct Vec2 {
+    // no inheritence
+    i32 x
+    i32 y
+}
+
+// structs can have methods (on instance)
+fn Vec2:length() -> i32 {
+    // self is implicit with : notation
+    return self.x * self.x + self.y * self.y
+}
+
+// structs can have (static) functions
+fn Vec2.isLongEnough(Vec2 self) -> bool {
+    return self.x > 1 && self.y > self.x
+}
+
+fn main() -> i32 {
+    // stack
+
+    Vec2 sv1 = Vec2 { x: 1, y: 2 }
+    // sv1.x += 1 ERROR
+    mut Vec2 sv2 = Vec2 { x: 3, y: 4 } // mutable
+    sv2.x += 1 // sv2.x: sv2.y
+
+    // heap
+
+    Vec2 hv1 = new Vec2 { x: 5, y: 6 } // heap
+    // hv1.x += 1 ERROR
+    mut Vec2 hv2 = new Vec2 { x: 7, y: 8 } // mutable
+    hv2.x += 1 // hv2.x: hv2.y
+
+    return 0
+}
