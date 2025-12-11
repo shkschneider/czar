@@ -320,7 +320,23 @@ function Parser:parse_binary_and()
 end
 
 function Parser:parse_equality()
-    return self:parse_binary_chain(self.parse_relational, { EQ = true, NEQ = true })
+    local left = self:parse_relational()
+    while true do
+        local tok = self:current()
+        if tok and (tok.type == "EQ" or tok.type == "NEQ") then
+            self:advance()
+            local right = self:parse_relational()
+            left = { kind = "binary", op = tok.value, left = left, right = right }
+        elseif tok and tok.type == "KEYWORD" and tok.value == "is" then
+            -- Handle 'is' keyword for type checking
+            self:advance()
+            local type_node = self:parse_type()
+            left = { kind = "is_check", expr = left, type = type_node }
+        else
+            break
+        end
+    end
+    return left
 end
 
 function Parser:parse_relational()
@@ -445,6 +461,11 @@ function Parser:parse_primary()
     elseif tok.type == "KEYWORD" and tok.value == "null" then
         self:advance()
         return { kind = "null" }
+    elseif tok.type == "KEYWORD" and tok.value == "type" then
+        -- type expr - returns a const string with the type name
+        self:advance()
+        local expr = self:parse_unary()  -- Parse next expression at unary level
+        return { kind = "type_of", expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "cast" then
         -- cast<Type> expr
         self:advance()

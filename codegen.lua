@@ -298,6 +298,97 @@ function Codegen:is_pointer_var(name)
     return var_info and var_info.type and var_info.type.kind == "pointer"
 end
 
+function Codegen:infer_type(expr)
+    -- Infer the type of an expression
+    if expr.kind == "int" then
+        return { kind = "named_type", name = "i32" }
+    elseif expr.kind == "bool" then
+        return { kind = "named_type", name = "bool" }
+    elseif expr.kind == "string" then
+        return { kind = "pointer", to = { kind = "named_type", name = "char" } }
+    elseif expr.kind == "null" then
+        return { kind = "pointer", to = { kind = "named_type", name = "void" } }
+    elseif expr.kind == "identifier" then
+        return self:get_var_type(expr.name)
+    elseif expr.kind == "field" then
+        local obj_type = self:infer_type(expr.object)
+        if obj_type then
+            local type_name = self:type_name(obj_type)
+            if type_name and self.structs[type_name] then
+                local struct_def = self.structs[type_name]
+                for _, field in ipairs(struct_def.fields) do
+                    if field.name == expr.field then
+                        return field.type
+                    end
+                end
+            end
+        end
+    elseif expr.kind == "binary" then
+        if expr.op == "==" or expr.op == "!=" or expr.op == "<" or expr.op == ">" or 
+           expr.op == "<=" or expr.op == ">=" or expr.op == "&&" or expr.op == "||" then
+            return { kind = "named_type", name = "bool" }
+        else
+            return self:infer_type(expr.left)
+        end
+    elseif expr.kind == "unary" then
+        if expr.op == "!" then
+            return { kind = "named_type", name = "bool" }
+        elseif expr.op == "&" then
+            local inner_type = self:infer_type(expr.operand)
+            return { kind = "pointer", to = inner_type }
+        elseif expr.op == "*" then
+            local inner_type = self:infer_type(expr.operand)
+            if inner_type and inner_type.kind == "pointer" then
+                return inner_type.to
+            end
+        else
+            return self:infer_type(expr.operand)
+        end
+    elseif expr.kind == "call" then
+        if expr.callee.kind == "identifier" then
+            local func_name = expr.callee.name
+            local func_info = self.functions["__global__"] and self.functions["__global__"][func_name]
+            if func_info then
+                return func_info.return_type
+            end
+        end
+    end
+    return nil
+end
+
+function Codegen:types_match(type1, type2)
+    -- Check if two types match
+    if not type1 or not type2 then return false end
+    
+    if type1.kind == "named_type" and type2.kind == "named_type" then
+        return type1.name == type2.name
+    elseif type1.kind == "pointer" and type2.kind == "pointer" then
+        return self:types_match(type1.to, type2.to)
+    elseif type1.kind == "pointer" and type1.is_clone and type2.kind == "named_type" then
+        -- Special case: clone types match their base type
+        return self:types_match(type1.to, type2)
+    end
+    return false
+end
+
+function Codegen:type_name_string(type_node)
+    -- Return a string representation of the type for the 'type' built-in
+    if not type_node then return "unknown" end
+    
+    if type_node.kind == "named_type" then
+        return type_node.name
+    elseif type_node.kind == "pointer" then
+        if type_node.is_clone then
+            -- For clone variables, return the base type name
+            return self:type_name_string(type_node.to)
+        else
+            return self:type_name_string(type_node.to) .. "*"
+        end
+    end
+    return "unknown"
+end
+
+
 function Codegen:gen_params(params)
     local parts = {}
     for i, p in ipairs(params) do
@@ -550,6 +641,18 @@ function Codegen:gen_expr(expr)
         else
             return string.format("(%s %s %s)", self:gen_expr(expr.left), expr.op, self:gen_expr(expr.right))
         end
+    elseif expr.kind == "is_check" then
+        -- Handle 'is' keyword for type checking
+        -- This is a compile-time check that always returns true or false
+        local expr_type = self:infer_type(expr.expr)
+        local target_type = expr.type
+        local matches = self:types_match(expr_type, target_type)
+        return matches and "true" or "false"
+    elseif expr.kind == "type_of" then
+        -- Handle 'type' built-in that returns a const string
+        local expr_type = self:infer_type(expr.expr)
+        local type_name = self:type_name_string(expr_type)
+        return string.format("\"%s\"", type_name)
     elseif expr.kind == "unary" then
         return string.format("(%s%s)", expr.op, self:gen_expr(expr.operand))
     elseif expr.kind == "null_check" then
