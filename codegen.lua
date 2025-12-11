@@ -168,16 +168,24 @@ function Codegen:c_type_in_struct(type_node, struct_name)
             return self:c_type(base_type) .. "*"
         end
     elseif type_node.kind == "named_type" then
-        -- In implicit pointer model, struct-typed fields should be pointers
-        if self:is_struct_type(type_node) then
-            -- Check for self-referential (non-pointer) - treat as pointer
+        local c_type = self:c_type(type_node)
+        -- In implicit pointer model, check if this is a non-primitive type
+        -- Primitive types: int32_t, int64_t, uint32_t, uint64_t, float, double, bool, void
+        local is_primitive = c_type == "int32_t" or c_type == "int64_t" or 
+                            c_type == "uint32_t" or c_type == "uint64_t" or
+                            c_type == "float" or c_type == "double" or
+                            c_type == "bool" or c_type == "void"
+        
+        if not is_primitive then
+            -- Non-primitive types (structs) should be pointers in implicit pointer model
             if type_node.name == struct_name then
+                -- Self-referential
                 return "struct " .. type_node.name .. "*"
             else
-                return self:c_type(type_node) .. "*"
+                return c_type .. "*"
             end
         else
-            return self:c_type(type_node)
+            return c_type
         end
     else
         return self:c_type(type_node)
