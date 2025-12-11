@@ -11,12 +11,16 @@
 extern const char luaJIT_BC_lexer[];
 extern const char luaJIT_BC_parser[];
 extern const char luaJIT_BC_codegen[];
+extern const char luaJIT_BC_generator[];
+extern const char luaJIT_BC_build[];
 extern const char luaJIT_BC_main[];
 
 // Declare external size symbols (defined in bytecode_sizes.c)
 extern const size_t luaJIT_BC_lexer_size;
 extern const size_t luaJIT_BC_parser_size;
 extern const size_t luaJIT_BC_codegen_size;
+extern const size_t luaJIT_BC_generator_size;
+extern const size_t luaJIT_BC_build_size;
 extern const size_t luaJIT_BC_main_size;
 
 // Helper to load bytecode into package.preload
@@ -64,7 +68,9 @@ int main(int argc, char **argv) {
     // Load modules into package.preload
     if (load_module(L, "lexer", luaJIT_BC_lexer, luaJIT_BC_lexer_size) != 0 ||
         load_module(L, "parser", luaJIT_BC_parser, luaJIT_BC_parser_size) != 0 ||
-        load_module(L, "codegen", luaJIT_BC_codegen, luaJIT_BC_codegen_size) != 0) {
+        load_module(L, "codegen", luaJIT_BC_codegen, luaJIT_BC_codegen_size) != 0 ||
+        load_module(L, "generator", luaJIT_BC_generator, luaJIT_BC_generator_size) != 0 ||
+        load_module(L, "build", luaJIT_BC_build, luaJIT_BC_build_size) != 0) {
         lua_close(L);
         return 1;
     }
