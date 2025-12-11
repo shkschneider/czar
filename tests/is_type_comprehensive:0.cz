@@ -1,0 +1,56 @@
+// Comprehensive test for 'is' keyword and 'type' built-in
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() -> i32 {
+    i32 num = 42
+    bool flag = true
+    Point p = Point { x: 10, y: 20 }
+    
+    // Test 'is' keyword with i32
+    if num is i32 {
+        // Should be true
+    } else {
+        return 1  // Fail
+    }
+    
+    // Test 'is' keyword with bool
+    if flag is bool {
+        // Should be true
+    } else {
+        return 2  // Fail
+    }
+    
+    // Test 'is' keyword with struct
+    if p is Point {
+        // Should be true
+    } else {
+        return 3  // Fail
+    }
+    
+    // Test 'type' built-in with i32
+    if type num == "i32" {
+        // Should be true
+    } else {
+        return 4  // Fail
+    }
+    
+    // Test 'type' built-in with bool
+    if type flag == "bool" {
+        // Should be true
+    } else {
+        return 5  // Fail
+    }
+    
+    // Test 'type' built-in with struct
+    if type p == "Point" {
+        // Should be true
+    } else {
+        return 6  // Fail
+    }
+    
+    // All tests passed
+    return 0
+}
