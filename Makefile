@@ -36,8 +36,15 @@ LUA_LIBRARY = libczar.a
 
 .PHONY: all build clean test syntax-check install help
 
-# Default target: build and run tests
+# Default target: build the cz binary from Lua bytecode
 all: build test
+
+# Build the cz binary from Lua bytecode
+build: $(OUT)
+	@echo "Build complete: $(OUT)"
+
+test:
+	@./check.sh tests/*.cz
 
 # Helper
 help:
@@ -48,10 +55,6 @@ help:
 	@echo "  make syntax-check  - Quick syntax check of all test files"
 	@echo "  make clean         - Clean build artifacts"
 	@echo "  make install       - Install cz to /usr/local/bin"
-
-# Build the cz binary from Lua bytecode
-build: $(OUT)
-	@echo "Build complete: $(OUT)"
 
 # Link the C main file with the Lua library to create the binary
 $(OUT): main.c main.h $(LUA_LIBRARY)
@@ -83,69 +86,6 @@ main.h: $(LUA_OBJECTS)
 		size=$$(nm -S $$obj | grep luaJIT_BC | awk '{print "0x" $$2}'); \
 		echo "const size_t luaJIT_BC_$${name}_size = $$size;" >> $@; \
 	done
-
-# Find all test .cz files
-TEST_FILES = $(wildcard tests/*.cz)
-EXPECTED_RESULTS = \
-	types:42 \
-	bindings:30 \
-	structs:15 \
-	pointers:30 \
-	functions:19 \
-	arithmetic:53 \
-	comparison:1 \
-	if_else:50 \
-	while:55 \
-	comments:60 \
-	no_semicolons:15 \
-	logical_operators:1 \
-	null_pointer:42 \
-	field_assignment:20 \
-	new_types:1 \
-	extension_methods:10 \
-	methods:13 \
-	error_as_value:42 \
-	comprehensive:1 \
-	underscore:23 \
-	underscore_edge_cases:172 \
-	underscore_example:117 \
-	compound_assign:8 \
-	compound_assign_comprehensive:250 \
-	compound_assign_fields:55 \
-	compound_assign_pointers:55
-
-# Run the test suite
-test: build
-	@echo "Running all tests..."
-	@passed=0; failed=0; \
-	for test in $(TEST_FILES); do \
-		name=$$(basename $$test .cz); \
-		echo -n "Testing $$name..."; \
-		./cz build $$test -o tests/$$name > /dev/null 2>&1; \
-		compile_status=$$?; \
-		if [ $$compile_status -ne 0 ] || [ ! -f tests/$$name ]; then \
-			echo " FAIL: Compilation failed"; \
-			failed=$$((failed + 1)); \
-			continue; \
-		fi; \
-		tests/$$name; \
-		exit_code=$$?; \
-		expected=$$(echo "$(EXPECTED_RESULTS)" | tr ' ' '\n' | grep "^$$name:" | cut -d: -f2); \
-		if [ -n "$$expected" ]; then \
-			if [ $$exit_code -eq $$expected ]; then \
-				echo " PASS (exit code: $$exit_code)"; \
-				passed=$$((passed + 1)); \
-			else \
-				echo " FAIL: Expected exit code $$expected, got $$exit_code"; \
-				failed=$$((failed + 1)); \
-			fi; \
-		else \
-			echo " PASS (exit code: $$exit_code, no expected value)"; \
-			passed=$$((passed + 1)); \
-		fi; \
-	done; \
-	echo "Results: $$passed passed, $$failed failed"; \
-	if [ $$failed -gt 0 ]; then exit 1; fi
 
 # Quick syntax check using cz test command
 syntax-check: build
