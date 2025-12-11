@@ -1,8 +1,8 @@
 // Test compound assignment operators (+=, -=, *=, /=)
-// These should only work on mutable variables (var)
+// These should only work on mutable variables
 
 fn main() -> i32 {
-i32 x = 10
+mut i32 x = 10
     
     // Test += operator
     x += 5   // x should be 15

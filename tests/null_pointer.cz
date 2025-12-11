@@ -4,7 +4,7 @@ struct Node {
 }
 
 fn main() -> i32 {
-Node* p = null
+mut Node* p = null
     
     // Check if we can assign null and non-null
     if p == null {

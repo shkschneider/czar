@@ -165,10 +165,17 @@ function Parser:parse_statement()
     elseif self:check("KEYWORD", "while") then
         return self:parse_while()
     else
-        -- Try to parse as variable declaration (Type name = ...)
+        -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
         local saved_pos = self.pos
         local is_var_decl = false
+        local is_mutable = false
+        
+        -- Check for optional mut keyword
+        if self:check("KEYWORD", "mut") then
+            is_mutable = true
+            self:advance()
+        end
         
         -- Check if this looks like a type declaration
         if self:is_type_start() then
@@ -177,7 +184,7 @@ function Parser:parse_statement()
                 local name_tok = self:current()
                 self:advance()
                 if self:check("EQUAL") then
-                    -- This is a variable declaration: Type name = expr
+                    -- This is a variable declaration: mut Type name = expr or Type name = expr
                     is_var_decl = true
                     self.pos = saved_pos  -- Reset to parse properly
                 end
@@ -186,6 +193,10 @@ function Parser:parse_statement()
         
         if is_var_decl then
             -- Parse as variable declaration
+            local mutable = false
+            if self:match("KEYWORD", "mut") then
+                mutable = true
+            end
             local type_ = self:parse_type()
             local name = self:expect("IDENT").value
             local init = nil
@@ -193,8 +204,7 @@ function Parser:parse_statement()
                 init = self:parse_expression()
             end
             self:match("SEMICOLON")
-            -- All variables are mutable by default now
-            return { kind = "var_decl", name = name, type = type_, mutable = true, init = init }
+            return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init }
         else
             -- Reset and parse as expression statement
             self.pos = saved_pos

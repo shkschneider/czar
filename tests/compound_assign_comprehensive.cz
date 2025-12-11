@@ -1,9 +1,9 @@
 // Comprehensive test for all compound assignment operators
 fn main() -> i32 {
-i32 a = 100
-i32 b = 50
-i32 c = 10
-i32 d = 20
+mut i32 a = 100
+mut i32 b = 50
+mut i32 c = 10
+mut i32 d = 20
     
     // Test all operators
     a += 50   // 150
@@ -12,7 +12,7 @@ i32 d = 20
     d /= 2    // 10
     
     // Combined result
-i32 result = a + b + c + d  // 150 + 40 + 50 + 10 = 250
+mut i32 result = a + b + c + d  // 150 + 40 + 50 + 10 = 250
     
     return result
 }

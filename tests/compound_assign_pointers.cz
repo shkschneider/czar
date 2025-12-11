@@ -5,8 +5,8 @@ struct Point {
 }
 
 fn main() -> i32 {
-Point p = Point { x: 10, y: 20 }
-Point* ptr = &p
+mut Point p = Point { x: 10, y: 20 }
+mut Point* ptr = &p
     
     // Test compound assignments through pointer
     ptr.x += 5   // p.x should be 15
