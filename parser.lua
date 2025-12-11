@@ -109,19 +109,27 @@ end
 function Parser:parse_function()
     self:expect("KEYWORD", "fn")
     local receiver_type = nil
+    local is_static_method = false
     local name = self:expect("IDENT").value
     
-    -- Check if this is a method definition (Type.method_name syntax)
-    if self:match("DOT") then
+    -- Check if this is a method definition
+    -- Type:method for instance methods (implicit mutable self)
+    -- Type.method for static methods (no implicit self)
+    if self:match("COLON") then
         receiver_type = name  -- The first identifier is the type
         name = self:expect("IDENT").value  -- The second identifier is the method name
+        is_static_method = false  -- Instance method with implicit self
+    elseif self:match("DOT") then
+        receiver_type = name  -- The first identifier is the type
+        name = self:expect("IDENT").value  -- The second identifier is the method name
+        is_static_method = true  -- Static method, no implicit self
     end
     
     self:expect("LPAREN")
     local params = {}
     
-    -- For methods (Type.method_name), add implicit mutable self parameter
-    if receiver_type then
+    -- For instance methods (Type:method), add implicit mutable self parameter
+    if receiver_type and not is_static_method then
         local self_type = { kind = "named_type", name = receiver_type }
         local self_param_type = { kind = "pointer", to = self_type, is_mut = true }
         table.insert(params, { name = "self", type = self_param_type })
