@@ -7,7 +7,7 @@ struct Point {
 
 fn main() -> i32 {
     // Test clone without type parameter
-    Point p1 = Point { x: 10, y: 20 }
+    mut Point p1 = Point { x: 10, y: 20 }
     Point p2 = clone p1
     
     // Modify original

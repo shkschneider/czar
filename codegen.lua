@@ -140,17 +140,30 @@ function Codegen:pop_scope()
     table.remove(self.scope_stack)
 end
 
-function Codegen:add_var(name, type_node)
+function Codegen:add_var(name, type_node, mutable)
     if #self.scope_stack > 0 then
-        self.scope_stack[#self.scope_stack][name] = type_node
+        self.scope_stack[#self.scope_stack][name] = {
+            type = type_node,
+            mutable = mutable or false
+        }
     end
 end
 
 function Codegen:get_var_type(name)
     for i = #self.scope_stack, 1, -1 do
-        local type_node = self.scope_stack[i][name]
-        if type_node then
-            return type_node
+        local var_info = self.scope_stack[i][name]
+        if var_info then
+            return var_info.type
+        end
+    end
+    return nil
+end
+
+function Codegen:get_var_info(name)
+    for i = #self.scope_stack, 1, -1 do
+        local var_info = self.scope_stack[i][name]
+        if var_info then
+            return var_info
         end
     end
     return nil
@@ -192,13 +205,13 @@ function Codegen:gen_statement(stmt)
         if is_clone then
             -- For clone, store as pointer type internally but present as value type
             local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
-            self:add_var(stmt.name, ptr_type)
+            self:add_var(stmt.name, ptr_type, stmt.mutable)
             local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
             decl = decl .. " = " .. self:gen_expr(stmt.init)
             return decl .. ";"
         else
-            self:add_var(stmt.name, stmt.type)
+            self:add_var(stmt.name, stmt.type, stmt.mutable)
             local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
             if stmt.init then
@@ -355,6 +368,17 @@ function Codegen:gen_expr(expr)
         -- For safe navigation, return the field or a default value (0 for numbers, NULL for pointers)
         return string.format("({ __auto_type _obj = %s; _obj ? _obj%s%s : 0; })", obj_expr, accessor, expr.field)
     elseif expr.kind == "assign" then
+        -- Check if target is an immutable variable
+        if expr.target.kind == "identifier" then
+            local var_type = self:get_var_type(expr.target.name)
+            if var_type then
+                -- Check if variable is immutable (we need to track this)
+                local var_info = self:get_var_info(expr.target.name)
+                if var_info and not var_info.mutable then
+                    error(string.format("Cannot assign to immutable variable '%s'", expr.target.name))
+                end
+            end
+        end
         return string.format("(%s = %s)", self:gen_expr(expr.target), self:gen_expr(expr.value))
     elseif expr.kind == "static_method_call" then
         -- Static method call: Type.method(obj, args...)
@@ -591,8 +615,8 @@ function Codegen:gen_function(fn)
             local param_name = "_unused_" .. i
             self:emit("    (void)" .. param_name .. ";")
         else
-            -- Add regular parameters to scope
-            self:add_var(param.name, param.type)
+            -- Add regular parameters to scope (parameters with mut are mutable)
+            self:add_var(param.name, param.type, param.mut or false)
         end
     end
 
