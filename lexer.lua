@@ -27,6 +27,13 @@ local keywords = {
     ["f64"] = true,
     ["bool"] = true,
     ["void"] = true,
+    -- any (void *)
+    -- elseif
+    -- for ...
+    -- for each ...
+    -- is/type
+    -- import
+    -- when ... {}
 }
 
 local simple_tokens = {
@@ -37,7 +44,7 @@ local simple_tokens = {
     ["["] = "LBRACKET",
     ["]"] = "RBRACKET",
     [","] = "COMMA",
-    [";"] = "SEMICOLON",
+    [";"] = "SEMICOLON", -- only for inline
     [":"] = "COLON",
     ["."] = "DOT",
     ["+"] = "PLUS",
@@ -49,6 +56,7 @@ local simple_tokens = {
     ["<"] = "LT",
     [">"] = "GT",
     ["="] = "EQUAL",
+    -- := declares = assigns == checks
 }
 
 local compound_tokens = {
