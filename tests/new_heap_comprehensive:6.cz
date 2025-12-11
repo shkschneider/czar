@@ -1,13 +1,13 @@
 // Test new keyword for heap allocation - comprehensive test
 
 struct Person {
-    mut i32 age
-    mut i32 score
+    i32 age
+    i32 score
 }
 
 struct Point {
-    mut i32 x
-    mut i32 y
+    i32 x
+    i32 y
 }
 
 fn main() -> i32 {
@@ -27,7 +27,7 @@ fn main() -> i32 {
     p2.y = 200
 
     // Test 4: Verify values
-    mut i32 result = 0
+    i32 result = 0
     if person.age == 30 {
         result = result + 1
     }

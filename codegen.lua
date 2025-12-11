@@ -528,28 +528,12 @@ function Codegen:gen_expr(expr)
                 end
             end
         elseif expr.target.kind == "field" then
-            -- Check if target field is mutable
-            -- We need to determine the type of the object
-            local obj_type = self:get_expr_type(expr.target.object)
-            if obj_type and self.structs[obj_type] then
-                local struct_def = self.structs[obj_type]
-                local field_name = expr.target.field
-                -- Find the field in the struct definition
-                local field_found = false
-                for _, field in ipairs(struct_def.fields) do
-                    if field.name == field_name then
-                        field_found = true
-                        if not field.mutable then
-                            error(string.format("Cannot assign to immutable field '%s' of struct '%s'", field_name, obj_type))
-                        end
-                        break
-                    end
-                end
-                -- If field not found, this is likely a semantic error caught elsewhere
-                -- but we can add a warning or error here for safety
-                if not field_found then
-                    -- Field doesn't exist in struct - this should have been caught by parser/typechecker
-                    -- For now, we'll allow it to proceed and let C compiler catch it
+            -- Check if target object variable is mutable
+            -- In the new model, field mutability comes from the variable, not the field
+            if expr.target.object.kind == "identifier" then
+                local var_info = self:get_var_info(expr.target.object.name)
+                if var_info and not var_info.mutable then
+                    error(string.format("Cannot assign to field '%s' of immutable variable '%s'", expr.target.field, expr.target.object.name))
                 end
             end
         end

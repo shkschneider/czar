@@ -1,11 +1,11 @@
 // Test struct field assignment
 struct Point {
-    mut i32 x
-    mut i32 y
+    i32 x
+    i32 y
 }
 
 fn main() -> i32 {
-    Point p = Point { x: 10, y: 20 }
+    mut Point p = Point { x: 10, y: 20 }
 
     // Modify fields
     p.x = 5
