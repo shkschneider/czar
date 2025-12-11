@@ -5,28 +5,28 @@ struct Point {
     i32 y
 }
 
-fn get_null() -> Point* {
+fn get_null() -> Point {
     return null
 }
 
-fn get_point() -> Point* {
+fn get_point() -> Point {
     Point p = Point { x: 10, y: 20 }
-    return &p
+    return new p // pointer
 }
 
 fn main() -> i32 {
     // Test 1: Using !! on non-null should work
     Point p1 = Point { x: 5, y: 10 }
-    Point* ptr1 = &p1
-    Point* checked = ptr1!!
+    Point ptr1 = p1 // pointer
+    Point checked = ptr1!!
 
     // Test 2: Chaining ?. with ??
-    Point* p2 = null
+    Point p2 = null // pointer
     i32 default_val = p2?.x ?? 42
 
     // Test 3: Non-null pointer with ?.
     Point p3 = Point { x: 7, y: 14 }
-    Point* ptr3 = &p3
+    Point ptr3 = p3 // pointer
     i32 safe_x = ptr3?.x ?? 0
 
     // Return sum for testing

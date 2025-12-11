@@ -7,12 +7,11 @@ struct Person {
 
 fn main() -> i32 {
     // Heap allocate a Person struct using new keyword
-    // Note: n is declared as Person, not Person* - compiler handles pointer internally
     mut Person person = new Person { age: 25, score: 50 }
-    
+
     // Access fields normally (compiler handles pointer dereferencing)
     i32 total = person.age + person.score
-    
+
     // Should return 75 (25 + 50)
     return total
 }
