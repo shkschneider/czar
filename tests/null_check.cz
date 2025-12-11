@@ -10,24 +10,24 @@ fn get_null() -> Point* {
 }
 
 fn get_point() -> Point* {
-    var Point p = Point { x: 10, y: 20 }
+Point p = Point { x: 10, y: 20 }
     return &p
 }
 
 fn main() -> i32 {
     // Test 1: Using !! on non-null should work
-    var Point p1 = Point { x: 5, y: 10 }
-    var Point* ptr1 = &p1
-    val Point* checked = ptr1!!
+Point p1 = Point { x: 5, y: 10 }
+Point* ptr1 = &p1
+Point* checked = ptr1!!
     
     // Test 2: Chaining ?. with ??
-    var Point* p2 = null
-    val i32 default_val = p2?.x ?? 42
+Point* p2 = null
+i32 default_val = p2?.x ?? 42
     
     // Test 3: Non-null pointer with ?.
-    var Point p3 = Point { x: 7, y: 14 }
-    var Point* ptr3 = &p3
-    val i32 safe_x = ptr3?.x ?? 0
+Point p3 = Point { x: 7, y: 14 }
+Point* ptr3 = &p3
+i32 safe_x = ptr3?.x ?? 0
     
     // Return sum for testing
     return default_val + safe_x  // 42 + 7 = 49

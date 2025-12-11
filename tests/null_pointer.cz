@@ -4,11 +4,11 @@ struct Node {
 }
 
 fn main() -> i32 {
-    var Node* p = null
+Node* p = null
     
     // Check if we can assign null and non-null
     if p == null {
-        var Node n = Node { value: 42 }
+Node n = Node { value: 42 }
         p = &n
         return p.value
     }

@@ -13,8 +13,8 @@ fn parse_int(i32 input) -> ParseIntResult {
 }
 
 fn main() -> i32 {
-    val ParseIntResult result1 = parse_int(42)
-    val ParseIntResult result2 = parse_int(-5)
+ParseIntResult result1 = parse_int(42)
+ParseIntResult result2 = parse_int(-5)
     
     if result1.ok {
         if result2.ok == false {
