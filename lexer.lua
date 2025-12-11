@@ -159,12 +159,6 @@ function Lexer:skip_comment()
             end
             return true
         end
-    elseif self:peek() == '-' and self:peek(1) == '-' then
-        -- Handle -- comments (Lua-style)
-        while self:peek() and self:peek() ~= '\n' do
-            self:advance()
-        end
-        return true
     end
     return false
 end
