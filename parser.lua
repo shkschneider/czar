@@ -94,6 +94,13 @@ function Parser:parse_struct()
         local field_type = self:parse_type()
         local field_name = self:expect("IDENT").value
         self:match("SEMICOLON")  -- semicolons are optional
+        
+        -- If the field type is the same as the struct name, make it a pointer
+        -- This handles self-referential types like: struct Node { Node next }
+        if field_type.kind == "named_type" and field_type.name == name then
+            field_type = { kind = "pointer", to = field_type }
+        end
+        
         table.insert(fields, { name = field_name, type = field_type, mutable = is_mutable })
     end
     self:expect("RBRACE")
