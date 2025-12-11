@@ -27,7 +27,7 @@ end
 
 local function run_binary(binary_path)
     -- Run the binary and capture exit code
-    local run_cmd = "./" .. binary_path
+    local run_cmd = shell_escape("./" .. binary_path)
     local ret = os.execute(run_cmd)
     
     -- In LuaJIT, os.execute returns the raw system return value
