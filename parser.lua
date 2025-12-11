@@ -412,26 +412,22 @@ function Parser:parse_primary()
         self:advance()
         return { kind = "null" }
     elseif tok.type == "KEYWORD" and tok.value == "cast" then
-        -- cast<Type>(expr)
+        -- cast<Type> expr
         self:advance()
         self:expect("LT")
         local target_type = self:parse_type()
         self:expect("GT")
-        self:expect("LPAREN")
-        local expr = self:parse_expression()
-        self:expect("RPAREN")
+        local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "cast", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "clone" then
-        -- clone(expr) or clone<Type>(expr)
+        -- clone expr or clone<Type> expr
         self:advance()
         local target_type = nil
         if self:match("LT") then
             target_type = self:parse_type()
             self:expect("GT")
         end
-        self:expect("LPAREN")
-        local expr = self:parse_expression()
-        self:expect("RPAREN")
+        local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "clone", target_type = target_type, expr = expr }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
