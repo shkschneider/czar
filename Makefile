@@ -103,7 +103,7 @@ EXPECTED_RESULTS = \
 	field_assignment:20 \
 	new_types:1 \
 	extension_methods:10 \
-	methods:10 \
+	methods:13 \
 	error_as_value:42 \
 	comprehensive:1 \
 	underscore:23 \
