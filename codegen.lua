@@ -828,7 +828,9 @@ function Codegen:gen_function(fn)
             self:emit("    (void)" .. param_name .. ";")
         else
             -- Add regular parameters to scope (parameters with mut are mutable)
-            self:add_var(param.name, param.type, param.mut or false)
+            -- Check both param.mut and param.type.is_mut for pointer types
+            local is_mutable = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
+            self:add_var(param.name, param.type, is_mutable or false)
         end
     end
 
