@@ -89,10 +89,12 @@ function Parser:parse_struct()
     self:expect("LBRACE")
     local fields = {}
     while not self:check("RBRACE") do
+        -- Check for optional mut keyword before field type
+        local is_mutable = self:match("KEYWORD", "mut") ~= nil
         local field_type = self:parse_type()
         local field_name = self:expect("IDENT").value
         self:match("SEMICOLON")  -- semicolons are optional
-        table.insert(fields, { name = field_name, type = field_type })
+        table.insert(fields, { name = field_name, type = field_type, mutable = is_mutable })
     end
     self:expect("RBRACE")
     return { kind = "struct", name = name, fields = fields }

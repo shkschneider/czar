@@ -1,7 +1,7 @@
 // Test pointers and address-of operator
 struct Vec2 {
-    i32 x
-    i32 y
+    mut i32 x
+    mut i32 y
 }
 
 fn not_modify(Vec2 p) -> void {
