@@ -18,7 +18,8 @@ local function usage()
     io.stderr:write("  lexer <file.cz>         Print all tokens to stdout\n")
     io.stderr:write("  parser <file.cz>        Print AST to stdout\n")
     io.stderr:write("  generator <file.cz>     Generate C code from .cz file (saves as .c)\n")
-    io.stderr:write("  build <file.c>          Compile .c file to a.out binary\n")
+    io.stderr:write("  build <file.c|.cz>      Compile .c or .cz file to binary\n")
+    io.stderr:write("                          Options: -o <output> (default: a.out)\n")
     io.stderr:write("  run <file.cz>           Compile and run a.out binary\n")
     io.stderr:write("\nNote: Each command depends on the ones before it.\n")
     io.stderr:write("\nExamples:\n")
@@ -26,6 +27,7 @@ local function usage()
     io.stderr:write("  cz parser program.cz\n")
     io.stderr:write("  cz generator program.cz\n")
     io.stderr:write("  cz build program.c\n")
+    io.stderr:write("  cz build program.cz -o myapp\n")
     io.stderr:write("  cz run program.cz\n")
     os.exit(1)
 end
@@ -169,15 +171,60 @@ end
 
 local function cmd_build(args)
     if #args < 1 then
-        io.stderr:write("Error: 'build' requires a C source file\n")
+        io.stderr:write("Error: 'build' requires a source file (.c or .cz)\n")
         usage()
     end
 
-    local c_file_path = args[1]
+    local source_path = args[1]
     local output_path = "a.out"
+    
+    -- Parse -o option if provided
+    local i = 2
+    while i <= #args do
+        if args[i] == "-o" then
+            i = i + 1
+            if i > #args then
+                io.stderr:write("Error: -o requires an argument\n")
+                os.exit(1)
+            end
+            output_path = args[i]
+        end
+        i = i + 1
+    end
+
+    -- Check if source is .cz or .c
+    local c_file_path
+    local cleanup_c = false
+    
+    if source_path:match("%.cz$") then
+        -- Generate C code from .cz file
+        local c_source, err = generator.generate_c(source_path)
+        if not c_source then
+            io.stderr:write(err .. "\n")
+            os.exit(1)
+        end
+        
+        -- Write to temporary C file
+        c_file_path = os.tmpname() .. ".c"
+        local ok, err = generator.write_c_file(c_source, c_file_path)
+        if not ok then
+            io.stderr:write(err .. "\n")
+            os.exit(1)
+        end
+        cleanup_c = true
+    else
+        -- Assume it's a .c file
+        c_file_path = source_path
+    end
 
     -- Compile C to binary
     local ok, err = build.compile_c_to_binary(c_file_path, output_path)
+    
+    -- Clean up temporary C file if we created one
+    if cleanup_c then
+        os.remove(c_file_path)
+    end
+    
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
