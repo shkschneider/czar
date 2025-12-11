@@ -12,6 +12,16 @@ local parser = require("parser")
 local generator = require("generator")
 local build = require("build")
 
+local function read_file(path)
+    local handle, err = io.open(path, "r")
+    if not handle then
+        return nil, err
+    end
+    local content = handle:read("*a")
+    handle:close()
+    return content
+end
+
 local function usage()
     io.stderr:write("Usage: cz <command> <path>\n")
     io.stderr:write("\nCommands:\n")
@@ -86,8 +96,14 @@ local function cmd_lexer(args)
 
     local source_path = args[1]
     
+    -- Validate that the source file has a .cz extension
+    if not source_path:match("%.cz$") then
+        io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
+        os.exit(1)
+    end
+    
     -- Read source file
-    local source, err = generator.read_file(source_path)
+    local source, err = read_file(source_path)
     if not source then
         io.stderr:write(string.format("Failed to read '%s': %s\n", source_path, err or "unknown error"))
         os.exit(1)
@@ -112,8 +128,14 @@ local function cmd_parser(args)
 
     local source_path = args[1]
     
+    -- Validate that the source file has a .cz extension
+    if not source_path:match("%.cz$") then
+        io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
+        os.exit(1)
+    end
+    
     -- Read source file
-    local source, err = generator.read_file(source_path)
+    local source, err = read_file(source_path)
     if not source then
         io.stderr:write(string.format("Failed to read '%s': %s\n", source_path, err or "unknown error"))
         os.exit(1)
@@ -217,9 +239,13 @@ local function cmd_build(args)
             os.exit(1)
         end
         cleanup_c = true
-    else
-        -- Assume it's a .c file
+    elseif source_path:match("%.c$") then
+        -- It's a .c file
         c_file_path = source_path
+    else
+        -- Invalid file extension
+        io.stderr:write(string.format("Error: source file must have .c or .cz extension, got: %s\n", source_path))
+        os.exit(1)
     end
 
     -- Compile C to binary
