@@ -9,135 +9,181 @@ end
 
 local lexer = require("lexer")
 local parser = require("parser")
-local codegen = require("codegen")
+local generator = require("generator")
+local build = require("build")
 
 local function usage()
-    io.stderr:write("Usage: cz <command> [options] <path>\n")
+    io.stderr:write("Usage: cz <command> <path>\n")
     io.stderr:write("\nCommands:\n")
-    io.stderr:write("  run <file.cz>           Compile and run a single file\n")
-    io.stderr:write("  build <file/dir>        Compile file or directory (requires single main entry-point)\n")
-    io.stderr:write("  test <file/dir>         Compile each file independently for syntax check\n")
-    io.stderr:write("\nOptions:\n")
-    io.stderr:write("  -o <output>             Specify output binary name (for run/build, default: a.out)\n")
+    io.stderr:write("  lexer <file.cz>         Print all tokens to stdout\n")
+    io.stderr:write("  parser <file.cz>        Print AST to stdout\n")
+    io.stderr:write("  generator <file.cz>     Generate C code from .cz file (saves as .c)\n")
+    io.stderr:write("  build <file.c>          Compile .c file to a.out binary\n")
+    io.stderr:write("  run <file.cz>           Compile and run a.out binary\n")
+    io.stderr:write("\nNote: Each command depends on the ones before it.\n")
     io.stderr:write("\nExamples:\n")
+    io.stderr:write("  cz lexer program.cz\n")
+    io.stderr:write("  cz parser program.cz\n")
+    io.stderr:write("  cz generator program.cz\n")
+    io.stderr:write("  cz build program.c\n")
     io.stderr:write("  cz run program.cz\n")
-    io.stderr:write("  cz build src/\n")
-    io.stderr:write("  cz test tests/\n")
     os.exit(1)
 end
 
-local function read_file(path)
-    local handle, err = io.open(path, "r")
-    if not handle then
-        return nil, err
+local function serialize_tokens(tokens)
+    local lines = {}
+    for _, tok in ipairs(tokens) do
+        table.insert(lines, string.format("%s '%s' at %d:%d", 
+            tok.type, tok.value, tok.line, tok.col))
     end
-    local content = handle:read("*a")
-    handle:close()
-    return content
+    return table.concat(lines, "\n")
 end
 
-local function shell_escape(str)
-    -- Escape shell metacharacters by wrapping in single quotes
-    -- and escaping any single quotes in the string
-    return "'" .. str:gsub("'", "'\\''") .. "'"
-end
-
-local function is_directory(path)
-    local ok, err, code = os.rename(path, path)
-    if not ok then
-        if code == 13 then  -- Permission denied, but exists
-            return true
+local function serialize_ast(ast, indent)
+    indent = indent or 0
+    local prefix = string.rep("  ", indent)
+    
+    if type(ast) ~= "table" then
+        return tostring(ast)
+    end
+    
+    local lines = {}
+    if ast.kind then
+        table.insert(lines, prefix .. "kind: " .. ast.kind)
+    end
+    
+    for k, v in pairs(ast) do
+        if k ~= "kind" then
+            if type(v) == "table" then
+                if #v > 0 and type(v[1]) == "table" then
+                    -- Array of nodes
+                    table.insert(lines, prefix .. k .. ":")
+                    for i, item in ipairs(v) do
+                        table.insert(lines, prefix .. "  [" .. i .. "]:")
+                        table.insert(lines, serialize_ast(item, indent + 2))
+                    end
+                else
+                    -- Single nested node
+                    table.insert(lines, prefix .. k .. ":")
+                    table.insert(lines, serialize_ast(v, indent + 1))
+                end
+            else
+                table.insert(lines, prefix .. k .. ": " .. tostring(v))
+            end
         end
-        return false
     end
-    -- Check if path ends with separator
-    local handle = io.popen("test -d " .. shell_escape(path) .. " && echo yes || echo no")
-    local result = handle:read("*a")
-    handle:close()
-    return result:match("yes") ~= nil
+    
+    return table.concat(lines, "\n")
 end
 
-local function find_cz_files(path)
-    local files = {}
-    if is_directory(path) then
-        -- Find all .cz files in directory
-        local handle = io.popen("find " .. shell_escape(path) .. " -name '*.cz' -type f 2>/dev/null")
-        for file in handle:lines() do
-            table.insert(files, file)
-        end
-        handle:close()
-    else
-        -- Single file
-        table.insert(files, path)
+local function cmd_lexer(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'lexer' requires a source file\n")
+        usage()
     end
-    return files
-end
 
-local function compile_to_c(source_path)
-    local source, err = read_file(source_path)
+    local source_path = args[1]
+    
+    -- Read source file
+    local source, err = generator.read_file(source_path)
     if not source then
         io.stderr:write(string.format("Failed to read '%s': %s\n", source_path, err or "unknown error"))
-        return nil, err
+        os.exit(1)
     end
 
+    -- Lex
     local ok, tokens = pcall(lexer, source)
     if not ok then
-        return nil, string.format("Lexer error: %s", tokens)
+        io.stderr:write(string.format("Lexer error: %s\n", tokens))
+        os.exit(1)
     end
 
-    local ok, ast = pcall(parser, tokens)
-    if not ok then
-        return nil, string.format("Parser error: %s", ast)
-    end
-
-    local ok, c_source = pcall(codegen, ast)
-    if not ok then
-        return nil, string.format("Codegen error: %s", c_source)
-    end
-
-    return c_source, nil
+    -- Print tokens to stdout
+    print(serialize_tokens(tokens))
 end
 
-local function compile_and_link(source_path, output_path)
-    -- Compile .cz to C
-    local c_source, err = compile_to_c(source_path)
+local function cmd_parser(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'parser' requires a source file\n")
+        usage()
+    end
+
+    local source_path = args[1]
+    
+    -- Read source file
+    local source, err = generator.read_file(source_path)
+    if not source then
+        io.stderr:write(string.format("Failed to read '%s': %s\n", source_path, err or "unknown error"))
+        os.exit(1)
+    end
+
+    -- Lex
+    local ok, tokens = pcall(lexer, source)
+    if not ok then
+        io.stderr:write(string.format("Lexer error: %s\n", tokens))
+        os.exit(1)
+    end
+
+    -- Parse
+    local ok, ast = pcall(parser, tokens)
+    if not ok then
+        io.stderr:write(string.format("Parser error: %s\n", ast))
+        os.exit(1)
+    end
+
+    -- Print AST to stdout
+    print(serialize_ast(ast))
+end
+
+local function cmd_generator(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'generator' requires a source file\n")
+        usage()
+    end
+
+    local source_path = args[1]
+    
+    -- Generate C code
+    local c_source, err = generator.generate_c(source_path)
     if not c_source then
         io.stderr:write(err .. "\n")
-        return false
+        os.exit(1)
     end
 
-    -- Write C source to temporary file
-    local c_temp = os.tmpname() .. ".c"
-    local c_file = io.open(c_temp, "w")
-    if not c_file then
-        io.stderr:write("Failed to create temporary C file\n")
-        return false
-    end
-    c_file:write(c_source)
-    c_file:close()
-
-    -- Compile C to binary with escaped paths, capture exit code properly
-    local cc_cmd = string.format("cc %s -o %s 2>&1; echo \"EXIT_CODE:$?\"", shell_escape(c_temp), shell_escape(output_path))
-    local cc_output = io.popen(cc_cmd)
-    local cc_result = cc_output:read("*a")
-    cc_output:close()
-    
-    -- Extract exit code from output
-    local exit_code = cc_result:match("EXIT_CODE:(%d+)")
-    local compilation_output = cc_result:gsub("EXIT_CODE:%d+%s*$", "")
-
-    -- Clean up temporary file
-    os.remove(c_temp)
-
-    if exit_code and tonumber(exit_code) ~= 0 then
-        io.stderr:write("C compilation failed:\n")
-        if compilation_output and compilation_output ~= "" then
-            io.stderr:write(compilation_output)
-        end
-        return false
+    -- Determine output path (.cz -> .c)
+    local output_path = source_path:gsub("%.cz$", ".c")
+    if output_path == source_path then
+        -- No .cz extension, just append .c
+        output_path = source_path .. ".c"
     end
 
-    return true
+    -- Write C file
+    local ok, err = generator.write_c_file(c_source, output_path)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Generated: %s\n", output_path))
+end
+
+local function cmd_build(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'build' requires a C source file\n")
+        usage()
+    end
+
+    local c_file_path = args[1]
+    local output_path = "a.out"
+
+    -- Compile C to binary
+    local ok, err = build.compile_c_to_binary(c_file_path, output_path)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Built: %s\n", output_path))
 end
 
 local function cmd_run(args)
@@ -147,130 +193,37 @@ local function cmd_run(args)
     end
 
     local source_path = args[1]
-    local output_path = "a.out"
-
-    -- Parse options
-    local i = 2
-    while i <= #args do
-        if args[i] == "-o" then
-            i = i + 1
-            if i > #args then
-                io.stderr:write("Error: -o requires an argument\n")
-                usage()
-            end
-            output_path = args[i]
-        else
-            io.stderr:write(string.format("Unknown option: %s\n", args[i]))
-            usage()
-        end
-        i = i + 1
-    end
-
-    -- Compile
-    if not compile_and_link(source_path, output_path) then
-        os.exit(1)
-    end
-
-    io.stderr:write(string.format("Successfully compiled %s to %s\n", source_path, output_path))
-
-    -- Run and capture exit code with escaped path
-    local run_cmd = shell_escape("./" .. output_path) .. "; echo $?"
-    local handle = io.popen(run_cmd)
-    local output = handle:read("*a")
-    handle:close()
     
-    -- Extract exit code from last line
-    local exit_code = output:match("(%d+)%s*$")
-    if exit_code then
-        os.exit(tonumber(exit_code))
-    else
-        os.exit(0)
-    end
-end
-
-local function cmd_build(args)
-    if #args < 1 then
-        io.stderr:write("Error: 'build' requires a source file or directory\n")
-        usage()
+    -- Generate C code
+    local c_source, err = generator.generate_c(source_path)
+    if not c_source then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
     end
 
-    local source_path = args[1]
+    -- Write to temporary C file
+    local c_temp = os.tmpname() .. ".c"
+    local ok, err = generator.write_c_file(c_source, c_temp)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    -- Compile to a.out
     local output_path = "a.out"
-
-    -- Parse options
-    local i = 2
-    while i <= #args do
-        if args[i] == "-o" then
-            i = i + 1
-            if i > #args then
-                io.stderr:write("Error: -o requires an argument\n")
-                usage()
-            end
-            output_path = args[i]
-        else
-            io.stderr:write(string.format("Unknown option: %s\n", args[i]))
-            usage()
-        end
-        i = i + 1
-    end
-
-    -- Find .cz files
-    local files = find_cz_files(source_path)
-    if #files == 0 then
-        io.stderr:write(string.format("Error: No .cz files found in %s\n", source_path))
+    local ok, err = build.compile_c_to_binary(c_temp, output_path)
+    
+    -- Clean up temporary C file
+    os.remove(c_temp)
+    
+    if not ok then
+        io.stderr:write(err .. "\n")
         os.exit(1)
     end
 
-    -- For build, we expect a single main entry-point
-    -- If multiple files, we'd need to implement a linking strategy
-    if #files == 1 then
-        if not compile_and_link(files[1], output_path) then
-            os.exit(1)
-        end
-        io.stderr:write(string.format("Successfully compiled %s to %s\n", files[1], output_path))
-    else
-        io.stderr:write("Error: build with multiple files not yet supported (requires single main entry-point)\n")
-        os.exit(1)
-    end
-end
-
-local function cmd_test(args)
-    if #args < 1 then
-        io.stderr:write("Error: 'test' requires a source file or directory\n")
-        usage()
-    end
-
-    local source_path = args[1]
-
-    -- Find .cz files
-    local files = find_cz_files(source_path)
-    if #files == 0 then
-        io.stderr:write(string.format("Error: No .cz files found in %s\n", source_path))
-        os.exit(1)
-    end
-
-    io.stderr:write(string.format("Testing %d file(s)...\n", #files))
-
-    local passed = 0
-    local failed = 0
-
-    for _, file in ipairs(files) do
-        io.stderr:write(string.format("  %s... ", file))
-        local c_source, err = compile_to_c(file)
-        if c_source then
-            io.stderr:write("OK\n")
-            passed = passed + 1
-        else
-            io.stderr:write("FAIL\n")
-            io.stderr:write(string.format("    %s\n", err))
-            failed = failed + 1
-        end
-    end
-
-    io.stderr:write(string.format("\nResults: %d passed, %d failed\n", passed, failed))
-    if failed > 0 then
-        os.exit(1)
-    end
+    -- Run the binary
+    local exit_code = build.run_binary(output_path)
+    os.exit(exit_code)
 end
 
 local function main()
@@ -284,12 +237,16 @@ local function main()
         table.insert(cmd_args, arg[i])
     end
 
-    if command == "run" then
-        cmd_run(cmd_args)
+    if command == "lexer" then
+        cmd_lexer(cmd_args)
+    elseif command == "parser" then
+        cmd_parser(cmd_args)
+    elseif command == "generator" then
+        cmd_generator(cmd_args)
     elseif command == "build" then
         cmd_build(cmd_args)
-    elseif command == "test" then
-        cmd_test(cmd_args)
+    elseif command == "run" then
+        cmd_run(cmd_args)
     else
         io.stderr:write(string.format("Unknown command: %s\n", command))
         usage()
@@ -297,3 +254,4 @@ local function main()
 end
 
 main()
+
