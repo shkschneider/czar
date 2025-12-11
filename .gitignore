@@ -65,6 +65,7 @@ tests/extension_methods
 tests/field_assignment
 tests/functions
 tests/if_else
+tests/is_keyword
 tests/logical_operators
 tests/methods
 tests/new_types
@@ -80,8 +81,13 @@ tests/null_operators_example
 tests/null_pointer
 tests/pointers
 tests/structs
+tests/type_builtin
 tests/types
 tests/underscore
 tests/underscore_edge_cases
 tests/underscore_example
 tests/while
+
+# Build artifacts
+build
+clean
