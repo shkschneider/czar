@@ -246,6 +246,47 @@ function Codegen:gen_expr(expr)
         -- mut argument: automatically take address
         local inner_expr = self:gen_expr(expr.expr)
         return "&" .. inner_expr
+    elseif expr.kind == "cast" then
+        -- cast<Type>(expr) -> (Type)expr
+        local target_type_str = self:c_type(expr.target_type)
+        local expr_str = self:gen_expr(expr.expr)
+        return string.format("((%s)%s)", target_type_str, expr_str)
+    elseif expr.kind == "clone" then
+        -- clone(expr) or clone<Type>(expr)
+        -- Allocate on heap and copy the value
+        local expr_str = self:gen_expr(expr.expr)
+        local source_type = nil
+        local target_type = nil
+        
+        -- Determine source type from expression
+        if expr.expr.kind == "identifier" then
+            source_type = self:get_var_type(expr.expr.name)
+        end
+        
+        -- If target type specified, use it; otherwise use source type
+        if expr.target_type then
+            target_type = expr.target_type
+        else
+            target_type = source_type
+        end
+        
+        if not target_type then
+            error("Cannot determine type for clone operation")
+        end
+        
+        local target_type_str = self:c_type(target_type)
+        
+        -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type)expr; _ptr; })
+        if expr.target_type and source_type then
+            -- With cast
+            local source_type_str = self:c_type(source_type)
+            return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = (%s)%s; _ptr; })", 
+                target_type_str, target_type_str, target_type_str, expr_str)
+        else
+            -- Without cast
+            return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = %s; _ptr; })", 
+                target_type_str, target_type_str, expr_str)
+        end
     elseif expr.kind == "binary" then
         -- Handle null coalescing operator
         if expr.op == "??" then
