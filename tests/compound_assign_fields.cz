@@ -5,7 +5,7 @@ struct Point {
 }
 
 fn main() -> i32 {
-Point p = Point { x: 10, y: 20 }
+mut Point p = Point { x: 10, y: 20 }
     
     // Test compound assignments on struct fields
     p.x += 5   // p.x should be 15
