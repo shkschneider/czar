@@ -1,14 +1,14 @@
-// Test method syntax (Type.method(self, ...))
+// Test method syntax (Type.method(...))
 struct Vec2 {
     i32 x
     i32 y
 }
 
-fn Vec2.length(Vec2 self) -> i32 {
+fn Vec2.length() -> i32 {
     return self.x * self.x + self.y * self.y
 }
 
-fn Vec2.add(mut Vec2 self, i32 dx, i32 dy) -> void {
+fn Vec2.add(i32 dx, i32 dy) -> void {
     self.x = self.x + dx
     self.y = self.y + dy
 }
