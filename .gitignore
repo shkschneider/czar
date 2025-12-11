@@ -66,6 +66,7 @@ tests/field_assignment
 tests/functions
 tests/if_else
 tests/is_keyword
+tests/is_type_comprehensive
 tests/logical_operators
 tests/methods
 tests/new_types
