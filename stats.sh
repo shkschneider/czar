@@ -1,10 +1,10 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 r=0
-for f in *.lua ; do
+for f in *.lua *.sh ; do
     l=$(wc -l $f | cut -d' ' -f1)
     (( r += l ))
-    n=${f/.lua/}
+    n=${f%.*}
     n=${n^}
     echo "$n: $l"
     while read m ; do
