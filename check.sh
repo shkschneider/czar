@@ -15,7 +15,7 @@ for f in $@ ; do
     r=${r%.*}
     echo -n "tests/$n..."
     if [[ ! $r =~ ^[0-9]+$ ]] ; then
-        r=0
+        r=-1
     fi
     ./cz build $f -o /tmp/$n >/dev/null 2>/tmp/cz
     if [[ ! -f /tmp/$n ]] ; then
@@ -25,7 +25,9 @@ for f in $@ ; do
     else
         /tmp/$n >/dev/null 2>/tmp/cz
         e=$?
-        if [[ $e -ne $r ]] ; then
+        if [[ $r -lt 0 ]] && [[ $e -ne 0 ]] ; then
+            (( ok += 1 ))
+        elif [[ $e -ne $r ]] ; then
             echo " FAILURE: $r vs $e"
             (( ko += 1 ))
         else
