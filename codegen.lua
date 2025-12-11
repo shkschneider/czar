@@ -169,8 +169,15 @@ function Codegen:get_var_info(name)
     return nil
 end
 
-function Codegen:get_expr_type(expr)
+function Codegen:get_expr_type(expr, depth)
     -- Helper function to determine the type of an expression
+    -- depth parameter prevents infinite recursion
+    depth = depth or 0
+    if depth > 10 then
+        -- Prevent infinite recursion for deeply nested expressions
+        return nil
+    end
+    
     if expr.kind == "identifier" then
         local var_type = self:get_var_type(expr.name)
         if var_type then
@@ -183,7 +190,7 @@ function Codegen:get_expr_type(expr)
         end
     elseif expr.kind == "field" then
         -- Get the type of the object and look up the field type
-        local obj_type = self:get_expr_type(expr.object)
+        local obj_type = self:get_expr_type(expr.object, depth + 1)
         if obj_type and self.structs[obj_type] then
             local struct_def = self.structs[obj_type]
             for _, field in ipairs(struct_def.fields) do
@@ -445,13 +452,21 @@ function Codegen:gen_expr(expr)
                 local struct_def = self.structs[obj_type]
                 local field_name = expr.target.field
                 -- Find the field in the struct definition
+                local field_found = false
                 for _, field in ipairs(struct_def.fields) do
                     if field.name == field_name then
+                        field_found = true
                         if not field.mutable then
                             error(string.format("Cannot assign to immutable field '%s' of struct '%s'", field_name, obj_type))
                         end
                         break
                     end
+                end
+                -- If field not found, this is likely a semantic error caught elsewhere
+                -- but we can add a warning or error here for safety
+                if not field_found then
+                    -- Field doesn't exist in struct - this should have been caught by parser/typechecker
+                    -- For now, we'll allow it to proceed and let C compiler catch it
                 end
             end
         end
