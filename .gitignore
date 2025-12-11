@@ -68,6 +68,10 @@ tests/if_else
 tests/logical_operators
 tests/methods
 tests/new_types
+tests/new_example
+tests/new_heap
+tests/new_heap_comprehensive
+tests/new_stack_vs_heap
 tests/no_semicolons
 tests/null_check
 tests/null_crash
