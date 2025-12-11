@@ -50,6 +50,8 @@ libczar.a
 # Test binaries
 tests/arithmetic
 tests/bindings
+tests/cast
+tests/clone
 tests/comments
 tests/comparison
 tests/compound_assign
