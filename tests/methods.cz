@@ -1,7 +1,7 @@
 // Test method syntax (Type.method(self, ...))
 struct Vec2 {
-    i32 x
-    i32 y
+    mut i32 x
+    mut i32 y
 }
 
 fn Vec2.length(Vec2 self) -> i32 {
