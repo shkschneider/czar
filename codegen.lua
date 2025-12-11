@@ -816,7 +816,14 @@ end
 function Codegen:gen_function(fn)
     local name = fn.name
     local c_name = name == "main" and "main_main" or name
-    local sig = string.format("%s %s(%s)", self:c_type(fn.return_type), c_name, self:gen_params(fn.params))
+    
+    -- In implicit pointer model, struct return types should be pointers
+    local return_type_str = self:c_type(fn.return_type)
+    if fn.return_type and fn.return_type.kind == "named_type" and self:is_struct_type(fn.return_type) then
+        return_type_str = return_type_str .. "*"
+    end
+    
+    local sig = string.format("%s %s(%s)", return_type_str, c_name, self:gen_params(fn.params))
     self:emit(sig)
     self:push_scope()
     self:emit("{")
