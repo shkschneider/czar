@@ -19,18 +19,18 @@ fn Point.ignore_self(Point _) -> i32 {
 
 fn main() -> i32 {
     // All parameters unused
-i32 v1 = all_unused(1, 2, true)
-    
+    i32 v1 = all_unused(1, 2, true)
+
     // Mixed used and unused
-i32 v2 = mixed_params(10, false, 20, 99)
-    
+    i32 v2 = mixed_params(10, false, 20, 99)
+
     // Method with underscore self
-Point p = Point { x: 5, y: 10 }
-i32 v3 = p.ignore_self()
-    
+    Point p = Point { x: 5, y: 10 }
+    i32 v3 = p.ignore_self()
+
     // Multiple discard statements
     _ = all_unused(1, 2, false)
     _ = mixed_params(5, true, 5, 0)
-    
+
     return v1 + v2 + v3  // 100 + 30 + 42 = 172
 }

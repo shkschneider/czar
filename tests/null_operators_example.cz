@@ -16,8 +16,8 @@ fn maybe_service(bool should_fail) -> Service* {
     if should_fail {
         return null
     } else {
-Config cfg = Config { timeout: 30, retries: 3 }
-Service svc = Service { name: 100, config: &cfg }
+    Config cfg = Config { timeout: 30, retries: 3 }
+    Service svc = Service { name: 100, config: &cfg }
         return &svc
     }
 }
@@ -25,39 +25,39 @@ Service svc = Service { name: 100, config: &cfg }
 fn main() -> i32 {
     // Example 1: Null-coalescing operator (??)
     // Provides a default value when the left side is null (or falsy)
-Service* service1 = null
-Config cfg1 = Config { timeout: 10, retries: 1 }
-Service svc1 = Service { name: 200, config: &cfg1 }
-Service* fallback = &svc1
-Service* result1 = service1 ?? fallback  // Uses fallback
-    
+    Service* service1 = null
+    Config cfg1 = Config { timeout: 10, retries: 1 }
+    Service svc1 = Service { name: 200, config: &cfg1 }
+    Service* fallback = &svc1
+    Service* result1 = service1 ?? fallback  // Uses fallback
+
     // Example 2: Safe navigation operator (?.)
     // Accesses a field only if the pointer is not null
-Service* service2 = null
-i32 timeout1 = service2?.name ?? 5  // Returns 5 (service2 is null)
-    
-Config cfg2 = Config { timeout: 20, retries: 2 }
-Service svc2 = Service { name: 300, config: &cfg2 }
-Service* service3 = &svc2
-i32 timeout2 = service3?.name ?? 5  // Returns 300 (service3 is not null)
-    
+    Service* service2 = null
+    i32 timeout1 = service2?.name ?? 5  // Returns 5 (service2 is null)
+
+    Config cfg2 = Config { timeout: 20, retries: 2 }
+    Service svc2 = Service { name: 300, config: &cfg2 }
+    Service* service3 = &svc2
+    i32 timeout2 = service3?.name ?? 5  // Returns 300 (service3 is not null)
+
     // Example 3: Null-check operator (!!)
     // Crashes the program if the value is null
-Config cfg3 = Config { timeout: 15, retries: 4 }
-Service svc3 = Service { name: 400, config: &cfg3 }
-Service* service4 = &svc3
-Service* checked = service4!!  // Succeeds, service4 is not null
-    
+    Config cfg3 = Config { timeout: 15, retries: 4 }
+    Service svc3 = Service { name: 400, config: &cfg3 }
+    Service* service4 = &svc3
+    Service* checked = service4!!  // Succeeds, service4 is not null
+
     // Example 4: Chaining operators
     // You can combine ?. and ?? to safely access fields with defaults
-Service* service5 = null
-i32 chained_timeout = service5?.name ?? 99  // Returns 99
-    
-Config cfg4 = Config { timeout: 25, retries: 5 }
-Service svc4 = Service { name: 500, config: &cfg4 }
-Service* service6 = &svc4
-i32 chained_timeout2 = service6?.name ?? 99  // Returns 500
-    
+    Service* service5 = null
+    i32 chained_timeout = service5?.name ?? 99  // Returns 99
+
+    Config cfg4 = Config { timeout: 25, retries: 5 }
+    Service svc4 = Service { name: 500, config: &cfg4 }
+    Service* service6 = &svc4
+    i32 chained_timeout2 = service6?.name ?? 99  // Returns 500
+
     // Calculate result
     // timeout1=5, timeout2=300, chained_timeout=99, chained_timeout2=500
     // Total would be 904, but we'll return a smaller value for testing
