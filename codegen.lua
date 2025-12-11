@@ -309,22 +309,28 @@ function Codegen:gen_params(params)
         
         local type_str = self:c_type(p.type)
         
-        -- In implicit pointer model, struct-typed parameters should be pointers
-        -- Check if this is a struct type (not a primitive and not already a pointer)
+        -- NEW SEMANTICS: Parameters receive VALUES unless marked mut
+        -- - Non-mut parameters: receive struct by value (no pointer)
+        -- - Mut parameters: receive pointer to struct (for modification)
+        -- This is controlled by caller passing with/without mut keyword
+        
+        -- Check if parameter is mutable (mut keyword)
+        local is_mut_param = p.mut or (p.type.kind == "pointer" and p.type.is_mut)
+        
         if p.type.kind == "named_type" and self:is_struct_type(p.type) then
-            type_str = type_str .. "*"
+            -- Struct type parameter
+            if is_mut_param then
+                -- mut parameter: receives pointer for modification
+                type_str = type_str .. "*"
+            else
+                -- Non-mut parameter: receives value (copy)
+                -- No pointer, just the struct type
+            end
+        elseif p.type.kind == "pointer" then
+            -- Already a pointer type - keep as is
         end
         
-        -- For parameters, check if this is a mutable pointer (mut parameter)
-        -- If it's a pointer type with is_mut flag, it should be non-const
-        -- Otherwise, struct pointers should be const (for pass-by-value semantics with implicit pointers)
-        if p.type.kind == "pointer" and p.type.is_mut then
-            -- Mutable parameter - no const
-            table.insert(parts, string.format("%s %s", type_str, param_name))
-        else
-            -- For other parameters, leave as-is (c_type handles it)
-            table.insert(parts, string.format("%s %s", type_str, param_name))
-        end
+        table.insert(parts, string.format("%s %s", type_str, param_name))
     end
     return join(parts, ", ")
 end
@@ -766,38 +772,47 @@ function Codegen:gen_expr(expr)
         local callee = self:gen_expr(expr.callee)
         local args = {}
         
-        -- Check for mut argument warnings and handle properly
+        -- NEW SEMANTICS: Caller controls mutability
+        -- - Without mut: pass value (dereference struct pointers)
+        -- - With mut: pass pointer (keep struct pointers as-is)
         if expr.callee.kind == "identifier" and self.functions["__global__"] then
             local func_def = self.functions["__global__"][expr.callee.name]
             if func_def then
                 for i, a in ipairs(expr.args) do
-                    if a.kind == "mut_arg" and func_def.params[i] then
+                    if a.kind == "mut_arg" then
+                        -- Caller uses mut keyword - wants to pass by reference
                         local param = func_def.params[i]
-                        -- Check if parameter is not a pointer (not mut)
-                        if param.type.kind ~= "pointer" or not param.type.is_mut then
+                        local param_is_mut = param and (param.mut or (param.type.kind == "pointer" and param.type.is_mut))
+                        
+                        if not param_is_mut then
                             io.stderr:write(string.format("Warning: passing mut argument %d to function '%s' but parameter '%s' is not mut. Modifications will not affect caller.\n", 
                                 i, expr.callee.name, param.name))
-                            -- Generate without & since parameter is not mut
-                            table.insert(args, self:gen_expr(a.expr))
-                        else
-                            -- Parameter is mut, generate with &
-                            table.insert(args, self:gen_expr(a))
                         end
+                        
+                        -- Generate the argument expression
+                        local arg_expr = self:gen_expr(a.expr)
+                        
+                        -- If the argument is a struct variable (which is internally a pointer),
+                        -- just pass it as-is (it's already a pointer)
+                        -- If mut parameter expects pointer, we're good
+                        -- If it doesn't expect a pointer but we're passing one, it's an error (warning above)
+                        table.insert(args, arg_expr)
                     else
-                        -- Regular argument - check if we need to dereference struct pointers
+                        -- Regular argument (no mut keyword) - caller wants pass-by-value
                         local arg_expr = self:gen_expr(a)
                         
-                        -- In implicit pointer model, all struct variables are pointers
-                        -- If passing to a non-mut parameter, dereference to copy the value
+                        -- If argument is a struct variable (internally a pointer)
+                        -- and parameter expects a value, dereference it
                         if a.kind == "identifier" and func_def.params[i] then
                             local var_type = self:get_var_type(a.name)
-                            local param_type = func_def.params[i].type
-                            local param_is_mut = param_type.kind == "pointer" and param_type.is_mut
+                            local param = func_def.params[i]
+                            local param_is_mut = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
                             
-                            -- If var is a struct pointer and param is NOT mut, dereference for value copy
+                            -- If var is a struct pointer and param is NOT mut (expects value), dereference
                             if var_type and var_type.kind == "pointer" and not param_is_mut then
-                                if param_type.kind ~= "pointer" then
-                                    -- Parameter expects value type, dereference the pointer
+                                local base_type = var_type.to
+                                if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
+                                    -- Dereference to pass by value
                                     arg_expr = "*" .. arg_expr
                                 end
                             end
@@ -883,16 +898,23 @@ function Codegen:gen_function(fn)
             local param_name = "_unused_" .. i
             self:emit("    (void)" .. param_name .. ";")
         else
-            -- Add regular parameters to scope (parameters with mut are mutable)
-            -- In implicit pointer model, struct-typed parameters are actually pointers
+            -- Add regular parameters to scope
+            -- NEW SEMANTICS: mut parameters are pointers, non-mut parameters are values
             local param_type = param.type
+            local is_mut_param = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
+            
             if param.type.kind == "named_type" and self:is_struct_type(param.type) then
-                -- Convert to pointer type for tracking
-                param_type = { kind = "pointer", to = param.type, is_mut = param.mut }
+                if is_mut_param then
+                    -- mut parameter: it's a pointer in the function
+                    param_type = { kind = "pointer", to = param.type, is_mut = true }
+                else
+                    -- Non-mut parameter: it's a value (struct by value)
+                    -- Keep param_type as is (named_type)
+                end
             end
             
-            -- Check both param.mut and param.type.is_mut for pointer types
-            local is_mutable = param.mut or (param_type.kind == "pointer" and param_type.is_mut)
+            -- Parameters with mut are mutable
+            local is_mutable = is_mut_param
             self:add_var(param.name, param_type, is_mutable or false)
         end
     end
