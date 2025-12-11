@@ -24,7 +24,7 @@ LDFLAGS="-L. -Wl,\
 --no-whole-archive -Wl,\
 -E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s" # TODO -static
 
-SOURCES=(main.lua lexer.lua parser.lua codegen.lua)
+SOURCES=(main.lua lexer.lua parser.lua codegen.lua generator.lua build.lua)
 LIBRARY=libczar.a
 
 for src in ${SOURCES[@]} ; do
