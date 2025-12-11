@@ -439,6 +439,23 @@ function Parser:parse_primary()
         end
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "clone", target_type = target_type, expr = expr }
+    elseif tok.type == "KEYWORD" and tok.value == "new" then
+        -- new Type { fields... }
+        self:advance()
+        local type_name_tok = self:expect("IDENT")
+        local type_name = type_name_tok.value
+        self:expect("LBRACE")
+        local fields = {}
+        if not self:check("RBRACE") then
+            repeat
+                local name = self:expect("IDENT").value
+                self:expect("COLON")
+                local value = self:parse_expression()
+                table.insert(fields, { name = name, value = value })
+            until not self:match("COMMA")
+        end
+        self:expect("RBRACE")
+        return { kind = "new_heap", type_name = type_name, fields = fields }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
         return { kind = "identifier", name = ident.value }

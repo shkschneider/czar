@@ -199,11 +199,12 @@ function Codegen:gen_statement(stmt)
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
-        -- Check if initializer is a clone expression
+        -- Check if initializer is a clone or new_heap expression
         local is_clone = stmt.init and stmt.init.kind == "clone"
+        local is_new_heap = stmt.init and stmt.init.kind == "new_heap"
         
-        if is_clone then
-            -- For clone, store as pointer type internally but present as value type
+        if is_clone or is_new_heap then
+            -- For clone/new, store as pointer type internally but present as value type
             local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
             self:add_var(stmt.name, ptr_type, stmt.mutable)
             local prefix = stmt.mutable and "" or "const "
@@ -283,6 +284,14 @@ function Codegen:gen_expr(expr)
         return expr.name
     elseif expr.kind == "mut_arg" then
         -- mut argument: automatically take address
+        -- But if the variable is heap-allocated (stored as pointer), don't take address
+        if expr.expr.kind == "identifier" then
+            local var_type = self:get_var_type(expr.expr.name)
+            if var_type and var_type.kind == "pointer" and var_type.is_clone then
+                -- This is a heap-allocated value (clone or new), already a pointer
+                return self:gen_expr(expr.expr)
+            end
+        end
         local inner_expr = self:gen_expr(expr.expr)
         return "&" .. inner_expr
     elseif expr.kind == "cast" then
@@ -556,7 +565,21 @@ function Codegen:gen_expr(expr)
                             table.insert(args, self:gen_expr(a))
                         end
                     else
-                        table.insert(args, self:gen_expr(a))
+                        -- Regular argument - check if we need to dereference heap-allocated values
+                        local arg_expr = self:gen_expr(a)
+                        
+                        -- If argument is a heap-allocated identifier and parameter expects value type, dereference
+                        if a.kind == "identifier" and func_def.params[i] then
+                            local var_type = self:get_var_type(a.name)
+                            local param_type = func_def.params[i].type
+                            if var_type and var_type.kind == "pointer" and var_type.is_clone and
+                               param_type.kind ~= "pointer" then
+                                -- Dereference: heap-allocated value passed to value parameter
+                                arg_expr = "*" .. arg_expr
+                            end
+                        end
+                        
+                        table.insert(args, arg_expr)
                     end
                 end
             else
@@ -596,6 +619,17 @@ function Codegen:gen_expr(expr)
             table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
         end
         return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+    elseif expr.kind == "new_heap" then
+        -- new Type { fields... }
+        -- Allocate on heap and initialize fields
+        local parts = {}
+        for _, f in ipairs(expr.fields) do
+            table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
+        end
+        local initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+        -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
+        return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = %s; _ptr; })", 
+            expr.type_name, expr.type_name, initializer)
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
