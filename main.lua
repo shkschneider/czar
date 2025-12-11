@@ -185,7 +185,7 @@ local function cmd_build(args)
             i = i + 1
             if i > #args then
                 io.stderr:write("Error: -o requires an argument\n")
-                os.exit(1)
+                usage()
             end
             output_path = args[i]
         end
