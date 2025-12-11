@@ -622,6 +622,8 @@ function Codegen:gen_expr(expr)
     elseif expr.kind == "new_heap" then
         -- new Type { fields... }
         -- Allocate on heap and initialize fields
+        -- Note: Manual memory management - caller responsible for free()
+        -- TODO: Scope-based cleanup (RAII/defer) could be added in future
         local parts = {}
         for _, f in ipairs(expr.fields) do
             table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
