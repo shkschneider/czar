@@ -8,8 +8,8 @@ fn multiply(i32 a, i32 b) -> i32 {
 }
 
 fn compute(i32 x, i32 y) -> i32 {
-i32 sum = add(x, y)
-i32 product = multiply(x, y)
+    i32 sum = add(x, y)
+    i32 product = multiply(x, y)
     return sum + product
 }
 

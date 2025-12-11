@@ -9,29 +9,29 @@ fn maybe_null(bool should_be_null) -> Node* {
     if should_be_null {
         return null
     } else {
-Node n = Node { value: 10, next: null }
+    Node n = Node { value: 10, next: null }
         return &n
     }
 }
 
 fn main() -> i32 {
     // Test null coalescing operator ??
-Node* p1 = null
-i32 result1 = 0 ?? 5  // Should be 5
-    
+    Node* p1 = null
+    i32 result1 = 0 ?? 5  // Should be 5
+
     // Test with pointer
-Node n1 = Node { value: 20, next: null }
-Node* p2 = &n1
-    
+    Node n1 = Node { value: 20, next: null }
+    Node* p2 = &n1
+
     // Safe navigation test - pointer is not null
-Node n2 = Node { value: 15, next: null }
-Node* p3 = &n2
-i32 safe_value = p3?.value ?? 0  // Should be 15
-    
+    Node n2 = Node { value: 15, next: null }
+    Node* p3 = &n2
+    i32 safe_value = p3?.value ?? 0  // Should be 15
+
     // Safe navigation test - pointer is null
-Node* p4 = null
-i32 safe_null = p4?.value ?? 100  // Should be 100 (p4 is null)
-    
+    Node* p4 = null
+    i32 safe_null = p4?.value ?? 100  // Should be 100 (p4 is null)
+
     // Return combination of tests
     return result1 + safe_value + safe_null  // 5 + 15 + 100 = 120
 }
