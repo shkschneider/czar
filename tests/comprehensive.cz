@@ -11,12 +11,12 @@ struct Rect {
 }
 
 // Method syntax on Point
-fn Point.distance_squared(Point* self) -> i32 {
+fn Point.distance_squared(Point self) -> i32 {
     return self.x * self.x + self.y * self.y
 }
 
 // Extension method on Rect
-fn area(Rect* self) -> u64 {
+fn area(Rect self) -> u64 {
     val u64 w = self.width
     val u64 h = self.height
     return w * h
@@ -28,7 +28,7 @@ struct ValidateResult {
     i32 error_msg
 }
 
-fn validate_point(Point* p) -> ValidateResult {
+fn validate_point(Point p) -> ValidateResult {
     if p.x < 0 {
         return ValidateResult { ok: false, error_msg: 1 }
     }
@@ -54,8 +54,8 @@ fn main() -> i32 {
     // Test extension method
     val u64 a = r.area()
     
-    // Test error-as-value
-    val ValidateResult result = validate_point(&p)
+    // Test error-as-value - pass by value
+    val ValidateResult result = validate_point(p)
     
     if result.ok {
         if dist == 25 {

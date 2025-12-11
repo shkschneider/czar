@@ -4,13 +4,13 @@ struct Vec2 {
     i32 y
 }
 
-fn modify(Vec2* p) -> void {
+fn modify(mut Vec2 p) -> void {
     p.x = 10
     p.y = 20
 }
 
 fn main() -> i32 {
     var Vec2 v = Vec2 { x: 1, y: 2 }
-    modify(&v)
+    modify(mut v)
     return v.x + v.y     // should return 30
 }
