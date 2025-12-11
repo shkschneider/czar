@@ -17,8 +17,8 @@ fn Point.distance_squared(Point self) -> i32 {
 
 // Extension method on Rect
 fn area(Rect self) -> u64 {
-    val u64 w = self.width
-    val u64 h = self.height
+u64 w = self.width
+u64 h = self.height
     return w * h
 }
 
@@ -39,23 +39,23 @@ fn validate_point(Point p) -> ValidateResult {
 }
 
 fn main() -> i32 {
-    var Point p = Point { x: 3, y: 4 }
+Point p = Point { x: 3, y: 4 }
     
     // Test method call with auto-addressing
-    val i32 dist = p.distance_squared()
+i32 dist = p.distance_squared()
     
     // Test with different numeric types
-    var Rect r = Rect {
+Rect r = Rect {
         top_left: Point { x: 0, y: 0 },
         width: 10,
         height: 5
     }
     
     // Test extension method
-    val u64 a = r.area()
+u64 a = r.area()
     
     // Test error-as-value - pass by value
-    val ValidateResult result = validate_point(p)
+ValidateResult result = validate_point(p)
     
     if result.ok {
         if dist == 25 {

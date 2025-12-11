@@ -2,7 +2,7 @@
 // These should only work on mutable variables (var)
 
 fn main() -> i32 {
-    var i32 x = 10
+i32 x = 10
     
     // Test += operator
     x += 5   // x should be 15
