@@ -1,11 +1,11 @@
 // Test compound assignment operators with struct fields
 struct Point {
-    mut i32 x
-    mut i32 y
+    i32 x
+    i32 y
 }
 
 fn main() -> i32 {
-    Point p = Point { x: 10, y: 20 }
+    mut Point p = Point { x: 10, y: 20 }
 
     // Test compound assignments on struct fields
     p.x += 5   // p.x should be 15
