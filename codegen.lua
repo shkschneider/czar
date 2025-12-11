@@ -309,6 +309,12 @@ function Codegen:gen_params(params)
         
         local type_str = self:c_type(p.type)
         
+        -- In implicit pointer model, struct-typed parameters should be pointers
+        -- Check if this is a struct type (not a primitive and not already a pointer)
+        if p.type.kind == "named_type" and self:is_struct_type(p.type) then
+            type_str = type_str .. "*"
+        end
+        
         -- For parameters, check if this is a mutable pointer (mut parameter)
         -- If it's a pointer type with is_mut flag, it should be non-const
         -- Otherwise, struct pointers should be const (for pass-by-value semantics with implicit pointers)
@@ -878,9 +884,16 @@ function Codegen:gen_function(fn)
             self:emit("    (void)" .. param_name .. ";")
         else
             -- Add regular parameters to scope (parameters with mut are mutable)
+            -- In implicit pointer model, struct-typed parameters are actually pointers
+            local param_type = param.type
+            if param.type.kind == "named_type" and self:is_struct_type(param.type) then
+                -- Convert to pointer type for tracking
+                param_type = { kind = "pointer", to = param.type, is_mut = param.mut }
+            end
+            
             -- Check both param.mut and param.type.is_mut for pointer types
-            local is_mutable = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
-            self:add_var(param.name, param.type, is_mutable or false)
+            local is_mutable = param.mut or (param_type.kind == "pointer" and param_type.is_mut)
+            self:add_var(param.name, param_type, is_mutable or false)
         end
     end
 
