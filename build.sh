@@ -56,3 +56,5 @@ cc $CFLAGS -o $OUT main.c $LDFLAGS
 echo -n "[CZ] " ; file -b ./$OUT
 
 #install -m 755 ./$(OUT) /usr/local/bin/cz
+
+rm -f ./*.o ./main.h ./*.a
