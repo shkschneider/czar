@@ -1,13 +1,13 @@
 // Test new keyword for heap allocation - comprehensive test
 
 struct Person {
-    i32 age
-    i32 score
+    mut i32 age
+    mut i32 score
 }
 
 struct Point {
-    i32 x
-    i32 y
+    mut i32 x
+    mut i32 y
 }
 
 fn main() -> i32 {
