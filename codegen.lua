@@ -169,6 +169,53 @@ function Codegen:get_var_info(name)
     return nil
 end
 
+function Codegen:get_expr_type(expr)
+    -- Helper function to determine the type of an expression
+    if expr.kind == "identifier" then
+        local var_type = self:get_var_type(expr.name)
+        if var_type then
+            -- If it's a pointer type, return the pointed-to type
+            if type(var_type) == "table" and var_type.kind == "pointer" then
+                return self:type_name(var_type.to)
+            else
+                return self:type_name(var_type)
+            end
+        end
+    elseif expr.kind == "field" then
+        -- Get the type of the object and look up the field type
+        local obj_type = self:get_expr_type(expr.object)
+        if obj_type and self.structs[obj_type] then
+            local struct_def = self.structs[obj_type]
+            for _, field in ipairs(struct_def.fields) do
+                if field.name == expr.field then
+                    return self:type_name(field.type)
+                end
+            end
+        end
+    end
+    return nil
+end
+
+function Codegen:type_name(type_node)
+    -- Helper to extract type name from a type node
+    if type(type_node) == "string" then
+        return type_node
+    elseif type(type_node) == "table" then
+        if type_node.kind == "pointer" then
+            return self:type_name(type_node.to)
+        elseif type_node.name then
+            return type_node.name
+        end
+    end
+    return nil
+end
+
+function Codegen:is_struct_type(type_node)
+    -- Check if a type is a struct type
+    local type_name = self:type_name(type_node)
+    return type_name and self.structs[type_name] ~= nil
+end
+
 function Codegen:gen_params(params)
     local parts = {}
     for i, p in ipairs(params) do
@@ -213,7 +260,10 @@ function Codegen:gen_statement(stmt)
             return decl .. ";"
         else
             self:add_var(stmt.name, stmt.type, stmt.mutable)
-            local prefix = stmt.mutable and "" or "const "
+            -- For struct types, don't use const even if not mutable
+            -- Field mutability is checked at compile time instead
+            local is_struct_type = self:is_struct_type(stmt.type)
+            local prefix = (stmt.mutable or is_struct_type) and "" or "const "
             local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
             if stmt.init then
                 decl = decl .. " = " .. self:gen_expr(stmt.init)
@@ -385,6 +435,23 @@ function Codegen:gen_expr(expr)
                 local var_info = self:get_var_info(expr.target.name)
                 if var_info and not var_info.mutable then
                     error(string.format("Cannot assign to immutable variable '%s'", expr.target.name))
+                end
+            end
+        elseif expr.target.kind == "field" then
+            -- Check if target field is mutable
+            -- We need to determine the type of the object
+            local obj_type = self:get_expr_type(expr.target.object)
+            if obj_type and self.structs[obj_type] then
+                local struct_def = self.structs[obj_type]
+                local field_name = expr.target.field
+                -- Find the field in the struct definition
+                for _, field in ipairs(struct_def.fields) do
+                    if field.name == field_name then
+                        if not field.mutable then
+                            error(string.format("Cannot assign to immutable field '%s' of struct '%s'", field_name, obj_type))
+                        end
+                        break
+                    end
                 end
             end
         end

@@ -1,12 +1,12 @@
 // Test compound assignment operators with pointers
 struct Point {
-    i32 x
-    i32 y
+    mut i32 x
+    mut i32 y
 }
 
 fn main() -> i32 {
-    mut Point p = Point { x: 10, y: 20 }
-    mut Point* ptr = &p
+    Point p = Point { x: 10, y: 20 }
+    Point* ptr = &p
 
     // Test compound assignments through pointer
     ptr.x += 5   // p.x should be 15
