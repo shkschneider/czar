@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[[ -x ./cz ]] || make build || exit 1
+[[ -x ./cz ]] || ./build.sh || exit 1
 
 [[ $# -eq 1 ]] || set -- tests/*.cz
 
