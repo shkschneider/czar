@@ -5,7 +5,7 @@ struct Data {
 }
 
 fn main() -> i32 {
-    Data* ptr = null
-    Data* checked = ptr!!  // This should crash
+    Data ptr = null
+    Data checked = ptr!!  // This should crash
     return 0
 }
