@@ -4,14 +4,14 @@ struct Node {
 }
 
 fn main() -> i32 {
-mut Node* p = null
-    
+    mut Node* p = null
+
     // Check if we can assign null and non-null
     if p == null {
-Node n = Node { value: 42 }
+    Node n = Node { value: 42 }
         p = &n
         return p.value
     }
-    
+
     return 0
 }
