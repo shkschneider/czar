@@ -12,7 +12,7 @@ fn process_data(i32 data, i32 _) -> i32 {
 }
 
 // Extension method that ignores self (utility method on type)
-fn Result.is_error(Result* _) -> bool {
+fn Result.is_error(Result _) -> bool {
     // Static method-like behavior - always returns false in this example
     return false
 }

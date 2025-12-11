@@ -4,11 +4,11 @@ struct Vec2 {
     i32 y
 }
 
-fn Vec2.length(Vec2* self) -> i32 {
+fn Vec2.length(Vec2 self) -> i32 {
     return self.x * self.x + self.y * self.y
 }
 
-fn Vec2.add(Vec2* self, i32 dx, i32 dy) -> void {
+fn Vec2.add(mut Vec2 self, i32 dx, i32 dy) -> void {
     self.x = self.x + dx
     self.y = self.y + dy
 }
@@ -21,10 +21,6 @@ fn main() -> i32 {
     
     // Call method with parameters
     v:add(1, 2)
-    
-    // Alternative: static-style call
-    // val i32 l = Vec2.length(v)
-    // Vec2.add(v, 1, 2)
     
     return v.x + v.y  // should return 3+1 + 4+2 = 10
 }
