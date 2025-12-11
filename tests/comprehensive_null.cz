@@ -6,39 +6,39 @@ struct Node {
 }
 
 fn create_node(i32 v) -> Node* {
-    var Node n = Node { value: v, next: null }
+Node n = Node { value: v, next: null }
     return &n
 }
 
 fn main() -> i32 {
     // Test 1: Null coalescing with integer literals
-    val i32 test1 = 0 ?? 10  // Since 0 is falsy, this should be 10
+i32 test1 = 0 ?? 10  // Since 0 is falsy, this should be 10
     
     // Test 2: Null coalescing with pointers
-    var Node* null_ptr = null
-    var Node n1 = Node { value: 5, next: null }
-    var Node* valid_ptr = &n1
-    var Node* result_ptr = null_ptr ?? valid_ptr
+Node* null_ptr = null
+Node n1 = Node { value: 5, next: null }
+Node* valid_ptr = &n1
+Node* result_ptr = null_ptr ?? valid_ptr
     
     // Test 3: Safe navigation on null pointer
-    var Node* n2 = null
-    val i32 safe1 = n2?.value ?? 100  // Should be 100
+Node* n2 = null
+i32 safe1 = n2?.value ?? 100  // Should be 100
     
     // Test 4: Safe navigation on valid pointer
-    var Node n3 = Node { value: 25, next: null }
-    var Node* p3 = &n3
-    val i32 safe2 = p3?.value ?? 0   // Should be 25
+Node n3 = Node { value: 25, next: null }
+Node* p3 = &n3
+i32 safe2 = p3?.value ?? 0   // Should be 25
     
     // Test 5: Null check on valid pointer (should not crash)
-    var Node n4 = Node { value: 15, next: null }
-    var Node* p4 = &n4
-    var Node* checked = p4!!  // Should succeed
+Node n4 = Node { value: 15, next: null }
+Node* p4 = &n4
+Node* checked = p4!!  // Should succeed
     
     // Test 6: Safe navigation on pointer field
-    var Node n5 = Node { value: 30, next: null }
-    var Node* p5 = &n5
-    var Node n6 = Node { value: 40, next: p5 }
-    var Node* p6 = &n6
+Node n5 = Node { value: 30, next: null }
+Node* p5 = &n5
+Node n6 = Node { value: 40, next: p5 }
+Node* p6 = &n6
     
     // Return sum (test1=10, safe1=100, safe2=25)
     return test1 + safe1 + safe2  // 10 + 100 + 25 = 135

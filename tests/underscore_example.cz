@@ -32,11 +32,11 @@ fn main() -> i32 {
     _ = returns_result()
     
     // Use functions with unused parameters
-    val i32 x = process_data(5, 999)  // Second param ignored
-    val i32 y = complex_api(1, true, 7, 99)  // Most params ignored
+i32 x = process_data(5, 999)  // Second param ignored
+i32 y = complex_api(1, true, 7, 99)  // Most params ignored
     
     // Method with ignored self
-    var Result r = Result { ok: true, value: 0, error: 0 }
+Result r = Result { ok: true, value: 0, error: 0 }
     _ = r.is_error()
     
     return x + y  // 10 + 107 = 117

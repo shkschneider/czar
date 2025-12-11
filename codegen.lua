@@ -186,13 +186,26 @@ function Codegen:gen_statement(stmt)
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
-        self:add_var(stmt.name, stmt.type)
-        local prefix = stmt.mutable and "" or "const "
-        local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
-        if stmt.init then
+        -- Check if initializer is a clone expression
+        local is_clone = stmt.init and stmt.init.kind == "clone"
+        
+        if is_clone then
+            -- For clone, store as pointer type internally but present as value type
+            local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
+            self:add_var(stmt.name, ptr_type)
+            local prefix = stmt.mutable and "" or "const "
+            local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
             decl = decl .. " = " .. self:gen_expr(stmt.init)
+            return decl .. ";"
+        else
+            self:add_var(stmt.name, stmt.type)
+            local prefix = stmt.mutable and "" or "const "
+            local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
+            if stmt.init then
+                decl = decl .. " = " .. self:gen_expr(stmt.init)
+            end
+            return decl .. ";"
         end
-        return decl .. ";"
     elseif stmt.kind == "expr_stmt" then
         -- Check if this is an underscore assignment in expression form
         local expr = stmt.expression

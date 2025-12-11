@@ -22,10 +22,10 @@ fn main() -> i32 {
     _ = returns_result()
     
     // Use function with unused params
-    val i32 a = takes_unused_param(100, 5)
+i32 a = takes_unused_param(100, 5)
     
     // Multiple unused params
-    val i32 b = takes_multiple_unused(1, true, 3)
+i32 b = takes_multiple_unused(1, true, 3)
     
     return a + b  // 10 + 13 = 23
 }
