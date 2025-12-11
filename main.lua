@@ -12,6 +12,9 @@ local parser = require("parser")
 local generator = require("generator")
 local build = require("build")
 
+-- Simple file reader utility
+-- Note: This is duplicated in generator.lua to avoid circular dependencies
+-- (generator needs it for its API, and main needs it for lexer/parser commands)
 local function read_file(path)
     local handle, err = io.open(path, "r")
     if not handle then
@@ -271,6 +274,12 @@ local function cmd_run(args)
     end
 
     local source_path = args[1]
+    
+    -- Validate that the source file has a .cz extension
+    if not source_path:match("%.cz$") then
+        io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
+        os.exit(1)
+    end
     
     -- Generate C code
     local c_source, err = generator.generate_c(source_path)
