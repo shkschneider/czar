@@ -13,7 +13,7 @@ struct Point {
     i32 y
 }
 
-fn Point.ignore_self(Point* _) -> i32 {
+fn Point.ignore_self(Point _) -> i32 {
     return 42
 }
 

@@ -113,7 +113,12 @@ function Parser:parse_function()
     local params = {}
     if not self:check("RPAREN") then
         repeat
+            local is_mut = self:match("KEYWORD", "mut") ~= nil
             local param_type = self:parse_type()
+            -- If mut is specified, wrap the type in a pointer internally
+            if is_mut then
+                param_type = { kind = "pointer", to = param_type, is_mut = true }
+            end
             local param_name = self:expect("IDENT").value
             table.insert(params, { name = param_name, type = param_type })
         until not self:match("COMMA")
@@ -302,7 +307,14 @@ function Parser:parse_postfix()
             local args = {}
             if not self:check("RPAREN") then
                 repeat
-                    table.insert(args, self:parse_expression())
+                    -- Check for mut keyword before argument
+                    local is_mut = self:match("KEYWORD", "mut") ~= nil
+                    local arg_expr = self:parse_expression()
+                    if is_mut then
+                        -- Wrap the argument expression to indicate it should be passed as mutable
+                        arg_expr = { kind = "mut_arg", expr = arg_expr }
+                    end
+                    table.insert(args, arg_expr)
                 until not self:match("COMMA")
             end
             self:expect("RPAREN")
