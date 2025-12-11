@@ -160,41 +160,67 @@ function Parser:parse_statement()
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "return", value = expr }
-    elseif self:check("KEYWORD", "var") or self:check("KEYWORD", "val") then
-        return self:parse_var_decl()
     elseif self:check("KEYWORD", "if") then
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then
         return self:parse_while()
     else
-        local expr = self:parse_expression()
-        self:match("SEMICOLON")  -- semicolons are optional
-        return { kind = "expr_stmt", expression = expr }
+        -- Try to parse as variable declaration (Type name = ...)
+        -- Save position to backtrack if needed
+        local saved_pos = self.pos
+        local is_var_decl = false
+        
+        -- Check if this looks like a type declaration
+        if self:is_type_start() then
+            local success, type_node = pcall(function() return self:parse_type() end)
+            if success and self:check("IDENT") then
+                local name_tok = self:current()
+                self:advance()
+                if self:check("EQUAL") then
+                    -- This is a variable declaration: Type name = expr
+                    is_var_decl = true
+                    self.pos = saved_pos  -- Reset to parse properly
+                end
+            end
+        end
+        
+        if is_var_decl then
+            -- Parse as variable declaration
+            local type_ = self:parse_type()
+            local name = self:expect("IDENT").value
+            local init = nil
+            if self:match("EQUAL") then
+                init = self:parse_expression()
+            end
+            self:match("SEMICOLON")
+            -- All variables are mutable by default now
+            return { kind = "var_decl", name = name, type = type_, mutable = true, init = init }
+        else
+            -- Reset and parse as expression statement
+            self.pos = saved_pos
+            local expr = self:parse_expression()
+            self:match("SEMICOLON")  -- semicolons are optional
+            return { kind = "expr_stmt", expression = expr }
+        end
     end
 end
 
-function Parser:parse_var_decl()
-    local mutable = self:match("KEYWORD", "var") ~= nil
-    if not mutable then self:expect("KEYWORD", "val") end
-    
-    -- Check for special case: val _ = expr or var _ = expr (discard statement)
-    if self:check("IDENT") and self:current().value == "_" then
-        local name = self:advance().value
-        if self:match("EQUAL") then
-            local init = self:parse_expression()
-            self:match("SEMICOLON")  -- semicolons are optional
-            return { kind = "discard", value = init }
-        end
+-- Helper to check if current token could start a type
+function Parser:is_type_start()
+    local tok = self:current()
+    if not tok then return false end
+    -- Check for type keywords or identifiers that look like types
+    if tok.type == "KEYWORD" and (tok.value == "i32" or tok.value == "i64" or 
+                                   tok.value == "u32" or tok.value == "u64" or 
+                                   tok.value == "f32" or tok.value == "f64" or 
+                                   tok.value == "bool" or tok.value == "void") then
+        return true
     end
-    
-    local type_ = self:parse_type()
-    local name = self:expect("IDENT").value
-    local init = nil
-    if self:match("EQUAL") then
-        init = self:parse_expression()
+    -- Check for user-defined types (identifiers starting with uppercase)
+    if tok.type == "IDENT" and tok.value:match("^[A-Z]") then
+        return true
     end
-    self:match("SEMICOLON")  -- semicolons are optional
-    return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init }
+    return false
 end
 
 function Parser:parse_if()

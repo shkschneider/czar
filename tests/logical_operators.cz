@@ -1,8 +1,8 @@
 // Test logical operators: && and ||
 fn main() -> i32 {
-    val i32 a = 10
-    val i32 b = 20
-    val i32 c = 30
+i32 a = 10
+i32 b = 20
+i32 c = 30
     
     // Test &&
     if a < b && b < c {

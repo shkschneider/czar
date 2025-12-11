@@ -14,10 +14,10 @@ fn add(mut Vec2 self, i32 dx, i32 dy) -> void {
 }
 
 fn main() -> i32 {
-    var Vec2 v = Vec2 { x: 3, y: 4 }
+Vec2 v = Vec2 { x: 3, y: 4 }
     
     // Call as method with auto-addressing
-    val i32 l = v.length()
+i32 l = v.length()
     
     // Call method with parameters
     v.add(1, 2)
