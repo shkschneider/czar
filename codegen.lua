@@ -308,49 +308,57 @@ function Codegen:gen_statement(stmt)
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
-        -- Check if initializer is a pointer-returning expression
-        local is_pointer_expr = false
+        -- In implicit pointer model, all struct-typed variables are pointers
+        local is_struct_type = self:is_struct_type(stmt.type)
         
-        if stmt.init then
-            local init_kind = stmt.init.kind
-            -- Direct pointer expressions
-            if init_kind == "clone" or init_kind == "new_heap" or init_kind == "null" or 
-               init_kind == "null_check" or init_kind == "null_coalesce" or init_kind == "safe_nav" then
-                is_pointer_expr = true
-            -- Identifier that's a pointer
-            elseif init_kind == "identifier" then
-                is_pointer_expr = self:is_pointer_var(stmt.init.name)
-            -- Function call that returns pointer
-            elseif init_kind == "call" and stmt.init.callee.kind == "identifier" then
-                local func_info = self.functions["__global__"] and self.functions["__global__"][stmt.init.callee.name]
-                if func_info and func_info.return_type and func_info.return_type.kind == "pointer" then
-                    is_pointer_expr = true
-                end
-            end
-        end
-        
-        if is_pointer_expr then
-            -- For pointer expressions, store as pointer type internally
+        if is_struct_type then
+            -- Struct types are always pointers in storage
             local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
             self:add_var(stmt.name, ptr_type, stmt.mutable)
-            -- For struct types, don't use const even if not mutable
-            local is_struct_type = self:is_struct_type(stmt.type)
-            local prefix = (stmt.mutable or is_struct_type) and "" or "const "
+            local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
             if stmt.init then
-                decl = decl .. " = " .. self:gen_expr(stmt.init)
+                local init_expr = self:gen_expr(stmt.init)
+                -- Struct literals are already addresses, others might need special handling
+                decl = decl .. " = " .. init_expr
             end
             return decl .. ";"
         else
-            self:add_var(stmt.name, stmt.type, stmt.mutable)
-            -- For struct types, don't use const even if not mutable
-            local is_struct_type = self:is_struct_type(stmt.type)
-            local prefix = (stmt.mutable or is_struct_type) and "" or "const "
-            local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
+            -- Non-struct types: check for special initializers
+            local is_pointer_expr = false
             if stmt.init then
-                decl = decl .. " = " .. self:gen_expr(stmt.init)
+                local init_kind = stmt.init.kind
+                if init_kind == "clone" or init_kind == "new_heap" or init_kind == "null" or 
+                   init_kind == "null_check" or init_kind == "null_coalesce" or init_kind == "safe_nav" then
+                    is_pointer_expr = true
+                elseif init_kind == "identifier" then
+                    is_pointer_expr = self:is_pointer_var(stmt.init.name)
+                elseif init_kind == "call" and stmt.init.callee.kind == "identifier" then
+                    local func_info = self.functions["__global__"] and self.functions["__global__"][stmt.init.callee.name]
+                    if func_info and func_info.return_type and func_info.return_type.kind == "pointer" then
+                        is_pointer_expr = true
+                    end
+                end
             end
-            return decl .. ";"
+            
+            if is_pointer_expr then
+                local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
+                self:add_var(stmt.name, ptr_type, stmt.mutable)
+                local prefix = stmt.mutable and "" or "const "
+                local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
+                if stmt.init then
+                    decl = decl .. " = " .. self:gen_expr(stmt.init)
+                end
+                return decl .. ";"
+            else
+                self:add_var(stmt.name, stmt.type, stmt.mutable)
+                local prefix = stmt.mutable and "" or "const "
+                local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
+                if stmt.init then
+                    decl = decl .. " = " .. self:gen_expr(stmt.init)
+                end
+                return decl .. ";"
+            end
         end
     elseif stmt.kind == "expr_stmt" then
         -- Check if this is an underscore assignment in expression form
@@ -743,17 +751,22 @@ function Codegen:gen_expr(expr)
                             table.insert(args, self:gen_expr(a))
                         end
                     else
-                        -- Regular argument - check if we need to dereference heap-allocated values
+                        -- Regular argument - check if we need to dereference struct pointers
                         local arg_expr = self:gen_expr(a)
                         
-                        -- If argument is a heap-allocated identifier and parameter expects value type, dereference
+                        -- In implicit pointer model, all struct variables are pointers
+                        -- If passing to a non-mut parameter, dereference to copy the value
                         if a.kind == "identifier" and func_def.params[i] then
                             local var_type = self:get_var_type(a.name)
                             local param_type = func_def.params[i].type
-                            if var_type and var_type.kind == "pointer" and var_type.is_clone and
-                               param_type.kind ~= "pointer" then
-                                -- Dereference: heap-allocated value passed to value parameter
-                                arg_expr = "*" .. arg_expr
+                            local param_is_mut = param_type.kind == "pointer" and param_type.is_mut
+                            
+                            -- If var is a struct pointer and param is NOT mut, dereference for value copy
+                            if var_type and var_type.kind == "pointer" and not param_is_mut then
+                                if param_type.kind ~= "pointer" then
+                                    -- Parameter expects value type, dereference the pointer
+                                    arg_expr = "*" .. arg_expr
+                                end
                             end
                         end
                         
@@ -796,7 +809,8 @@ function Codegen:gen_expr(expr)
         for _, f in ipairs(expr.fields) do
             table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
         end
-        return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+        -- In implicit pointer model, struct literals should return addresses (pointers)
+        return string.format("&(%s){ %s }", expr.type_name, join(parts, ", "))
     elseif expr.kind == "new_heap" then
         -- new Type { fields... }
         -- Allocate on heap and initialize fields
