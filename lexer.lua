@@ -11,6 +11,7 @@ local keywords = {
     ["return"] = true,
     ["var"] = true,
     ["val"] = true,
+    ["mut"] = true,
     ["if"] = true,
     ["else"] = true,
     ["while"] = true,

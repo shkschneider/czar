@@ -242,6 +242,10 @@ function Codegen:gen_expr(expr)
         return "NULL"
     elseif expr.kind == "identifier" then
         return expr.name
+    elseif expr.kind == "mut_arg" then
+        -- mut argument: automatically take address
+        local inner_expr = self:gen_expr(expr.expr)
+        return "&" .. inner_expr
     elseif expr.kind == "binary" then
         -- Handle null coalescing operator
         if expr.op == "??" then
