@@ -4,7 +4,7 @@
 // Both are copied when passed to functions unless mut is used
 
 struct Node {
-    i32 value
+    mut i32 value
 }
 
 fn modify_by_copy(Node n) -> void {
