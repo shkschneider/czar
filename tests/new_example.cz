@@ -16,7 +16,7 @@ fn get_total(Person p) -> i32 {
 
 fn main() -> i32 {
     // Example from problem statement: heap allocation without explicit pointer syntax
-    Person person = new Person { age: 25, score: 50 }
+    mut Person person = new Person { age: 25, score: 50 }
 
     // Access fields normally (compiler handles pointer dereferencing)
     i32 initial_total = person.age + person.score  // 75
