@@ -40,5 +40,8 @@ for f in $@ ; do
 done
 echo "OK=$ok KO=$ko"
 
+[[ $ko -gt 0 ]] && rm -f ./cz
+
 exit $ko
+
 # EOF
