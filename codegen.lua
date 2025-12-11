@@ -259,15 +259,32 @@ function Codegen:gen_expr(expr)
     elseif expr.kind == "null" then
         return "NULL"
     elseif expr.kind == "identifier" then
+        -- Check if this is a clone variable that needs dereferencing
+        local var_type = self:get_var_type(expr.name)
+        if var_type and var_type.kind == "pointer" and var_type.is_clone then
+            -- For clone variables used directly (not in field access), dereference them
+            -- But we need context to know if this is a field access or not
+            -- For now, just return the name - field access will handle it
+            return expr.name
+        end
         return expr.name
     elseif expr.kind == "mut_arg" then
         -- mut argument: automatically take address
         local inner_expr = self:gen_expr(expr.expr)
         return "&" .. inner_expr
     elseif expr.kind == "cast" then
-        -- cast<Type>(expr) -> (Type)expr
+        -- cast<Type> expr -> (Type)expr
         local target_type_str = self:c_type(expr.target_type)
         local expr_str = self:gen_expr(expr.expr)
+        
+        -- Check if we're casting a clone variable that needs dereferencing
+        if expr.expr.kind == "identifier" then
+            local var_type = self:get_var_type(expr.expr.name)
+            if var_type and var_type.kind == "pointer" and var_type.is_clone then
+                expr_str = "*" .. expr_str
+            end
+        end
+        
         return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "clone" then
         -- clone(expr) or clone<Type>(expr)
