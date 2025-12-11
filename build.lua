@@ -26,21 +26,24 @@ local function compile_c_to_binary(c_file_path, output_path)
 end
 
 local function run_binary(binary_path)
-    -- Run and capture exit code with escaped path
-    local run_cmd = shell_escape("./" .. binary_path) .. "; echo $?"
-    local handle = io.popen(run_cmd)
-    local output = handle:read("*a")
-    handle:close()
+    -- Run the binary and capture exit code
+    local run_cmd = "./" .. binary_path
+    local ret = os.execute(run_cmd)
     
-    -- Print output to stdout
-    io.write(output)
-    
-    -- Extract exit code from last line
-    local exit_code = output:match("(%d+)%s*$")
-    if exit_code then
-        return tonumber(exit_code)
+    -- In LuaJIT, os.execute returns the raw system return value
+    -- The exit code is in the high byte, so we need to shift right by 8
+    if type(ret) == "number" then
+        -- LuaJIT/Lua 5.1 behavior: return value contains exit code shifted left by 8
+        local exit_code = math.floor(ret / 256)
+        return exit_code
     else
-        return 0
+        -- Lua 5.2+ behavior: returns (true/nil, "exit", code)
+        local ok, _, code = ret
+        if ok then
+            return code or 0
+        else
+            return code or 1
+        end
     end
 end
 
