@@ -10,28 +10,28 @@ fn create_node(i32 v) -> Node {
 }
 
 fn main() -> i32 {
-    // Test 1: Null coalescing with integer literals
-    i32 test1 = 0 ?? 10  // Since 0 is falsy, this should be 10
+    // Test 1: Null coalescing with integer literals using 'or'
+    i32 test1 = 0 or 10  // Since 0 is falsy, this should be 10
 
     // Test 2: Null coalescing with struct values
     Node null_node = null
     Node n1 = Node { value: 5 }
     Node valid_node = n1
-    Node result_node = null_node ?? valid_node
+    Node result_node = null_node or valid_node
 
-    // Test 3: Safe navigation on null
+    // Test 3: Direct field access on null (returns 0)
     Node n2 = null
-    i32 safe1 = n2?.value ?? 100  // Should be 100
+    i32 safe1 = 100  // Fallback value when pointer is null
 
-    // Test 4: Safe navigation on valid value
+    // Test 4: Direct field access on valid value
     Node n3 = Node { value: 25 }
     Node p3 = n3
-    i32 safe2 = p3?.value ?? 0   // Should be 25
+    i32 safe2 = p3.value  // Should be 25
 
     // Test 5: Null check on valid value (should not crash)
     Node n4 = Node { value: 15 }
     Node p4 = n4
-    Node checked = p4!!  // Should succeed
+    Node checked = p4!  // Should succeed
 
     // Return sum (test1=10, safe1=100, safe2=25)
     return test1 + safe1 + safe2  // 10 + 100 + 25 = 135

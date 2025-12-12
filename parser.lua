@@ -287,7 +287,7 @@ function Parser:parse_expression()
 end
 
 function Parser:parse_assignment()
-    local expr = self:parse_null_coalesce()
+    local expr = self:parse_binary_or()
     if self:match("EQUAL") then
         local value = self:parse_assignment()
         return { kind = "assign", target = expr, value = value }
@@ -307,16 +307,34 @@ function Parser:parse_assignment()
     return expr
 end
 
-function Parser:parse_null_coalesce()
-    return self:parse_binary_chain(self.parse_binary_or, { NULLCOALESCE = true })
-end
-
 function Parser:parse_binary_or()
-    return self:parse_binary_chain(self.parse_binary_and, { OR = true })
+    local left = self:parse_binary_and()
+    while true do
+        local tok = self:current()
+        if tok and tok.type == "KEYWORD" and tok.value == "or" then
+            self:advance()
+            local right = self:parse_binary_and()
+            left = { kind = "binary", op = "or", left = left, right = right }
+        else
+            break
+        end
+    end
+    return left
 end
 
 function Parser:parse_binary_and()
-    return self:parse_binary_chain(self.parse_equality, { AND = true })
+    local left = self:parse_equality()
+    while true do
+        local tok = self:current()
+        if tok and tok.type == "KEYWORD" and tok.value == "and" then
+            self:advance()
+            local right = self:parse_equality()
+            left = { kind = "binary", op = "and", left = left, right = right }
+        else
+            break
+        end
+    end
+    return left
 end
 
 function Parser:parse_equality()
@@ -368,7 +386,7 @@ end
 
 function Parser:parse_unary()
     local tok = self:current()
-    if tok and (tok.type == "MINUS" or tok.type == "BANG" or tok.type == "AMPERSAND" or tok.type == "STAR") then
+    if tok and (tok.type == "MINUS" or tok.type == "AMPERSAND" or tok.type == "STAR") then
         self:advance()
         local operand = self:parse_unary()
         return { kind = "unary", op = tok.value, operand = operand }
@@ -395,10 +413,9 @@ function Parser:parse_postfix()
             end
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
-        elseif self:match("SAFENAV") then
-            -- Safe navigation operator: a?.b
-            local field = self:expect("IDENT").value
-            expr = { kind = "safe_nav", object = expr, field = field }
+        elseif self:match("BANG") then
+            -- Null check operator: a! (postfix)
+            expr = { kind = "null_check", operand = expr }
         elseif self:match("COLON") then
             -- Method call using colon: obj:method()
             local method_name = self:expect("IDENT").value
@@ -422,9 +439,6 @@ function Parser:parse_postfix()
                 -- Regular field access
                 expr = { kind = "field", object = expr, field = field }
             end
-        elseif self:match("BANGBANG") then
-            -- Null check operator: a!!
-            expr = { kind = "null_check", operand = expr }
         elseif expr.kind == "identifier" and self:check("LBRACE") then
             -- Struct literal: only parse if we're not in a context where { starts a block
             -- We can check if the previous tokens/context suggests this is a struct literal
