@@ -2,7 +2,7 @@
 
 ./build.sh || exit 1
 
-[[ $# -eq 1 ]] || set -- tests/*.cz
+[[ $# -gt 1 ]] || set -- tests/*.cz
 
 ok=0
 ko=0
