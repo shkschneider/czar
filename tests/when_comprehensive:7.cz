@@ -1,0 +1,26 @@
+// Comprehensive when test with multiple patterns
+fn classify(i32 n) -> i32 {
+    when (n) {
+        0 -> { return 1 }
+        1 -> { return 2 }
+        2 -> { return 3 }
+        3 -> { return 4 }
+        else -> { return 0 }
+    }
+}
+
+fn check_range(i32 val) -> i32 {
+    when {
+        val < 0 -> { return 1 }
+        val == 0 -> { return 2 }
+        val < 10 -> { return 3 }
+        val < 100 -> { return 4 }
+        else -> { return 5 }
+    }
+}
+
+fn main() -> i32 {
+    i32 a = classify(2)
+    i32 b = check_range(50)
+    return a + b
+}

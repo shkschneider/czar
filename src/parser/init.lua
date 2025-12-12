@@ -408,10 +408,13 @@ function Parser:parse_when_arm()
     
     self:expect("ARROW")
     
-    -- Parse body (can be an expression or a block)
+    -- Parse body (can be a statement or a block)
     local body
     if self:check("LBRACE") then
         body = self:parse_block()
+    elseif self:check("KEYWORD", "return") then
+        -- Handle return statement
+        body = { kind = "block", statements = { self:parse_statement() } }
     else
         -- Single expression
         local expr = self:parse_expression()
