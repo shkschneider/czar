@@ -21,6 +21,7 @@ local function is_type_token(tok)
         ["f64"] = true,
         ["bool"] = true,
         ["void"] = true,
+        ["any"] = true,
     }
     if tok.type == "KEYWORD" and type_keywords[tok.value] then
         return true
@@ -247,7 +248,8 @@ function Parser:is_type_start()
     if tok.type == "KEYWORD" and (tok.value == "i32" or tok.value == "i64" or 
                                    tok.value == "u32" or tok.value == "u64" or 
                                    tok.value == "f32" or tok.value == "f64" or 
-                                   tok.value == "bool" or tok.value == "void") then
+                                   tok.value == "bool" or tok.value == "void" or
+                                   tok.value == "any") then
         return true
     end
     -- Check for user-defined types (identifiers starting with uppercase)
