@@ -118,11 +118,23 @@ function Parser:parse_function()
     -- Type.method for static methods (no implicit self)
     if self:match("COLON") then
         receiver_type = name  -- The first identifier is the type
-        name = self:expect("IDENT").value  -- The second identifier is the method name
+        -- Allow 'new' and 'free' as method names (they're special constructor/destructor names)
+        local tok = self:current()
+        if tok and tok.type == "KEYWORD" and (tok.value == "new" or tok.value == "free") then
+            name = self:advance().value  -- Accept keyword as method name
+        else
+            name = self:expect("IDENT").value  -- The second identifier is the method name
+        end
         is_static_method = false  -- Instance method with implicit self
     elseif self:match("DOT") then
         receiver_type = name  -- The first identifier is the type
-        name = self:expect("IDENT").value  -- The second identifier is the method name
+        -- Allow 'new' and 'free' as static method names too
+        local tok = self:current()
+        if tok and tok.type == "KEYWORD" and (tok.value == "new" or tok.value == "free") then
+            name = self:advance().value  -- Accept keyword as method name
+        else
+            name = self:expect("IDENT").value  -- The second identifier is the method name
+        end
         is_static_method = true  -- Static method, no implicit self
     end
     
