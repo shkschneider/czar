@@ -42,7 +42,7 @@ function Codegen:collect_structs_and_functions()
             -- Validate constructor/destructor signatures (new requirement)
             if item.receiver_type and (item.name == "new" or item.name == "free") then
                 -- Constructor and destructor methods must have only self as parameter
-                if #item.params ~= 1 or item.params[1].name ~= "self" then
+                if not item.params or #item.params ~= 1 or item.params[1].name ~= "self" then
                     error(string.format("%s:%s() can only have self as parameter", item.receiver_type, item.name))
                 end
             end
@@ -662,10 +662,12 @@ function Codegen:gen_statement(stmt)
             end
             
             -- Call constructor if the struct has one
-            local struct_type_name = stmt.type.name
-            local constructor_call = self:gen_constructor_call(struct_type_name, stmt.name)
-            if constructor_call then
-                return decl .. ";\n    " .. constructor_call
+            if stmt.type and stmt.type.kind == "named_type" then
+                local struct_type_name = stmt.type.name
+                local constructor_call = self:gen_constructor_call(struct_type_name, stmt.name)
+                if constructor_call then
+                    return decl .. ";\n    " .. constructor_call
+                end
             end
             
             return decl .. ";"
