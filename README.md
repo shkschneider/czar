@@ -213,8 +213,22 @@ Parentheses optional depending on taste; grammar supports both.
 ### 11. Evaluation Order
 
 - Strict left-to-right for all expression evaluation.
-- `&&` and `||` are short-circuiting.
+- `and` and `or` are short-circuiting logical operators.
+- `or` also serves as the null-coalescing operator.
 - Compiler may introduce temporaries in generated C to preserve these guarantees.
+
+### 12. Null Safety
+
+- `!` (postfix): Null-check operator - crashes if value is null
+- `or`: Null-coalescing operator - returns right operand if left is null/falsy
+- Direct field access with `.` - no special safe navigation operator
+- Nullable types can be represented as `Type` (pointer semantics)
+
+### 13. Numeric Literals
+
+- Underscore `_` can be used as a separator in numeric literals for readability
+- Example: `1_000_000` is equivalent to `1000000`
+- Underscores are ignored during lexing
 
 ## Compiler Architecture
 
@@ -369,8 +383,9 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - Variables: val (immutable) and var (mutable)
 - Functions with parameters and return values
 - Control flow: if/else and while loops
-- Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (&&, ||)
-- Null-safety operators: `!!` (null-check), `??` (null-coalescing), `?.` (safe navigation)
+- Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (`and`, `or`)
+- Null-safety operators: `!` (null-check), `or` (null-coalescing/logical OR)
+- Numeric literals: Underscore `_` separator supported (e.g., `1_000`)
 - Struct literals and field access
 
 **v1 Features (Halfway Complete):**
