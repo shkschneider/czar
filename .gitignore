@@ -1,6 +1,7 @@
-*.h
-*.o
-*.a
-*.out
-cz
 build/
+main.h
+*.out
+*.o
+*.s
+*.a
+cz
