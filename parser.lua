@@ -262,15 +262,43 @@ function Parser:parse_if()
     local condition = self:parse_expression()
     local then_block = self:parse_block()
     local else_block = nil
-    if self:match("KEYWORD", "else") then
+    if self:match("KEYWORD", "elseif") then
+        -- elseif - parse condition and treat as nested if statement
+        local elseif_condition = self:parse_expression()
+        local elseif_then_block = self:parse_block()
+        -- Create nested if statement for the elseif
+        local nested_if = { kind = "if", condition = elseif_condition, then_block = elseif_then_block, else_block = nil }
+        -- Check for more elseif or else
+        if self:check("KEYWORD", "elseif") or self:check("KEYWORD", "else") then
+            -- Recursively handle more elseif/else by parsing the rest
+            nested_if.else_block = self:parse_if_continuation()
+        end
+        else_block = { kind = "block", statements = { nested_if } }
+    elseif self:match("KEYWORD", "else") then
         if self:check("KEYWORD", "if") then
-            -- else if - parse as nested if statement
+            -- else if - parse as nested if statement (for backward compatibility)
             else_block = { kind = "block", statements = { self:parse_if() } }
         else
             else_block = self:parse_block()
         end
     end
     return { kind = "if", condition = condition, then_block = then_block, else_block = else_block }
+end
+
+function Parser:parse_if_continuation()
+    -- Parse the continuation of an if statement (elseif/else part only)
+    if self:match("KEYWORD", "elseif") then
+        local elseif_condition = self:parse_expression()
+        local elseif_then_block = self:parse_block()
+        local nested_if = { kind = "if", condition = elseif_condition, then_block = elseif_then_block, else_block = nil }
+        if self:check("KEYWORD", "elseif") or self:check("KEYWORD", "else") then
+            nested_if.else_block = self:parse_if_continuation()
+        end
+        return { kind = "block", statements = { nested_if } }
+    elseif self:match("KEYWORD", "else") then
+        return self:parse_block()
+    end
+    return nil
 end
 
 function Parser:parse_while()
