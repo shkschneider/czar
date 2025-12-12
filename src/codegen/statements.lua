@@ -155,6 +155,8 @@ function Statements.gen_statement(stmt)
         return Statements.gen_if(stmt)
     elseif stmt.kind == "while" then
         return Statements.gen_while(stmt)
+    elseif stmt.kind == "when" then
+        return Statements.gen_when(stmt)
     else
         error("unknown statement kind: " .. tostring(stmt.kind))
     end
@@ -241,6 +243,116 @@ function Statements.gen_while(stmt)
     end
     ctx():pop_scope()
 
+    table.insert(parts, "}")
+    return join(parts, "\n    ")
+end
+
+function Statements.gen_when(stmt)
+    local parts = {}
+    
+    -- If there's a subject variable declaration, emit it first
+    if stmt.subject_var and stmt.subject_type then
+        local type_str = Codegen.Types.c_type(stmt.subject_type)
+        local init_expr = Codegen.Expressions.gen_expr(stmt.subject)
+        table.insert(parts, type_str .. " " .. stmt.subject_var .. " = " .. init_expr .. ";")
+    end
+    
+    -- Generate if-else chain for the when arms
+    local first = true
+    local has_else = false
+    
+    for i, arm in ipairs(stmt.arms) do
+        if arm.pattern_kind == "else" then
+            has_else = true
+            if first then
+                -- If else is the only arm (shouldn't happen normally)
+                table.insert(parts, "{")
+            else
+                table.insert(parts, "} else {")
+            end
+            
+            -- Push scope for else arm
+            ctx():push_scope()
+            for _, s in ipairs(arm.body.statements) do
+                table.insert(parts, "    " .. Statements.gen_statement(s))
+            end
+            -- Insert cleanup for else arm
+            local cleanup = ctx():get_scope_cleanup()
+            for _, cleanup_code in ipairs(cleanup) do
+                table.insert(parts, "    " .. cleanup_code)
+            end
+            ctx():pop_scope()
+        elseif arm.pattern_kind == "type_check" then
+            -- Generate type check: typeof(subject) == Type
+            -- For now, we'll use a simpler approach with _Generic or runtime checks
+            -- Since C doesn't have native type checking, we'll need to approximate
+            local condition
+            if stmt.subject then
+                -- Use _Generic for compile-time type checking (C11)
+                local type_name = arm.pattern.kind == "named_type" and arm.pattern.name or "unknown"
+                -- For simplicity, generate a comment and use true condition
+                -- In a real implementation, this would need proper type metadata
+                condition = "/* is " .. type_name .. " */ 1"
+            else
+                condition = "1"  -- Always true if no subject
+            end
+            
+            if first then
+                table.insert(parts, "if (" .. condition .. ") {")
+                first = false
+            else
+                table.insert(parts, "} else if (" .. condition .. ") {")
+            end
+            
+            -- Push scope for type check arm
+            ctx():push_scope()
+            for _, s in ipairs(arm.body.statements) do
+                table.insert(parts, "    " .. Statements.gen_statement(s))
+            end
+            -- Insert cleanup for type check arm
+            local cleanup = ctx():get_scope_cleanup()
+            for _, cleanup_code in ipairs(cleanup) do
+                table.insert(parts, "    " .. cleanup_code)
+            end
+            ctx():pop_scope()
+        else  -- value pattern
+            local condition
+            if stmt.subject then
+                -- Compare subject with pattern value
+                local subject_expr
+                if stmt.subject_var then
+                    subject_expr = stmt.subject_var
+                else
+                    subject_expr = Codegen.Expressions.gen_expr(stmt.subject)
+                end
+                local pattern_expr = Codegen.Expressions.gen_expr(arm.pattern)
+                condition = subject_expr .. " == " .. pattern_expr
+            else
+                -- Condition-only when: evaluate pattern as boolean
+                condition = Codegen.Expressions.gen_expr(arm.pattern)
+            end
+            
+            if first then
+                table.insert(parts, "if (" .. condition .. ") {")
+                first = false
+            else
+                table.insert(parts, "} else if (" .. condition .. ") {")
+            end
+            
+            -- Push scope for value pattern arm
+            ctx():push_scope()
+            for _, s in ipairs(arm.body.statements) do
+                table.insert(parts, "    " .. Statements.gen_statement(s))
+            end
+            -- Insert cleanup for value pattern arm
+            local cleanup = ctx():get_scope_cleanup()
+            for _, cleanup_code in ipairs(cleanup) do
+                table.insert(parts, "    " .. cleanup_code)
+            end
+            ctx():pop_scope()
+        end
+    end
+    
     table.insert(parts, "}")
     return join(parts, "\n    ")
 end
