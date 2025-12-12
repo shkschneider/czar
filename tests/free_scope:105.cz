@@ -1,0 +1,25 @@
+// Test automatic scope-based cleanup
+
+struct Person {
+    i32 age
+}
+
+fn main() -> i32 {
+    // Heap allocation - should be automatically freed at scope exit
+    Person p1 = new Person { age: 25 }
+    
+    // Clone allocation - should be automatically freed at scope exit
+    Person p2 = clone p1
+    
+    // Stack allocation - should NOT be freed (automatic by C)
+    Person p3 = Person { age: 30 }
+    
+    // Alias - should NOT be freed (points to p1)
+    Person p4 = p1
+    
+    // Return total
+    return p1.age + p2.age + p3.age + p4.age
+}
+// At this point: p1 and p2 should be freed automatically
+// p3 is stack-allocated (handled by C)
+// p4 is an alias (no free needed)
