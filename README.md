@@ -400,6 +400,8 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - ✅ **Error-as-value**: Pattern demonstrated with Result-style structs
 - ⏳ **Overloading**: Not yet implemented (planned)
 - ⏳ **Nullable pointers with explicit null checks**: Partially supported
+- `#` talks to the compiler
+- `@` is for interfaces
 
 ### Usage
 
