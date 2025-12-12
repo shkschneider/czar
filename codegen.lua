@@ -541,12 +541,32 @@ function Codegen:gen_if(stmt)
     for _, s in ipairs(stmt.then_block.statements) do
         table.insert(parts, "    " .. self:gen_statement(s))
     end
-    if stmt.else_block then
-        table.insert(parts, "} else {")
-        for _, s in ipairs(stmt.else_block.statements) do
-            table.insert(parts, "    " .. self:gen_statement(s))
+    
+    -- Handle else/elseif chain
+    local current_else = stmt.else_block
+    while current_else do
+        -- Check if else_block is a single if statement (elseif pattern)
+        if current_else.kind == "block" and 
+           #current_else.statements == 1 and 
+           current_else.statements[1].kind == "if" then
+            -- Generate "else if" instead of "else { if"
+            local nested_if = current_else.statements[1]
+            table.insert(parts, "} else if (" .. self:gen_expr(nested_if.condition) .. ") {")
+            for _, s in ipairs(nested_if.then_block.statements) do
+                table.insert(parts, "    " .. self:gen_statement(s))
+            end
+            -- Continue with the nested else_block
+            current_else = nested_if.else_block
+        else
+            -- Normal else block (not an if statement)
+            table.insert(parts, "} else {")
+            for _, s in ipairs(current_else.statements) do
+                table.insert(parts, "    " .. self:gen_statement(s))
+            end
+            current_else = nil  -- End the chain
         end
     end
+    
     table.insert(parts, "}")
     return join(parts, "\n    ")
 end
