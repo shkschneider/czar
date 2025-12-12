@@ -1,12 +1,19 @@
 -- Run module: executes compiled binaries
 
-local utils = require("utils")
+local Run = {}
+Run.__index = Run
 
-local function run_binary(binary_path)
+local function shell_escape(str)
+    -- Escape shell metacharacters by wrapping in single quotes
+    -- and escaping any single quotes in the string
+    return "'" .. str:gsub("'", "'\\''") .. "'"
+end
+
+function Run.run_binary(binary_path)
     -- Run the binary and capture exit code
-    local run_cmd = utils.shell_escape("./" .. binary_path)
+    local run_cmd = shell_escape("./" .. binary_path)
     local ret = os.execute(run_cmd)
-    
+
     -- In LuaJIT, os.execute returns the raw system return value
     -- The exit code is in the high byte (shifted left by 8), so we need to shift right by 8
     -- This is done via division by 256, which is equivalent to right-shifting by 8 bits
@@ -27,6 +34,4 @@ local function run_binary(binary_path)
     end
 end
 
-return {
-    run_binary = run_binary
-}
+return Run
