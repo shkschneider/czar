@@ -944,12 +944,12 @@ function Codegen:gen_expr(expr)
         -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = *source_ptr; _ptr; })
         if expr.target_type and source_type then
             -- With cast
-            return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = (%s)%s; _ptr; })", 
-                target_type_str, target_type_str, target_type_str, source_expr)
+            return string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = (%s)%s; _ptr; })", 
+                target_type_str, self:malloc_func(), target_type_str, target_type_str, source_expr)
         else
             -- Without cast
-            return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = %s; _ptr; })", 
-                target_type_str, target_type_str, source_expr)
+            return string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = %s; _ptr; })", 
+                target_type_str, self:malloc_func(), target_type_str, source_expr)
         end
     elseif expr.kind == "binary" then
         -- Handle special operators
@@ -1026,8 +1026,8 @@ function Codegen:gen_expr(expr)
                    (expr.value.kind == "identifier" and not self:is_pointer_var(expr.value.name)) then
                     -- Wrap value in heap allocation (new)
                     local type_name = self:c_type(var_info.type.to)
-                    value_expr = string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = %s; _ptr; })", 
-                        type_name, type_name, value_expr)
+                    value_expr = string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = %s; _ptr; })", 
+                        type_name, self:malloc_func(), type_name, value_expr)
                 end
             end
         end
@@ -1308,8 +1308,8 @@ function Codegen:gen_expr(expr)
         end
         local initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
         -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
-        return string.format("({ %s* _ptr = malloc(sizeof(%s)); *_ptr = %s; _ptr; })", 
-            expr.type_name, expr.type_name, initializer)
+        return string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = %s; _ptr; })", 
+            expr.type_name, self:malloc_func(), expr.type_name, initializer)
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
@@ -1388,8 +1388,54 @@ end
 
 function Codegen:gen_wrapper(has_main)
     if has_main then
-        self:emit("int main(void) { return main_main(); }")
+        if self.debug_memory then
+            -- With memory tracking, capture return value and print stats
+            self:emit("int main(void) {")
+            self:emit("    int _ret = main_main();")
+            self:emit("    _czar_print_memory_stats();")
+            self:emit("    return _ret;")
+            self:emit("}")
+        else
+            self:emit("int main(void) { return main_main(); }")
+        end
     end
+end
+
+function Codegen:gen_memory_tracking_helpers()
+    self:emit("// Memory tracking helpers")
+    self:emit("static size_t _czar_alloc_count = 0;")
+    self:emit("static size_t _czar_alloc_bytes = 0;")
+    self:emit("static size_t _czar_free_count = 0;")
+    self:emit("static size_t _czar_free_bytes = 0;")
+    self:emit("")
+    self:emit("void* _czar_malloc(size_t size) {")
+    self:emit("    void* ptr = malloc(size);")
+    self:emit("    if (ptr) {")
+    self:emit("        _czar_alloc_count++;")
+    self:emit("        _czar_alloc_bytes += size;")
+    self:emit("    }")
+    self:emit("    return ptr;")
+    self:emit("}")
+    self:emit("")
+    self:emit("void _czar_free(void* ptr) {")
+    self:emit("    if (ptr) {")
+    self:emit("        _czar_free_count++;")
+    self:emit("        // Note: We don't track freed bytes since C doesn't provide allocation size")
+    self:emit("    }")
+    self:emit("    free(ptr);")
+    self:emit("}")
+    self:emit("")
+    self:emit("void _czar_print_memory_stats(void) {")
+    self:emit("    fprintf(stderr, \"\\n=== Memory Summary ===\\n\");")
+    self:emit("    fprintf(stderr, \"Allocations: %zu (%zu bytes)\\n\", _czar_alloc_count, _czar_alloc_bytes);")
+    self:emit("    fprintf(stderr, \"Frees: %zu\\n\", _czar_free_count);")
+    self:emit("    if (_czar_alloc_count != _czar_free_count) {")
+    self:emit("        fprintf(stderr, \"WARNING: Memory leak detected! %zu allocations not freed\\n\",")
+    self:emit("                _czar_alloc_count - _czar_free_count);")
+    self:emit("    }")
+    self:emit("    fprintf(stderr, \"======================\\n\");")
+    self:emit("}")
+    self:emit("")
 end
 
 function Codegen:generate()
@@ -1399,6 +1445,11 @@ function Codegen:generate()
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
     self:emit("")
+
+    -- Add memory tracking helpers if debug_memory is enabled
+    if self.debug_memory then
+        self:gen_memory_tracking_helpers()
+    end
 
     for _, item in ipairs(self.ast.items) do
         if item.kind == "struct" then
@@ -1419,7 +1470,7 @@ function Codegen:generate()
     return join(self.out, "\n") .. "\n"
 end
 
-return function(ast)
-    local gen = Codegen.new(ast)
+return function(ast, options)
+    local gen = Codegen.new(ast, options)
     return gen:generate()
 end
