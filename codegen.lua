@@ -597,28 +597,7 @@ function Codegen:gen_expr(expr)
         local target_type_str = self:c_type(expr.target_type)
         local expr_str = self:gen_expr(expr.expr)
         
-        -- Check if we're casting a clone variable that needs dereferencing
-        if expr.expr.kind == "identifier" then
-            local var_type = self:get_var_type(expr.expr.name)
-            if var_type and var_type.kind == "pointer" and var_type.is_clone then
-                expr_str = "*" .. expr_str
-            end
-        end
-        
-        -- Special case: when casting to 'any' (void*), struct pointers don't need dereferencing
-        -- They are already pointers in the implicit pointer model
-        if expr.target_type.kind == "named_type" and expr.target_type.name == "any" then
-            if expr.expr.kind == "identifier" then
-                local var_type = self:get_var_type(expr.expr.name)
-                if var_type and var_type.kind == "pointer" then
-                    -- This is a struct pointer, just cast it directly
-                    return string.format("((%s)%s)", target_type_str, expr.expr.name)
-                end
-            end
-        end
-        
-        -- Special case: when casting from 'any' (void*) to a struct type
-        -- We need to cast to a pointer type
+        -- Determine source type for special handling
         local source_type = nil
         if expr.expr.kind == "identifier" then
             source_type = self:get_var_type(expr.expr.name)
@@ -627,13 +606,34 @@ function Codegen:gen_expr(expr)
             source_type = self:infer_type(expr.expr)
         end
         
+        -- Check if we're casting a clone variable that needs dereferencing
+        if expr.expr.kind == "identifier" and source_type and source_type.kind == "pointer" and source_type.is_clone then
+            expr_str = "*" .. expr_str
+        end
+        
+        -- Special case: when casting to 'any' (void*), struct pointers don't need dereferencing
+        -- They are already pointers in the implicit pointer model
+        if expr.target_type.kind == "named_type" and expr.target_type.name == "any" then
+            if expr.expr.kind == "identifier" and source_type and source_type.kind == "pointer" then
+                -- This is a struct pointer, just cast it directly
+                return string.format("((%s)%s)", target_type_str, expr.expr.name)
+            end
+            -- For other expressions casting to 'any', use the generated expression
+            return string.format("((%s)%s)", target_type_str, expr_str)
+        end
+        
+        -- Special case: when casting from 'any' (void*) to a struct type
+        -- We need to cast to a pointer type since structs are pointers in Czar's model
         if source_type and source_type.kind == "named_type" and source_type.name == "any" then
             if expr.target_type.kind == "named_type" and self.structs[expr.target_type.name] then
                 -- Casting from any to a struct, cast to pointer type
                 return string.format("((%s*)%s)", target_type_str, expr_str)
             end
+            -- For other types from 'any', use normal cast
+            return string.format("((%s)%s)", target_type_str, expr_str)
         end
         
+        -- Default: normal cast
         return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "clone" then
         -- clone(expr) or clone<Type>(expr)
