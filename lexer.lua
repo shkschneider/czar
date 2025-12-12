@@ -12,6 +12,7 @@ local keywords = {
     ["mut"] = true,
     ["if"] = true,
     ["else"] = true,
+    ["elseif"] = true,
     ["while"] = true,
     ["true"] = true,
     ["false"] = true,
@@ -32,7 +33,6 @@ local keywords = {
     ["and"] = true,
     ["or"] = true,
     -- any (void *)
-    -- elseif
     -- for ...
     -- for each ...
     -- is/type
