@@ -13,7 +13,7 @@ for f in $@ ; do
     r=$f
     r=${r##*:}
     r=${r%.*}
-    echo -n "tests/$n..."
+    echo -n "- tests/$n..."
     if [[ ! $r =~ ^[0-9]+$ ]] ; then
         r=-1
     fi
