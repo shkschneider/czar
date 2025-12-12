@@ -11,7 +11,7 @@ for f in $@ ; do
     n=${n##*/}
     n=${n%:*}
     r=$f
-    r=${r##*:}
+    r=${r##*@}
     r=${r%.*}
     echo -n "- tests/$n..."
     if [[ ! $r =~ ^[0-9]+$ ]] ; then
