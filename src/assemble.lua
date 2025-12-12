@@ -28,7 +28,7 @@ local function assemble_to_asm(source_path)
     local c_source
     local c_file_path
     local cleanup_c = false
-    
+
     if source_path:match("%.cz$") then
         -- Generate C code from .cz file
         local c_code, err = generate.generate_c(source_path)
@@ -36,7 +36,7 @@ local function assemble_to_asm(source_path)
             return nil, err
         end
         c_source = c_code
-        
+
         -- Write to temporary C file
         c_file_path = os.tmpname() .. ".c"
         local ok, err = write_file(c_source, c_file_path)
@@ -55,31 +55,31 @@ local function assemble_to_asm(source_path)
     else
         return nil, string.format("Source file must have .c or .cz extension, got: %s", source_path)
     end
-    
+
     -- Compile C to assembly using cc -S
     local asm_temp = os.tmpname() .. ".s"
     local cmd = string.format("cc -S -o %s %s 2>&1", asm_temp, c_file_path)
     local handle = io.popen(cmd)
     local output = handle:read("*a")
     local success = handle:close()
-    
+
     -- Clean up temporary C file if we created one
     if cleanup_c then
         os.remove(c_file_path)
     end
-    
+
     if not success then
         return nil, string.format("Assembly generation failed:\n%s", output)
     end
-    
+
     -- Read the assembly file
     local asm_content, err = read_file(asm_temp)
     os.remove(asm_temp)
-    
+
     if not asm_content then
         return nil, string.format("Failed to read assembly output: %s", err or "unknown error")
     end
-    
+
     return asm_content, nil
 end
 
