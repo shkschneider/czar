@@ -55,6 +55,11 @@ echo -e "\t$LDFLAGS"
 cc $CFLAGS -o $OUT main.c $LDFLAGS
 echo -n "[CZ] " ; file -b ./$OUT
 
-#install -m 755 ./$(OUT) /usr/local/bin/cz
-
+set +e
 rm -f ./*.o ./main.h ./*.a
+./$OUT run ./demo/main.cz >/dev/null 2>&1 \
+    && echo "[DEMO] SUCCESS: $?" \
+    || echo "[DEMO] FAILURE: $?" >&2
+rm -f ./a.out
+
+#install -m 755 ./$(OUT) /usr/local/bin/cz
