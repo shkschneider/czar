@@ -39,6 +39,14 @@ function Codegen:collect_structs_and_functions()
         if item.kind == "struct" then
             self.structs[item.name] = item
         elseif item.kind == "function" then
+            -- Validate constructor/destructor signatures (new requirement)
+            if item.receiver_type and (item.name == "new" or item.name == "free") then
+                -- Constructor and destructor methods must have only self as parameter
+                if #item.params ~= 1 or item.params[1].name ~= "self" then
+                    error(string.format("%s:%s() can only have self as parameter", item.receiver_type, item.name))
+                end
+            end
+            
             -- Check if this function returns null (making return type a pointer)
             if item.return_type and item.return_type.kind == "named_type" then
                 local returns_null = self:function_returns_null(item)
@@ -82,6 +90,32 @@ function Codegen:collect_structs_and_functions()
             end
         end
     end
+end
+
+-- Check if a struct has a constructor method (Type:new)
+function Codegen:has_constructor(struct_name)
+    return self.functions[struct_name] and self.functions[struct_name]["new"]
+end
+
+-- Check if a struct has a destructor method (Type:free)
+function Codegen:has_destructor(struct_name)
+    return self.functions[struct_name] and self.functions[struct_name]["free"]
+end
+
+-- Generate constructor call for a struct variable
+function Codegen:gen_constructor_call(struct_name, var_name)
+    if self:has_constructor(struct_name) then
+        return string.format("%s_constructor(%s);", struct_name, var_name)
+    end
+    return nil
+end
+
+-- Generate destructor call for a struct variable
+function Codegen:gen_destructor_call(struct_name, var_name)
+    if self:has_destructor(struct_name) then
+        return string.format("%s_destructor(%s);", struct_name, var_name)
+    end
+    return nil
 end
 
 function Codegen:function_returns_null(fn)
@@ -266,6 +300,15 @@ function Codegen:get_scope_cleanup()
             local var_name = heap_vars[i]
             local var_info = self:get_var_info(var_name)
             if var_info and var_info.needs_free then
+                -- Check if the variable is a struct with a destructor
+                local var_type = var_info.type
+                if var_type and var_type.kind == "pointer" and var_type.to and var_type.to.kind == "named_type" then
+                    local struct_name = var_type.to.name
+                    local destructor_call = self:gen_destructor_call(struct_name, var_name)
+                    if destructor_call then
+                        table.insert(cleanup, destructor_call)
+                    end
+                end
                 table.insert(cleanup, string.format("free(%s);", var_name))
             end
         end
@@ -286,6 +329,15 @@ function Codegen:get_all_scope_cleanup()
             local var_name = heap_vars[i]
             local var_info = self:get_var_info(var_name)
             if var_info and var_info.needs_free then
+                -- Check if the variable is a struct with a destructor
+                local var_type = var_info.type
+                if var_type and var_type.kind == "pointer" and var_type.to and var_type.to.kind == "named_type" then
+                    local struct_name = var_type.to.name
+                    local destructor_call = self:gen_destructor_call(struct_name, var_name)
+                    if destructor_call then
+                        table.insert(cleanup, destructor_call)
+                    end
+                end
                 table.insert(cleanup, string.format("free(%s);", var_name))
             end
         end
@@ -567,8 +619,20 @@ function Codegen:gen_statement(stmt)
         if expr.kind ~= "identifier" then
             error("free can only be used with variable names, got " .. expr.kind)
         end
+        
+        -- Check if the variable is a struct with a destructor
+        local var_type = self:get_var_type(expr.name)
+        local destructor_code = ""
+        if var_type and var_type.kind == "pointer" and var_type.to and var_type.to.kind == "named_type" then
+            local struct_name = var_type.to.name
+            local destructor_call = self:gen_destructor_call(struct_name, expr.name)
+            if destructor_call then
+                destructor_code = destructor_call .. "\n    "
+            end
+        end
+        
         self:mark_freed(expr.name)
-        return "free(" .. expr.name .. ");"
+        return destructor_code .. "free(" .. expr.name .. ");"
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
@@ -596,6 +660,14 @@ function Codegen:gen_statement(stmt)
                 -- Struct literals are already addresses, others might need special handling
                 decl = decl .. " = " .. init_expr
             end
+            
+            -- Call constructor if the struct has one
+            local struct_type_name = stmt.type.name
+            local constructor_call = self:gen_constructor_call(struct_type_name, stmt.name)
+            if constructor_call then
+                return decl .. ";\n    " .. constructor_call
+            end
+            
             return decl .. ";"
         else
             -- Non-struct types: check for special initializers
@@ -1224,6 +1296,15 @@ end
 function Codegen:gen_function(fn)
     local name = fn.name
     local c_name = name == "main" and "main_main" or name
+    
+    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    if fn.receiver_type then
+        if name == "new" then
+            c_name = fn.receiver_type .. "_constructor"
+        elseif name == "free" then
+            c_name = fn.receiver_type .. "_destructor"
+        end
+    end
     
     -- In implicit pointer model, struct return types should be pointers
     local return_type_str = self:c_type(fn.return_type)
