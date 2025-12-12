@@ -36,21 +36,25 @@ function Codegen:emit(line)
     table.insert(self.out, line)
 end
 
--- Get the malloc function name (with or without debug wrapper)
-function Codegen:malloc_func()
+-- Get the malloc function call (with or without debug wrapper)
+-- is_explicit: true for explicit 'new' allocations, false for implicit (clone, etc.)
+function Codegen:malloc_call(size_expr, is_explicit)
     if self.debug_memory then
-        return "_czar_malloc"
+        local explicit_flag = is_explicit and "1" or "0"
+        return string.format("_czar_malloc(%s, %s)", size_expr, explicit_flag)
     else
-        return "malloc"
+        return string.format("malloc(%s)", size_expr)
     end
 end
 
--- Get the free function name (with or without debug wrapper)
-function Codegen:free_func()
+-- Get the free function call (with or without debug wrapper)
+-- is_explicit: true for explicit 'free' statements, false for implicit scope cleanup
+function Codegen:free_call(ptr_expr, is_explicit)
     if self.debug_memory then
-        return "_czar_free"
+        local explicit_flag = is_explicit and "1" or "0"
+        return string.format("_czar_free(%s, %s)", ptr_expr, explicit_flag)
     else
-        return "free"
+        return string.format("free(%s)", ptr_expr)
     end
 end
 
@@ -329,7 +333,7 @@ function Codegen:get_scope_cleanup()
                         table.insert(cleanup, destructor_call)
                     end
                 end
-                table.insert(cleanup, string.format("%s(%s);", self:free_func(), var_name))
+                table.insert(cleanup, self:free_call(var_name, false) .. ";")  -- Implicit free (scope cleanup)
             end
         end
     end
@@ -358,7 +362,7 @@ function Codegen:get_all_scope_cleanup()
                         table.insert(cleanup, destructor_call)
                     end
                 end
-                table.insert(cleanup, string.format("%s(%s);", self:free_func(), var_name))
+                table.insert(cleanup, self:free_call(var_name, false) .. ";")  -- Implicit free (scope cleanup)
             end
         end
     end
@@ -652,7 +656,7 @@ function Codegen:gen_statement(stmt)
         end
         
         self:mark_freed(expr.name)
-        return destructor_code .. self:free_func() .. "(" .. expr.name .. ");"
+        return destructor_code .. self:free_call(expr.name, true) .. ";"  -- Explicit free statement
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
@@ -943,13 +947,13 @@ function Codegen:gen_expr(expr)
         
         -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = *source_ptr; _ptr; })
         if expr.target_type and source_type then
-            -- With cast
-            return string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = (%s)%s; _ptr; })", 
-                target_type_str, self:malloc_func(), target_type_str, target_type_str, source_expr)
+            -- With cast (implicit allocation - clone)
+            return string.format("({ %s* _ptr = %s; *_ptr = (%s)%s; _ptr; })", 
+                target_type_str, self:malloc_call("sizeof(" .. target_type_str .. ")", false), target_type_str, source_expr)
         else
-            -- Without cast
-            return string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = %s; _ptr; })", 
-                target_type_str, self:malloc_func(), target_type_str, source_expr)
+            -- Without cast (implicit allocation - clone)
+            return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })", 
+                target_type_str, self:malloc_call("sizeof(" .. target_type_str .. ")", false), source_expr)
         end
     elseif expr.kind == "binary" then
         -- Handle special operators
@@ -1024,10 +1028,10 @@ function Codegen:gen_expr(expr)
                 -- Target is a pointer. Check if value is a struct literal or identifier
                 if expr.value.kind == "struct_literal" or 
                    (expr.value.kind == "identifier" and not self:is_pointer_var(expr.value.name)) then
-                    -- Wrap value in heap allocation (new)
+                    -- Wrap value in heap allocation (implicit allocation - assignment)
                     local type_name = self:c_type(var_info.type.to)
-                    value_expr = string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = %s; _ptr; })", 
-                        type_name, self:malloc_func(), type_name, value_expr)
+                    value_expr = string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })", 
+                        type_name, self:malloc_call("sizeof(" .. type_name .. ")", false), value_expr)
                 end
             end
         end
@@ -1308,8 +1312,9 @@ function Codegen:gen_expr(expr)
         end
         local initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
         -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
-        return string.format("({ %s* _ptr = %s(sizeof(%s)); *_ptr = %s; _ptr; })", 
-            expr.type_name, self:malloc_func(), expr.type_name, initializer)
+        -- Explicit allocation with 'new' keyword
+        return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })", 
+            expr.type_name, self:malloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
@@ -1403,35 +1408,76 @@ end
 
 function Codegen:gen_memory_tracking_helpers()
     self:emit("// Memory tracking helpers")
-    self:emit("static size_t _czar_alloc_count = 0;")
-    self:emit("static size_t _czar_alloc_bytes = 0;")
-    self:emit("static size_t _czar_free_count = 0;")
-    self:emit("static size_t _czar_free_bytes = 0;")
+    self:emit("static size_t _czar_explicit_alloc_count = 0;")
+    self:emit("static size_t _czar_explicit_alloc_bytes = 0;")
+    self:emit("static size_t _czar_implicit_alloc_count = 0;")
+    self:emit("static size_t _czar_implicit_alloc_bytes = 0;")
+    self:emit("static size_t _czar_explicit_free_count = 0;")
+    self:emit("static size_t _czar_implicit_free_count = 0;")
+    self:emit("static size_t _czar_current_alloc_count = 0;")
+    self:emit("static size_t _czar_current_alloc_bytes = 0;")
+    self:emit("static size_t _czar_peak_alloc_count = 0;")
+    self:emit("static size_t _czar_peak_alloc_bytes = 0;")
     self:emit("")
-    self:emit("void* _czar_malloc(size_t size) {")
+    self:emit("void* _czar_malloc(size_t size, int is_explicit) {")
     self:emit("    void* ptr = malloc(size);")
     self:emit("    if (ptr) {")
-    self:emit("        _czar_alloc_count++;")
-    self:emit("        _czar_alloc_bytes += size;")
+    self:emit("        if (is_explicit) {")
+    self:emit("            _czar_explicit_alloc_count++;")
+    self:emit("            _czar_explicit_alloc_bytes += size;")
+    self:emit("        } else {")
+    self:emit("            _czar_implicit_alloc_count++;")
+    self:emit("            _czar_implicit_alloc_bytes += size;")
+    self:emit("        }")
+    self:emit("        _czar_current_alloc_count++;")
+    self:emit("        _czar_current_alloc_bytes += size;")
+    self:emit("        if (_czar_current_alloc_count > _czar_peak_alloc_count) {")
+    self:emit("            _czar_peak_alloc_count = _czar_current_alloc_count;")
+    self:emit("        }")
+    self:emit("        if (_czar_current_alloc_bytes > _czar_peak_alloc_bytes) {")
+    self:emit("            _czar_peak_alloc_bytes = _czar_current_alloc_bytes;")
+    self:emit("        }")
     self:emit("    }")
     self:emit("    return ptr;")
     self:emit("}")
     self:emit("")
-    self:emit("void _czar_free(void* ptr) {")
+    self:emit("void _czar_free(void* ptr, int is_explicit) {")
     self:emit("    if (ptr) {")
-    self:emit("        _czar_free_count++;")
-    self:emit("        // Note: Tracking freed bytes would require storing allocation sizes separately")
+    self:emit("        if (is_explicit) {")
+    self:emit("            _czar_explicit_free_count++;")
+    self:emit("        } else {")
+    self:emit("            _czar_implicit_free_count++;")
+    self:emit("        }")
+    self:emit("        _czar_current_alloc_count--;")
+    self:emit("        // Note: We decrement bytes but don't know exact size without tracking")
     self:emit("    }")
     self:emit("    free(ptr);")
     self:emit("}")
     self:emit("")
     self:emit("void _czar_print_memory_stats(void) {")
+    self:emit("    size_t total_alloc_count = _czar_explicit_alloc_count + _czar_implicit_alloc_count;")
+    self:emit("    size_t total_alloc_bytes = _czar_explicit_alloc_bytes + _czar_implicit_alloc_bytes;")
+    self:emit("    size_t total_free_count = _czar_explicit_free_count + _czar_implicit_free_count;")
+    self:emit("    ")
     self:emit("    fprintf(stderr, \"\\n=== Memory Summary ===\\n\");")
-    self:emit("    fprintf(stderr, \"Allocations: %zu (%zu bytes)\\n\", _czar_alloc_count, _czar_alloc_bytes);")
-    self:emit("    fprintf(stderr, \"Frees: %zu\\n\", _czar_free_count);")
-    self:emit("    if (_czar_alloc_count != _czar_free_count) {")
+    self:emit("    fprintf(stderr, \"Allocations:\\n\");")
+    self:emit("    fprintf(stderr, \"  Explicit: %zu (%zu bytes)\\n\", _czar_explicit_alloc_count, _czar_explicit_alloc_bytes);")
+    self:emit("    fprintf(stderr, \"  Implicit: %zu (%zu bytes)\\n\", _czar_implicit_alloc_count, _czar_implicit_alloc_bytes);")
+    self:emit("    fprintf(stderr, \"  Total:    %zu (%zu bytes)\\n\", total_alloc_count, total_alloc_bytes);")
+    self:emit("    fprintf(stderr, \"\\n\");")
+    self:emit("    fprintf(stderr, \"Frees:\\n\");")
+    self:emit("    fprintf(stderr, \"  Explicit: %zu\\n\", _czar_explicit_free_count);")
+    self:emit("    fprintf(stderr, \"  Implicit: %zu\\n\", _czar_implicit_free_count);")
+    self:emit("    fprintf(stderr, \"  Total:    %zu\\n\", total_free_count);")
+    self:emit("    fprintf(stderr, \"\\n\");")
+    self:emit("    fprintf(stderr, \"Peak Usage:\\n\");")
+    self:emit("    fprintf(stderr, \"  Count: %zu allocations\\n\", _czar_peak_alloc_count);")
+    self:emit("    fprintf(stderr, \"  Bytes: %zu bytes\\n\", _czar_peak_alloc_bytes);")
+    self:emit("    ")
+    self:emit("    if (total_alloc_count != total_free_count) {")
+    self:emit("        fprintf(stderr, \"\\n\");")
     self:emit("        fprintf(stderr, \"WARNING: Memory leak detected! %zu allocations not freed\\n\",")
-    self:emit("                _czar_alloc_count - _czar_free_count);")
+    self:emit("                total_alloc_count - total_free_count);")
     self:emit("    }")
     self:emit("    fprintf(stderr, \"======================\\n\");")
     self:emit("}")
