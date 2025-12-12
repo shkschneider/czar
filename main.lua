@@ -12,6 +12,7 @@ local parser = require("parser")
 local generate = require("generate")
 local assemble = require("assemble")
 local build = require("build")
+local run = require("run")
 
 -- Simple file reader utility
 -- Note: This is duplicated in generator.lua to avoid circular dependencies
@@ -390,7 +391,7 @@ local function cmd_run(args)
     end
 
     -- Run the binary
-    local exit_code = build.run_binary(output_path)
+    local exit_code = run.run_binary(output_path)
     os.exit(exit_code)
 end
 
