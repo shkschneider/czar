@@ -149,6 +149,8 @@ function Codegen:c_type(type_node)
             return "bool"
         elseif name == "void" then
             return "void"
+        elseif name == "any" then
+            return "void*"
         else
             return name
         end
@@ -170,11 +172,11 @@ function Codegen:c_type_in_struct(type_node, struct_name)
     elseif type_node.kind == "named_type" then
         local c_type = self:c_type(type_node)
         -- In implicit pointer model, check if this is a non-primitive type
-        -- Primitive types: int32_t, int64_t, uint32_t, uint64_t, float, double, bool, void
+        -- Primitive types: int32_t, int64_t, uint32_t, uint64_t, float, double, bool, void, void* (any)
         local is_primitive = c_type == "int32_t" or c_type == "int64_t" or 
                             c_type == "uint32_t" or c_type == "uint64_t" or
                             c_type == "float" or c_type == "double" or
-                            c_type == "bool" or c_type == "void"
+                            c_type == "bool" or c_type == "void" or c_type == "void*"
         
         if not is_primitive then
             -- Non-primitive types (structs) should be pointers in implicit pointer model
@@ -600,6 +602,35 @@ function Codegen:gen_expr(expr)
             local var_type = self:get_var_type(expr.expr.name)
             if var_type and var_type.kind == "pointer" and var_type.is_clone then
                 expr_str = "*" .. expr_str
+            end
+        end
+        
+        -- Special case: when casting to 'any' (void*), struct pointers don't need dereferencing
+        -- They are already pointers in the implicit pointer model
+        if expr.target_type.kind == "named_type" and expr.target_type.name == "any" then
+            if expr.expr.kind == "identifier" then
+                local var_type = self:get_var_type(expr.expr.name)
+                if var_type and var_type.kind == "pointer" then
+                    -- This is a struct pointer, just cast it directly
+                    return string.format("((%s)%s)", target_type_str, expr.expr.name)
+                end
+            end
+        end
+        
+        -- Special case: when casting from 'any' (void*) to a struct type
+        -- We need to cast to a pointer type
+        local source_type = nil
+        if expr.expr.kind == "identifier" then
+            source_type = self:get_var_type(expr.expr.name)
+        elseif expr.expr.kind == "field" then
+            -- Get the type of the field
+            source_type = self:infer_type(expr.expr)
+        end
+        
+        if source_type and source_type.kind == "named_type" and source_type.name == "any" then
+            if expr.target_type.kind == "named_type" and self.structs[expr.target_type.name] then
+                -- Casting from any to a struct, cast to pointer type
+                return string.format("((%s*)%s)", target_type_str, expr_str)
             end
         end
         
