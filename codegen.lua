@@ -25,6 +25,7 @@ function Codegen.new(ast)
         functions = {},  -- Store function/method definitions indexed by receiver type for method call resolution
         out = {},
         scope_stack = {},
+        heap_vars_stack = {},  -- Track heap-allocated variables per scope for automatic cleanup
     }
     return setmetatable(self, Codegen)
 end
@@ -205,19 +206,83 @@ end
 
 function Codegen:push_scope()
     table.insert(self.scope_stack, {})
+    table.insert(self.heap_vars_stack, {})  -- Track heap vars for this scope
 end
 
 function Codegen:pop_scope()
     table.remove(self.scope_stack)
+    table.remove(self.heap_vars_stack)
 end
 
-function Codegen:add_var(name, type_node, mutable)
+function Codegen:add_var(name, type_node, mutable, needs_free)
     if #self.scope_stack > 0 then
         self.scope_stack[#self.scope_stack][name] = {
             type = type_node,
-            mutable = mutable or false
+            mutable = mutable or false,
+            needs_free = needs_free or false
         }
+        -- Track heap-allocated variables for automatic cleanup
+        if needs_free then
+            table.insert(self.heap_vars_stack[#self.heap_vars_stack], name)
+        end
     end
+end
+
+function Codegen:mark_freed(name)
+    -- Mark variable as already freed to prevent double-free at scope exit
+    for i = #self.scope_stack, 1, -1 do
+        local var_info = self.scope_stack[i][name]
+        if var_info then
+            var_info.needs_free = false
+            -- Remove from heap_vars_stack at the appropriate level
+            for j = #self.heap_vars_stack, 1, -1 do
+                for k, var_name in ipairs(self.heap_vars_stack[j]) do
+                    if var_name == name then
+                        table.remove(self.heap_vars_stack[j], k)
+                        return
+                    end
+                end
+            end
+            return
+        end
+    end
+end
+
+function Codegen:get_scope_cleanup()
+    -- Generate free() calls for heap-allocated variables in current scope
+    -- Returns cleanup code in reverse order (LIFO)
+    local cleanup = {}
+    if #self.heap_vars_stack > 0 then
+        local heap_vars = self.heap_vars_stack[#self.heap_vars_stack]
+        for i = #heap_vars, 1, -1 do  -- Reverse order (LIFO)
+            local var_name = heap_vars[i]
+            local var_info = self:get_var_info(var_name)
+            if var_info and var_info.needs_free then
+                table.insert(cleanup, string.format("free(%s);", var_name))
+            end
+        end
+    end
+    return cleanup
+end
+
+function Codegen:get_all_scope_cleanup()
+    -- Generate free() calls for ALL heap-allocated variables in all active scopes
+    -- Used for early returns to cleanup everything before exiting function
+    -- Returns cleanup code in reverse order (LIFO - newest first, then older scopes)
+    local cleanup = {}
+    -- Iterate through all active scopes from innermost to outermost
+    for scope_idx = #self.heap_vars_stack, 1, -1 do
+        local heap_vars = self.heap_vars_stack[scope_idx]
+        -- Within each scope, reverse order (LIFO)
+        for i = #heap_vars, 1, -1 do
+            local var_name = heap_vars[i]
+            local var_info = self:get_var_info(var_name)
+            if var_info and var_info.needs_free then
+                table.insert(cleanup, string.format("free(%s);", var_name))
+            end
+        end
+    end
+    return cleanup
 end
 
 function Codegen:get_var_type(name)
@@ -455,24 +520,67 @@ function Codegen:gen_block(block)
     for _, stmt in ipairs(block.statements) do
         self:emit("    " .. self:gen_statement(stmt))
     end
+    -- Insert cleanup code at end of block
+    local cleanup = self:get_scope_cleanup()
+    for _, cleanup_code in ipairs(cleanup) do
+        self:emit("    " .. cleanup_code)
+    end
     self:emit("}")
     self:pop_scope()
 end
 
 function Codegen:gen_statement(stmt)
     if stmt.kind == "return" then
-        return "return " .. self:gen_expr(stmt.value) .. ";"
+        -- For return statements, we need to:
+        -- 1. Evaluate the return expression FIRST
+        -- 2. Then cleanup 
+        -- 3. Then return
+        -- We use a temporary variable to hold the return value
+        local cleanup = self:get_all_scope_cleanup()
+        if #cleanup > 0 then
+            -- Need to use temporary for return value
+            local return_expr = self:gen_expr(stmt.value)
+            local parts = {}
+            -- Create a block with temp variable to avoid use-after-free
+            table.insert(parts, "{ ")
+            table.insert(parts, "typeof(" .. return_expr .. ") _ret_val = " .. return_expr .. "; ")
+            for _, cleanup_code in ipairs(cleanup) do
+                table.insert(parts, cleanup_code .. " ")
+            end
+            table.insert(parts, "return _ret_val; }")
+            return table.concat(parts, "")
+        else
+            -- No cleanup needed, simple return
+            return "return " .. self:gen_expr(stmt.value) .. ";"
+        end
+    elseif stmt.kind == "free" then
+        -- Explicit free statement
+        local expr = stmt.value
+        if expr.kind ~= "identifier" then
+            error("free can only be used with variable names")
+        end
+        self:mark_freed(expr.name)
+        return "free(" .. expr.name .. ");"
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
     elseif stmt.kind == "var_decl" then
+        -- Determine if this variable needs to be freed
+        local needs_free = false
+        if stmt.init then
+            local init_kind = stmt.init.kind
+            if init_kind == "new_heap" or init_kind == "clone" then
+                needs_free = true
+            end
+        end
+        
         -- In implicit pointer model, all struct-typed variables are pointers
         local is_struct_type = self:is_struct_type(stmt.type)
         
         if is_struct_type then
             -- Struct types are always pointers in storage
             local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
-            self:add_var(stmt.name, ptr_type, stmt.mutable)
+            self:add_var(stmt.name, ptr_type, stmt.mutable, needs_free)
             local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
             if stmt.init then
@@ -501,7 +609,7 @@ function Codegen:gen_statement(stmt)
             
             if is_pointer_expr then
                 local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
-                self:add_var(stmt.name, ptr_type, stmt.mutable)
+                self:add_var(stmt.name, ptr_type, stmt.mutable, needs_free)
                 local prefix = stmt.mutable and "" or "const "
                 local decl = string.format("%s%s* %s", prefix, self:c_type(stmt.type), stmt.name)
                 if stmt.init then
@@ -509,7 +617,7 @@ function Codegen:gen_statement(stmt)
                 end
                 return decl .. ";"
             else
-                self:add_var(stmt.name, stmt.type, stmt.mutable)
+                self:add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
                 local prefix = stmt.mutable and "" or "const "
                 local decl = string.format("%s%s %s", prefix, self:c_type(stmt.type), stmt.name)
                 if stmt.init then
@@ -538,9 +646,18 @@ end
 function Codegen:gen_if(stmt)
     local parts = {}
     table.insert(parts, "if (" .. self:gen_expr(stmt.condition) .. ") {")
+    
+    -- Push scope for then block
+    self:push_scope()
     for _, s in ipairs(stmt.then_block.statements) do
         table.insert(parts, "    " .. self:gen_statement(s))
     end
+    -- Insert cleanup for then block
+    local cleanup = self:get_scope_cleanup()
+    for _, cleanup_code in ipairs(cleanup) do
+        table.insert(parts, "    " .. cleanup_code)
+    end
+    self:pop_scope()
     
     -- Handle else/elseif chain
     local current_else = stmt.else_block
@@ -552,17 +669,37 @@ function Codegen:gen_if(stmt)
             -- Generate "else if" instead of "else { if"
             local nested_if = current_else.statements[1]
             table.insert(parts, "} else if (" .. self:gen_expr(nested_if.condition) .. ") {")
+            
+            -- Push scope for elseif block
+            self:push_scope()
             for _, s in ipairs(nested_if.then_block.statements) do
                 table.insert(parts, "    " .. self:gen_statement(s))
             end
+            -- Insert cleanup for elseif block
+            cleanup = self:get_scope_cleanup()
+            for _, cleanup_code in ipairs(cleanup) do
+                table.insert(parts, "    " .. cleanup_code)
+            end
+            self:pop_scope()
+            
             -- Continue with the nested else_block
             current_else = nested_if.else_block
         else
             -- Normal else block (not an if statement)
             table.insert(parts, "} else {")
+            
+            -- Push scope for else block
+            self:push_scope()
             for _, s in ipairs(current_else.statements) do
                 table.insert(parts, "    " .. self:gen_statement(s))
             end
+            -- Insert cleanup for else block
+            cleanup = self:get_scope_cleanup()
+            for _, cleanup_code in ipairs(cleanup) do
+                table.insert(parts, "    " .. cleanup_code)
+            end
+            self:pop_scope()
+            
             current_else = nil  -- End the chain
         end
     end
@@ -574,9 +711,19 @@ end
 function Codegen:gen_while(stmt)
     local parts = {}
     table.insert(parts, "while (" .. self:gen_expr(stmt.condition) .. ") {")
+    
+    -- Push scope for while body
+    self:push_scope()
     for _, s in ipairs(stmt.body.statements) do
         table.insert(parts, "    " .. self:gen_statement(s))
     end
+    -- Insert cleanup for while body
+    local cleanup = self:get_scope_cleanup()
+    for _, cleanup_code in ipairs(cleanup) do
+        table.insert(parts, "    " .. cleanup_code)
+    end
+    self:pop_scope()
+    
     table.insert(parts, "}")
     return join(parts, "\n    ")
 end
@@ -1113,6 +1260,17 @@ function Codegen:gen_function(fn)
     for _, stmt in ipairs(fn.body.statements) do
         self:emit("    " .. self:gen_statement(stmt))
     end
+    
+    -- Insert cleanup code at end of function ONLY if last statement is not a return
+    -- (return statements handle their own cleanup)
+    local last_stmt = fn.body.statements[#fn.body.statements]
+    if not last_stmt or last_stmt.kind ~= "return" then
+        local cleanup = self:get_scope_cleanup()
+        for _, cleanup_code in ipairs(cleanup) do
+            self:emit("    " .. cleanup_code)
+        end
+    end
+    
     self:emit("}")
     self:pop_scope()
     self:emit("")
