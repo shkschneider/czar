@@ -1,0 +1,14 @@
+// Test constructor with heap allocation
+struct Counter {
+    i32 value
+}
+
+fn Counter:new() -> void {
+    self.value = 10
+}
+
+fn main() -> i32 {
+    // Heap allocation - should call constructor
+    Counter c = new Counter {}
+    return c.value  // should return 10
+}
