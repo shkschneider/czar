@@ -58,6 +58,56 @@ function Codegen:free_call(ptr_expr, is_explicit)
     end
 end
 
+-- Resolve function arguments, handling named arguments and default parameters
+-- args: list of arguments from the call site (may include named_arg nodes)
+-- params: list of parameters from the function definition (may include default_value)
+-- Returns: list of resolved argument expressions in the correct parameter order
+function Codegen:resolve_arguments(args, params)
+    local resolved = {}
+    local named_args = {}
+    local positional_count = 0
+    
+    -- First pass: separate positional and named arguments
+    for _, arg in ipairs(args) do
+        if arg.kind == "named_arg" then
+            named_args[arg.name] = arg.expr
+        else
+            positional_count = positional_count + 1
+        end
+    end
+    
+    -- Second pass: fill in resolved array with arguments in parameter order
+    local positional_index = 1
+    for i, param in ipairs(params) do
+        if named_args[param.name] then
+            -- Named argument provided
+            resolved[i] = named_args[param.name]
+        elseif positional_index <= positional_count then
+            -- Positional argument provided
+            -- Find the next positional argument (skip named ones)
+            local arg_index = 1
+            for j, arg in ipairs(args) do
+                if arg.kind ~= "named_arg" then
+                    if arg_index == positional_index then
+                        resolved[i] = arg
+                        break
+                    end
+                    arg_index = arg_index + 1
+                end
+            end
+            positional_index = positional_index + 1
+        elseif param.default_value then
+            -- No argument provided, use default value
+            resolved[i] = param.default_value
+        else
+            -- No argument and no default - this is an error
+            error(string.format("Missing argument for parameter '%s' (no default value)", param.name))
+        end
+    end
+    
+    return resolved
+end
+
 function Codegen:collect_structs_and_functions()
     for _, item in ipairs(self.ast.items or {}) do
         if item.kind == "struct" then
@@ -1049,9 +1099,12 @@ function Codegen:gen_expr(expr)
         end
 
         if method then
+            -- Resolve arguments with named args and defaults
+            local resolved_args = self:resolve_arguments(expr.args, method.params)
+            
             -- Generate function call with caller-controlled mutability semantics
             local args = {}
-            for i, a in ipairs(expr.args) do
+            for i, a in ipairs(resolved_args) do
                 local arg_expr = self:gen_expr(a)
 
                 -- Apply caller-controlled mutability semantics
@@ -1133,8 +1186,15 @@ function Codegen:gen_expr(expr)
 
                 table.insert(args, obj_expr)
 
+                -- Resolve the remaining arguments (excluding self)
+                local method_params_without_self = {}
+                for i = 2, #method.params do
+                    table.insert(method_params_without_self, method.params[i])
+                end
+                local resolved_args = self:resolve_arguments(expr.args, method_params_without_self)
+                
                 -- Add the rest of the arguments
-                for _, a in ipairs(expr.args) do
+                for _, a in ipairs(resolved_args) do
                     table.insert(args, self:gen_expr(a))
                 end
 
@@ -1187,8 +1247,15 @@ function Codegen:gen_expr(expr)
 
                 table.insert(args, obj_expr)
 
+                -- Resolve the remaining arguments (excluding self)
+                local method_params_without_self = {}
+                for i = 2, #method.params do
+                    table.insert(method_params_without_self, method.params[i])
+                end
+                local resolved_args = self:resolve_arguments(expr.args, method_params_without_self)
+                
                 -- Add the rest of the arguments
-                for _, a in ipairs(expr.args) do
+                for _, a in ipairs(resolved_args) do
                     table.insert(args, self:gen_expr(a))
                 end
 
@@ -1206,7 +1273,10 @@ function Codegen:gen_expr(expr)
         if expr.callee.kind == "identifier" and self.functions["__global__"] then
             local func_def = self.functions["__global__"][expr.callee.name]
             if func_def then
-                for i, a in ipairs(expr.args) do
+                -- Resolve arguments (handle named args and defaults)
+                local resolved_args = self:resolve_arguments(expr.args, func_def.params)
+                
+                for i, a in ipairs(resolved_args) do
                     if a.kind == "mut_arg" then
                         -- Caller uses mut keyword - wants to pass by reference
                         local param = func_def.params[i]
