@@ -3,8 +3,8 @@ fn test_when_type() -> i32 {
     i32 x = 42
     
     when (x) {
-        is i32 -> { return 32 }
-        is bool -> { return 10 }
+        is i32 -> { return 32 };
+        is bool -> { return 10 };
         else -> { return 0 }
     }
 }

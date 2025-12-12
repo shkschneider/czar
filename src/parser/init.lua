@@ -376,7 +376,13 @@ function Parser:parse_when()
     while not self:check("RBRACE") do
         local arm = self:parse_when_arm()
         table.insert(arms, arm)
-        self:match("SEMICOLON")  -- semicolons are optional between arms
+        -- Semicolons are required between arms unless the last arm used braces
+        -- or this is the last arm before closing brace
+        if not self:check("RBRACE") and not arm.used_braces then
+            self:expect("SEMICOLON")
+        else
+            self:match("SEMICOLON")  -- optional if using braces or at end
+        end
     end
     self:expect("RBRACE")
     
@@ -410,11 +416,15 @@ function Parser:parse_when_arm()
     
     -- Parse body (can be a statement or a block)
     local body
+    local used_braces = false
     if self:check("LBRACE") then
         body = self:parse_block()
+        used_braces = true
     elseif self:check("KEYWORD", "return") then
-        -- Handle return statement
-        body = { kind = "block", statements = { self:parse_statement() } }
+        -- Handle return statement inline without consuming semicolon
+        self:advance()  -- consume 'return'
+        local expr = self:parse_expression()
+        body = { kind = "block", statements = { { kind = "return", value = expr } } }
     else
         -- Single expression
         local expr = self:parse_expression()
@@ -424,7 +434,8 @@ function Parser:parse_when_arm()
     return {
         pattern_kind = pattern_kind,
         pattern = pattern,
-        body = body
+        body = body,
+        used_braces = used_braces
     }
 end
 
