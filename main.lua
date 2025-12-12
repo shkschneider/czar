@@ -162,6 +162,8 @@ local function cmd_lexer(args)
 
     -- Print tokens to stdout
     print(serialize_tokens(tokens))
+
+    return 0
 end
 
 local function cmd_parser(args)
@@ -201,6 +203,8 @@ local function cmd_parser(args)
 
     -- Print AST to stdout
     print(serialize_ast(ast))
+
+    return 0
 end
 
 local function cmd_generate(args)
@@ -242,6 +246,8 @@ local function cmd_generate(args)
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
+
+    return 0
 end
 
 local function cmd_assemble(args)
@@ -277,6 +283,8 @@ local function cmd_assemble(args)
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
+
+    return 0
 end
 
 local function cmd_build(args)
@@ -335,6 +343,8 @@ local function cmd_build(args)
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
+
+    return 0
 end
 
 local function cmd_run(args)
@@ -404,8 +414,7 @@ local function main()
         cmd_lexer(cmd_args)
     elseif command == "parser" then
         cmd_parser(cmd_args)
-    elseif command == "generate" or command == "generator" then
-        -- Support both 'generate' and 'generator' for backwards compatibility
+    elseif command == "generate" then
         cmd_generate(cmd_args)
     elseif command == "assemble" then
         cmd_assemble(cmd_args)
