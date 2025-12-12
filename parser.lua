@@ -4,6 +4,19 @@
 local Parser = {}
 Parser.__index = Parser
 
+-- Shared type keywords table
+local TYPE_KEYWORDS = {
+    ["i32"] = true,
+    ["i64"] = true,
+    ["u32"] = true,
+    ["u64"] = true,
+    ["f32"] = true,
+    ["f64"] = true,
+    ["bool"] = true,
+    ["void"] = true,
+    ["any"] = true,
+}
+
 local function token_label(tok)
     if not tok then return "<eof>" end
     return string.format("%s('%s') at %d:%d", tok.type, tok.value, tok.line, tok.col)
@@ -12,18 +25,7 @@ end
 local function is_type_token(tok)
     if not tok then return false end
     if tok.type == "IDENT" then return true end
-    local type_keywords = {
-        ["i32"] = true,
-        ["i64"] = true,
-        ["u32"] = true,
-        ["u64"] = true,
-        ["f32"] = true,
-        ["f64"] = true,
-        ["bool"] = true,
-        ["void"] = true,
-        ["any"] = true,
-    }
-    if tok.type == "KEYWORD" and type_keywords[tok.value] then
+    if tok.type == "KEYWORD" and TYPE_KEYWORDS[tok.value] then
         return true
     end
     return false
@@ -264,15 +266,10 @@ end
 function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
-    -- Check for type keywords or identifiers that look like types
-    if tok.type == "KEYWORD" and (tok.value == "i32" or tok.value == "i64" or 
-                                   tok.value == "u32" or tok.value == "u64" or 
-                                   tok.value == "f32" or tok.value == "f64" or 
-                                   tok.value == "bool" or tok.value == "void" or
-                                   tok.value == "any") then
+    -- Check for type keywords or user-defined types (uppercase identifiers)
+    if tok.type == "KEYWORD" and TYPE_KEYWORDS[tok.value] then
         return true
     end
-    -- Check for user-defined types (identifiers starting with uppercase)
     if tok.type == "IDENT" and tok.value:match("^[A-Z]") then
         return true
     end
