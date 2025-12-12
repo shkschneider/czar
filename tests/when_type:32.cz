@@ -1,0 +1,14 @@
+// Test when with type checking pattern
+fn test_when_type() -> i32 {
+    i32 x = 42
+    
+    when (x) {
+        is i32 -> { return 32 }
+        is bool -> { return 10 }
+        else -> { return 0 }
+    }
+}
+
+fn main() -> i32 {
+    return test_when_type()
+}
