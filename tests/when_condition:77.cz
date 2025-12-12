@@ -1,0 +1,15 @@
+// Test when without subject (condition-based)
+fn test_when_condition() -> i32 {
+    i32 x = 3
+    i32 y = 7
+    
+    when {
+        x > 5 -> { return 10 }
+        y > 5 -> { return 77 }
+        else -> { return 0 }
+    }
+}
+
+fn main() -> i32 {
+    return test_when_condition()
+}
