@@ -185,6 +185,11 @@ function Parser:parse_statement()
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "return", value = expr }
+    elseif self:check("KEYWORD", "free") then
+        self:advance()
+        local expr = self:parse_expression()
+        self:match("SEMICOLON")  -- semicolons are optional
+        return { kind = "free", value = expr }
     elseif self:check("KEYWORD", "if") then
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then
