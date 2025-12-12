@@ -505,6 +505,7 @@ end
 -- method_name: name of the method
 -- call_args: array of argument expressions (excluding self)
 -- Returns: the generated C function call string
+-- Throws: error if method is not found on the object's type
 function Codegen:gen_method_call(obj, method_name, call_args)
     -- Determine the type of the object
     local obj_type = nil
@@ -1323,7 +1324,12 @@ function Codegen:gen_expr(expr)
             table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
         end
         -- In implicit pointer model, struct literals should return heap-allocated pointers
-        -- to avoid dangling pointer issues when returned from functions
+        -- to avoid dangling pointer issues when returned from functions.
+        -- 
+        -- Memory management note: The allocated memory must be managed by the caller.
+        -- If assigned to a variable, automatic scope-based cleanup will free it.
+        -- Temporary struct literals not assigned to variables will leak memory
+        -- (this is acceptable for short-lived programs but should be improved).
         local initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
         -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
         return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })", 
