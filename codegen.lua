@@ -960,18 +960,33 @@ function Codegen:gen_expr(expr)
                         local param_is_mut = param and (param.mut or (param.type.kind == "pointer" and param.type.is_mut))
                         
                         if not param_is_mut then
-                            io.stderr:write(string.format("Warning: passing mut argument %d to function '%s' but parameter '%s' is not mut. Modifications will not affect caller.\n", 
+                            -- Parameter doesn't accept mut - ignore the mut from caller
+                            -- Treat it as a regular (non-mut) argument instead
+                            io.stderr:write(string.format("Warning: passing mut argument %d to function '%s' but parameter '%s' is not mut. Ignoring mut keyword.\n", 
                                 i, expr.callee.name, param.name))
+                            
+                            -- Generate as if it were a non-mut argument
+                            local arg_expr = self:gen_expr(a.expr)
+                            
+                            -- Dereference if it's a struct pointer and param expects value
+                            if a.expr.kind == "identifier" then
+                                local var_type = self:get_var_type(a.expr.name)
+                                if var_type and var_type.kind == "pointer" and not param_is_mut then
+                                    local base_type = var_type.to
+                                    if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
+                                        -- Dereference to pass by value
+                                        arg_expr = "*" .. arg_expr
+                                    end
+                                end
+                            end
+                            table.insert(args, arg_expr)
+                        else
+                            -- Parameter is mut - pass by reference as intended
+                            local arg_expr = self:gen_expr(a.expr)
+                            -- If the argument is a struct variable (which is internally a pointer),
+                            -- just pass it as-is (it's already a pointer)
+                            table.insert(args, arg_expr)
                         end
-                        
-                        -- Generate the argument expression
-                        local arg_expr = self:gen_expr(a.expr)
-                        
-                        -- If the argument is a struct variable (which is internally a pointer),
-                        -- just pass it as-is (it's already a pointer)
-                        -- If mut parameter expects pointer, we're good
-                        -- If it doesn't expect a pointer but we're passing one, it's an error (warning above)
-                        table.insert(args, arg_expr)
                     else
                         -- Regular argument (no mut keyword) - caller wants pass-by-value
                         local arg_expr = self:gen_expr(a)
