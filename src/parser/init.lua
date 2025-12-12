@@ -211,6 +211,8 @@ function Parser:parse_statement()
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then
         return self:parse_while()
+    elseif self:check("KEYWORD", "when") then
+        return self:parse_when()
     else
         -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
@@ -325,6 +327,102 @@ function Parser:parse_while()
     local condition = self:parse_expression()
     local body = self:parse_block()
     return { kind = "while", condition = condition, body = body }
+end
+
+function Parser:parse_when()
+    self:expect("KEYWORD", "when")
+    
+    local subject = nil
+    local subject_var = nil
+    local subject_type = nil
+    
+    -- Check if there's a subject: when (expr) or when (Type var = expr) or when { ... }
+    if self:match("LPAREN") then
+        -- Check for variable declaration pattern: Type var = expr
+        local saved_pos = self.pos
+        if self:is_type_start() then
+            local success, type_node = pcall(function() return self:parse_type() end)
+            if success and self:check("IDENT") then
+                local var_name = self:current().value
+                self:advance()
+                if self:match("EQUAL") then
+                    -- This is a variable declaration pattern
+                    subject_type = type_node
+                    subject_var = var_name
+                    subject = self:parse_expression()
+                    self:expect("RPAREN")
+                else
+                    -- Not a declaration, backtrack and parse as expression
+                    self.pos = saved_pos
+                    subject = self:parse_expression()
+                    self:expect("RPAREN")
+                end
+            else
+                -- Backtrack and parse as expression
+                self.pos = saved_pos
+                subject = self:parse_expression()
+                self:expect("RPAREN")
+            end
+        else
+            subject = self:parse_expression()
+            self:expect("RPAREN")
+        end
+    end
+    -- If no LPAREN, then it's a condition-only when { ... }
+    
+    -- Parse arms
+    self:expect("LBRACE")
+    local arms = {}
+    while not self:check("RBRACE") do
+        local arm = self:parse_when_arm()
+        table.insert(arms, arm)
+        self:match("SEMICOLON")  -- semicolons are optional between arms
+    end
+    self:expect("RBRACE")
+    
+    return {
+        kind = "when",
+        subject = subject,
+        subject_var = subject_var,
+        subject_type = subject_type,
+        arms = arms
+    }
+end
+
+function Parser:parse_when_arm()
+    -- Parse pattern: is Type, value expression, or else
+    local pattern = nil
+    local pattern_kind = nil
+    
+    if self:match("KEYWORD", "else") then
+        pattern_kind = "else"
+    elseif self:match("KEYWORD", "is") then
+        -- Type check pattern: is Type
+        pattern_kind = "type_check"
+        pattern = self:parse_type()
+    else
+        -- Value pattern or condition
+        pattern_kind = "value"
+        pattern = self:parse_expression()
+    end
+    
+    self:expect("ARROW")
+    
+    -- Parse body (can be an expression or a block)
+    local body
+    if self:check("LBRACE") then
+        body = self:parse_block()
+    else
+        -- Single expression
+        local expr = self:parse_expression()
+        body = { kind = "block", statements = { { kind = "expr_stmt", expression = expr } } }
+    end
+    
+    return {
+        pattern_kind = pattern_kind,
+        pattern = pattern,
+        body = body
+    }
 end
 
 -- Expression parsing
