@@ -34,11 +34,11 @@ local keywords = {
     ["any"] = true,
     ["and"] = true,
     ["or"] = true,
+    ["when"] = true,
     -- for ...
     -- for each ...
     -- is/type
     -- import
-    -- when ... {}
 }
 
 local simple_tokens = {
