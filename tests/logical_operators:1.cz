@@ -1,13 +1,13 @@
-// Test logical operators: && and ||
+// Test logical operators: and and or
 fn main() -> i32 {
     i32 a = 10
     i32 b = 20
     i32 c = 30
 
-    // Test &&
-    if a < b && b < c {
-        // Test ||
-        if a == 5 || a == 10 {
+    // Test and
+    if a < b and b < c {
+        // Test or
+        if a == 5 or a == 10 {
             return 1  // success
         }
     }
