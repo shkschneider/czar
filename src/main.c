@@ -8,24 +8,34 @@
 #include "main.h"
 
 // Declare external bytecode symbols
-extern const char luaJIT_BC_lexer[];
-extern const char luaJIT_BC_parser[];
-extern const char luaJIT_BC_codegen[];
+extern const char luaJIT_BC_main[];
+extern const char luaJIT_BC_lexer_init[];
+extern const char luaJIT_BC_parser_init[];
+extern const char luaJIT_BC_codegen_init[];
+extern const char luaJIT_BC_codegen_types[];
+extern const char luaJIT_BC_codegen_memory[];
+extern const char luaJIT_BC_codegen_functions[];
+extern const char luaJIT_BC_codegen_statements[];
+extern const char luaJIT_BC_codegen_expressions[];
 extern const char luaJIT_BC_generate[];
 extern const char luaJIT_BC_assemble[];
 extern const char luaJIT_BC_build[];
 extern const char luaJIT_BC_run[];
-extern const char luaJIT_BC_main[];
 
 // Declare external size symbols (defined in bytecode_sizes.c)
-extern const size_t luaJIT_BC_lexer_size;
-extern const size_t luaJIT_BC_parser_size;
-extern const size_t luaJIT_BC_codegen_size;
+extern const size_t luaJIT_BC_main_size;
+extern const size_t luaJIT_BC_lexer_init_size;
+extern const size_t luaJIT_BC_parser_init_size;
+extern const size_t luaJIT_BC_codegen_init_size;
+extern const size_t luaJIT_BC_codegen_types_size;
+extern const size_t luaJIT_BC_codegen_memory_size;
+extern const size_t luaJIT_BC_codegen_functions_size;
+extern const size_t luaJIT_BC_codegen_statements_size;
+extern const size_t luaJIT_BC_codegen_expressions_size;
 extern const size_t luaJIT_BC_generate_size;
 extern const size_t luaJIT_BC_assemble_size;
 extern const size_t luaJIT_BC_build_size;
 extern const size_t luaJIT_BC_run_size;
-extern const size_t luaJIT_BC_main_size;
 
 // Helper to load bytecode into package.preload
 static int load_module(lua_State *L, const char *name, const char *bytecode, size_t size) {
@@ -70,9 +80,14 @@ int main(int argc, char **argv) {
     lua_setglobal(L, "arg");
 
     // Load modules into package.preload
-    if (load_module(L, "lexer", luaJIT_BC_lexer, luaJIT_BC_lexer_size) != 0 ||
-        load_module(L, "parser", luaJIT_BC_parser, luaJIT_BC_parser_size) != 0 ||
-        load_module(L, "codegen", luaJIT_BC_codegen, luaJIT_BC_codegen_size) != 0 ||
+    if (load_module(L, "lexer", luaJIT_BC_lexer_init, luaJIT_BC_lexer_init_size) != 0 ||
+        load_module(L, "parser", luaJIT_BC_parser_init, luaJIT_BC_parser_init_size) != 0 ||
+        load_module(L, "codegen", luaJIT_BC_codegen_init, luaJIT_BC_codegen_init_size) != 0 ||
+        load_module(L, "codegen.types", luaJIT_BC_codegen_types, luaJIT_BC_codegen_types_size) != 0 ||
+        load_module(L, "codegen.memory", luaJIT_BC_codegen_memory, luaJIT_BC_codegen_memory_size) != 0 ||
+        load_module(L, "codegen.functions", luaJIT_BC_codegen_functions, luaJIT_BC_codegen_functions_size) != 0 ||
+        load_module(L, "codegen.statements", luaJIT_BC_codegen_statements, luaJIT_BC_codegen_statements_size) != 0 ||
+        load_module(L, "codegen.expressions", luaJIT_BC_codegen_expressions, luaJIT_BC_codegen_expressions_size) != 0 ||
         load_module(L, "generate", luaJIT_BC_generate, luaJIT_BC_generate_size) != 0 ||
         load_module(L, "assemble", luaJIT_BC_assemble, luaJIT_BC_assemble_size) != 0 ||
         load_module(L, "build", luaJIT_BC_build, luaJIT_BC_build_size) != 0 ||
