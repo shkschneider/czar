@@ -113,28 +113,26 @@ function Parser:parse_function()
     local is_static_method = false
     local name = self:expect("IDENT").value
     
+    -- Helper to parse method name (allows 'new' and 'free' as special method names)
+    local function parse_method_name(self)
+        local tok = self:current()
+        if tok and tok.type == "KEYWORD" and (tok.value == "new" or tok.value == "free") then
+            return self:advance().value  -- Accept keyword as method name
+        else
+            return self:expect("IDENT").value  -- Normal identifier
+        end
+    end
+    
     -- Check if this is a method definition
     -- Type:method for instance methods (implicit mutable self)
     -- Type.method for static methods (no implicit self)
     if self:match("COLON") then
         receiver_type = name  -- The first identifier is the type
-        -- Allow 'new' and 'free' as method names (they're special constructor/destructor names)
-        local tok = self:current()
-        if tok and tok.type == "KEYWORD" and (tok.value == "new" or tok.value == "free") then
-            name = self:advance().value  -- Accept keyword as method name
-        else
-            name = self:expect("IDENT").value  -- The second identifier is the method name
-        end
+        name = parse_method_name(self)
         is_static_method = false  -- Instance method with implicit self
     elseif self:match("DOT") then
         receiver_type = name  -- The first identifier is the type
-        -- Allow 'new' and 'free' as static method names too
-        local tok = self:current()
-        if tok and tok.type == "KEYWORD" and (tok.value == "new" or tok.value == "free") then
-            name = self:advance().value  -- Accept keyword as method name
-        else
-            name = self:expect("IDENT").value  -- The second identifier is the method name
-        end
+        name = parse_method_name(self)
         is_static_method = true  -- Static method, no implicit self
     end
     
