@@ -12,7 +12,7 @@ fn Vec2:length() -> i32 {
 
 // structs can have (static) functions
 fn Vec2.isLongEnough(Vec2 self) -> bool {
-    return self.x > 1 && self.y > self.x
+    return self.x > 1 and self.y > self.x
 }
 
 fn main() -> i32 {
