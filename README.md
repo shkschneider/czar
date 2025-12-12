@@ -199,6 +199,8 @@ Later (v2+), this may become: `Result<T, E>` with monomorphization.
 ```
 if x > 0 {
     ...
+} elseif x == 0 {
+    ...
 } else {
     ...
 }
@@ -209,6 +211,8 @@ while x < 10 {
 ```
 
 Parentheses optional depending on taste; grammar supports both.
+
+**Note:** Both `elseif` (single keyword) and `else if` (two keywords) are supported for backward compatibility.
 
 ### 11. Evaluation Order
 
