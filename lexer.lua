@@ -30,9 +30,9 @@ local keywords = {
     ["f64"] = true,
     ["bool"] = true,
     ["void"] = true,
+    ["any"] = true,
     ["and"] = true,
     ["or"] = true,
-    -- any (void *)
     -- for ...
     -- for each ...
     -- is/type
