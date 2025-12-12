@@ -15,6 +15,7 @@ extern const char luaJIT_BC_generate[];
 extern const char luaJIT_BC_assemble[];
 extern const char luaJIT_BC_build[];
 extern const char luaJIT_BC_run[];
+extern const char luaJIT_BC_utils[];
 extern const char luaJIT_BC_main[];
 
 // Declare external size symbols (defined in bytecode_sizes.c)
@@ -25,6 +26,7 @@ extern const size_t luaJIT_BC_generate_size;
 extern const size_t luaJIT_BC_assemble_size;
 extern const size_t luaJIT_BC_build_size;
 extern const size_t luaJIT_BC_run_size;
+extern const size_t luaJIT_BC_utils_size;
 extern const size_t luaJIT_BC_main_size;
 
 // Helper to load bytecode into package.preload
@@ -76,7 +78,8 @@ int main(int argc, char **argv) {
         load_module(L, "generate", luaJIT_BC_generate, luaJIT_BC_generate_size) != 0 ||
         load_module(L, "assemble", luaJIT_BC_assemble, luaJIT_BC_assemble_size) != 0 ||
         load_module(L, "build", luaJIT_BC_build, luaJIT_BC_build_size) != 0 ||
-        load_module(L, "run", luaJIT_BC_run, luaJIT_BC_run_size) != 0) {
+        load_module(L, "run", luaJIT_BC_run, luaJIT_BC_run_size) != 0 ||
+        load_module(L, "utils", luaJIT_BC_utils, luaJIT_BC_utils_size) != 0) {
         lua_close(L);
         return 1;
     }

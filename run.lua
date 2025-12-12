@@ -1,14 +1,10 @@
 -- Run module: executes compiled binaries
 
-local function shell_escape(str)
-    -- Escape shell metacharacters by wrapping in single quotes
-    -- and escaping any single quotes in the string
-    return "'" .. str:gsub("'", "'\\''") .. "'"
-end
+local utils = require("utils")
 
 local function run_binary(binary_path)
     -- Run the binary and capture exit code
-    local run_cmd = shell_escape("./" .. binary_path)
+    local run_cmd = utils.shell_escape("./" .. binary_path)
     local ret = os.execute(run_cmd)
     
     -- In LuaJIT, os.execute returns the raw system return value
