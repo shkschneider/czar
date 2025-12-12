@@ -27,25 +27,62 @@ local function read_file(path)
 end
 
 local function usage()
-    io.stderr:write("Usage: cz <command> <path>\n")
+    io.stderr:write("Usage: cz <command> <path> [options]\n")
     io.stderr:write("\nCommands:\n")
     io.stderr:write("  lexer <file.cz>         Print all tokens to stdout\n")
     io.stderr:write("  parser <file.cz>        Print AST to stdout\n")
     io.stderr:write("  generate <file.cz>      Generate C code from .cz file (prints to stdout and saves as .c)\n")
     io.stderr:write("  assemble <file.c|.cz>   Generate assembly from .c or .cz file (prints to stdout and saves as .s)\n")
     io.stderr:write("  build <file.c|.cz>      Compile .c or .cz file to binary\n")
-    io.stderr:write("                          Options: -o <output> (default: a.out)\n")
+    io.stderr:write("                          Options: -o <output> (default: a.out), --debug\n")
     io.stderr:write("  run <file.cz>           Compile and run a.out binary\n")
+    io.stderr:write("                          Options: --debug\n")
+    io.stderr:write("\nOptions:\n")
+    io.stderr:write("  --debug                 Enable memory tracking and print statistics on exit\n")
     io.stderr:write("\nNote: Each command depends on the ones before it.\n")
     io.stderr:write("\nExamples:\n")
     io.stderr:write("  cz lexer program.cz\n")
     io.stderr:write("  cz parser program.cz\n")
     io.stderr:write("  cz generate program.cz\n")
+    io.stderr:write("  cz generate program.cz --debug\n")
     io.stderr:write("  cz assemble program.cz\n")
     io.stderr:write("  cz build program.c\n")
     io.stderr:write("  cz build program.cz -o myapp\n")
+    io.stderr:write("  cz build program.cz --debug\n")
     io.stderr:write("  cz run program.cz\n")
+    io.stderr:write("  cz run program.cz --debug\n")
     os.exit(1)
+end
+
+-- Parse common options from args
+local function parse_options(args)
+    local options = {
+        debug_memory = false,
+        source_path = nil,
+        output_path = nil
+    }
+    
+    local i = 1
+    while i <= #args do
+        if args[i] == "--debug" then
+            options.debug_memory = true
+        elseif args[i] == "-o" then
+            i = i + 1
+            if i > #args then
+                io.stderr:write("Error: -o requires an argument\n")
+                usage()
+            end
+            options.output_path = args[i]
+        elseif not options.source_path then
+            options.source_path = args[i]
+        else
+            io.stderr:write(string.format("Error: unexpected argument '%s'\n", args[i]))
+            usage()
+        end
+        i = i + 1
+    end
+    
+    return options
 end
 
 local function serialize_tokens(tokens)
@@ -171,7 +208,13 @@ local function cmd_generate(args)
         usage()
     end
 
-    local source_path = args[1]
+    local opts = parse_options(args)
+    local source_path = opts.source_path
+    
+    if not source_path then
+        io.stderr:write("Error: 'generate' requires a source file\n")
+        usage()
+    end
     
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
@@ -179,8 +222,8 @@ local function cmd_generate(args)
         os.exit(1)
     end
     
-    -- Generate C code
-    local c_source, err = generate.generate_c(source_path)
+    -- Generate C code with options
+    local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
@@ -245,24 +288,13 @@ local function cmd_build(args)
         usage()
     end
 
-    local source_path = args[1]
-    local output_path = "a.out"
+    local opts = parse_options(args)
+    local source_path = opts.source_path
+    local output_path = opts.output_path or "a.out"
     
-    -- Parse -o option if provided
-    local i = 2
-    while i <= #args do
-        if args[i] == "-o" then
-            i = i + 1
-            if i > #args then
-                io.stderr:write("Error: -o requires an argument\n")
-                usage()
-            end
-            output_path = args[i]
-        else
-            io.stderr:write(string.format("Error: unknown option '%s'\n", args[i]))
-            usage()
-        end
-        i = i + 1
+    if not source_path then
+        io.stderr:write("Error: 'build' requires a source file\n")
+        usage()
     end
 
     -- Check if source is .cz or .c
@@ -270,8 +302,8 @@ local function cmd_build(args)
     local cleanup_c = false
     
     if source_path:match("%.cz$") then
-        -- Generate C code from .cz file
-        local c_source, err = generate.generate_c(source_path)
+        -- Generate C code from .cz file with options
+        local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
         if not c_source then
             io.stderr:write(err .. "\n")
             os.exit(1)
@@ -316,7 +348,13 @@ local function cmd_run(args)
         usage()
     end
 
-    local source_path = args[1]
+    local opts = parse_options(args)
+    local source_path = opts.source_path
+    
+    if not source_path then
+        io.stderr:write("Error: 'run' requires a source file\n")
+        usage()
+    end
     
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
@@ -324,8 +362,8 @@ local function cmd_run(args)
         os.exit(1)
     end
     
-    -- Generate C code
-    local c_source, err = generate.generate_c(source_path)
+    -- Generate C code with options
+    local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)

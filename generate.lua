@@ -15,7 +15,8 @@ local function read_file(path)
     return content
 end
 
-local function generate_c(source_path)
+local function generate_c(source_path, options)
+    options = options or {}
     -- Read source file
     local source, err = read_file(source_path)
     if not source then
@@ -35,7 +36,7 @@ local function generate_c(source_path)
     end
 
     -- Generate C code
-    local ok, c_source = pcall(codegen, ast)
+    local ok, c_source = pcall(codegen, ast, options)
     if not ok then
         return nil, string.format("Codegen error: %s", c_source)
     end
