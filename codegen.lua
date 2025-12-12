@@ -325,15 +325,13 @@ function Codegen:infer_type(expr)
         end
     elseif expr.kind == "binary" then
         if expr.op == "==" or expr.op == "!=" or expr.op == "<" or expr.op == ">" or 
-           expr.op == "<=" or expr.op == ">=" or expr.op == "&&" or expr.op == "||" then
+           expr.op == "<=" or expr.op == ">=" or expr.op == "and" or expr.op == "or" then
             return { kind = "named_type", name = "bool" }
         else
             return self:infer_type(expr.left)
         end
     elseif expr.kind == "unary" then
-        if expr.op == "!" then
-            return { kind = "named_type", name = "bool" }
-        elseif expr.op == "&" then
+        if expr.op == "&" then
             local inner_type = self:infer_type(expr.operand)
             return { kind = "pointer", to = inner_type }
         elseif expr.op == "*" then
@@ -487,7 +485,7 @@ function Codegen:gen_statement(stmt)
             if stmt.init then
                 local init_kind = stmt.init.kind
                 if init_kind == "clone" or init_kind == "new_heap" or init_kind == "null" or 
-                   init_kind == "null_check" or init_kind == "null_coalesce" or init_kind == "safe_nav" then
+                   init_kind == "null_check" then
                     is_pointer_expr = true
                 elseif init_kind == "identifier" then
                     is_pointer_expr = self:is_pointer_var(stmt.init.name)
@@ -654,13 +652,16 @@ function Codegen:gen_expr(expr)
                 target_type_str, target_type_str, source_expr)
         end
     elseif expr.kind == "binary" then
-        -- Handle null coalescing operator
-        if expr.op == "??" then
+        -- Handle special operators
+        if expr.op == "or" then
             local left = self:gen_expr(expr.left)
             local right = self:gen_expr(expr.right)
+            -- 'or' is used for both logical OR and null coalescing
             -- For null coalescing, we use a statement expression with a temporary
-            -- This works for pointer types primarily
             return string.format("({ __auto_type _tmp = %s; _tmp ? _tmp : (%s); })", left, right)
+        elseif expr.op == "and" then
+            -- 'and' is logical AND
+            return string.format("(%s && %s)", self:gen_expr(expr.left), self:gen_expr(expr.right))
         else
             return string.format("(%s %s %s)", self:gen_expr(expr.left), expr.op, self:gen_expr(expr.right))
         end
@@ -689,20 +690,6 @@ function Codegen:gen_expr(expr)
         local operand = self:gen_expr(expr.operand)
         -- Generate: assert-like behavior
         return string.format("({ __auto_type _tmp = %s; if (!_tmp) { fprintf(stderr, \"null check failed\\n\"); abort(); } _tmp; })", operand)
-    elseif expr.kind == "safe_nav" then
-        -- Safe navigation: expr?.field
-        local obj_expr = self:gen_expr(expr.object)
-        -- Determine if we need -> or .
-        local use_arrow = false
-        if expr.object.kind == "identifier" then
-            local var_type = self:get_var_type(expr.object.name)
-            if var_type and self:is_pointer_type(var_type) then
-                use_arrow = true
-            end
-        end
-        local accessor = use_arrow and "->" or "."
-        -- For safe navigation, return the field or a default value (0 for numbers, NULL for pointers)
-        return string.format("({ __auto_type _obj = %s; _obj ? _obj%s%s : 0; })", obj_expr, accessor, expr.field)
     elseif expr.kind == "assign" then
         -- Check if target is an immutable variable
         if expr.target.kind == "identifier" then

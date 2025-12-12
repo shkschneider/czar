@@ -29,6 +29,8 @@ local keywords = {
     ["f64"] = true,
     ["bool"] = true,
     ["void"] = true,
+    ["and"] = true,
+    ["or"] = true,
     -- any (void *)
     -- elseif
     -- for ...
@@ -67,11 +69,6 @@ local compound_tokens = {
     ["!="] = "NEQ",
     ["<="] = "LTE",
     [">="] = "GTE",
-    ["&&"] = "AND",
-    ["||"] = "OR",
-    ["!!"] = "BANGBANG",
-    ["??"] = "NULLCOALESCE",
-    ["?."] = "SAFENAV",
     ["+="] = "PLUSEQUAL",
     ["-="] = "MINUSEQUAL",
     ["*="] = "STAREQUAL",
@@ -168,8 +165,12 @@ end
 function Lexer:lex_number()
     local start_col = self.col
     local value = ""
-    while self:peek() and is_digit(self:peek()) do
-        value = value .. self:advance()
+    while self:peek() and (is_digit(self:peek()) or self:peek() == "_") do
+        local ch = self:advance()
+        -- Skip underscores - they're just for readability
+        if ch ~= "_" then
+            value = value .. ch
+        end
     end
     self:add_token("INT", value, self.line, start_col)
 end
