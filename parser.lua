@@ -155,7 +155,12 @@ function Parser:parse_function()
                 param_type = { kind = "pointer", to = param_type, is_mut = true }
             end
             local param_name = self:expect("IDENT").value
-            table.insert(params, { name = param_name, type = param_type })
+            local default_value = nil
+            -- Check for default value
+            if self:match("EQUAL") then
+                default_value = self:parse_expression()
+            end
+            table.insert(params, { name = param_name, type = param_type, default_value = default_value })
         until not self:match("COMMA")
     end
     self:expect("RPAREN")
@@ -448,10 +453,27 @@ function Parser:parse_postfix()
                 repeat
                     -- Check for mut keyword before argument
                     local is_mut = self:match("KEYWORD", "mut") ~= nil
+                    
+                    -- Check for named argument (name: value)
+                    local arg_name = nil
+                    local saved_pos = self.pos
+                    if self:check("IDENT") then
+                        local next_pos = self.pos + 1
+                        if self.tokens[next_pos] and self.tokens[next_pos].type == "COLON" then
+                            -- This is a named argument
+                            arg_name = self:advance().value  -- consume identifier
+                            self:advance()  -- consume colon
+                        end
+                    end
+                    
                     local arg_expr = self:parse_expression()
                     if is_mut then
                         -- Wrap the argument expression to indicate it should be passed as mutable
                         arg_expr = { kind = "mut_arg", expr = arg_expr }
+                    end
+                    if arg_name then
+                        -- This is a named argument
+                        arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
                     end
                     table.insert(args, arg_expr)
                 until not self:match("COMMA")
@@ -475,7 +497,22 @@ function Parser:parse_postfix()
                 local args = {}
                 if not self:check("RPAREN") then
                     repeat
-                        table.insert(args, self:parse_expression())
+                        -- Check for named argument (name: value)
+                        local arg_name = nil
+                        if self:check("IDENT") then
+                            local next_pos = self.pos + 1
+                            if self.tokens[next_pos] and self.tokens[next_pos].type == "COLON" then
+                                -- This is a named argument
+                                arg_name = self:advance().value  -- consume identifier
+                                self:advance()  -- consume colon
+                            end
+                        end
+                        
+                        local arg_expr = self:parse_expression()
+                        if arg_name then
+                            arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
+                        end
+                        table.insert(args, arg_expr)
                     until not self:match("COMMA")
                 end
                 self:expect("RPAREN")
