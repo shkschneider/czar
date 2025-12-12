@@ -5,9 +5,10 @@ tests/*
 !tests/*.*
 a.out
 
-# ...
+# Generated files
 *.o
 *.a
+*.s
 main.h
 bytecode.c
 libczar.a
