@@ -230,16 +230,24 @@ end
 
 function Codegen:mark_freed(name)
     -- Mark variable as already freed to prevent double-free at scope exit
+    -- Note: While this has O(n²) complexity in worst case, it's acceptable because:
+    -- 1. Number of variables per scope is typically small (< 10)
+    -- 2. Early return after finding the variable minimizes actual iterations
+    -- 3. Most variables are freed at scope exit, explicit free is rare
     for i = #self.scope_stack, 1, -1 do
         local var_info = self.scope_stack[i][name]
         if var_info then
             var_info.needs_free = false
-            -- Remove from heap_vars_stack at the appropriate level
-            for j = #self.heap_vars_stack, 1, -1 do
-                for k, var_name in ipairs(self.heap_vars_stack[j]) do
-                    if var_name == name then
-                        table.remove(self.heap_vars_stack[j], k)
-                        return
+            -- Remove from heap_vars_stack at the same scope level
+            -- Start search from the scope where we found the variable
+            for j = i, 1, -1 do
+                local heap_vars = self.heap_vars_stack[j]
+                if heap_vars then
+                    for k, var_name in ipairs(heap_vars) do
+                        if var_name == name then
+                            table.remove(heap_vars, k)
+                            return
+                        end
                     end
                 end
             end
@@ -557,7 +565,7 @@ function Codegen:gen_statement(stmt)
         -- Explicit free statement
         local expr = stmt.value
         if expr.kind ~= "identifier" then
-            error("free can only be used with variable names")
+            error("free can only be used with variable names, got " .. expr.kind)
         end
         self:mark_freed(expr.name)
         return "free(" .. expr.name .. ");"
@@ -1199,8 +1207,7 @@ function Codegen:gen_expr(expr)
     elseif expr.kind == "new_heap" then
         -- new Type { fields... }
         -- Allocate on heap and initialize fields
-        -- Note: Manual memory management - caller responsible for free()
-        -- TODO: Scope-based cleanup (RAII/defer) could be added in future
+        -- Note: Automatic scope-based cleanup implemented - freed at scope exit
         local parts = {}
         for _, f in ipairs(expr.fields) do
             table.insert(parts, string.format(".%s = %s", f.name, self:gen_expr(f.value)))
