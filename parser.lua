@@ -456,7 +456,6 @@ function Parser:parse_postfix()
                     
                     -- Check for named argument (name: value)
                     local arg_name = nil
-                    local saved_pos = self.pos
                     if self:check("IDENT") then
                         local next_pos = self.pos + 1
                         if self.tokens[next_pos] and self.tokens[next_pos].type == "COLON" then
