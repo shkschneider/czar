@@ -9,7 +9,8 @@ end
 
 local lexer = require("lexer")
 local parser = require("parser")
-local generator = require("generator")
+local generate = require("generate")
+local assemble = require("assemble")
 local build = require("build")
 
 -- Simple file reader utility
@@ -30,7 +31,8 @@ local function usage()
     io.stderr:write("\nCommands:\n")
     io.stderr:write("  lexer <file.cz>         Print all tokens to stdout\n")
     io.stderr:write("  parser <file.cz>        Print AST to stdout\n")
-    io.stderr:write("  generator <file.cz>     Generate C code from .cz file (saves as .c)\n")
+    io.stderr:write("  generate <file.cz>      Generate C code from .cz file (prints to stdout and saves as .c)\n")
+    io.stderr:write("  assemble <file.c|.cz>   Generate assembly from .c or .cz file (prints to stdout and saves as .s)\n")
     io.stderr:write("  build <file.c|.cz>      Compile .c or .cz file to binary\n")
     io.stderr:write("                          Options: -o <output> (default: a.out)\n")
     io.stderr:write("  run <file.cz>           Compile and run a.out binary\n")
@@ -38,7 +40,8 @@ local function usage()
     io.stderr:write("\nExamples:\n")
     io.stderr:write("  cz lexer program.cz\n")
     io.stderr:write("  cz parser program.cz\n")
-    io.stderr:write("  cz generator program.cz\n")
+    io.stderr:write("  cz generate program.cz\n")
+    io.stderr:write("  cz assemble program.cz\n")
     io.stderr:write("  cz build program.c\n")
     io.stderr:write("  cz build program.cz -o myapp\n")
     io.stderr:write("  cz run program.cz\n")
@@ -162,9 +165,9 @@ local function cmd_parser(args)
     print(serialize_ast(ast))
 end
 
-local function cmd_generator(args)
+local function cmd_generate(args)
     if #args < 1 then
-        io.stderr:write("Error: 'generator' requires a source file\n")
+        io.stderr:write("Error: 'generate' requires a source file\n")
         usage()
     end
 
@@ -177,23 +180,63 @@ local function cmd_generator(args)
     end
     
     -- Generate C code
-    local c_source, err = generator.generate_c(source_path)
+    local c_source, err = generate.generate_c(source_path)
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
 
+    -- Print C code to stdout
+    print(c_source)
+
     -- Determine output path (.cz -> .c)
     local output_path = source_path:gsub("%.cz$", ".c")
 
     -- Write C file
-    local ok, err = generator.write_c_file(c_source, output_path)
+    local ok, err = generate.write_c_file(c_source, output_path)
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
 
     io.stderr:write(string.format("Generated: %s\n", output_path))
+end
+
+local function cmd_assemble(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'assemble' requires a source file (.c or .cz)\n")
+        usage()
+    end
+
+    local source_path = args[1]
+    
+    -- Validate that the source file has a .c or .cz extension
+    if not source_path:match("%.cz?$") then
+        io.stderr:write(string.format("Error: source file must have .c or .cz extension, got: %s\n", source_path))
+        os.exit(1)
+    end
+    
+    -- Generate assembly code
+    local asm_source, err = assemble.assemble_to_asm(source_path)
+    if not asm_source then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    -- Print assembly code to stdout
+    print(asm_source)
+
+    -- Determine output path (.cz/.c -> .s)
+    local output_path = source_path:gsub("%.c?z?$", "") .. ".s"
+
+    -- Write assembly file
+    local ok, err = assemble.write_file(asm_source, output_path)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Assembled: %s\n", output_path))
 end
 
 local function cmd_build(args)
@@ -228,7 +271,7 @@ local function cmd_build(args)
     
     if source_path:match("%.cz$") then
         -- Generate C code from .cz file
-        local c_source, err = generator.generate_c(source_path)
+        local c_source, err = generate.generate_c(source_path)
         if not c_source then
             io.stderr:write(err .. "\n")
             os.exit(1)
@@ -236,7 +279,7 @@ local function cmd_build(args)
         
         -- Write to temporary C file
         c_file_path = os.tmpname() .. ".c"
-        local ok, err = generator.write_c_file(c_source, c_file_path)
+        local ok, err = generate.write_c_file(c_source, c_file_path)
         if not ok then
             io.stderr:write(err .. "\n")
             os.exit(1)
@@ -282,7 +325,7 @@ local function cmd_run(args)
     end
     
     -- Generate C code
-    local c_source, err = generator.generate_c(source_path)
+    local c_source, err = generate.generate_c(source_path)
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
@@ -290,7 +333,7 @@ local function cmd_run(args)
 
     -- Write to temporary C file
     local c_temp = os.tmpname() .. ".c"
-    local ok, err = generator.write_c_file(c_source, c_temp)
+    local ok, err = generate.write_c_file(c_source, c_temp)
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
@@ -328,8 +371,11 @@ local function main()
         cmd_lexer(cmd_args)
     elseif command == "parser" then
         cmd_parser(cmd_args)
-    elseif command == "generator" then
-        cmd_generator(cmd_args)
+    elseif command == "generate" or command == "generator" then
+        -- Support both 'generate' and 'generator' for backwards compatibility
+        cmd_generate(cmd_args)
+    elseif command == "assemble" then
+        cmd_assemble(cmd_args)
     elseif command == "build" then
         cmd_build(cmd_args)
     elseif command == "run" then
