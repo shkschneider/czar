@@ -20,6 +20,7 @@ local keywords = {
     ["clone"] = true,
     ["cast"] = true,
     ["new"] = true,
+    ["free"] = true,
     ["is"] = true,
     ["type"] = true,
     ["i32"] = true,
