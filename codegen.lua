@@ -18,7 +18,8 @@ local function join(list, sep)
     return table.concat(list, sep or "")
 end
 
-function Codegen.new(ast)
+function Codegen.new(ast, options)
+    options = options or {}
     local self = {
         ast = ast,
         structs = {},
@@ -26,12 +27,31 @@ function Codegen.new(ast)
         out = {},
         scope_stack = {},
         heap_vars_stack = {},  -- Track heap-allocated variables per scope for automatic cleanup
+        debug_memory = options.debug_memory or false,  -- Enable memory tracking and statistics
     }
     return setmetatable(self, Codegen)
 end
 
 function Codegen:emit(line)
     table.insert(self.out, line)
+end
+
+-- Get the malloc function name (with or without debug wrapper)
+function Codegen:malloc_func()
+    if self.debug_memory then
+        return "_czar_malloc"
+    else
+        return "malloc"
+    end
+end
+
+-- Get the free function name (with or without debug wrapper)
+function Codegen:free_func()
+    if self.debug_memory then
+        return "_czar_free"
+    else
+        return "free"
+    end
 end
 
 function Codegen:collect_structs_and_functions()
@@ -309,7 +329,7 @@ function Codegen:get_scope_cleanup()
                         table.insert(cleanup, destructor_call)
                     end
                 end
-                table.insert(cleanup, string.format("free(%s);", var_name))
+                table.insert(cleanup, string.format("%s(%s);", self:free_func(), var_name))
             end
         end
     end
@@ -338,7 +358,7 @@ function Codegen:get_all_scope_cleanup()
                         table.insert(cleanup, destructor_call)
                     end
                 end
-                table.insert(cleanup, string.format("free(%s);", var_name))
+                table.insert(cleanup, string.format("%s(%s);", self:free_func(), var_name))
             end
         end
     end
@@ -632,7 +652,7 @@ function Codegen:gen_statement(stmt)
         end
         
         self:mark_freed(expr.name)
-        return destructor_code .. "free(" .. expr.name .. ");"
+        return destructor_code .. self:free_func() .. "(" .. expr.name .. ");"
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. self:gen_expr(stmt.value) .. ");"
