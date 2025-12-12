@@ -1,0 +1,26 @@
+// Test both constructor and destructor
+struct Resource {
+    i32 id
+    i32 value
+}
+
+fn Resource:new() -> void {
+    self.id = 100
+    self.value = 0
+}
+
+fn Resource:free() -> void {
+    // Cleanup logic here (for testing, just modify value)
+    self.value = 999
+}
+
+fn main() -> i32 {
+    mut Resource r = new Resource {}
+    r.value = 55
+    
+    // Explicit free - should call destructor before freeing
+    i32 result = r.value
+    free r
+    
+    return result  // should return 55
+}
