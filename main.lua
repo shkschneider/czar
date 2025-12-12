@@ -62,7 +62,7 @@ local function parse_options(args)
         source_path = nil,
         output_path = nil
     }
-    
+
     local i = 1
     while i <= #args do
         if args[i] == "--debug" then
@@ -82,14 +82,14 @@ local function parse_options(args)
         end
         i = i + 1
     end
-    
+
     return options
 end
 
 local function serialize_tokens(tokens)
     local lines = {}
     for _, tok in ipairs(tokens) do
-        table.insert(lines, string.format("%s '%s' at %d:%d", 
+        table.insert(lines, string.format("%s '%s' at %d:%d",
             tok.type, tok.value, tok.line, tok.col))
     end
     return table.concat(lines, "\n")
@@ -98,16 +98,16 @@ end
 local function serialize_ast(ast, indent)
     indent = indent or 0
     local prefix = string.rep("  ", indent)
-    
+
     if type(ast) ~= "table" then
         return tostring(ast)
     end
-    
+
     local lines = {}
     if ast.kind then
         table.insert(lines, prefix .. "kind: " .. ast.kind)
     end
-    
+
     for k, v in pairs(ast) do
         if k ~= "kind" then
             if type(v) == "table" then
@@ -128,7 +128,7 @@ local function serialize_ast(ast, indent)
             end
         end
     end
-    
+
     return table.concat(lines, "\n")
 end
 
@@ -139,13 +139,13 @@ local function cmd_lexer(args)
     end
 
     local source_path = args[1]
-    
+
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
         io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
         os.exit(1)
     end
-    
+
     -- Read source file
     local source, err = read_file(source_path)
     if not source then
@@ -171,13 +171,13 @@ local function cmd_parser(args)
     end
 
     local source_path = args[1]
-    
+
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
         io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
         os.exit(1)
     end
-    
+
     -- Read source file
     local source, err = read_file(source_path)
     if not source then
@@ -211,18 +211,18 @@ local function cmd_generate(args)
 
     local opts = parse_options(args)
     local source_path = opts.source_path
-    
+
     if not source_path then
         io.stderr:write("Error: 'generate' requires a source file\n")
         usage()
     end
-    
+
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
         io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
         os.exit(1)
     end
-    
+
     -- Generate C code with options
     local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
     if not c_source then
@@ -242,8 +242,6 @@ local function cmd_generate(args)
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
-
-    io.stderr:write(string.format("Generated: %s\n", output_path))
 end
 
 local function cmd_assemble(args)
@@ -253,13 +251,13 @@ local function cmd_assemble(args)
     end
 
     local source_path = args[1]
-    
+
     -- Validate that the source file has a .c or .cz extension
     if not source_path:match("%.cz?$") then
         io.stderr:write(string.format("Error: source file must have .c or .cz extension, got: %s\n", source_path))
         os.exit(1)
     end
-    
+
     -- Generate assembly code
     local asm_source, err = assemble.assemble_to_asm(source_path)
     if not asm_source then
@@ -279,8 +277,6 @@ local function cmd_assemble(args)
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
-
-    io.stderr:write(string.format("Assembled: %s\n", output_path))
 end
 
 local function cmd_build(args)
@@ -292,7 +288,7 @@ local function cmd_build(args)
     local opts = parse_options(args)
     local source_path = opts.source_path
     local output_path = opts.output_path or "a.out"
-    
+
     if not source_path then
         io.stderr:write("Error: 'build' requires a source file\n")
         usage()
@@ -301,7 +297,7 @@ local function cmd_build(args)
     -- Check if source is .cz or .c
     local c_file_path
     local cleanup_c = false
-    
+
     if source_path:match("%.cz$") then
         -- Generate C code from .cz file with options
         local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
@@ -309,7 +305,7 @@ local function cmd_build(args)
             io.stderr:write(err .. "\n")
             os.exit(1)
         end
-        
+
         -- Write to temporary C file
         c_file_path = os.tmpname() .. ".c"
         local ok, err = generate.write_c_file(c_source, c_file_path)
@@ -329,18 +325,16 @@ local function cmd_build(args)
 
     -- Compile C to binary
     local ok, err = build.compile_c_to_binary(c_file_path, output_path)
-    
+
     -- Clean up temporary C file if we created one
     if cleanup_c then
         os.remove(c_file_path)
     end
-    
+
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
-
-    io.stderr:write(string.format("Built: %s\n", output_path))
 end
 
 local function cmd_run(args)
@@ -351,18 +345,18 @@ local function cmd_run(args)
 
     local opts = parse_options(args)
     local source_path = opts.source_path
-    
+
     if not source_path then
         io.stderr:write("Error: 'run' requires a source file\n")
         usage()
     end
-    
+
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
         io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
         os.exit(1)
     end
-    
+
     -- Generate C code with options
     local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
     if not c_source then
@@ -381,10 +375,10 @@ local function cmd_run(args)
     -- Compile to a.out
     local output_path = "a.out"
     local ok, err = build.compile_c_to_binary(c_temp, output_path)
-    
+
     -- Clean up temporary C file
     os.remove(c_temp)
-    
+
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
