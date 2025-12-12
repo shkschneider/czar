@@ -3,9 +3,9 @@ fn test_inline() -> i32 {
     i32 x = 2
     
     when (x) {
-        1 -> return 10
-        2 -> return 42
-        3 -> return 30
+        1 -> return 10;
+        2 -> return 42;
+        3 -> return 30;
         else -> return 0
     }
 }
