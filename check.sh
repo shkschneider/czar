@@ -3,6 +3,7 @@
 ./build.sh || exit 1
 
 [[ $# -gt 1 ]] || set -- tests/*.cz
+mkdir -p ./build
 
 ok=0
 ko=0
@@ -17,13 +18,13 @@ for f in $@ ; do
     if [[ ! $r =~ ^[0-9]+$ ]] ; then
         r=-1
     fi
-    ./cz build $f -o /tmp/$n >/dev/null 2>/tmp/cz
-    if [[ ! -f /tmp/$n ]] ; then
+    ./cz build $f -o ./build/$n >/dev/null 2>/tmp/cz
+    if [[ ! -x ./build/$n ]] ; then
         echo " ERROR:"
         cat /tmp/cz >&2
         (( ko += 1 ))
     else
-        /tmp/$n >/dev/null 2>/tmp/cz
+        ./build/$n >/dev/null 2>/tmp/cz
         e=$?
         if [[ $r -lt 0 ]] && [[ $e -ne 0 ]] ; then
             (( ok += 1 ))
@@ -34,7 +35,7 @@ for f in $@ ; do
             echo " SUCCESS: $r"
             (( ok += 1 ))
         fi
-        rm -f /tmp/$n
+        rm -f ./build/$n
     fi
     rm -f /tmp/cz
 done

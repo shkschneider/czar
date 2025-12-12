@@ -1,6 +1,7 @@
 build/
 main.h
 *.out
+*.h
 *.o
 *.s
 *.a
