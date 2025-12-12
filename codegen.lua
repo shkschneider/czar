@@ -950,6 +950,187 @@ function Codegen:gen_while(stmt)
     return join(parts, "\n    ")
 end
 
+-- Generate a function call expression
+function Codegen:gen_call_expr(expr)
+    -- Check if this is a method call (callee is a method_ref or field expression)
+    if expr.callee.kind == "method_ref" then
+        -- Method call using colon: obj:method()
+        return self:gen_method_call(expr.callee.object, expr.callee.method, expr.args)
+    elseif expr.callee.kind == "field" then
+        -- Method call using dot: obj.method()
+        return self:gen_method_call(expr.callee.object, expr.callee.field, expr.args)
+    end
+
+    -- Regular function call
+    local callee = self:gen_expr(expr.callee)
+    local args = {}
+    
+    -- NEW SEMANTICS: Caller controls mutability
+    -- - Without mut: pass value (dereference struct pointers)
+    -- - With mut: pass pointer (keep struct pointers as-is)
+    if expr.callee.kind == "identifier" and self.functions["__global__"] then
+        local func_def = self.functions["__global__"][expr.callee.name]
+        if func_def then
+            -- Resolve arguments (handle named args and defaults)
+            local resolved_args = self:resolve_arguments(expr.callee.name, expr.args, func_def.params)
+            
+            for i, a in ipairs(resolved_args) do
+                if a.kind == "mut_arg" then
+                    -- Caller uses mut keyword - wants to pass by reference
+                    local param = func_def.params[i]
+                    local param_is_mut = param and (param.mut or (param.type.kind == "pointer" and param.type.is_mut))
+                    
+                    if not param_is_mut then
+                        -- Parameter doesn't accept mut - ignore the mut from caller
+                        -- Treat it as a regular (non-mut) argument instead
+                        io.stderr:write(string.format("Warning: passing mut argument %d to function '%s' but parameter '%s' is not mut. Ignoring mut keyword.\n", 
+                            i, expr.callee.name, param.name))
+                        
+                        -- Generate as if it were a non-mut argument
+                        local arg_expr = self:gen_expr(a.expr)
+                        
+                        -- Dereference if it's a struct pointer and param expects value
+                        if a.expr.kind == "identifier" then
+                            local var_type = self:get_var_type(a.expr.name)
+                            if var_type and var_type.kind == "pointer" and not param_is_mut then
+                                local base_type = var_type.to
+                                if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
+                                    -- Dereference to pass by value
+                                    arg_expr = "*" .. arg_expr
+                                end
+                            end
+                        end
+                        table.insert(args, arg_expr)
+                    else
+                        -- Parameter is mut - pass by reference as intended
+                        local arg_expr = self:gen_expr(a.expr)
+                        -- If the argument is a struct variable (which is internally a pointer),
+                        -- just pass it as-is (it's already a pointer)
+                        table.insert(args, arg_expr)
+                    end
+                else
+                    -- Regular argument (no mut keyword) - caller wants pass-by-value
+                    local arg_expr = self:gen_expr(a)
+                    
+                    -- If argument is a struct variable (internally a pointer)
+                    -- and parameter expects a value, dereference it
+                    if a.kind == "identifier" and func_def.params[i] then
+                        local var_type = self:get_var_type(a.name)
+                        local param = func_def.params[i]
+                        local param_is_mut = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
+                        
+                        -- If var is a struct pointer and param is NOT mut (expects value), dereference
+                        if var_type and var_type.kind == "pointer" and not param_is_mut then
+                            local base_type = var_type.to
+                            if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
+                                -- Dereference to pass by value
+                                arg_expr = "*" .. arg_expr
+                            end
+                        end
+                    end
+                    
+                    table.insert(args, arg_expr)
+                end
+            end
+        else
+            for _, a in ipairs(expr.args) do
+                table.insert(args, self:gen_expr(a))
+            end
+        end
+    else
+        for _, a in ipairs(expr.args) do
+            table.insert(args, self:gen_expr(a))
+        end
+    end
+    
+    if builtin_calls[callee] then
+        return builtin_calls[callee](args)
+    end
+    return string.format("%s(%s)", callee, join(args, ", "))
+end
+
+-- Generate a cast expression
+function Codegen:gen_cast_expr(expr)
+    local target_type_str = self:c_type(expr.target_type)
+    local expr_str = self:gen_expr(expr.expr)
+    
+    -- Determine source type for special handling
+    local source_type = nil
+    if expr.expr.kind == "identifier" then
+        source_type = self:get_var_type(expr.expr.name)
+    elseif expr.expr.kind == "field" then
+        source_type = self:infer_type(expr.expr)
+    end
+    
+    -- Check if we're casting a clone variable that needs dereferencing
+    if expr.expr.kind == "identifier" and source_type and source_type.kind == "pointer" and source_type.is_clone then
+        expr_str = "*" .. expr_str
+    end
+    
+    -- Special case: when casting to 'any' (void*), struct pointers don't need dereferencing
+    if expr.target_type.kind == "named_type" and expr.target_type.name == "any" then
+        if expr.expr.kind == "identifier" and source_type and source_type.kind == "pointer" then
+            return string.format("((%s)%s)", target_type_str, expr.expr.name)
+        end
+        return string.format("((%s)%s)", target_type_str, expr_str)
+    end
+    
+    -- Special case: when casting from 'any' (void*) to a struct type
+    if source_type and source_type.kind == "named_type" and source_type.name == "any" then
+        if expr.target_type.kind == "named_type" and self.structs[expr.target_type.name] then
+            return string.format("((%s*)%s)", target_type_str, expr_str)
+        end
+        return string.format("((%s)%s)", target_type_str, expr_str)
+    end
+    
+    -- Default: normal cast
+    return string.format("((%s)%s)", target_type_str, expr_str)
+end
+
+-- Generate a clone expression
+function Codegen:gen_clone_expr(expr)
+    local expr_str = self:gen_expr(expr.expr)
+    local source_type = nil
+    local target_type = nil
+    
+    -- Determine source type from expression
+    if expr.expr.kind == "identifier" then
+        source_type = self:get_var_type(expr.expr.name)
+    end
+    
+    -- If target type specified, use it; otherwise use source type
+    if expr.target_type then
+        target_type = expr.target_type
+    else
+        target_type = source_type
+    end
+    
+    if not target_type then
+        error("Cannot determine type for clone operation")
+    end
+    
+    -- In implicit pointer model, struct variables are pointers
+    local actual_type = target_type
+    local needs_deref = false
+    
+    if target_type.kind == "pointer" then
+        actual_type = target_type.to
+        needs_deref = true
+    end
+    
+    local target_type_str = self:c_type(actual_type)
+    local source_expr = needs_deref and ("*" .. expr_str) or expr_str
+    
+    -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = source; _ptr; })
+    if expr.target_type and source_type then
+        return string.format("({ %s* _ptr = %s; *_ptr = (%s)%s; _ptr; })", 
+            target_type_str, self:malloc_call("sizeof(" .. target_type_str .. ")", false), target_type_str, source_expr)
+    else
+        return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })", 
+            target_type_str, self:malloc_call("sizeof(" .. target_type_str .. ")", false), source_expr)
+    end
+end
+
 function Codegen:gen_expr(expr)
     if expr.kind == "int" then
         return tostring(expr.value)
@@ -982,95 +1163,9 @@ function Codegen:gen_expr(expr)
         local inner_expr = self:gen_expr(expr.expr)
         return "&" .. inner_expr
     elseif expr.kind == "cast" then
-        -- cast<Type> expr -> (Type)expr
-        local target_type_str = self:c_type(expr.target_type)
-        local expr_str = self:gen_expr(expr.expr)
-        
-        -- Determine source type for special handling
-        local source_type = nil
-        if expr.expr.kind == "identifier" then
-            source_type = self:get_var_type(expr.expr.name)
-        elseif expr.expr.kind == "field" then
-            -- Get the type of the field
-            source_type = self:infer_type(expr.expr)
-        end
-        
-        -- Check if we're casting a clone variable that needs dereferencing
-        if expr.expr.kind == "identifier" and source_type and source_type.kind == "pointer" and source_type.is_clone then
-            expr_str = "*" .. expr_str
-        end
-        
-        -- Special case: when casting to 'any' (void*), struct pointers don't need dereferencing
-        -- They are already pointers in the implicit pointer model
-        if expr.target_type.kind == "named_type" and expr.target_type.name == "any" then
-            if expr.expr.kind == "identifier" and source_type and source_type.kind == "pointer" then
-                -- This is a struct pointer, just cast it directly
-                return string.format("((%s)%s)", target_type_str, expr.expr.name)
-            end
-            -- For other expressions casting to 'any', use the generated expression
-            return string.format("((%s)%s)", target_type_str, expr_str)
-        end
-        
-        -- Special case: when casting from 'any' (void*) to a struct type
-        -- We need to cast to a pointer type since structs are pointers in Czar's model
-        if source_type and source_type.kind == "named_type" and source_type.name == "any" then
-            if expr.target_type.kind == "named_type" and self.structs[expr.target_type.name] then
-                -- Casting from any to a struct, cast to pointer type
-                return string.format("((%s*)%s)", target_type_str, expr_str)
-            end
-            -- For other types from 'any', use normal cast
-            return string.format("((%s)%s)", target_type_str, expr_str)
-        end
-        
-        -- Default: normal cast
-        return string.format("((%s)%s)", target_type_str, expr_str)
+        return self:gen_cast_expr(expr)
     elseif expr.kind == "clone" then
-        -- clone(expr) or clone<Type>(expr)
-        -- Allocate on heap and copy the value
-        local expr_str = self:gen_expr(expr.expr)
-        local source_type = nil
-        local target_type = nil
-        
-        -- Determine source type from expression
-        if expr.expr.kind == "identifier" then
-            source_type = self:get_var_type(expr.expr.name)
-        end
-        
-        -- If target type specified, use it; otherwise use source type
-        if expr.target_type then
-            target_type = expr.target_type
-        else
-            target_type = source_type
-        end
-        
-        if not target_type then
-            error("Cannot determine type for clone operation")
-        end
-        
-        -- In implicit pointer model, struct variables are pointers
-        -- We need to dereference them to clone the value
-        local actual_type = target_type
-        local needs_deref = false
-        
-        if target_type.kind == "pointer" then
-            -- Source is a pointer, need to dereference it
-            actual_type = target_type.to
-            needs_deref = true
-        end
-        
-        local target_type_str = self:c_type(actual_type)
-        local source_expr = needs_deref and ("*" .. expr_str) or expr_str
-        
-        -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = *source_ptr; _ptr; })
-        if expr.target_type and source_type then
-            -- With cast (implicit allocation - clone)
-            return string.format("({ %s* _ptr = %s; *_ptr = (%s)%s; _ptr; })", 
-                target_type_str, self:malloc_call("sizeof(" .. target_type_str .. ")", false), target_type_str, source_expr)
-        else
-            -- Without cast (implicit allocation - clone)
-            return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })", 
-                target_type_str, self:malloc_call("sizeof(" .. target_type_str .. ")", false), source_expr)
-        end
+        return self:gen_clone_expr(expr)
     elseif expr.kind == "binary" then
         -- Handle special operators
         if expr.op == "or" then
@@ -1205,101 +1300,7 @@ function Codegen:gen_expr(expr)
         -- Compound assignment: x += y becomes x = x + y
         return string.format("(%s = %s %s %s)", self:gen_expr(expr.target), self:gen_expr(expr.target), expr.operator, self:gen_expr(expr.value))
     elseif expr.kind == "call" then
-        -- Check if this is a method call (callee is a method_ref or field expression)
-        if expr.callee.kind == "method_ref" then
-            -- Method call using colon: obj:method()
-            return self:gen_method_call(expr.callee.object, expr.callee.method, expr.args)
-        elseif expr.callee.kind == "field" then
-            -- Method call using dot: obj.method()
-            return self:gen_method_call(expr.callee.object, expr.callee.field, expr.args)
-        end
-
-        -- Regular function call
-        local callee = self:gen_expr(expr.callee)
-        local args = {}
-        
-        -- NEW SEMANTICS: Caller controls mutability
-        -- - Without mut: pass value (dereference struct pointers)
-        -- - With mut: pass pointer (keep struct pointers as-is)
-        if expr.callee.kind == "identifier" and self.functions["__global__"] then
-            local func_def = self.functions["__global__"][expr.callee.name]
-            if func_def then
-                -- Resolve arguments (handle named args and defaults)
-                local resolved_args = self:resolve_arguments(expr.callee.name, expr.args, func_def.params)
-                
-                for i, a in ipairs(resolved_args) do
-                    if a.kind == "mut_arg" then
-                        -- Caller uses mut keyword - wants to pass by reference
-                        local param = func_def.params[i]
-                        local param_is_mut = param and (param.mut or (param.type.kind == "pointer" and param.type.is_mut))
-                        
-                        if not param_is_mut then
-                            -- Parameter doesn't accept mut - ignore the mut from caller
-                            -- Treat it as a regular (non-mut) argument instead
-                            io.stderr:write(string.format("Warning: passing mut argument %d to function '%s' but parameter '%s' is not mut. Ignoring mut keyword.\n", 
-                                i, expr.callee.name, param.name))
-                            
-                            -- Generate as if it were a non-mut argument
-                            local arg_expr = self:gen_expr(a.expr)
-                            
-                            -- Dereference if it's a struct pointer and param expects value
-                            if a.expr.kind == "identifier" then
-                                local var_type = self:get_var_type(a.expr.name)
-                                if var_type and var_type.kind == "pointer" and not param_is_mut then
-                                    local base_type = var_type.to
-                                    if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
-                                        -- Dereference to pass by value
-                                        arg_expr = "*" .. arg_expr
-                                    end
-                                end
-                            end
-                            table.insert(args, arg_expr)
-                        else
-                            -- Parameter is mut - pass by reference as intended
-                            local arg_expr = self:gen_expr(a.expr)
-                            -- If the argument is a struct variable (which is internally a pointer),
-                            -- just pass it as-is (it's already a pointer)
-                            table.insert(args, arg_expr)
-                        end
-                    else
-                        -- Regular argument (no mut keyword) - caller wants pass-by-value
-                        local arg_expr = self:gen_expr(a)
-                        
-                        -- If argument is a struct variable (internally a pointer)
-                        -- and parameter expects a value, dereference it
-                        if a.kind == "identifier" and func_def.params[i] then
-                            local var_type = self:get_var_type(a.name)
-                            local param = func_def.params[i]
-                            local param_is_mut = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
-                            
-                            -- If var is a struct pointer and param is NOT mut (expects value), dereference
-                            if var_type and var_type.kind == "pointer" and not param_is_mut then
-                                local base_type = var_type.to
-                                if base_type and base_type.kind == "named_type" and self:is_struct_type(base_type) then
-                                    -- Dereference to pass by value
-                                    arg_expr = "*" .. arg_expr
-                                end
-                            end
-                        end
-                        
-                        table.insert(args, arg_expr)
-                    end
-                end
-            else
-                for _, a in ipairs(expr.args) do
-                    table.insert(args, self:gen_expr(a))
-                end
-            end
-        else
-            for _, a in ipairs(expr.args) do
-                table.insert(args, self:gen_expr(a))
-            end
-        end
-        
-        if builtin_calls[callee] then
-            return builtin_calls[callee](args)
-        end
-        return string.format("%s(%s)", callee, join(args, ", "))
+        return self:gen_call_expr(expr)
     elseif expr.kind == "field" then
         local obj_expr = self:gen_expr(expr.object)
         -- Determine if we need -> or .
