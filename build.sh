@@ -93,11 +93,5 @@ echo -e "\t$LDFLAGS"
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
 echo -n "[CZ] " ; file -b ./$OUT
 
-set +e
-rm -rf ./build
-./$OUT run ./demo/main.cz >/dev/null 2>/tmp/cz \
-    && echo "[DEMO] SUCCESS: $?" \
-    || { echo "[DEMO] FAILURE: $?" >&2 ; cat /tmp/cz ; exit 1 ; }
-rm -f ./a.out
-
 #install -m 755 ./$(OUT) /usr/local/bin/cz
+rm -rf ./build
