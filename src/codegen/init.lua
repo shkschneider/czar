@@ -175,13 +175,30 @@ end
 function Codegen:generate()
     self:collect_structs_and_functions()
     
-    -- Process allocator directives from AST
+    -- Process allocator directives from AST and check for duplicates
+    local malloc_directive_count = 0
+    local free_directive_count = 0
+    local malloc_directive_line = nil
+    local free_directive_line = nil
+    
     for _, item in ipairs(self.ast.items) do
         if item.kind == "allocator_directive" then
             if item.directive_type == "malloc" then
+                malloc_directive_count = malloc_directive_count + 1
+                if malloc_directive_count > 1 then
+                    error(string.format("duplicate #malloc directive at %d:%d (previous at %d:%d)", 
+                        item.line, item.col, malloc_directive_line.line, malloc_directive_line.col))
+                end
                 self.custom_malloc = item.function_name
+                malloc_directive_line = item
             elseif item.directive_type == "free" then
+                free_directive_count = free_directive_count + 1
+                if free_directive_count > 1 then
+                    error(string.format("duplicate #free directive at %d:%d (previous at %d:%d)", 
+                        item.line, item.col, free_directive_line.line, free_directive_line.col))
+                end
                 self.custom_free = item.function_name
+                free_directive_line = item
             end
         end
     end
