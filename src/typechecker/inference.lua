@@ -42,6 +42,26 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_binary_type(typechecker, expr)
     elseif expr.kind == "unary" then
         return Inference.infer_unary_type(typechecker, expr)
+    elseif expr.kind == "is_check" then
+        -- Type check operator always returns bool
+        local inferred = { kind = "named_type", name = "bool" }
+        expr.inferred_type = inferred
+        return inferred
+    elseif expr.kind == "clone" then
+        -- Clone operator returns the target type if specified, otherwise the source type
+        if expr.target_type then
+            expr.inferred_type = expr.target_type
+            return expr.target_type
+        else
+            local source_type = Inference.infer_type(typechecker, expr.expr)
+            expr.inferred_type = source_type
+            return source_type
+        end
+    elseif expr.kind == "null_check" then
+        -- Null check operator (!) returns the operand type (asserts non-null)
+        local operand_type = Inference.infer_type(typechecker, expr.operand)
+        expr.inferred_type = operand_type
+        return operand_type
     elseif expr.kind == "call" then
         return Inference.infer_call_type(typechecker, expr)
     elseif expr.kind == "method_call" then
@@ -320,6 +340,18 @@ end
 function Inference.types_compatible(type1, type2)
     if not type1 or not type2 then
         return false
+    end
+    
+    -- Allow void* (null) to be compatible with any named type (for nullable pointers)
+    if type1.kind == "pointer" and type1.to and type1.to.name == "void" then
+        if type2.kind == "named_type" then
+            return true  -- null can be assigned to any struct type
+        end
+    end
+    if type2.kind == "pointer" and type2.to and type2.to.name == "void" then
+        if type1.kind == "named_type" then
+            return true  -- struct type can accept null
+        end
     end
     
     if type1.kind == "named_type" and type2.kind == "named_type" then
