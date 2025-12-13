@@ -46,7 +46,10 @@ function Typechecker:collect_declarations()
         elseif item.kind == "function" then
             -- Determine if this is a method or a global function
             local type_name = "__global__"
-            if item.receiver then
+            -- Check for receiver_type field (used by parser for methods)
+            if item.receiver_type then
+                type_name = item.receiver_type
+            elseif item.receiver then
                 type_name = item.receiver.type.name
             end
             
@@ -84,7 +87,12 @@ function Typechecker:check_function(func)
     -- Add parameters to scope
     for _, param in ipairs(func.params) do
         local param_type = param.type
+        -- Check if mutability is in param.mutable or in the type itself (for pointers)
         local is_mutable = param.mutable
+        if not is_mutable and param_type and param_type.kind == "pointer" then
+            -- For pointer types, check is_mut flag in the type
+            is_mutable = param_type.is_mut
+        end
         self:add_var(param.name, param_type, is_mutable)
     end
     
