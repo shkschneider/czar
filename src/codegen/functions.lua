@@ -308,7 +308,7 @@ end
 
 function Functions.gen_wrapper(has_main)
     if has_main then
-        if Codegen.debug_memory then
+        if ctx().debug then
             -- With memory tracking, capture return value and print stats
             ctx():emit("int main(void) {")
             ctx():emit("    int _ret = main_main();")
