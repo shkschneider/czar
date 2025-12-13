@@ -258,18 +258,6 @@ function Types.sizeof_expr(type_node)
     end
     
     local c_type_str = Types.c_type(type_node)
-    
-    -- For struct types, we need to use sizeof(struct_name)
-    if type_node.kind == "named_type" then
-        local name = type_node.name
-        -- Check if it's a struct type (not a primitive)
-        if name ~= "i32" and name ~= "i64" and name ~= "u32" and name ~= "u64" and 
-           name ~= "f32" and name ~= "f64" and name ~= "bool" and name ~= "void" and name ~= "any" then
-            -- It's a struct type, use sizeof(struct_name)
-            return "sizeof(" .. c_type_str .. ")"
-        end
-    end
-    
     return "sizeof(" .. c_type_str .. ")"
 end
 
