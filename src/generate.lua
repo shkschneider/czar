@@ -1,8 +1,11 @@
 -- Generator module: generates C code from .cz source file
--- Wraps lexer, parser, and codegen functionality
+-- Wraps lexer, parser, typechecker, lowering, analysis, and codegen functionality
 
 local lexer = require("lexer")
 local parser = require("parser")
+local typechecker = require("typechecker")
+local lowering = require("lowering")
+local analysis = require("analysis")
 local codegen = require("codegen")
 
 local function read_file(path)
@@ -40,8 +43,26 @@ local function generate_c(source_path, options)
         return nil, string.format("Parser error: %s", ast)
     end
 
-    -- Generate C code
-    local ok, c_source = pcall(codegen, ast, options)
+    -- Type check (distinct pass after AST construction)
+    local ok, typed_ast = pcall(typechecker, ast)
+    if not ok then
+        return nil, string.format("Type checking error: %s", typed_ast)
+    end
+
+    -- Lowering (insert explicit pointer ops, canonicalize for codegen)
+    local ok, lowered_ast = pcall(lowering, typed_ast)
+    if not ok then
+        return nil, string.format("Lowering error: %s", lowered_ast)
+    end
+
+    -- Escape analysis / lifetime checks
+    local ok, analyzed_ast = pcall(analysis, lowered_ast)
+    if not ok then
+        return nil, string.format("Analysis error: %s", analyzed_ast)
+    end
+
+    -- Generate C code (runs on typed/lowered/analyzed AST)
+    local ok, c_source = pcall(codegen, analyzed_ast, options)
     if not ok then
         return nil, string.format("Codegen error: %s", c_source)
     end
