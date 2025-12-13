@@ -76,6 +76,18 @@ function Inference.infer_type(typechecker, expr)
         local target_type = expr.to_type or expr.target_type
         expr.inferred_type = target_type
         return target_type
+    elseif expr.kind == "sizeof" or expr.kind == "type_of" then
+        -- sizeof and type return i32 and string respectively
+        -- sizeof returns the size in bytes as i32
+        -- type_of returns a string
+        local result_type
+        if expr.kind == "sizeof" then
+            result_type = { kind = "named_type", name = "i32" }
+        else
+            result_type = { kind = "pointer", to = { kind = "named_type", name = "char" } }
+        end
+        expr.inferred_type = result_type
+        return result_type
     elseif expr.kind == "directive" then
         return Inference.infer_directive_type(expr)
     elseif expr.kind == "compound_assign" then
