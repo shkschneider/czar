@@ -31,6 +31,10 @@ function Codegen.new(ast, options)
         current_function = nil,
         custom_malloc = nil,
         custom_free = nil,
+        type_aliases = {
+            -- Built-in alias for String -> char*
+            ["String"] = "char*"
+        },
     }
     return setmetatable(self, Codegen)
 end
@@ -204,6 +208,13 @@ function Codegen:generate()
                 self.custom_free = item.function_name
                 free_directive_line = item
             end
+        elseif item.kind == "alias_directive" then
+            -- Store type alias for replacement
+            if self.type_aliases[item.alias_name] then
+                error(string.format("duplicate #alias for '%s' at %d:%d", 
+                    item.alias_name, item.line, item.col))
+            end
+            self.type_aliases[item.alias_name] = item.target_type_str
         end
     end
     
