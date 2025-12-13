@@ -26,6 +26,7 @@ function Codegen.new(ast, options)
         out = {},
         scope_stack = {},
         heap_vars_stack = {},
+        debug = options.debug or false,
         debug_memory = options.debug_memory or false,
         source_file = options.source_file or "unknown",
         current_function = nil,
