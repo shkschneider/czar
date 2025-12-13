@@ -16,6 +16,9 @@ function Typechecker.new(ast)
         functions = {},    -- type_name -> { method_name -> func_def } or "__global__" -> { func_name -> func_def }
         scope_stack = {},  -- stack of scopes for variable lookups
         errors = {},       -- collected type errors
+        type_aliases = {   -- type_name -> target_type_string
+            ["String"] = "char*"  -- Built-in alias
+        },
     }
     return setmetatable(self, Typechecker)
 end
@@ -57,8 +60,18 @@ function Typechecker:collect_declarations()
                 self.functions[type_name] = {}
             end
             self.functions[type_name][item.name] = item
+        elseif item.kind == "alias_directive" then
+            -- Store type aliases
+            if self.type_aliases[item.alias_name] then
+                self:add_error(string.format(
+                    "duplicate #alias for '%s' at %d:%d",
+                    item.alias_name, item.line, item.col
+                ))
+            else
+                self.type_aliases[item.alias_name] = item.target_type_str
+            end
         elseif item.kind == "directive" then
-            -- Store directives but don't type check them
+            -- Store other directives but don't type check them
         end
     end
 end
@@ -147,7 +160,7 @@ function Typechecker:check_var_decl(stmt)
         local init_type = self:check_expression(stmt.init)
         
         -- Check type compatibility
-        if not Inference.types_compatible(var_type, init_type) then
+        if not Inference.types_compatible(var_type, init_type, self) then
             self:add_error(string.format(
                 "Type mismatch in variable '%s': expected %s, got %s",
                 stmt.name,
@@ -180,7 +193,7 @@ function Typechecker:check_assign(stmt)
     local value_type = self:check_expression(stmt.value)
     
     -- Check type compatibility
-    if not Inference.types_compatible(target_type, value_type) then
+    if not Inference.types_compatible(target_type, value_type, self) then
         self:add_error(string.format(
             "Type mismatch in assignment: expected %s, got %s",
             Inference.type_to_string(target_type),

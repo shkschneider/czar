@@ -279,7 +279,7 @@ function Inference.infer_struct_literal_type(typechecker, expr)
             
             if field_type then
                 local value_type = Inference.infer_type(typechecker, field_init.value)
-                if not Inference.types_compatible(field_type, value_type) then
+                if not Inference.types_compatible(field_type, value_type, typechecker) then
                     typechecker:add_error(string.format(
                         "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
                         field_init.name,
@@ -327,7 +327,7 @@ function Inference.infer_new_type(typechecker, expr)
             
             if field_type then
                 local value_type = Inference.infer_type(typechecker, field_init.value)
-                if not Inference.types_compatible(field_type, value_type) then
+                if not Inference.types_compatible(field_type, value_type, typechecker) then
                     typechecker:add_error(string.format(
                         "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
                         field_init.name,
@@ -348,10 +348,44 @@ function Inference.infer_new_type(typechecker, expr)
     end
 end
 
+-- Resolve type alias to its target type
+-- For simple cases like "char*", we need to handle this specially
+-- Since the target_type_str is a string, we need to interpret it
+function Inference.resolve_type_alias(typechecker, type_node)
+    if not type_node or type_node.kind ~= "named_type" then
+        return type_node
+    end
+    
+    local alias_target = typechecker.type_aliases[type_node.name]
+    if not alias_target then
+        return type_node
+    end
+    
+    -- Parse the alias target string
+    -- For now, handle simple cases like "char*"
+    if alias_target:match("^(%w+)%*$") then
+        -- It's a pointer type like "char*"
+        local base_type = alias_target:match("^(%w+)%*$")
+        return {
+            kind = "pointer",
+            to = { kind = "named_type", name = base_type }
+        }
+    else
+        -- It's a simple named type
+        return { kind = "named_type", name = alias_target }
+    end
+end
+
 -- Check if two types are compatible
-function Inference.types_compatible(type1, type2)
+function Inference.types_compatible(type1, type2, typechecker)
     if not type1 or not type2 then
         return false
+    end
+    
+    -- Resolve type aliases if typechecker is available
+    if typechecker then
+        type1 = Inference.resolve_type_alias(typechecker, type1)
+        type2 = Inference.resolve_type_alias(typechecker, type2)
     end
     
     -- Allow void* (null) to be compatible with any named type (for nullable pointers)
@@ -369,11 +403,11 @@ function Inference.types_compatible(type1, type2)
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
     elseif type1.kind == "pointer" and type2.kind == "pointer" then
-        return Inference.types_compatible(type1.to, type2.to)
+        return Inference.types_compatible(type1.to, type2.to, typechecker)
     elseif type1.kind == "pointer" and type1.is_clone and type2.kind == "named_type" then
-        return Inference.types_compatible(type1.to, type2)
+        return Inference.types_compatible(type1.to, type2, typechecker)
     elseif type2.kind == "pointer" and type2.is_clone and type1.kind == "named_type" then
-        return Inference.types_compatible(type2.to, type1)
+        return Inference.types_compatible(type2.to, type1, typechecker)
     end
     
     return false

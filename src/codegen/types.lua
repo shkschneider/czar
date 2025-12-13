@@ -15,10 +15,33 @@ function Types.c_type(type_node)
         return Types.c_type(type_node.to) .. "*"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
-        if name == "i32" then
+        
+        -- Check for type aliases first and resolve them
+        if ctx().type_aliases and ctx().type_aliases[name] then
+            local alias_target = ctx().type_aliases[name]
+            -- Parse the alias target string and recursively resolve it
+            if alias_target:match("^(%w+)%*$") then
+                -- It's a pointer type like "char*"
+                local base_type = alias_target:match("^(%w+)%*$")
+                return Types.c_type({ kind = "named_type", name = base_type }) .. "*"
+            else
+                -- It's a simple named type, recursively resolve it
+                return Types.c_type({ kind = "named_type", name = alias_target })
+            end
+        end
+        
+        if name == "i8" then
+            return "int8_t"
+        elseif name == "i16" then
+            return "int16_t"
+        elseif name == "i32" then
             return "int32_t"
         elseif name == "i64" then
             return "int64_t"
+        elseif name == "u8" then
+            return "uint8_t"
+        elseif name == "u16" then
+            return "uint16_t"
         elseif name == "u32" then
             return "uint32_t"
         elseif name == "u64" then
@@ -54,7 +77,9 @@ function Types.c_type_in_struct(type_node, struct_name)
     elseif type_node.kind == "named_type" then
         local c_type = Types.c_type(type_node)
         -- In implicit pointer model, check if this is a non-primitive type
-        local is_primitive = c_type == "int32_t" or c_type == "int64_t" or
+        local is_primitive = c_type == "int8_t" or c_type == "int16_t" or 
+                            c_type == "int32_t" or c_type == "int64_t" or
+                            c_type == "uint8_t" or c_type == "uint16_t" or
                             c_type == "uint32_t" or c_type == "uint64_t" or
                             c_type == "float" or c_type == "double" or
                             c_type == "bool" or c_type == "void" or c_type == "void*"
