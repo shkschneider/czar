@@ -234,6 +234,30 @@ Parentheses optional depending on taste; grammar supports both.
 - Example: `1_000_000` is equivalent to `1000000`
 - Underscores are ignored during lexing
 
+### 14. Compiler Directives
+
+Directives provide compile-time information and control, starting with `#`:
+
+- **`#FILE`**: Returns the source filename as a string
+- **`#FUNCTION`**: Returns the current function name as a string
+- **`#DEBUG`**: Returns `false` normally, `true` with `--debug` flag
+
+Example:
+```czar
+fn process(i32 x) -> i32 {
+    bool debug = #DEBUG
+    
+    if debug {
+        // Debug-only code - zero overhead in release builds
+        return x * 2
+    }
+    
+    return x
+}
+```
+
+See [COMPILER_DIRECTIVES.md](COMPILER_DIRECTIVES.md) for complete documentation.
+
 ## Compiler Architecture
 
 Written in Lua, producing portable C.
@@ -398,9 +422,10 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - ✅ **Extension methods**: Any function with first parameter named `self` is callable as a method
 - ✅ **Auto-addressing**: Methods automatically convert values to pointers when needed
 - ✅ **Error-as-value**: Pattern demonstrated with Result-style structs
+- ✅ **Compiler directives**: `#FILE`, `#FUNCTION`, `#DEBUG` for compile-time information
 - ⏳ **Overloading**: Not yet implemented (planned)
 - ⏳ **Nullable pointers with explicit null checks**: Partially supported
-- `#` talks to the compiler
+- `#` talks to the compiler (see COMPILER_DIRECTIVES.md)
 - `@` is for interfaces
 
 ### Usage
