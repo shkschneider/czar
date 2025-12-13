@@ -363,12 +363,12 @@ function Inference.resolve_type_alias(typechecker, type_node)
     
     -- Parse the alias target string
     -- Handle pointer types like "char*" or "char *" (with optional spaces)
-    if alias_target:match("^(%w+)%s*%*$") then
+    local base_type_match = alias_target:match("^(%w+)%s*%*$")
+    if base_type_match then
         -- It's a pointer type like "char*"
-        local base_type = alias_target:match("^(%w+)%s*%*$")
         return {
             kind = "pointer",
-            to = { kind = "named_type", name = base_type }
+            to = { kind = "named_type", name = base_type_match }
         }
     else
         -- It's a simple named type
