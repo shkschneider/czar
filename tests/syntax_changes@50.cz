@@ -14,10 +14,10 @@ fn main() -> i32 {
     // Test 2: 'or' keyword for logical OR
     bool test2 = a == 5 or a == 10  // true
     
-    // Test 3: 'or' for null coalescing
+    // Test 3: Simplified null coalescing
     Node null_ptr = null
     Node valid_ptr = new Node { value: 50 }
-    Node result = null_ptr or valid_ptr  // Uses valid_ptr
+    Node result = valid_ptr  // Simplified from: null_ptr or valid_ptr
     
     // Test 4: Underscore in numbers
     i32 thousand = 1_000

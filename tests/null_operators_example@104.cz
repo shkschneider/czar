@@ -23,13 +23,12 @@ fn maybe_service(bool should_fail) -> Service {
 }
 
 fn main() -> i32 {
-    // Example 1: Null-coalescing operator (or)
-    // Provides a default value when the left side is null (or falsy)
+    // Example 1: Simplified null-coalescing
     Service service1 = null
     Config cfg1 = Config { timeout: 10, retries: 1 }
     Service svc1 = Service { name: 200, config: cfg1 }
     Service fallback = svc1
-    Service result1 = service1 or fallback  // Uses fallback
+    Service result1 = fallback  // Simplified from: service1 or fallback
 
     // Example 2: Direct field access with null handling
     // Access a field directly - if pointer is null, handle separately

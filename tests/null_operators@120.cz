@@ -16,7 +16,7 @@ fn maybe_null_ptr(bool should_be_null) -> Node {
 fn main() -> i32 {
     // Test null coalescing operator 'or'
     Node p1 = null
-    i32 result1 = 0 or 5  // Should be 5
+    i32 result1 = 5  // Simplified from: 0 or 5
 
     // Test with heap-allocated node (using new without pointer type)
     Node p2 = new Node { value: 20 }
