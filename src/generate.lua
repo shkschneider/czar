@@ -17,6 +17,11 @@ end
 
 local function generate_c(source_path, options)
     options = options or {}
+    
+    -- Extract just the filename (not the full path) for #FILE
+    local filename = source_path:match("([^/]+)$") or source_path
+    options.source_file = filename
+    
     -- Read source file
     local source, err = read_file(source_path)
     if not source then
