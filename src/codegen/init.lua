@@ -120,6 +120,10 @@ function Codegen:type_name_string(type_node)
     return Codegen.Types.type_name_string(type_node)
 end
 
+function Codegen:sizeof_expr(type_node)
+    return Codegen.Types.sizeof_expr(type_node)
+end
+
 function Codegen:resolve_arguments(func_name, args, params)
     return Codegen.Functions.resolve_arguments(func_name, args, params)
 end
