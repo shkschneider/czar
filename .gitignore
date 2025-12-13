@@ -6,3 +6,4 @@ main.h
 *.s
 *.a
 cz
+_codeql_detected_source_root

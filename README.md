@@ -246,12 +246,12 @@ Example:
 ```czar
 fn process(i32 x) -> i32 {
     bool debug = #DEBUG
-    
+
     if debug {
         // Debug-only code - zero overhead in release builds
         return x * 2
     }
-    
+
     return x
 }
 ```
