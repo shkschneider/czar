@@ -81,8 +81,35 @@ function Parser:parse_top_level()
         return self:parse_struct()
     elseif self:check("KEYWORD", "fn") then
         return self:parse_function()
+    elseif self:check("DIRECTIVE") then
+        return self:parse_top_level_directive()
     else
         error(string.format("unexpected token in top-level: %s", token_label(self:current())))
+    end
+end
+
+function Parser:parse_top_level_directive()
+    local directive_tok = self:expect("DIRECTIVE")
+    local directive_name = directive_tok.value:upper()
+    
+    -- #malloc and #free directives take a function name argument
+    if directive_name == "MALLOC" or directive_name == "FREE" then
+        -- Accept both IDENT and KEYWORD tokens (e.g., "malloc" and "free" are keywords)
+        local func_name_tok = self:current()
+        if not func_name_tok or (func_name_tok.type ~= "IDENT" and func_name_tok.type ~= "KEYWORD") then
+            error(string.format("expected function name after #%s but found %s", directive_name:lower(), token_label(func_name_tok)))
+        end
+        self:advance()
+        
+        return { 
+            kind = "allocator_directive", 
+            directive_type = directive_name:lower(),
+            function_name = func_name_tok.value,
+            line = directive_tok.line,
+            col = directive_tok.col
+        }
+    else
+        error(string.format("unknown top-level directive: #%s at %d:%d", directive_tok.value, directive_tok.line, directive_tok.col))
     end
 end
 
