@@ -19,7 +19,7 @@ set -e
 OUT=cz
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) \
 -O2"
-LDFLAGS="-static -L. -Wl,\
+LDFLAGS="-static -L. -L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
 -E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
@@ -69,7 +69,7 @@ cp ./src/main.c ./build/main.c
 echo "[CC] main.c -lczar ..."
 echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
-cc $CFLAGS -o ./$OUT ./build/main.c -L./build $LDFLAGS
+cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
 echo -n "[CZ] " ; file -b ./$OUT
 
 set +e
