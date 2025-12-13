@@ -19,10 +19,25 @@ set -e
 OUT=cz
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) \
 -O2"
-LDFLAGS="-L. -Wl,\
+
+# Check if luastatic is available for static linking
+if command -v luastatic >/dev/null 2>&1; then
+    echo "[LUASTATIC] detected, building static binary"
+    # Note: luastatic is a tool for creating static Lua binaries.
+    # When statically linking LuaJIT, the linker will produce a dlopen warning
+    # because LuaJIT's FFI uses dlopen for dynamic library loading. This is
+    # expected LuaJIT behavior and does not indicate a build failure.
+    LDFLAGS="-static -L. -L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
--E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s" # TODO -static
+-E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
+else
+    echo "[LUASTATIC] not found, building dynamic binary"
+    LDFLAGS="-L. -L./build -Wl,\
+--whole-archive -lczar -Wl,\
+--no-whole-archive -Wl,\
+-E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
+fi
 
 SOURCES=(
     main.lua
@@ -69,7 +84,7 @@ cp ./src/main.c ./build/main.c
 echo "[CC] main.c -lczar ..."
 echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
-cc $CFLAGS -o ./$OUT ./build/main.c -L./build $LDFLAGS
+cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
 echo -n "[CZ] " ; file -b ./$OUT
 
 set +e
