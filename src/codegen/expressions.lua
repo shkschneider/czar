@@ -184,6 +184,13 @@ function Expressions.gen_expr(expr)
         end
         local type_name = ctx():type_name_string(expr_type)
         return string.format("\"%s\"", type_name)
+    elseif expr.kind == "sizeof" then
+        -- Handle 'sizeof' built-in that returns the size in bytes
+        local expr_type = ctx():infer_type(expr.expr)
+        if not expr_type then
+            error("Cannot infer type for 'sizeof' expression")
+        end
+        return ctx():sizeof_expr(expr_type)
     elseif expr.kind == "unary" then
         return string.format("(%s%s)", expr.op, Expressions.gen_expr(expr.operand))
     elseif expr.kind == "null_check" then
