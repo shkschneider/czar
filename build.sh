@@ -43,6 +43,12 @@ SOURCES=(
     main.lua
     lexer/init.lua
     parser/init.lua
+    typechecker/init.lua
+    typechecker/resolver.lua
+    typechecker/inference.lua
+    typechecker/mutability.lua
+    lowering/init.lua
+    analysis/init.lua
     codegen/init.lua
     codegen/types.lua
     codegen/memory.lua
