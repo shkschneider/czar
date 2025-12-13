@@ -50,8 +50,12 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_static_method_call_type(typechecker, expr)
     elseif expr.kind == "struct_literal" then
         return Inference.infer_struct_literal_type(typechecker, expr)
+    elseif expr.kind == "new_heap" or expr.kind == "new_stack" then
+        return Inference.infer_new_type(typechecker, expr)
     elseif expr.kind == "cast" then
-        return expr.to_type
+        local target_type = expr.to_type or expr.target_type
+        expr.inferred_type = target_type
+        return target_type
     elseif expr.kind == "directive" then
         return Inference.infer_directive_type(expr)
     elseif expr.kind == "compound_assign" then
@@ -157,6 +161,26 @@ function Inference.infer_call_type(typechecker, expr)
             typechecker:add_error(string.format("Undefined function: %s", func_name))
             return nil
         end
+    elseif expr.callee.kind == "method_ref" then
+        -- Handle method reference calls (e.g., obj:method())
+        local obj_type = Inference.infer_type(typechecker, expr.callee.object)
+        if not obj_type then
+            return nil
+        end
+        
+        local type_name = Inference.get_base_type_name(obj_type)
+        local method_def = Resolver.resolve_function(typechecker, type_name, expr.callee.method)
+        
+        if method_def then
+            expr.inferred_type = method_def.return_type
+            return method_def.return_type
+        else
+            typechecker:add_error(string.format(
+                "Method '%s' not found on type '%s'",
+                expr.callee.method, type_name or "unknown"
+            ))
+            return nil
+        end
     end
     
     return nil
@@ -202,7 +226,13 @@ end
 
 -- Infer the type of a struct literal
 function Inference.infer_struct_literal_type(typechecker, expr)
-    local struct_def = Resolver.resolve_struct(typechecker, expr.struct_name)
+    if not expr.struct_name and not expr.type_name then
+        typechecker:add_error("Struct literal missing type_name")
+        return nil
+    end
+    
+    local struct_name = expr.struct_name or expr.type_name
+    local struct_def = Resolver.resolve_struct(typechecker, struct_name)
     
     if struct_def then
         -- Type check each field
@@ -221,7 +251,7 @@ function Inference.infer_struct_literal_type(typechecker, expr)
                     typechecker:add_error(string.format(
                         "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
                         field_init.name,
-                        expr.struct_name,
+                        struct_name,
                         Inference.type_to_string(field_type),
                         Inference.type_to_string(value_type)
                     ))
@@ -229,11 +259,11 @@ function Inference.infer_struct_literal_type(typechecker, expr)
             end
         end
         
-        local inferred = { kind = "named_type", name = expr.struct_name }
+        local inferred = { kind = "named_type", name = struct_name }
         expr.inferred_type = inferred
         return inferred
     else
-        typechecker:add_error(string.format("Undefined struct: %s", expr.struct_name))
+        typechecker:add_error(string.format("Undefined struct: %s", struct_name or "nil"))
         return nil
     end
 end
@@ -246,6 +276,44 @@ function Inference.infer_directive_type(expr)
         return { kind = "named_type", name = "bool" }
     end
     return nil
+end
+
+-- Infer the type of a new expression (heap or stack allocation)
+function Inference.infer_new_type(typechecker, expr)
+    local struct_def = Resolver.resolve_struct(typechecker, expr.type_name)
+    
+    if struct_def then
+        -- Type check each field (similar to struct literal)
+        for _, field_init in ipairs(expr.fields) do
+            local field_type = nil
+            for _, field_def in ipairs(struct_def.fields) do
+                if field_def.name == field_init.name then
+                    field_type = field_def.type
+                    break
+                end
+            end
+            
+            if field_type then
+                local value_type = Inference.infer_type(typechecker, field_init.value)
+                if not Inference.types_compatible(field_type, value_type) then
+                    typechecker:add_error(string.format(
+                        "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
+                        field_init.name,
+                        expr.type_name,
+                        Inference.type_to_string(field_type),
+                        Inference.type_to_string(value_type)
+                    ))
+                end
+            end
+        end
+        
+        local inferred = { kind = "named_type", name = expr.type_name }
+        expr.inferred_type = inferred
+        return inferred
+    else
+        typechecker:add_error(string.format("Undefined struct: %s", expr.type_name or "nil"))
+        return nil
+    end
 end
 
 -- Check if two types are compatible
