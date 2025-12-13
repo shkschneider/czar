@@ -27,6 +27,19 @@ function Expressions.gen_expr(expr)
         return expr.value and "true" or "false"
     elseif expr.kind == "null" then
         return "NULL"
+    elseif expr.kind == "directive" then
+        -- Handle compiler directives: #FILE, #FUNCTION, #DEBUG
+        local directive_name = expr.name:upper()
+        if directive_name == "FILE" then
+            return string.format("\"%s\"", ctx().source_file)
+        elseif directive_name == "FUNCTION" then
+            local func_name = ctx().current_function or "unknown"
+            return string.format("\"%s\"", func_name)
+        elseif directive_name == "DEBUG" then
+            return ctx().debug_memory and "true" or "false"
+        else
+            error(string.format("Unknown directive: #%s at %d:%d", expr.name, expr.line, expr.col))
+        end
     elseif expr.kind == "identifier" then
         -- Check if this is a clone variable that needs dereferencing
         local var_type = ctx():get_var_type(expr.name)

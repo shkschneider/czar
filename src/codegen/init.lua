@@ -27,6 +27,8 @@ function Codegen.new(ast, options)
         scope_stack = {},
         heap_vars_stack = {},
         debug_memory = options.debug_memory or false,
+        source_file = options.source_file or "unknown",
+        current_function = nil,
     }
     return setmetatable(self, Codegen)
 end

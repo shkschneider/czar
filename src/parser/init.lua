@@ -708,6 +708,9 @@ function Parser:parse_primary()
     elseif tok.type == "IDENT" then
         local ident = self:advance()
         return { kind = "identifier", name = ident.value }
+    elseif tok.type == "DIRECTIVE" then
+        local directive = self:advance()
+        return { kind = "directive", name = directive.value, line = directive.line, col = directive.col }
     elseif tok.type == "LPAREN" then
         self:advance()
         local expr = self:parse_expression()
