@@ -2,6 +2,124 @@
 
 This document describes compiler directives that can be used to customize the behavior of the Czar compiler. Directives are special commands that begin with `#` and provide instructions to the compiler rather than being part of the program logic.
 
+## Implemented Directives
+
+### Compile-Time Information Directives
+
+These directives are replaced at compile time with values that provide information about the compilation context. They can be used in any expression context.
+
+#### `#FILE`
+
+Returns the source filename as a string literal.
+
+**Syntax:**
+```czar
+#FILE
+```
+
+**Type:** `string` (const char* in generated C)
+
+**Purpose:**
+- Provides the name of the source file being compiled
+- Useful for logging, debugging, and error reporting
+- Returns just the filename (e.g., "main.cz"), not the full path
+
+**Example:**
+```czar
+fn main() -> i32 {
+    // Log which file is being executed
+    // In a real implementation with print support:
+    // print("Running file: ", #FILE)
+    return 0
+}
+```
+
+#### `#FUNCTION`
+
+Returns the current function name as a string literal.
+
+**Syntax:**
+```czar
+#FUNCTION
+```
+
+**Type:** `string` (const char* in generated C)
+
+**Purpose:**
+- Provides the name of the function where the directive is used
+- Useful for logging, debugging, and tracing execution
+- Returns "unknown" if used outside a function context
+
+**Example:**
+```czar
+fn calculate(i32 x) -> i32 {
+    // Log the function name for debugging
+    // In a real implementation with print support:
+    // print("Entering function: ", #FUNCTION)
+    return x * 2
+}
+
+fn main() -> i32 {
+    i32 result = calculate(21)
+    return result
+}
+```
+
+#### `#DEBUG`
+
+Returns a boolean indicating whether debug mode is enabled.
+
+**Syntax:**
+```czar
+#DEBUG
+```
+
+**Type:** `bool`
+
+**Values:**
+- `false` - default, when compiling without `--debug` flag
+- `true` - when compiling with `--debug` flag
+
+**Purpose:**
+- Enables conditional compilation of debug-only code
+- Avoids runtime overhead for debug checks in production builds
+- Works seamlessly with if statements and other control flow
+
+**Example:**
+```czar
+fn process_data(i32 value) -> i32 {
+    bool debug = #DEBUG
+    
+    if debug {
+        // This code only runs when compiled with --debug
+        // In a real implementation with print support:
+        // print("Debug: processing value ", value)
+    }
+    
+    return value * 2
+}
+
+fn main() -> i32 {
+    return process_data(21)
+}
+```
+
+**Usage with compiler:**
+```bash
+# Compile without debug mode (#DEBUG = false)
+cz build program.cz -o program
+
+# Compile with debug mode (#DEBUG = true)
+cz build program.cz --debug -o program_debug
+
+# Run with debug mode
+cz run program.cz --debug
+```
+
+### Why No `#LINE` Directive?
+
+The `#LINE` directive was considered but not implemented to avoid overhead. Line number information is already tracked by the lexer and available in error messages. Adding a runtime-accessible line number would require additional bookkeeping and code generation that doesn't provide enough value for the added complexity.
+
 ## Planned Directives
 
 ### Memory Management Directives
