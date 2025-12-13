@@ -1,0 +1,7 @@
+// Test that directives are parsed and work
+#malloc malloc
+#free free
+
+fn main() -> i32 {
+    return 0
+}
