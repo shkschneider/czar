@@ -6,8 +6,12 @@ Parser.__index = Parser
 
 -- Shared type keywords table
 local TYPE_KEYWORDS = {
+    ["i8"] = true,
+    ["i16"] = true,
     ["i32"] = true,
     ["i64"] = true,
+    ["u8"] = true,
+    ["u16"] = true,
     ["u32"] = true,
     ["u64"] = true,
     ["f32"] = true,
@@ -105,6 +109,41 @@ function Parser:parse_top_level_directive()
             kind = "allocator_directive", 
             directive_type = directive_name:lower(),
             function_name = func_name_tok.value,
+            line = directive_tok.line,
+            col = directive_tok.col
+        }
+    elseif directive_name == "ALIAS" then
+        -- #alias mytype existing_type
+        -- mytype is one word, existing_type can be multiple tokens (rest of the line)
+        local alias_name_tok = self:expect("IDENT")
+        local alias_name = alias_name_tok.value
+        
+        -- Collect all remaining tokens until end of line/statement as the target type string
+        -- We'll collect tokens and concatenate them with appropriate spacing
+        local target_type_tokens = {}
+        
+        -- Keep reading tokens until we hit EOF, a directive, struct, or fn keyword
+        while self:current() and 
+              not self:check("EOF") and 
+              not self:check("DIRECTIVE") and
+              not (self:check("KEYWORD", "struct") or self:check("KEYWORD", "fn")) do
+            local tok = self:current()
+            table.insert(target_type_tokens, tok.value)
+            self:advance()
+        end
+        
+        if #target_type_tokens == 0 then
+            error(string.format("expected target type after #alias %s at %d:%d", 
+                alias_name, directive_tok.line, directive_tok.col))
+        end
+        
+        -- Join tokens to form the target type string
+        local target_type_str = table.concat(target_type_tokens, " ")
+        
+        return {
+            kind = "alias_directive",
+            alias_name = alias_name,
+            target_type_str = target_type_str,
             line = directive_tok.line,
             col = directive_tok.col
         }
@@ -295,11 +334,11 @@ end
 function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
-    -- Check for type keywords or user-defined types (uppercase identifiers)
+    -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
     if tok.type == "KEYWORD" and TYPE_KEYWORDS[tok.value] then
         return true
     end
-    if tok.type == "IDENT" and tok.value:match("^[A-Z]") then
+    if tok.type == "IDENT" then
         return true
     end
     return false
