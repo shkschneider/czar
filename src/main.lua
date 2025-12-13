@@ -58,6 +58,7 @@ end
 -- Parse common options from args
 local function parse_options(args)
     local options = {
+        debug = false,
         debug_memory = false,
         source_path = nil,
         output_path = nil
@@ -66,7 +67,8 @@ local function parse_options(args)
     local i = 1
     while i <= #args do
         if args[i] == "--debug" then
-            options.debug_memory = true
+            options.debug = true
+            options.debug_memory = true  -- --debug also enables memory tracking
         elseif args[i] == "-o" then
             i = i + 1
             if i > #args then
@@ -228,7 +230,7 @@ local function cmd_generate(args)
     end
 
     -- Generate C code with options
-    local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
+    local c_source, err = generate.generate_c(source_path, { debug = opts.debug, debug_memory = opts.debug_memory })
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
@@ -308,7 +310,7 @@ local function cmd_build(args)
 
     if source_path:match("%.cz$") then
         -- Generate C code from .cz file with options
-        local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
+        local c_source, err = generate.generate_c(source_path, { debug = opts.debug, debug_memory = opts.debug_memory })
         if not c_source then
             io.stderr:write(err .. "\n")
             os.exit(1)
@@ -368,7 +370,7 @@ local function cmd_run(args)
     end
 
     -- Generate C code with options
-    local c_source, err = generate.generate_c(source_path, { debug_memory = opts.debug_memory })
+    local c_source, err = generate.generate_c(source_path, { debug = opts.debug, debug_memory = opts.debug_memory })
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
