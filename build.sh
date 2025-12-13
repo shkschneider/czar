@@ -22,8 +22,8 @@ CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) \
 
 # Check if luastatic is available for static linking
 if command -v luastatic >/dev/null 2>&1; then
-    echo "[LUASTATIC] detected, building static binary"
     # Note: luastatic is a tool for creating static Lua binaries.
+    echo "[LUASTATIC] $(command -v luastatic) -> static"
     # When statically linking LuaJIT, the linker will produce a dlopen warning
     # because LuaJIT's FFI uses dlopen for dynamic library loading. This is
     # expected LuaJIT behavior and does not indicate a build failure.
@@ -32,7 +32,7 @@ if command -v luastatic >/dev/null 2>&1; then
 --no-whole-archive -Wl,\
 -E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
 else
-    echo "[LUASTATIC] not found, building dynamic binary"
+    echo "[LUASTATIC] null -> dynamic"
     LDFLAGS="-L. -L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
