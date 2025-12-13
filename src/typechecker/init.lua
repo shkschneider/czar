@@ -97,7 +97,8 @@ end
 
 -- Type check a block of statements
 function Typechecker:check_block(block)
-    for _, stmt in ipairs(block) do
+    local statements = block.statements or block
+    for _, stmt in ipairs(statements) do
         self:check_statement(stmt)
     end
 end
@@ -115,7 +116,12 @@ function Typechecker:check_statement(stmt)
     elseif stmt.kind == "return" then
         self:check_return(stmt)
     elseif stmt.kind == "expr_stmt" then
-        self:check_expression(stmt.expr)
+        -- Check if the expression is an assignment
+        if stmt.expression and stmt.expression.kind == "assign" then
+            self:check_assign(stmt.expression)
+        else
+            self:check_expression(stmt.expr or stmt.expression)
+        end
     elseif stmt.kind == "when" then
         self:check_when(stmt)
     elseif stmt.kind == "free" then
@@ -242,21 +248,27 @@ function Typechecker:check_when(stmt)
     local subject_type = self:check_expression(stmt.subject)
     
     -- Type check each arm
-    for _, arm in ipairs(stmt.arms) do
-        self:push_scope()
-        
-        -- Add variable binding if present
-        if arm.var_name then
-            self:add_var(arm.var_name, subject_type, false)
+    if stmt.arms then
+        for _, arm in ipairs(stmt.arms) do
+            self:push_scope()
+            
+            -- Add variable binding if present
+            if arm.var_name then
+                self:add_var(arm.var_name, subject_type, false)
+            end
+            
+            -- Check the arm condition if present
+            if arm.condition then
+                self:check_expression(arm.condition)
+            end
+            
+            -- Check the arm body (which might be called 'block' or 'body')
+            local arm_block = arm.block or arm.body
+            if arm_block then
+                self:check_block(arm_block)
+            end
+            self:pop_scope()
         end
-        
-        -- Check the arm condition if present
-        if arm.condition then
-            self:check_expression(arm.condition)
-        end
-        
-        self:check_block(arm.block)
-        self:pop_scope()
     end
 end
 
