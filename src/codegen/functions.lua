@@ -236,6 +236,9 @@ function Functions.gen_function(fn)
         end
     end
 
+    -- Track current function for #FUNCTION directive
+    ctx().current_function = name
+
     -- In implicit pointer model, struct return types should be pointers
     local return_type_str = Codegen.Types.c_type(fn.return_type)
     if fn.return_type and fn.return_type.kind == "named_type" and Codegen.Types.is_struct_type(fn.return_type) then
@@ -291,6 +294,7 @@ function Functions.gen_function(fn)
 
     ctx():emit("}")
     ctx():pop_scope()
+    ctx().current_function = nil  -- Clear current function tracking
     ctx():emit("")
 end
 
