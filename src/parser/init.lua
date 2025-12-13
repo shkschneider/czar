@@ -697,6 +697,11 @@ function Parser:parse_primary()
         self:advance()
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "type_of", expr = expr }
+    elseif tok.type == "KEYWORD" and tok.value == "sizeof" then
+        -- sizeof expr - returns the size in bytes of the type
+        self:advance()
+        local expr = self:parse_unary()  -- Parse next expression at unary level
+        return { kind = "sizeof", expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "cast" then
         -- cast<Type> expr
         self:advance()
