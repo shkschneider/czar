@@ -10,7 +10,7 @@ function Mutability.check_mutable_target(typechecker, target)
     if target.kind == "identifier" then
         local var_info = Resolver.resolve_name(typechecker, target.name)
         if not var_info then
-            typechecker:add_error(string.format("Undeclared identifier: %s", target.name))
+            -- Don't report error here - let the expression type checker handle it
             return false
         end
         
@@ -28,7 +28,7 @@ function Mutability.check_mutable_target(typechecker, target)
         if target.object.kind == "identifier" then
             local var_info = Resolver.resolve_name(typechecker, target.object.name)
             if not var_info then
-                typechecker:add_error(string.format("Undeclared identifier: %s", target.object.name))
+                -- Don't report error here - let the expression type checker handle it
                 return false
             end
             
