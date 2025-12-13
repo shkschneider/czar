@@ -20,9 +20,10 @@ function Types.c_type(type_node)
         if ctx().type_aliases and ctx().type_aliases[name] then
             local alias_target = ctx().type_aliases[name]
             -- Parse the alias target string and recursively resolve it
-            if alias_target:match("^(%w+)%*$") then
+            -- Handle pointer types like "char*" or "char *" (with optional spaces)
+            if alias_target:match("^(%w+)%s*%*$") then
                 -- It's a pointer type like "char*"
-                local base_type = alias_target:match("^(%w+)%*$")
+                local base_type = alias_target:match("^(%w+)%s*%*$")
                 return Types.c_type({ kind = "named_type", name = base_type }) .. "*"
             else
                 -- It's a simple named type, recursively resolve it
