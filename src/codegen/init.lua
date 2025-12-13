@@ -27,9 +27,10 @@ function Codegen.new(ast, options)
         scope_stack = {},
         heap_vars_stack = {},
         debug = options.debug or false,
-        debug_memory = options.debug_memory or false,
         source_file = options.source_file or "unknown",
         current_function = nil,
+        custom_malloc = nil,
+        custom_free = nil,
     }
     return setmetatable(self, Codegen)
 end
@@ -173,13 +174,35 @@ end
 
 function Codegen:generate()
     self:collect_structs_and_functions()
+    
+    -- Process allocator directives from AST
+    for _, item in ipairs(self.ast.items) do
+        if item.kind == "allocator_directive" then
+            if item.directive_type == "malloc" then
+                self.custom_malloc = item.function_name
+            elseif item.directive_type == "free" then
+                self.custom_free = item.function_name
+            end
+        end
+    end
+    
+    -- In debug mode, automatically use cz_malloc/cz_free if not already overridden
+    if self.debug then
+        if not self.custom_malloc then
+            self.custom_malloc = "cz_malloc"
+        end
+        if not self.custom_free then
+            self.custom_free = "cz_free"
+        end
+    end
+    
     self:emit("#include <stdint.h>")
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
     self:emit("")
 
-    if self.debug_memory then
+    if self.debug then
         Codegen.Memory.gen_memory_tracking_helpers()
     end
 

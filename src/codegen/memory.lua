@@ -114,20 +114,42 @@ function Memory.get_var_info(name)
 end
 
 function Memory.malloc_call(size_expr, is_explicit)
-    if Codegen.debug_memory then
-        local explicit_flag = is_explicit and "1" or "0"
-        return string.format("_czar_malloc(%s, %s)", size_expr, explicit_flag)
-    else
+    -- Use custom malloc if set, otherwise use default or debug wrapper
+    local malloc_func = ctx().custom_malloc
+    
+    if not malloc_func then
+        -- No custom allocator, use default malloc
         return string.format("malloc(%s)", size_expr)
+    elseif malloc_func == "malloc" then
+        -- Explicitly reset to standard C malloc
+        return string.format("malloc(%s)", size_expr)
+    elseif malloc_func == "cz_malloc" then
+        -- Using the debug wrapper which needs the is_explicit flag
+        local explicit_flag = is_explicit and "1" or "0"
+        return string.format("cz_malloc(%s, %s)", size_expr, explicit_flag)
+    else
+        -- Custom allocator - assume it has standard malloc signature
+        return string.format("%s(%s)", malloc_func, size_expr)
     end
 end
 
 function Memory.free_call(ptr_expr, is_explicit)
-    if Codegen.debug_memory then
-        local explicit_flag = is_explicit and "1" or "0"
-        return string.format("_czar_free(%s, %s)", ptr_expr, explicit_flag)
-    else
+    -- Use custom free if set, otherwise use default or debug wrapper
+    local free_func = ctx().custom_free
+    
+    if not free_func then
+        -- No custom deallocator, use default free
         return string.format("free(%s)", ptr_expr)
+    elseif free_func == "free" then
+        -- Explicitly reset to standard C free
+        return string.format("free(%s)", ptr_expr)
+    elseif free_func == "cz_free" then
+        -- Using the debug wrapper which needs the is_explicit flag
+        local explicit_flag = is_explicit and "1" or "0"
+        return string.format("cz_free(%s, %s)", ptr_expr, explicit_flag)
+    else
+        -- Custom deallocator - assume it has standard free signature
+        return string.format("%s(%s)", free_func, ptr_expr)
     end
 end
 
@@ -144,7 +166,7 @@ function Memory.gen_memory_tracking_helpers()
     ctx():emit("static size_t _czar_peak_alloc_count = 0;")
     ctx():emit("static size_t _czar_peak_alloc_bytes = 0;")
     ctx():emit("")
-    ctx():emit("void* _czar_malloc(size_t size, int is_explicit) {")
+    ctx():emit("void* cz_malloc(size_t size, int is_explicit) {")
     ctx():emit("    void* ptr = malloc(size);")
     ctx():emit("    if (ptr) {")
     ctx():emit("        if (is_explicit) {")
@@ -166,7 +188,7 @@ function Memory.gen_memory_tracking_helpers()
     ctx():emit("    return ptr;")
     ctx():emit("}")
     ctx():emit("")
-    ctx():emit("void _czar_free(void* ptr, int is_explicit) {")
+    ctx():emit("void cz_free(void* ptr, int is_explicit) {")
     ctx():emit("    if (ptr) {")
     ctx():emit("        if (is_explicit) {")
     ctx():emit("            _czar_explicit_free_count++;")
