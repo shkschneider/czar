@@ -19,10 +19,10 @@ set -e
 OUT=cz
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) \
 -O2"
-LDFLAGS="-L. -Wl,\
+LDFLAGS="-static -L. -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
--E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s" # TODO -static
+-E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
 
 SOURCES=(
     main.lua
