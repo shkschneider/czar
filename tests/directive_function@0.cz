@@ -1,0 +1,10 @@
+// Test #FUNCTION directive returns correct function name
+fn test_func() -> i32 {
+    // #FUNCTION should be replaced with "test_func"
+    return 0
+}
+
+fn main() -> i32 {
+    i32 r = test_func()
+    return r
+}
