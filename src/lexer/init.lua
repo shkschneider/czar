@@ -23,6 +23,7 @@ local keywords = {
     ["free"] = true,
     ["is"] = true,
     ["type"] = true,
+    ["sizeof"] = true,
     ["i32"] = true,
     ["i64"] = true,
     ["u32"] = true,
