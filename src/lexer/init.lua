@@ -186,6 +186,19 @@ function Lexer:lex_identifier()
     self:add_token(kind, value, self.line, start_col)
 end
 
+function Lexer:lex_directive()
+    local start_col = self.col
+    self:advance() -- consume '#'
+    local value = ""
+    while self:peek() and is_alnum(self:peek()) do
+        value = value .. self:advance()
+    end
+    if value == "" then
+        error(string.format("expected directive name after '#' at %d:%d", self.line, start_col))
+    end
+    self:add_token("DIRECTIVE", value, self.line, start_col)
+end
+
 function Lexer:lex_string()
     local start_col = self.col
     local value = ""
@@ -254,6 +267,11 @@ function Lexer:next_token()
 
     if ch == '"' then
         self:lex_string()
+        return true
+    end
+
+    if ch == '#' then
+        self:lex_directive()
         return true
     end
 
