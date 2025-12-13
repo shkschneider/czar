@@ -438,8 +438,10 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 **Build Features:**
 - Optimized with `-O2` for better performance
 - Stripped with `-s` for minimal binary size
-- Static linking (~1.8MB, fully portable)
-- No external dependencies required at runtime
+- Automatic static linking if `luastatic` is available (~1.8MB, fully portable)
+- Falls back to dynamic linking if `luastatic` is not found (~79KB, requires libluajit-5.1.so.2)
+
+**Note:** When building with static linking, the linker will produce a warning about `dlopen` usage in statically linked applications. This is expected behavior due to LuaJIT's FFI (Foreign Function Interface) and does not indicate a build failure.
 
 ### Testing
 
