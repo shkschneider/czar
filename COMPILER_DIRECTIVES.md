@@ -120,13 +120,13 @@ cz run program.cz --debug
 
 The `#LINE` directive was considered but not implemented to avoid overhead. Line number information is already tracked by the lexer and available in error messages. Adding a runtime-accessible line number would require additional bookkeeping and code generation that doesn't provide enough value for the added complexity.
 
-## Planned Directives
+## Memory Management Directives
 
-### Memory Management Directives
-
-#### `#malloc <function_name>`
+### `#malloc <function_name>`
 
 Specifies a custom allocation function to replace the default C `malloc`.
+
+**Status:** ✅ Implemented
 
 **Syntax:**
 ```czar
@@ -139,17 +139,20 @@ Specifies a custom allocation function to replace the default C `malloc`.
 - Enables integration with custom memory pools, arena allocators, or tracking allocators
 
 **Requirements:**
-- The specified function must have the signature: `void* function_name(size_t size)`
+- Must be a top-level directive (before any functions or structs)
+- The specified function must have the signature: `void* function_name(size_t size)` or `void* function_name(size_t size, int is_explicit)` for debug wrappers
 - The function must be available at link time (either defined in the Czar code or linked from C)
-- Must be declared before any memory allocations occur in the code
+
+**Debug Mode Behavior:**
+When compiling with `--debug` flag, the compiler automatically uses `cz_malloc` (the built-in debug memory tracker) unless explicitly overridden with a directive.
+
+**Reset to Standard C:**
+Use `#malloc malloc` to explicitly use standard C `malloc`, even in debug mode.
 
 **Example:**
 ```czar
-// Define or declare custom allocator
-extern fn cz_malloc(u64 size) -> void*
-
-// Tell compiler to use it instead of malloc
-#malloc cz_malloc
+// Use custom allocator
+#malloc my_custom_malloc
 
 struct Vec2 {
     i32 x
@@ -157,15 +160,29 @@ struct Vec2 {
 }
 
 fn main() -> i32 {
-    // This will use cz_malloc instead of malloc
+    // This will use my_custom_malloc instead of malloc
     Vec2 v = new Vec2 { x: 10, y: 20 }
     return 0
 }
 ```
 
-#### `#free <function_name>`
+**Example - Reset to standard C:**
+```czar
+// Even in debug mode, use standard malloc
+#malloc malloc
+#free free
+
+fn main() -> i32 {
+    // Uses standard malloc/free
+    return 0
+}
+```
+
+### `#free <function_name>`
 
 Specifies a custom deallocation function to replace the default C `free`.
+
+**Status:** ✅ Implemented
 
 **Syntax:**
 ```czar
@@ -178,59 +195,77 @@ Specifies a custom deallocation function to replace the default C `free`.
 - Enables custom cleanup logic, tracking, or validation
 
 **Requirements:**
-- The specified function must have the signature: `void function_name(void* ptr)`
-- The function must be available at link time
+- Must be a top-level directive (before any functions or structs)
+- The specified function must have the signature: `void function_name(void* ptr)` or `void function_name(void* ptr, int is_explicit)` for debug wrappers
 - Should be used in conjunction with `#malloc` to ensure matching allocator/deallocator
+
+**Debug Mode Behavior:**
+When compiling with `--debug` flag, the compiler automatically uses `cz_free` (the built-in debug memory tracker) unless explicitly overridden with a directive.
+
+**Reset to Standard C:**
+Use `#free free` to explicitly use standard C `free`, even in debug mode.
 
 **Example:**
 ```czar
-// Define or declare custom deallocator
-extern fn cz_free(void* ptr) -> void
-
-// Tell compiler to use custom memory management
-#malloc cz_malloc
-#free cz_free
+// Use custom memory management
+#malloc my_custom_malloc
+#free my_custom_free
 
 fn main() -> i32 {
-    // Allocations use cz_malloc, deallocations use cz_free
+    // Allocations use my_custom_malloc, deallocations use my_custom_free
     Vec2 v = new Vec2 { x: 10, y: 20 }
-    // Automatic cleanup uses cz_free
     return 0
 }
 ```
 
-## Implementation Strategy
+## Implementation
 
 ### Parsing Phase
 1. Lexer recognizes `#` as a directive marker
-2. Parser identifies directive type and arguments
+2. Parser identifies directive type and arguments at top-level
 3. Directives are processed before code generation
 
 ### Code Generation Phase
-1. Compiler maintains a table of custom function mappings
-2. When generating memory allocation code:
-   - Check if `#malloc` directive was specified
-   - Use custom function if available, otherwise use default `malloc`
-3. When generating deallocation code:
-   - Check if `#free` directive was specified
-   - Use custom function if available, otherwise use default `free`
+1. Compiler maintains custom_malloc and custom_free names
+2. In debug mode, automatically sets to cz_malloc/cz_free if not overridden
+3. When generating memory allocation code:
+   - Use custom_malloc if set, otherwise use default `malloc`
+   - Special handling for `cz_malloc` which takes an is_explicit flag
+4. When generating deallocation code:
+   - Use custom_free if set, otherwise use default `free`
+   - Special handling for `cz_free` which takes an is_explicit flag
 
-### Validation
-- Compiler validates that directive appears before code that would use it
-- Type checking ensures function signatures match requirements
-- Link-time errors if specified functions are not available
+### Debug Memory Tracking
+
+The built-in `cz_malloc` and `cz_free` functions track:
+- Explicit allocations (via `new` keyword)
+- Implicit allocations (compiler-generated)
+- Peak memory usage
+- Memory leaks
 
 ## Use Cases
 
-### 1. Custom Memory Tracking
+### 1. Automatic Debug Memory Tracking
+```czar
+// No directives needed - automatic in debug mode
+fn main() -> i32 {
+    // Compile with --debug to get memory statistics
+    Vec2 v = new Vec2 { x: 10, y: 20 }
+    return 0
+}
+```
+
+Compile with `cz build program.cz --debug` to automatically track all memory allocations.
+
+### 2. Custom Memory Tracking
 ```czar
 #malloc tracked_malloc
 #free tracked_free
 
-// All allocations/deallocations are tracked
+// All allocations/deallocations use custom trackers
 ```
 
-### 2. Arena Allocators
+### 3. Arena Allocators
 ```czar
 #malloc arena_alloc
 #free arena_free  // No-op or arena cleanup
@@ -238,15 +273,15 @@ fn main() -> i32 {
 // Fast bulk allocations, cleanup entire arena at once
 ```
 
-### 3. Testing and Debugging
+### 4. Testing and Debugging with Standard Allocators
 ```czar
-#malloc debug_malloc
-#free debug_free
+#malloc malloc
+#free free
 
-// Allocators that check for corruption, log calls, etc.
+// Override debug mode to use standard C allocators
 ```
 
-### 4. Platform-Specific Allocators
+### 5. Platform-Specific Allocators
 ```czar
 #malloc platform_malloc
 #free platform_free
