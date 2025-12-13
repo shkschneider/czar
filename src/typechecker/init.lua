@@ -163,9 +163,8 @@ end
 function Typechecker:check_assign(stmt)
     -- Check if target is mutable
     if not Mutability.check_mutable_target(self, stmt.target) then
-        self:add_error(string.format(
-            "Cannot assign to immutable target"
-        ))
+        -- Mutability check failed, don't continue with type checking
+        return
     end
     
     -- Type check both sides
