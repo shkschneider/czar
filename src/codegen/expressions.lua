@@ -36,7 +36,7 @@ function Expressions.gen_expr(expr)
             local func_name = ctx().current_function or "unknown"
             return string.format("\"%s\"", func_name)
         elseif directive_name == "DEBUG" then
-            return ctx().debug_memory and "true" or "false"
+            return ctx().debug and "true" or "false"
         else
             error(string.format("Unknown directive: #%s at %d:%d", expr.name, expr.line, expr.col))
         end
