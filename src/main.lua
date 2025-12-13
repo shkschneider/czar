@@ -9,6 +9,7 @@ end
 
 local lexer = require("lexer")
 local parser = require("parser")
+local typechecker = require("typechecker")
 local generate = require("generate")
 local assemble = require("assemble")
 local build = require("build")
@@ -32,6 +33,7 @@ local function usage()
     io.stderr:write("\nCommands:\n")
     io.stderr:write("  lexer <file.cz>         Print all tokens to stdout\n")
     io.stderr:write("  parser <file.cz>        Print AST to stdout\n")
+    io.stderr:write("  typechecker <file.cz>   Type check and print annotated AST to stdout\n")
     io.stderr:write("  generate <file.cz>      Generate C code from .cz file (prints to stdout and saves as .c)\n")
     io.stderr:write("  assemble <file.c|.cz>   Generate assembly from .c or .cz file (prints to stdout and saves as .s)\n")
     io.stderr:write("  build <file.c|.cz>      Compile .c or .cz file to binary\n")
@@ -44,6 +46,7 @@ local function usage()
     io.stderr:write("\nExamples:\n")
     io.stderr:write("  cz lexer program.cz\n")
     io.stderr:write("  cz parser program.cz\n")
+    io.stderr:write("  cz typechecker program.cz\n")
     io.stderr:write("  cz generate program.cz\n")
     io.stderr:write("  cz generate program.cz --debug\n")
     io.stderr:write("  cz assemble program.cz\n")
@@ -203,6 +206,54 @@ local function cmd_parser(args)
 
     -- Print AST to stdout
     print(serialize_ast(ast))
+
+    return 0
+end
+
+local function cmd_typechecker(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'typechecker' requires a source file\n")
+        usage()
+    end
+
+    local source_path = args[1]
+
+    -- Validate that the source file has a .cz extension
+    if not source_path:match("%.cz$") then
+        io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
+        os.exit(1)
+    end
+
+    -- Read source file
+    local source, err = read_file(source_path)
+    if not source then
+        io.stderr:write(string.format("Failed to read '%s': %s\n", source_path, err or "unknown error"))
+        os.exit(1)
+    end
+
+    -- Lex
+    local ok, tokens = pcall(lexer, source)
+    if not ok then
+        io.stderr:write(string.format("Lexer error: %s\n", tokens))
+        os.exit(1)
+    end
+
+    -- Parse
+    local ok, ast = pcall(parser, tokens)
+    if not ok then
+        io.stderr:write(string.format("Parser error: %s\n", ast))
+        os.exit(1)
+    end
+
+    -- Type check
+    local ok, typed_ast = pcall(typechecker, ast)
+    if not ok then
+        io.stderr:write(string.format("Type checking error: %s\n", typed_ast))
+        os.exit(1)
+    end
+
+    -- Print typed AST to stdout
+    print(serialize_ast(typed_ast))
 
     return 0
 end
@@ -414,6 +465,8 @@ local function main()
         cmd_lexer(cmd_args)
     elseif command == "parser" then
         cmd_parser(cmd_args)
+    elseif command == "typechecker" then
+        cmd_typechecker(cmd_args)
     elseif command == "generate" then
         cmd_generate(cmd_args)
     elseif command == "assemble" then
