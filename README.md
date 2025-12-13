@@ -437,9 +437,9 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 
 **Build Features:**
 - Optimized with `-O2` for better performance
-- Stripped with `-s` for minimal binary size (~31KB dynamically linked)
-- Optional static linking with `STATIC=1` (~1.7MB, fully portable)
-- Dynamic linking by default (smaller binary, requires libluajit-5.1.so)
+- Stripped with `-s` for minimal binary size
+- Static linking (~1.8MB, fully portable)
+- No external dependencies required at runtime
 
 ### Testing
 
