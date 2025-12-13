@@ -194,9 +194,7 @@ test: $(OUT)
 		r=$${f##*@} ; \
 		r=$${r%.*} ; \
 		echo -n "- tests/$$n..." ; \
-		case $$r in \
-			''|*[!0-9]*) r=-1 ;; \
-		esac ; \
+		echo "$$r" | grep -q '^[0-9][0-9]*$$' || r=-1 ; \
 		./$(OUT) build $$f -o $(BUILD_DIR)/$$n >/dev/null 2>/tmp/cz ; \
 		if [ ! -x $(BUILD_DIR)/$$n ] ; then \
 			echo " ERROR:" ; \
