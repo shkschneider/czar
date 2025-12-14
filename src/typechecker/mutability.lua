@@ -24,7 +24,7 @@ function Mutability.check_mutable_target(typechecker, target)
         
         return true
     elseif target.kind == "field" then
-        -- In the implicit pointer model, field mutability comes from the variable
+        -- Field mutability depends on whether we're accessing through a pointer or value
         if target.object.kind == "identifier" then
             local var_info = Resolver.resolve_name(typechecker, target.object.name)
             if not var_info then
@@ -32,6 +32,13 @@ function Mutability.check_mutable_target(typechecker, target)
                 return false
             end
             
+            -- If the variable is a pointer type, we can always modify through it
+            -- (the pointed-to memory, not the pointer itself)
+            if var_info.type and var_info.type.kind == "pointer" then
+                return true
+            end
+            
+            -- If it's a value type, the variable itself must be mutable
             if not var_info.mutable then
                 typechecker:add_error(string.format(
                     "Cannot assign to field '%s' of immutable variable '%s'",

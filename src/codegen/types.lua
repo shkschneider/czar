@@ -76,23 +76,11 @@ function Types.c_type_in_struct(type_node, struct_name)
             return Types.c_type(base_type) .. "*"
         end
     elseif type_node.kind == "named_type" then
+        -- In explicit pointer model, all types are values unless explicitly declared as pointers
         local c_type = Types.c_type(type_node)
-        -- In implicit pointer model, check if this is a non-primitive type
-        local is_primitive = c_type == "int8_t" or c_type == "int16_t" or 
-                            c_type == "int32_t" or c_type == "int64_t" or
-                            c_type == "uint8_t" or c_type == "uint16_t" or
-                            c_type == "uint32_t" or c_type == "uint64_t" or
-                            c_type == "float" or c_type == "double" or
-                            c_type == "bool" or c_type == "void" or c_type == "void*"
-
-        if not is_primitive then
-            -- Non-primitive types (structs) should be pointers in implicit pointer model
-            if type_node.name == struct_name then
-                -- Self-referential
-                return "struct " .. type_node.name .. "*"
-            else
-                return c_type .. "*"
-            end
+        if type_node.name == struct_name then
+            -- Self-referential value type (would be invalid in C, but keep for now)
+            return "struct " .. type_node.name
         else
             return c_type
         end
