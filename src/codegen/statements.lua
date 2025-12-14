@@ -81,24 +81,23 @@ function Statements.gen_statement(stmt)
             end
         end
 
-        -- In implicit pointer model, all struct-typed variables are pointers
-        local is_struct_type = Codegen.Types.is_struct_type(stmt.type)
+        -- In explicit pointer model, check if the type itself is a pointer
+        local is_pointer_type = stmt.type.kind == "pointer"
 
-        if is_struct_type then
-            -- Struct types are always pointers in storage
-            local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
-            ctx():add_var(stmt.name, ptr_type, stmt.mutable, needs_free)
+        if is_pointer_type then
+            -- This is an explicit pointer type (Type*)
+            ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
             local prefix = stmt.mutable and "" or "const "
-            local decl = string.format("%s%s* %s", prefix, Codegen.Types.c_type(stmt.type), stmt.name)
+            local base_type = Codegen.Types.c_type(stmt.type.to)
+            local decl = string.format("%s%s* %s", prefix, base_type, stmt.name)
             if stmt.init then
                 local init_expr = Codegen.Expressions.gen_expr(stmt.init)
-                -- Struct literals are already addresses, others might need special handling
                 decl = decl .. " = " .. init_expr
             end
 
-            -- Call constructor if the struct has one
-            if stmt.type and stmt.type.kind == "named_type" then
-                local struct_type_name = stmt.type.name
+            -- Call constructor if the struct has one (dereference pointer to call)
+            if stmt.type.to and stmt.type.to.kind == "named_type" then
+                local struct_type_name = stmt.type.to.name
                 local constructor_call = Codegen.Functions.gen_constructor_call(struct_type_name, stmt.name)
                 if constructor_call then
                     return decl .. ";\n    " .. constructor_call
@@ -107,41 +106,24 @@ function Statements.gen_statement(stmt)
 
             return decl .. ";"
         else
-            -- Non-struct types: check for special initializers
-            local is_pointer_expr = false
+            -- This is a value type
+            ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
+            local prefix = stmt.mutable and "" or "const "
+            local decl = string.format("%s%s %s", prefix, Codegen.Types.c_type(stmt.type), stmt.name)
             if stmt.init then
-                local init_kind = stmt.init.kind
-                if init_kind == "clone" or init_kind == "new_heap" or init_kind == "null" or
-                   init_kind == "null_check" then
-                    is_pointer_expr = true
-                elseif init_kind == "identifier" then
-                    is_pointer_expr = Codegen.Types.is_pointer_var(stmt.init.name)
-                elseif init_kind == "call" and stmt.init.callee.kind == "identifier" then
-                    local func_info = ctx().functions["__global__"] and ctx().functions["__global__"][stmt.init.callee.name]
-                    if func_info and func_info.return_type and func_info.return_type.kind == "pointer" then
-                        is_pointer_expr = true
-                    end
+                decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
+            end
+
+            -- Call constructor if the type is a struct
+            if stmt.type and stmt.type.kind == "named_type" and Codegen.Types.is_struct_type(stmt.type) then
+                local struct_type_name = stmt.type.name
+                local constructor_call = Codegen.Functions.gen_constructor_call(struct_type_name, "&" .. stmt.name)
+                if constructor_call then
+                    return decl .. ";\n    " .. constructor_call
                 end
             end
 
-            if is_pointer_expr then
-                local ptr_type = { kind = "pointer", to = stmt.type, is_clone = true }
-                ctx():add_var(stmt.name, ptr_type, stmt.mutable, needs_free)
-                local prefix = stmt.mutable and "" or "const "
-                local decl = string.format("%s%s* %s", prefix, Codegen.Types.c_type(stmt.type), stmt.name)
-                if stmt.init then
-                    decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
-                end
-                return decl .. ";"
-            else
-                ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
-                local prefix = stmt.mutable and "" or "const "
-                local decl = string.format("%s%s %s", prefix, Codegen.Types.c_type(stmt.type), stmt.name)
-                if stmt.init then
-                    decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
-                end
-                return decl .. ";"
-            end
+            return decl .. ";"
         end
     elseif stmt.kind == "expr_stmt" then
         -- Check if this is an underscore assignment in expression form
