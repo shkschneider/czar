@@ -15,7 +15,7 @@ This is a toy language I'm trying to make to learn more about languages and comp
 - Static types
 - Value semantics by default
 - Explicit `mut`ability
-- Implicit pointers (no `&` nor `*`)
+- Explicit pointers (`&` and `*`, like Go)
 - Stack/Heap allocations + defer free (no GC)
 - Structs with methods and static functions + extensions
 - Error-as-value
