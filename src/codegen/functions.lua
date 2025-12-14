@@ -187,7 +187,8 @@ function Functions.function_returns_null(fn)
     return check_block(fn.body)
 end
 
-function Functions.gen_params(params)    local parts = {}
+function Functions.gen_params(params)
+    local parts = {}
     for i, p in ipairs(params) do
         local param_name = p.name
         -- Generate unique name for underscore parameters
@@ -196,26 +197,10 @@ function Functions.gen_params(params)    local parts = {}
         end
 
         local type_str = Codegen.Types.c_type(p.type)
-
-        -- NEW SEMANTICS: Parameters receive VALUES unless marked mut
-        -- - Non-mut parameters: receive struct by value (no pointer)
-        -- - Mut parameters: receive pointer to struct (for modification)
-        -- This is controlled by caller passing with/without mut keyword
-
-        -- Check if parameter is mutable (mut keyword)
-        local is_mut_param = p.mut or (p.type.kind == "pointer" and p.type.is_mut)
-
-        if p.type.kind == "named_type" and Codegen.Types.is_struct_type(p.type) then
-            -- Struct type parameter
-            if is_mut_param then
-                -- mut parameter: receives pointer for modification
-                type_str = type_str .. "*"
-            else
-                -- Non-mut parameter: receives value (copy)
-                -- No pointer, just the struct type
-            end
-        elseif p.type.kind == "pointer" then
-            -- Already a pointer type - keep as is
+        
+        -- In explicit pointer model, types are as declared
+        if p.type.kind == "pointer" then
+            type_str = Codegen.Types.c_type(p.type.to) .. "*"
         end
 
         table.insert(parts, string.format("%s %s", type_str, param_name))
@@ -239,10 +224,10 @@ function Functions.gen_function(fn)
     -- Track current function for #FUNCTION directive
     ctx().current_function = name
 
-    -- In implicit pointer model, struct return types should be pointers
+    -- In explicit pointer model, return types are as declared
     local return_type_str = Codegen.Types.c_type(fn.return_type)
-    if fn.return_type and fn.return_type.kind == "named_type" and Codegen.Types.is_struct_type(fn.return_type) then
-        return_type_str = return_type_str .. "*"
+    if fn.return_type and fn.return_type.kind == "pointer" then
+        return_type_str = Codegen.Types.c_type(fn.return_type.to) .. "*"
     end
 
     local sig = string.format("%s %s(%s)", return_type_str, c_name, Functions.gen_params(fn.params))
