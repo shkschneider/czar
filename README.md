@@ -8,7 +8,7 @@ Czar is a personal “better C” project, inspired by C, Zig, Jai, Go, and Kotl
 - Static types
 - Value semantics by default
 - Explicit `mut`ability
-- Implicit pointers (no `&` nor `*`)
+- Explicit pointers (`&` and `*`, like Go)
 - Stack/Heap allocations + defer free (no GC)
 - Structs with methods and static functions + extensions
 - Error-as-value
@@ -71,11 +71,14 @@ struct Point {
 }
 ```
 
-**Pointers** are automatic; no `*`:
+**Pointers** are explicit with `&` and `*`:
 
 ```czar
-Vec2 p = Vec2 {}              // pointer to Vec2
-fn modify(mut Vec2 p) -> void // function modifying p
+Vec2 v = Vec2 {}               // value on stack
+Vec2* p = new Vec2 {}          // pointer to heap-allocated Vec2
+fn modify(Vec2* p) -> void     // function taking pointer
+modify(&v)                     // explicit address-of
+i32 x = (*p).x                 // explicit dereference (or use p.x with auto-deref)
 ```
 
 ## v0 Language Features
@@ -97,8 +100,8 @@ This is the minimal coherent slice to bootstrap the compiler.
 ### 2. Bindings
 
 ```
-i32 x = 1       // immutable
-mut i32 y = 2   // mutable
+i32 x = 1       // immutable value
+mut i32 y = 2   // mutable value
 
 i32 z           // declared, must be assigned before first read
 z = 10
@@ -107,16 +110,17 @@ z = 10
 ### 3. Pointers
 
 ```
-mut Vec2 v = Vec2 { x: 1, y: 2 }
-mut Vec2 p = v  // implicit pointer
+mut Vec2 v = Vec2 { x: 1, y: 2 }   // mutable value on stack
+Vec2* p = &v                        // pointer to v
 
-p.x = 10        // auto-deref on .
+p.x = 10        // modify through pointer (auto -> vs .)
 ```
 
 **Semantics:**
 
-- Param type `T` → passed by value.
-- Param type `mut T` → passed by pointer.
+- Param type `T` → passed by value (copy).
+- Param type `T*` → passed by pointer (can modify through pointer).
+- Use `&expr` to take address, `*expr` to dereference.
 
 ### 4. Structs
 
