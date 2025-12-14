@@ -210,25 +210,24 @@ function Parser:parse_function()
     -- For instance methods (Type:method), add implicit mutable self parameter
     if receiver_type and not is_static_method then
         local self_type = { kind = "named_type", name = receiver_type }
-        local self_param_type = { kind = "pointer", to = self_type, is_mut = true }
-        table.insert(params, { name = "self", type = self_param_type })
+        -- In explicit pointer model, self is a pointer to the type
+        local self_param_type = { kind = "pointer", to = self_type }
+        table.insert(params, { name = "self", type = self_param_type, mutable = true })
     end
     
     if not self:check("RPAREN") then
         repeat
             local is_mut = self:match("KEYWORD", "mut") ~= nil
             local param_type = self:parse_type()
-            -- If mut is specified, wrap the type in a pointer internally
-            if is_mut then
-                param_type = { kind = "pointer", to = param_type, is_mut = true }
-            end
+            -- In explicit pointer model, mut is just a mutability flag, not an implicit pointer
+            -- The user must use Type* for pointer parameters
             local param_name = self:expect("IDENT").value
             local default_value = nil
             -- Check for default value
             if self:match("EQUAL") then
                 default_value = self:parse_expression()
             end
-            table.insert(params, { name = param_name, type = param_type, default_value = default_value })
+            table.insert(params, { name = param_name, type = param_type, mutable = is_mut, default_value = default_value })
         until not self:match("COMMA")
     end
     self:expect("RPAREN")
@@ -626,8 +625,8 @@ function Parser:parse_postfix()
             local args = {}
             if not self:check("RPAREN") then
                 repeat
-                    -- Check for mut keyword before argument
-                    local is_mut = self:match("KEYWORD", "mut") ~= nil
+                    -- In explicit pointer model, users should use & operator directly
+                    -- No special mut keyword handling in arguments
                     
                     -- Check for named argument (name: value)
                     local arg_name = nil
@@ -641,10 +640,6 @@ function Parser:parse_postfix()
                     end
                     
                     local arg_expr = self:parse_expression()
-                    if is_mut then
-                        -- Wrap the argument expression to indicate it should be passed as mutable
-                        arg_expr = { kind = "mut_arg", expr = arg_expr }
-                    end
                     if arg_name then
                         -- This is a named argument
                         arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }

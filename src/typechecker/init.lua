@@ -100,12 +100,8 @@ function Typechecker:check_function(func)
     -- Add parameters to scope
     for _, param in ipairs(func.params) do
         local param_type = param.type
-        -- Check if mutability is in param.mutable or in the type itself (for pointers)
-        local is_mutable = param.mutable
-        if not is_mutable and param_type and param_type.kind == "pointer" then
-            -- For pointer types, check is_mut flag in the type
-            is_mutable = param_type.is_mut
-        end
+        -- In explicit pointer model, check mutable field directly
+        local is_mutable = param.mutable or false
         self:add_var(param.name, param_type, is_mutable)
     end
     
