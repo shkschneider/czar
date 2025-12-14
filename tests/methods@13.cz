@@ -23,7 +23,7 @@ fn main() -> i32 {
     v:add(1, 2)
 
     // Alternative: static-style call
-    Vec2.add(v, 1, 2)
+    Vec2.add(&v, 1, 2)
 
     return v.x + v.y  // should return 3+1+1 + 4+2+2 = 13
 }

@@ -48,14 +48,23 @@ function Inference.infer_type(typechecker, expr)
         expr.inferred_type = inferred
         return inferred
     elseif expr.kind == "clone" then
-        -- Clone operator returns the target type if specified, otherwise the source type
+        -- Clone operator returns a pointer to the cloned value
         if expr.target_type then
-            expr.inferred_type = expr.target_type
-            return expr.target_type
+            -- clone<Type> returns Type*
+            local ptr_type = { kind = "pointer", to = expr.target_type }
+            expr.inferred_type = ptr_type
+            return ptr_type
         else
             local source_type = Inference.infer_type(typechecker, expr.expr)
-            expr.inferred_type = source_type
-            return source_type
+            -- If source is a pointer, keep it; otherwise wrap in pointer
+            local result_type
+            if source_type and source_type.kind == "pointer" then
+                result_type = source_type
+            else
+                result_type = { kind = "pointer", to = source_type }
+            end
+            expr.inferred_type = result_type
+            return result_type
         end
     elseif expr.kind == "null_check" then
         -- Null check operator (!) returns the operand type (asserts non-null)
@@ -339,7 +348,8 @@ function Inference.infer_new_type(typechecker, expr)
             end
         end
         
-        local inferred = { kind = "named_type", name = expr.type_name }
+        -- In explicit pointer model, new returns a pointer to the type
+        local inferred = { kind = "pointer", to = { kind = "named_type", name = expr.type_name } }
         expr.inferred_type = inferred
         return inferred
     else
@@ -388,15 +398,15 @@ function Inference.types_compatible(type1, type2, typechecker)
         type2 = Inference.resolve_type_alias(typechecker, type2)
     end
     
-    -- Allow void* (null) to be compatible with any named type (for nullable pointers)
+    -- Allow void* (null) to be compatible with any pointer type
     if type1.kind == "pointer" and type1.to and type1.to.name == "void" then
-        if type2.kind == "named_type" then
-            return true  -- null can be assigned to any struct type
+        if type2.kind == "pointer" or type2.kind == "named_type" then
+            return true  -- null can be assigned to any pointer or struct type
         end
     end
     if type2.kind == "pointer" and type2.to and type2.to.name == "void" then
-        if type1.kind == "named_type" then
-            return true  -- struct type can accept null
+        if type1.kind == "pointer" or type1.kind == "named_type" then
+            return true  -- any pointer or struct type can accept null
         end
     end
     
