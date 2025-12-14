@@ -87,9 +87,15 @@ function Statements.gen_statement(stmt)
         if is_pointer_type then
             -- This is an explicit pointer type (Type*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
-            local prefix = stmt.mutable and "" or "const "
             local base_type = Codegen.Types.c_type(stmt.type.to)
-            local decl = string.format("%s%s* %s", prefix, base_type, stmt.name)
+            local decl
+            if stmt.mutable then
+                -- Mutable pointer variable: can reassign pointer and modify through it
+                decl = string.format("%s* %s", base_type, stmt.name)
+            else
+                -- Immutable pointer variable: can't reassign pointer but can modify through it
+                decl = string.format("%s* const %s", base_type, stmt.name)
+            end
             if stmt.init then
                 local init_expr = Codegen.Expressions.gen_expr(stmt.init)
                 decl = decl .. " = " .. init_expr

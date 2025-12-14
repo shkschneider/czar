@@ -1,16 +1,16 @@
-// Test pointers and address-of operator
+// Test explicit pointers and address-of operator
 struct Vec2 {
     i32 x
     i32 y
 }
 
 fn not_modify(Vec2 p) -> void {
-    // error
+    // Cannot modify - receives value (copy)
     // p.x = 10
     // p.y = 20
 }
 
-fn modify(mut Vec2 p) -> void {
+fn modify(Vec2* p) -> void {
     p.x = 10
     p.y = 20
 }
@@ -18,6 +18,6 @@ fn modify(mut Vec2 p) -> void {
 fn main() -> i32 {
     mut Vec2 v = Vec2 { x: 1, y: 2 }
     not_modify(v)
-    modify(mut v)
+    modify(&v)
     return v.x + v.y     // should return 30
 }
