@@ -6,18 +6,19 @@
 
 This is a toy language I'm trying to make to learn more about languages and compilation.
 
-## Key Features
-
-- Explicit over magical
-- Static types
+- Static typing with explicit type annotations
 - Value semantics by default
-- Explicit `mut`ability
-- Explicit pointers (`&` and `*`, like Go)
-- Stack/Heap allocations + defer free (no GC)
-- Structs with methods and static functions + extensions
-- Error-as-value
-- C-level performance
-- Goal: Simple, friendly compiler errors
+- Explicit mutability via  mut  keyword
+- Pointers with  &  (address-of) and  *  (dereference) operators
+- Structs with fields and methods
+- Method syntax with  :  operator (e.g.,  obj:method() )
+- Extension methods that can be defined outside the struct
+- Memory management with explicit  new  and  free
+- Error-as-value pattern (no exceptions)
+- Null safety features with  ?  and  !!  operators
+- Type casting with  cast<Type>  syntax
+- Arrays with compile-time bounds checking
+- Directives for compile-time configuration (#FILE, #FUNCTION, #DEBUG, etc.)
 
 > Someone had good intentions at each step along the way, but nobody stopped to ask why
 
