@@ -625,8 +625,8 @@ function Parser:parse_postfix()
             local args = {}
             if not self:check("RPAREN") then
                 repeat
-                    -- In explicit pointer model, users should use & operator directly
-                    -- No special mut keyword handling in arguments
+                    -- Check for mut keyword before argument (syntactic sugar for &)
+                    local is_mut = self:match("KEYWORD", "mut") ~= nil
                     
                     -- Check for named argument (name: value)
                     local arg_name = nil
@@ -640,6 +640,10 @@ function Parser:parse_postfix()
                     end
                     
                     local arg_expr = self:parse_expression()
+                    if is_mut then
+                        -- mut is syntactic sugar for & (address-of)
+                        arg_expr = { kind = "unary", op = "&", operand = arg_expr }
+                    end
                     if arg_name then
                         -- This is a named argument
                         arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }

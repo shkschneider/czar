@@ -158,14 +158,16 @@ function Expressions.gen_expr(expr)
                 end
             end
         elseif expr.target.kind == "field" then
-            -- Check if target object variable is mutable or a pointer
+            -- Check if target object variable is mutable
             if expr.target.object.kind == "identifier" then
                 local var_info = ctx():get_var_info(expr.target.object.name)
                 if var_info then
                     local var_type = ctx():get_var_type(expr.target.object.name)
-                    -- If it's a pointer type, we can modify through it
+                    -- For pointers: need the variable to be mutable to modify through it
                     if var_type and var_type.kind == "pointer" then
-                        -- OK - can modify through pointer
+                        if not var_info.mutable then
+                            error(string.format("Cannot assign to field '%s' through immutable pointer '%s'", expr.target.field, expr.target.object.name))
+                        end
                     elseif not var_info.mutable then
                         -- Value type and not mutable - error
                         error(string.format("Cannot assign to field '%s' of immutable variable '%s'", expr.target.field, expr.target.object.name))
