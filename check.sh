@@ -11,7 +11,7 @@ check_ok() {
     local f=$1
     local n=$f
     n=${n##*/}
-    echo -n "- [ok] $n..."
+    echo -n "[tests/ok] $n..."
     local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     if [[ ! -x $o ]] ; then
@@ -37,7 +37,7 @@ check_ko() {
     local f=$1
     local n=$f
     n=${n##*/}
-    echo -n "- [ko] $n..."
+    echo -n "[test/ko] $n..."
     local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     local e=$?
