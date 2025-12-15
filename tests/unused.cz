@@ -3,11 +3,11 @@ struct Vec2 {
     i32 y
 }
 
-fn test(i32 _) -> void {
+fn test(i32 _) void {
     // nothing
 }
 
-fn main() -> i32 {
+fn main() i32 {
     i32 n = 42
     test(n)
     return 0

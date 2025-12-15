@@ -5,16 +5,16 @@ struct Point {
     i32 y
 }
 
-fn get_null() -> Point* {
+fn get_null() Point* {
     return null
 }
 
-fn get_point() -> Point* {
+fn get_point() Point* {
     Point* p = new Point { x: 10, y: 20 }
     return p
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test 1: Using !! on non-null should work
     Point* p1 = new Point { x: 5, y: 10 }
     Point* ptr1 = p1

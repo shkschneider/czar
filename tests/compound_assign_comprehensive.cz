@@ -1,5 +1,5 @@
 // Comprehensive test for all compound assignment operators
-fn main() -> i32 {
+fn main() i32 {
     mut i32 a = 100
     mut i32 b = 50
     mut i32 c = 10

@@ -4,7 +4,7 @@ struct Node {
     i32 value
 }
 
-fn maybe_null_ptr(bool should_be_null) -> Node* {
+fn maybe_null_ptr(bool should_be_null) Node* {
     if should_be_null {
         return null
     } else {
@@ -13,7 +13,7 @@ fn maybe_null_ptr(bool should_be_null) -> Node* {
     }
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test null coalescing operator 'or'
     Node* p1 = null
     i32 result1 = 5  // Simplified from: 0 or 5

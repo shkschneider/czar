@@ -1,5 +1,5 @@
 // Test comments: single-line // and multi-line /* */
-fn main() -> i32 {
+fn main() i32 {
     // This is a single-line comment
     i32 x = 10
 

@@ -1,5 +1,5 @@
 // Test logical operators: and and or
-fn main() -> i32 {
+fn main() i32 {
     i32 a = 10
     i32 b = 20
     i32 c = 30

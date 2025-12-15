@@ -1,13 +1,13 @@
 // Test named and default parameters together
-fn add(i32 x = 10, i32 y = 20) -> i32 {
+fn add(i32 x = 10, i32 y = 20) i32 {
     return x + y
 }
 
-fn compute(i32 a, i32 b = 5, i32 c = 10) -> i32 {
+fn compute(i32 a, i32 b = 5, i32 c = 10) i32 {
     return a + b * c
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Call with all defaults
     i32 r1 = add()  // 10 + 20 = 30
 

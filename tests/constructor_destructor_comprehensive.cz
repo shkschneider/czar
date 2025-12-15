@@ -8,25 +8,25 @@ struct Resource {
 }
 
 // Constructor: automatically called on initialization
-fn Resource:new() -> void {
+fn Resource:new() void {
     self.id = 0
     self.ref_count = 1
     self.is_initialized = true
 }
 
 // Destructor: automatically called on free
-fn Resource:free() -> void {
+fn Resource:free() void {
     // In a real program, this would release resources
     self.ref_count = 0
     self.is_initialized = false
 }
 
 // Helper method to increment reference count
-fn Resource:acquire() -> void {
+fn Resource:acquire() void {
     self.ref_count = self.ref_count + 1
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test 1: Stack allocation with constructor
     mut Resource r1 = Resource {}
     mut i32 test1 = 0

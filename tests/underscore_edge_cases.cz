@@ -1,10 +1,10 @@
 // Additional underscore tests - edge cases
 
-fn all_unused(i32 _, i32 _, bool _) -> i32 {
+fn all_unused(i32 _, i32 _, bool _) i32 {
     return 100
 }
 
-fn mixed_params(i32 a, bool _, i32 b, i32 _) -> i32 {
+fn mixed_params(i32 a, bool _, i32 b, i32 _) i32 {
     return a + b
 }
 
@@ -13,11 +13,11 @@ struct Point {
     i32 y
 }
 
-fn Point.ignore_self(Point _) -> i32 {
+fn Point.ignore_self(Point _) i32 {
     return 42
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // All parameters unused
     i32 v1 = all_unused(1, 2, true)
 
