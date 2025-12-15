@@ -221,6 +221,18 @@ function Inference.infer_binary_type(typechecker, expr)
     local left_type = Inference.infer_type(typechecker, expr.left)
     local right_type = Inference.infer_type(typechecker, expr.right)
 
+    -- Check for division by zero literal
+    if expr.op == "/" then
+        if expr.right.kind == "int" and expr.right.value == 0 then
+            local line = expr.line or (expr.right and expr.right.line) or 0
+            local msg = "Division by zero"
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.DIVISION_BY_ZERO, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
+
     -- Comparison and logical operators return bool
     if expr.op == "==" or expr.op == "!=" or
        expr.op == "<" or expr.op == ">" or
