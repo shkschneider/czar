@@ -14,7 +14,7 @@ fn Counter:free() -> void {
 
 fn main() -> i32 {
     // Heap allocation - should call constructor (sets value to 100)
-    Counter c = new Counter {}
+    Counter* c = new Counter {}
     // Destructor will be called at scope exit
     return c.value  // should return 100
 }
