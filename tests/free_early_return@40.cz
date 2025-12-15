@@ -5,14 +5,14 @@ struct Data {
 }
 
 fn test_early(i32 x) -> i32 {
-    Data d1 = new Data { value: 10 }
-    Data d2 = new Data { value: 20 }
-    
+    Data* d1 = new Data { value: 10 }
+    Data* d2 = new Data { value: 20 }
+
     if x > 5 {
         // Early return - should free d1 and d2 before returning
         return d1.value + d2.value
     }
-    
+
     // Normal return - should also free d1 and d2
     return d1.value
 }
