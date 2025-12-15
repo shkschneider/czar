@@ -13,6 +13,10 @@ function Types.c_type(type_node)
     if not type_node then return "void" end
     if type_node.kind == "pointer" then
         return Types.c_type(type_node.to) .. "*"
+    elseif type_node.kind == "array" then
+        -- Arrays in C are declared with the size after the name, not in the type
+        -- So we return just the element type here
+        return Types.c_type(type_node.element_type)
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         

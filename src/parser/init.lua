@@ -301,8 +301,11 @@ function Parser:parse_statement()
             if success and self:check("IDENT") then
                 local name_tok = self:current()
                 self:advance()
-                if self:check("EQUAL") then
-                    -- This is a variable declaration: mut Type name = expr or Type name = expr
+                -- Variable declaration can be with or without initialization
+                -- Check for = (with init) or semicolon/newline (without init)
+                if self:check("EQUAL") or self:check("SEMICOLON") or self:check("EOF") or 
+                   (self:current() and (self:current().line > name_tok.line or self:current().type == "KEYWORD")) then
+                    -- This is a variable declaration
                     is_var_decl = true
                     self.pos = saved_pos  -- Reset to parse properly
                 end
