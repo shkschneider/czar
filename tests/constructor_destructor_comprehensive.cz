@@ -1,0 +1,61 @@
+// Comprehensive test of constructor and destructor functionality
+// Demonstrates a Resource struct with initialization and cleanup
+
+struct Resource {
+    i32 id
+    i32 ref_count
+    bool is_initialized
+}
+
+// Constructor: automatically called on initialization
+fn Resource:new() -> void {
+    self.id = 0
+    self.ref_count = 1
+    self.is_initialized = true
+}
+
+// Destructor: automatically called on free
+fn Resource:free() -> void {
+    // In a real program, this would release resources
+    self.ref_count = 0
+    self.is_initialized = false
+}
+
+// Helper method to increment reference count
+fn Resource:acquire() -> void {
+    self.ref_count = self.ref_count + 1
+}
+
+fn main() -> i32 {
+    // Test 1: Stack allocation with constructor
+    mut Resource r1 = Resource {}
+    mut i32 test1 = 0
+    if r1.is_initialized {
+        if r1.ref_count == 1 {
+            test1 = 1
+        }
+    }
+
+    // Test 2: Heap allocation with constructor and explicit free
+    mut Resource* r2 = new Resource {}
+    r2.id = 100
+    r2:acquire()  // ref_count becomes 2
+    mut i32 test2 = 0
+    if r2.ref_count == 2 {
+        if r2.id == 100 {
+            test2 = 1
+        }
+    }
+    free r2  // Calls destructor then frees memory
+
+    // Test 3: Heap allocation with auto-free
+    Resource* r3 = new Resource {}
+    mut i32 test3 = 0
+    if r3.is_initialized {
+        test3 = 1
+    }
+    // r3 will be automatically freed at scope exit (destructor called)
+
+    // Return sum: should be 3 if all tests pass
+    return test1 + test2 + test3 - 3
+}

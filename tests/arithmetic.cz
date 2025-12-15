@@ -1,0 +1,12 @@
+// Test arithmetic operators
+fn main() -> i32 {
+    i32 a = 10
+    i32 b = 3
+
+    i32 sum = a + b        // 13
+    i32 diff = a - b       // 7
+    i32 prod = a * b       // 30
+    i32 quot = a / b       // 3
+
+    return (sum + diff + prod + quot) - 53 // 13 + 7 + 30 + 3 = 53
+}
