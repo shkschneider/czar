@@ -165,7 +165,11 @@ function Expressions.gen_expr(expr)
         end
         return ctx():sizeof_expr(expr_type)
     elseif expr.kind == "unary" then
-        return string.format("(%s%s)", expr.op, Expressions.gen_expr(expr.operand))
+        if expr.op == "not" then
+            return string.format("(!%s)", Expressions.gen_expr(expr.operand))
+        else
+            return string.format("(%s%s)", expr.op, Expressions.gen_expr(expr.operand))
+        end
     elseif expr.kind == "null_check" then
         -- Null check operator: expr!!
         local operand = Expressions.gen_expr(expr.operand)

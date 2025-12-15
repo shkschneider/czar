@@ -1,5 +1,5 @@
 // Test the 'is' keyword for type checking
-fn main() -> i32 {
+fn main() i32 {
     i32 v = 42
 
     // Test 'is' keyword

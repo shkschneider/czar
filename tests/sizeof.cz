@@ -11,7 +11,7 @@ struct Large {
     i32 c
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test sizeof on primitives
     i32 x = 1
     i32 size_i32 = sizeof x

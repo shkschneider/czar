@@ -4,12 +4,12 @@ struct Node {
     i32 value
 }
 
-fn create_node(i32 v) -> Node* {
+fn create_node(i32 v) Node* {
     Node* n = new Node { value: v }
     return n
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test 1: Simplified - just use the value directly
     i32 test1 = 10  // Simplified from: 0 or 10
 

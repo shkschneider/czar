@@ -39,7 +39,7 @@ local keywords = {
     ["any"] = true,
     ["and"] = true,
     ["or"] = true,
-    ["when"] = true,
+    ["not"] = true,
     -- for ...
     -- for each ...
     -- is/type
@@ -70,7 +70,6 @@ local simple_tokens = {
 }
 
 local compound_tokens = {
-    ["->"] = "ARROW",
     ["=="] = "EQ",
     ["!="] = "NEQ",
     ["<="] = "LTE",

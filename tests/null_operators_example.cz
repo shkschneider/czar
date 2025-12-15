@@ -12,7 +12,7 @@ struct Service {
 }
 
 // Returns null if flag is true
-fn maybe_service(bool should_fail) -> Service* {
+fn maybe_service(bool should_fail) Service* {
     if should_fail {
         return null
     } else {
@@ -24,7 +24,7 @@ fn maybe_service(bool should_fail) -> Service* {
     }
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Example 1: Null pointer
     Service* service1 = null
     Service* fallback = new Service {

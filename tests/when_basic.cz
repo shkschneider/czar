@@ -1,15 +1,18 @@
-// Test basic when expression with value matching
-fn test_when_value() -> i32 {
+// Test basic value matching with if-else
+fn test_value_matching() i32 {
     i32 x = 2
 
-    when (x) {
-        1 -> { return 1 };
-        2 -> { return 0 };
-        3 -> { return 2 };
-        else -> { return 3 }
+    if x == 1 {
+        return 1
+    } elseif x == 2 {
+        return 0
+    } elseif x == 3 {
+        return 2
+    } else {
+        return 3
     }
 }
 
-fn main() -> i32 {
-    return test_when_value()
+fn main() i32 {
+    return test_value_matching()
 }

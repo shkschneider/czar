@@ -1,5 +1,5 @@
 // Test comparison and logical operators
-fn main() -> i32 {
+fn main() i32 {
     i32 a = 10
     i32 b = 20
 
