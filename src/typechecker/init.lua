@@ -5,11 +5,13 @@
 local Resolver = require("typechecker.resolver")
 local Inference = require("typechecker.inference")
 local Mutability = require("typechecker.mutability")
+local Errors = require("errors")
 
 local Typechecker = {}
 Typechecker.__index = Typechecker
 
-function Typechecker.new(ast)
+function Typechecker.new(ast, options)
+    options = options or {}
     local self = {
         ast = ast,
         structs = {},      -- struct_name -> struct_def
@@ -19,6 +21,7 @@ function Typechecker.new(ast)
         type_aliases = {   -- type_name -> target_type_string
             ["String"] = "char*"  -- Built-in alias
         },
+        source_file = options.source_file or "<unknown>",  -- Source filename for error messages
     }
     return setmetatable(self, Typechecker)
 end
@@ -33,7 +36,7 @@ function Typechecker:check()
     
     -- Report any errors
     if #self.errors > 0 then
-        local error_msg = "Type checking failed:\n" .. table.concat(self.errors, "\n")
+        local error_msg = Errors.format_phase_errors("Type checking", self.errors)
         error(error_msg)
     end
     
@@ -63,10 +66,11 @@ function Typechecker:collect_declarations()
         elseif item.kind == "alias_directive" then
             -- Store type aliases
             if self.type_aliases[item.alias_name] then
-                self:add_error(string.format(
-                    "duplicate #alias for '%s' at %d:%d",
-                    item.alias_name, item.line, item.col
-                ))
+                local line = item.line or 0
+                local msg = string.format("duplicate #alias for '%s'", item.alias_name)
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.DUPLICATE_ALIAS, msg)
+                self:add_error(formatted_error)
             else
                 self.type_aliases[item.alias_name] = item.target_type_str
             end
@@ -157,12 +161,16 @@ function Typechecker:check_var_decl(stmt)
         
         -- Check type compatibility
         if not Inference.types_compatible(var_type, init_type, self) then
-            self:add_error(string.format(
+            local line = stmt.line or 0
+            local msg = string.format(
                 "Type mismatch in variable '%s': expected %s, got %s",
                 stmt.name,
                 Inference.type_to_string(var_type),
                 Inference.type_to_string(init_type)
-            ))
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg)
+            self:add_error(formatted_error)
         end
         
         -- Annotate the initializer with its type
@@ -190,11 +198,15 @@ function Typechecker:check_assign(stmt)
     
     -- Check type compatibility
     if not Inference.types_compatible(target_type, value_type, self) then
-        self:add_error(string.format(
+        local line = stmt.line or (stmt.target and stmt.target.line) or 0
+        local msg = string.format(
             "Type mismatch in assignment: expected %s, got %s",
             Inference.type_to_string(target_type),
             Inference.type_to_string(value_type)
-        ))
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg)
+        self:add_error(formatted_error)
     end
     
     -- Check const-correctness: cannot assign immutable value to mutable target
@@ -216,11 +228,15 @@ function Typechecker:check_assign(stmt)
             end
             
             if target_needs_mut and value_type and value_type.kind == "pointer" then
-                self:add_error(string.format(
+                local line = stmt.line or stmt.value.line or 0
+                local msg = string.format(
                     "Cannot assign immutable pointer '%s' to mutable location. The value has const qualifier. Use 'mut %s' if you need to reassign it.",
                     stmt.value.name,
                     stmt.value.name
-                ))
+                )
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.CONST_QUALIFIER_DISCARDED, msg)
+                self:add_error(formatted_error)
             end
         end
     end
@@ -233,10 +249,14 @@ function Typechecker:check_if(stmt)
     
     -- Condition should be bool
     if not Inference.is_bool_type(cond_type) then
-        self:add_error(string.format(
+        local line = stmt.line or (stmt.condition and stmt.condition.line) or 0
+        local msg = string.format(
             "Condition must be bool, got %s",
             Inference.type_to_string(cond_type)
-        ))
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg)
+        self:add_error(formatted_error)
     end
     
     -- Type check branches
@@ -249,10 +269,14 @@ function Typechecker:check_if(stmt)
         for _, branch in ipairs(stmt.elseif_branches) do
             local branch_cond_type = self:check_expression(branch.condition)
             if not Inference.is_bool_type(branch_cond_type) then
-                self:add_error(string.format(
+                local line = branch.line or (branch.condition and branch.condition.line) or 0
+                local msg = string.format(
                     "Elseif condition must be bool, got %s",
                     Inference.type_to_string(branch_cond_type)
-                ))
+                )
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg)
+                self:add_error(formatted_error)
             end
             self:push_scope()
             self:check_block(branch.block)
@@ -274,10 +298,14 @@ function Typechecker:check_while(stmt)
     
     -- Condition should be bool
     if not Inference.is_bool_type(cond_type) then
-        self:add_error(string.format(
+        local line = stmt.line or (stmt.condition and stmt.condition.line) or 0
+        local msg = string.format(
             "While condition must be bool, got %s",
             Inference.type_to_string(cond_type)
-        ))
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg)
+        self:add_error(formatted_error)
     end
     
     -- Type check body
@@ -331,11 +359,15 @@ function Typechecker:check_return(stmt)
                     local var_type = var_info.type
                     -- Check if this is a stack-allocated variable (not a pointer)
                     if var_type and var_type.kind ~= "pointer" then
-                        self:add_error(string.format(
+                        local line = stmt.line or stmt.value.line or 0
+                        local msg = string.format(
                             "Cannot return address of stack variable '%s'. The variable will be destroyed when the function returns. Use 'return clone %s' to return a heap-allocated copy.",
                             operand.name,
                             operand.name
-                        ))
+                        )
+                        local formatted_error = Errors.format("ERROR", self.source_file, line,
+                            Errors.ErrorType.RETURN_STACK_REFERENCE, msg)
+                        self:add_error(formatted_error)
                     end
                 end
             end
@@ -384,7 +416,7 @@ function Typechecker:add_error(msg)
 end
 
 -- Module entry point
-return function(ast)
-    local checker = Typechecker.new(ast)
+return function(ast, options)
+    local checker = Typechecker.new(ast, options)
     return checker:check()
 end

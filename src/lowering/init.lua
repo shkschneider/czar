@@ -26,7 +26,8 @@ function Lowering:lower()
 end
 
 -- Module entry point
-return function(typed_ast)
+return function(typed_ast, options)
+    options = options or {}
     local lowerer = Lowering.new(typed_ast)
     return lowerer:lower()
 end

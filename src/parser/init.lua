@@ -703,7 +703,7 @@ function Parser:parse_primary()
         return { kind = "new_heap", type_name = type_name, fields = fields }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
-        return { kind = "identifier", name = ident.value }
+        return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
     elseif tok.type == "DIRECTIVE" then
         local directive = self:advance()
         return { kind = "directive", name = directive.value, line = directive.line, col = directive.col }

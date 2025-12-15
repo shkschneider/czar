@@ -34,37 +34,49 @@ local function generate_c(source_path, options)
     -- Lex
     local ok, tokens = pcall(lexer, source)
     if not ok then
-        return nil, string.format("Lexer error: %s", tokens)
+        -- Remove Lua error prefix
+        local clean_error = tokens:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return nil, string.format("Lexer error: %s", clean_error)
     end
 
     -- Parse
     local ok, ast = pcall(parser, tokens)
     if not ok then
-        return nil, string.format("Parser error: %s", ast)
+        -- Remove Lua error prefix
+        local clean_error = ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return nil, string.format("Parser error: %s", clean_error)
     end
 
     -- Type check (distinct pass after AST construction)
-    local ok, typed_ast = pcall(typechecker, ast)
+    local ok, typed_ast = pcall(typechecker, ast, options)
     if not ok then
-        return nil, string.format("Type checking error: %s", typed_ast)
+        -- Remove Lua error prefix like "[string "typechecker"]:0: "
+        local clean_error = typed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return nil, clean_error
     end
 
     -- Lowering (insert explicit pointer ops, canonicalize for codegen)
-    local ok, lowered_ast = pcall(lowering, typed_ast)
+    local ok, lowered_ast = pcall(lowering, typed_ast, options)
     if not ok then
-        return nil, string.format("Lowering error: %s", lowered_ast)
+        -- Remove Lua error prefix
+        local clean_error = lowered_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return nil, clean_error
     end
 
     -- Escape analysis / lifetime checks
-    local ok, analyzed_ast = pcall(analysis, lowered_ast)
+    local ok, analyzed_ast = pcall(analysis, lowered_ast, options)
     if not ok then
-        return nil, string.format("Analysis error: %s", analyzed_ast)
+        -- Remove Lua error prefix
+        local clean_error = analyzed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return nil, clean_error
     end
 
     -- Generate C code (runs on typed/lowered/analyzed AST)
     local ok, c_source = pcall(codegen, analyzed_ast, options)
     if not ok then
-        return nil, string.format("Codegen error: %s", c_source)
+        -- Remove Lua error prefix
+        local clean_error = c_source:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return nil, string.format("Codegen error: %s", clean_error)
     end
 
     return c_source, nil

@@ -2,15 +2,19 @@
 -- This runs after lowering and before codegen
 -- It analyzes which allocations escape and determines allocation strategy (stack vs heap)
 
+local Errors = require("errors")
+
 local Analysis = {}
 Analysis.__index = Analysis
 
-function Analysis.new(lowered_ast)
+function Analysis.new(lowered_ast, options)
+    options = options or {}
     local self = {
         ast = lowered_ast,
         freed_vars = {},     -- Track variables that have been freed in current scope
         scope_stack = {},    -- Stack of scopes for tracking freed variables
         errors = {},         -- Collected analysis errors
+        source_file = options.source_file or "<unknown>",  -- Source filename for error messages
     }
     return setmetatable(self, Analysis)
 end
@@ -33,7 +37,7 @@ function Analysis:analyze()
     
     -- Report any errors
     if #self.errors > 0 then
-        local error_msg = "Lifetime analysis failed:\n" .. table.concat(self.errors, "\n")
+        local error_msg = Errors.format_phase_errors("Lifetime analysis", self.errors)
         error(error_msg)
     end
     
@@ -120,11 +124,15 @@ function Analysis:analyze_expression(expr, declaring_var)
     if expr.kind == "identifier" then
         -- Check if this variable has been freed
         if self:is_freed(expr.name) and expr.name ~= declaring_var then
-            self:add_error(string.format(
+            local line = expr.line or 0
+            local msg = string.format(
                 "Use-after-free detected: Variable '%s' is used after being freed. " ..
                 "This is a memory safety violation.",
                 expr.name
-            ))
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, line, 
+                Errors.ErrorType.USE_AFTER_FREE, msg)
+            self:add_error(formatted_error)
         end
     elseif expr.kind == "binary" then
         self:analyze_expression(expr.left, declaring_var)
@@ -198,7 +206,7 @@ function Analysis:add_error(msg)
 end
 
 -- Module entry point
-return function(lowered_ast)
-    local analyzer = Analysis.new(lowered_ast)
+return function(lowered_ast, options)
+    local analyzer = Analysis.new(lowered_ast, options)
     return analyzer:analyze()
 end
