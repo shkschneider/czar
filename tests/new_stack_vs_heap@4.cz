@@ -11,7 +11,7 @@ fn modify_by_copy(Node n) -> void {
     // ERROR n.value = 999 (n is immutable)
 }
 
-fn modify_by_ptr(Node* n) -> void {
+fn modify_by_ptr(mut Node* n) -> void {
     // This modifies through pointer
     n.value = 100
 }
@@ -37,8 +37,8 @@ fn main() -> i32 {
     }
 
     // Test 2: Reference semantics (pass by pointer)
-    modify_by_ptr(&stack_node)  // take address of value
-    modify_by_ptr(heap_node)    // already a pointer
+    modify_by_ptr(mut stack_node)  // take address of value
+    modify_by_ptr(mut heap_node)    // already a pointer
 
     // Both should be modified to 100
     if stack_node.value == 100 {
