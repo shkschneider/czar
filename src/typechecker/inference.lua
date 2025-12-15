@@ -37,7 +37,7 @@ function Inference.infer_type(typechecker, expr)
             local line = expr.line or 0
             local msg = string.format("Undeclared identifier: %s", expr.name)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path, typechecker.source_path)
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
