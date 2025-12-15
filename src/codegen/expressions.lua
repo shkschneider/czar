@@ -438,6 +438,20 @@ function Expressions.gen_expr(expr)
         -- Explicit allocation with 'new' keyword
         return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
             expr.type_name, ctx():malloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
+    elseif expr.kind == "array_literal" then
+        -- Array literal: { expr1, expr2, ... }
+        local parts = {}
+        for _, elem in ipairs(expr.elements) do
+            table.insert(parts, Expressions.gen_expr(elem))
+        end
+        return string.format("{ %s }", join(parts, ", "))
+    elseif expr.kind == "slice" then
+        -- Slice: arr[start:end]
+        -- In C, this is a pointer to the start element
+        -- We'll generate: &arr[start]
+        local array_expr = Expressions.gen_expr(expr.array)
+        local start_expr = Expressions.gen_expr(expr.start)
+        return string.format("&%s[%s]", array_expr, start_expr)
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end

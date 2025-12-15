@@ -108,6 +108,10 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_directive_type(expr)
     elseif expr.kind == "compound_assign" then
         return Inference.infer_type(typechecker, expr.target)
+    elseif expr.kind == "array_literal" then
+        return Inference.infer_array_literal_type(typechecker, expr)
+    elseif expr.kind == "slice" then
+        return Inference.infer_slice_type(typechecker, expr)
     end
 
     return nil
@@ -161,8 +165,8 @@ function Inference.infer_index_type(typechecker, expr)
         return nil
     end
 
-    -- Check that array is actually an array type
-    if array_type.kind ~= "array" then
+    -- Check that array is actually an array or slice type
+    if array_type.kind ~= "array" and array_type.kind ~= "slice" then
         local line = expr.line or (expr.array and expr.array.line) or 0
         local msg = string.format(
             "Cannot index non-array type '%s'",
@@ -189,8 +193,8 @@ function Inference.infer_index_type(typechecker, expr)
         return nil
     end
 
-    -- Compile-time bounds checking: check if index is a constant integer
-    if expr.index.kind == "int" then
+    -- Compile-time bounds checking: check if index is a constant integer (only for arrays, not slices)
+    if array_type.kind == "array" and expr.index.kind == "int" then
         local index_value = expr.index.value
         local array_size = array_type.size
 
@@ -207,7 +211,7 @@ function Inference.infer_index_type(typechecker, expr)
         end
     end
 
-    -- Return the element type of the array
+    -- Return the element type of the array or slice
     expr.inferred_type = array_type.element_type
     return array_type.element_type
 end
@@ -572,6 +576,15 @@ function Inference.types_compatible(type1, type2, typechecker)
         return Inference.types_compatible(type1.to, type2, typechecker)
     elseif type2.kind == "pointer" and type2.is_clone and type1.kind == "named_type" then
         return Inference.types_compatible(type2.to, type1, typechecker)
+    elseif type1.kind == "array" and type2.kind == "array" then
+        -- Arrays are compatible if element types match and sizes match
+        if type1.size ~= type2.size then
+            return false
+        end
+        return Inference.types_compatible(type1.element_type, type2.element_type, typechecker)
+    elseif type1.kind == "slice" and type2.kind == "slice" then
+        -- Slices are compatible if element types match
+        return Inference.types_compatible(type1.element_type, type2.element_type, typechecker)
     end
 
     return false
@@ -615,9 +628,103 @@ function Inference.type_to_string(type_node)
         end
     elseif type_node.kind == "array" then
         return Inference.type_to_string(type_node.element_type) .. "[" .. tostring(type_node.size) .. "]"
+    elseif type_node.kind == "slice" then
+        return Inference.type_to_string(type_node.element_type) .. "[]"
     end
 
     return "unknown"
+end
+
+-- Infer the type of an array literal
+function Inference.infer_array_literal_type(typechecker, expr)
+    -- Infer element type from first element
+    if #expr.elements == 0 then
+        local line = expr.line or 0
+        local msg = "Cannot infer type of empty array literal"
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return nil
+    end
+    
+    local element_type = Inference.infer_type(typechecker, expr.elements[1])
+    if not element_type then
+        return nil
+    end
+    
+    -- Check that all elements have the same type
+    for i = 2, #expr.elements do
+        local elem_type = Inference.infer_type(typechecker, expr.elements[i])
+        if not Inference.types_compatible(element_type, elem_type, typechecker) then
+            local line = expr.line or 0
+            local msg = string.format(
+                "Array literal element %d has type '%s', expected '%s'",
+                i, Inference.type_to_string(elem_type), Inference.type_to_string(element_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        end
+    end
+    
+    -- Return array type with inferred size
+    local inferred = { kind = "array", element_type = element_type, size = #expr.elements }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a slice expression (array[start:end])
+function Inference.infer_slice_type(typechecker, expr)
+    local array_type = Inference.infer_type(typechecker, expr.array)
+    
+    if not array_type then
+        return nil
+    end
+    
+    -- Check that the source is an array
+    if array_type.kind ~= "array" then
+        local line = expr.line or (expr.array and expr.array.line) or 0
+        local msg = string.format(
+            "Cannot slice non-array type '%s'",
+            Inference.type_to_string(array_type)
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return nil
+    end
+    
+    -- Type check the indices
+    local start_type = Inference.infer_type(typechecker, expr.start)
+    local end_type = Inference.infer_type(typechecker, expr.end_expr)
+    
+    -- Check that indices are integer types
+    if start_type and (start_type.kind ~= "named_type" or not start_type.name:match("^[iu]%d+$")) then
+        local line = expr.line or 0
+        local msg = string.format(
+            "Slice start index must be an integer type, got '%s'",
+            Inference.type_to_string(start_type)
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+    end
+    
+    if end_type and (end_type.kind ~= "named_type" or not end_type.name:match("^[iu]%d+$")) then
+        local line = expr.line or 0
+        local msg = string.format(
+            "Slice end index must be an integer type, got '%s'",
+            Inference.type_to_string(end_type)
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+    end
+    
+    -- Return a slice type
+    local slice_type = { kind = "slice", element_type = array_type.element_type }
+    expr.inferred_type = slice_type
+    return slice_type
 end
 
 return Inference

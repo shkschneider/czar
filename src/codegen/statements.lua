@@ -84,6 +84,7 @@ function Statements.gen_statement(stmt)
         -- In explicit pointer model, check if the type itself is a pointer
         local is_pointer_type = stmt.type.kind == "pointer"
         local is_array_type = stmt.type.kind == "array"
+        local is_slice_type = stmt.type.kind == "slice"
 
         if is_array_type then
             -- Array type declaration
@@ -92,6 +93,15 @@ function Statements.gen_statement(stmt)
             local array_size = stmt.type.size
             local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s %s[%d]", prefix, element_type, stmt.name, array_size)
+            if stmt.init then
+                decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
+            end
+            return decl .. ";"
+        elseif is_slice_type then
+            -- Slice type declaration (always immutable)
+            ctx():add_var(stmt.name, stmt.type, false, needs_free)
+            local element_type = Codegen.Types.c_type(stmt.type.element_type)
+            local decl = string.format("%s* const %s", element_type, stmt.name)
             if stmt.init then
                 decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
             end
