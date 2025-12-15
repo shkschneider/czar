@@ -55,7 +55,11 @@ SOURCES=(
     codegen/functions.lua
     codegen/statements.lua
     codegen/expressions.lua
-    generate.lua assemble.lua build.lua run.lua
+    generate.lua
+    assemble.lua
+    build.lua
+    run.lua
+    errors.lua
 )
 
 LIBRARY=libczar.a
