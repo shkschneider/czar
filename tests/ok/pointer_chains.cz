@@ -1,0 +1,24 @@
+// Test complex pointer chains with multiple dereferences
+struct Node {
+    i32 value
+}
+
+fn get_value(Node* n) i32 {
+    return n.value
+}
+
+fn get_value_from_ptr(Node** pp) i32 {
+    return pp.value
+}
+
+fn main() i32 {
+    Node n = Node { value: 42 }
+    Node* p = &n
+    Node** pp = &p
+    
+    // Test various dereference patterns
+    i32 v1 = get_value(p)
+    i32 v2 = get_value_from_ptr(pp)
+    
+    return v1 + v2 - 84  // 42 + 42 = 84
+}

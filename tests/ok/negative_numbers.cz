@@ -1,0 +1,11 @@
+// Test negative numbers in arithmetic
+fn main() i32 {
+    i32 a = -10
+    i32 b = 5
+    i32 c = -3
+    
+    i32 sum = a + b + c  // -10 + 5 + (-3) = -8
+    i32 prod = a * c    // -10 * -3 = 30
+    
+    return sum + prod - 22  // -8 + 30 = 22
+}

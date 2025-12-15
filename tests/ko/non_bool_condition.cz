@@ -1,0 +1,10 @@
+// Test non-boolean condition in if
+fn main() i32 {
+    i32 x = 10
+    
+    if x {  // ERROR: condition must be boolean
+        return 1
+    }
+    
+    return 0
+}

@@ -1,0 +1,21 @@
+// Test array of structs
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() i32 {
+    Point[3] points
+    
+    // Initialize each point
+    points[0] = Point { x: 1, y: 2 }
+    points[1] = Point { x: 3, y: 4 }
+    points[2] = Point { x: 5, y: 6 }
+    
+    // Sum all coordinates
+    i32 sum = points[0].x + points[0].y + 
+              points[1].x + points[1].y + 
+              points[2].x + points[2].y
+    
+    return sum - 21  // 1+2+3+4+5+6 = 21
+}
