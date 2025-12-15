@@ -8,11 +8,11 @@ ko=0
 
 # expected to exit 0
 check_ok() {
-    f=$1
-    n=$f
+    local f=$1
+    local n=$f
     n=${n##*/}
-    echo -n "- $n..."
-    o=${f/.cz/.out}
+    echo -n "- [ok] $n..."
+    local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     if [[ ! -x $o ]] ; then
         echo " ERROR (compilation failed):"
@@ -23,6 +23,7 @@ check_ok() {
             echo " SUCCESS"
             (( ok += 1 ))
         } || {
+            e=$?
             echo " FAILURE: $e"
             (( ko += 1 ))
         }
@@ -33,19 +34,19 @@ check_ok() {
 
 # expected to fail compilation (or exit non-zero)
 check_ko() {
-    f=$1
-    n=$f
+    local f=$1
+    local n=$f
     n=${n##*/}
-    echo -n "- $n..."
-    o=${f/.cz/.out}
+    echo -n "- [ko] $n..."
+    local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
-    if [[ $? -ne 0 ]] ; then
+    local e=$?
+    if [[ $e -ne 0 ]] ; then
         echo " SUCCESS"
         (( ok += 1 ))
     else
         ./$o >/dev/null 2>/tmp/cz && {
-            e=$?
-            echo " FAILURE: $e"
+            echo " FAILURE"
             (( ko += 1 ))
         } || {
             e=$?
