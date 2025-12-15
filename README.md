@@ -1,34 +1,12 @@
 # Czar
 
-<<<<<<< HEAD
 > Caesar: "Veni. Vidi. Vici."
-=======
-> A small, often explicit, low-level, statically typed systems language.
->>>>>>> c5ce96c (readme)
 
 *Just kidding.*
 
-<<<<<<< HEAD
 This is a toy language I'm trying to make to learn more about languages and compilation.
-=======
-- Explicit over magical
-- Static types
-- Value semantics by default
-- Explicit `mut`ability
-- Explicit pointers (`&` and `*`, like Go)
-- Stack/Heap allocations + defer free (no GC)
-- Structs with methods and static functions + extensions
-- Error-as-value
-- C-level performance
-- Goal: Simple, friendly compiler errors
->>>>>>> c5ce96c (readme)
 
 > Someone had good intentions at each step along the way, but nobody stopped to ask why
-
-- [extended-c](https://github.com/shkschneider/czar/tree/extended-c)
-    is a branch with .h/.c files to extend on the standard c library in an effort to make C better for me
-- [lua-to-c](https://github.com/shkschneider/czar/tree/lua-to-c)
-    is a transpiler from .cz to .c first written in lua then self-hosted
 
 ## Primary Goals
 
