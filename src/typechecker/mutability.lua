@@ -32,9 +32,19 @@ function Mutability.check_mutable_target(typechecker, target)
                 return false
             end
             
-            -- If the variable is a pointer type, we can always modify through it
-            -- (the pointed-to memory, not the pointer itself)
+            -- If the variable is a pointer type, check if it's mutable
             if var_info.type and var_info.type.kind == "pointer" then
+                -- For pointers: need the variable to be marked as mutable to modify through it
+                -- This enforces: Vec2* p = const (cannot modify), mut Vec2* p = mutable
+                if not var_info.mutable then
+                    typechecker:add_error(string.format(
+                        "Cannot assign to field '%s' through immutable pointer '%s'. Use 'mut %s*' to allow modification.",
+                        target.field,
+                        target.object.name,
+                        var_info.type.to.name or "Type"
+                    ))
+                    return false
+                end
                 return true
             end
             

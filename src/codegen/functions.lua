@@ -198,9 +198,18 @@ function Functions.gen_params(params)
 
         local type_str = Codegen.Types.c_type(p.type)
         
-        -- In explicit pointer model, types are as declared
+        -- In explicit pointer model with immutability by default:
+        -- - Type* without mut → const Type* (immutable data through pointer)
+        -- - mut Type* → Type* (mutable data through pointer)
         if p.type.kind == "pointer" then
-            type_str = Codegen.Types.c_type(p.type.to) .. "*"
+            local base_type = Codegen.Types.c_type(p.type.to)
+            if p.mutable then
+                -- mut Type* → Type* (can modify through pointer)
+                type_str = base_type .. "*"
+            else
+                -- Type* → const Type* (cannot modify through pointer)
+                type_str = "const " .. base_type .. "*"
+            end
         end
 
         table.insert(parts, string.format("%s %s", type_str, param_name))
@@ -242,23 +251,11 @@ function Functions.gen_function(fn)
             ctx():emit("    (void)" .. param_name .. ";")
         else
             -- Add regular parameters to scope
-            -- NEW SEMANTICS: mut parameters are pointers, non-mut parameters are values
+            -- In explicit pointer model, parameters track mutability via param.mutable field
             local param_type = param.type
-            local is_mut_param = param.mut or (param.type.kind == "pointer" and param.type.is_mut)
+            local is_mutable = param.mutable or false
 
-            if param.type.kind == "named_type" and Codegen.Types.is_struct_type(param.type) then
-                if is_mut_param then
-                    -- mut parameter: it's a pointer in the function
-                    param_type = { kind = "pointer", to = param.type, is_mut = true }
-                else
-                    -- Non-mut parameter: it's a value (struct by value)
-                    -- Keep param_type as is (named_type)
-                end
-            end
-
-            -- Parameters with mut are mutable
-            local is_mutable = is_mut_param
-            ctx():add_var(param.name, param_type, is_mutable or false)
+            ctx():add_var(param.name, param_type, is_mutable)
         end
     end
 
