@@ -124,6 +124,6 @@ The following tests in `tests/ko/` currently compile successfully but SHOULD fai
 2. **missing_return.cz** - Missing return statement in non-void function not detected
 3. **recursive_struct_direct.cz** - Recursive struct definition not caught (would cause infinite size)
 4. **void_return_value.cz** - Void function returning a value is not caught
-5. **division_by_zero.cz** - Division by zero literal not caught at compile time
+5. ~~**division_by_zero.cz** - Division by zero literal not caught at compile time~~ **FIXED** ✅
 
 These represent missing validation in the type checker and semantic analyzer.
