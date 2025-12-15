@@ -9,7 +9,7 @@ fn main() -> i32 {
 
     // Check if we can assign null and non-null
     if p == null {
-        Node* n = new Node { value: 42 }
+        mut Node* n = new Node { value: 42 }
         p = n
         return p.value
     }
