@@ -157,7 +157,8 @@ function Inference.infer_index_type(typechecker, expr)
         return nil
     end
     
-    -- Check that index is an integer type
+    -- Check that index is an integer type (only i8, i16, i32, i64, u8, u16, u32, u64)
+    -- Floating point types are NOT allowed for array indices
     if not index_type or index_type.kind ~= "named_type" or 
        not index_type.name:match("^[iu]%d+$") then
         typechecker:add_error(string.format(
@@ -207,6 +208,8 @@ function Inference.infer_binary_type(typechecker, expr)
     if expr.op == "+" or expr.op == "-" then
         local left_is_pointer = left_type and left_type.kind == "pointer"
         local right_is_pointer = right_type and right_type.kind == "pointer"
+        -- Check for any numeric type including floats (i32, u64, f32, f64, etc.)
+        -- We forbid ALL numeric + pointer operations for safety
         local left_is_numeric = left_type and left_type.kind == "named_type" and 
                                 (left_type.name:match("^[iuf]%d+$") ~= nil)
         local right_is_numeric = right_type and right_type.kind == "named_type" and 
