@@ -1,0 +1,27 @@
+// Test named and default parameters together
+fn add(i32 x = 10, i32 y = 20) -> i32 {
+    return x + y
+}
+
+fn compute(i32 a, i32 b = 5, i32 c = 10) -> i32 {
+    return a + b * c
+}
+
+fn main() -> i32 {
+    // Call with all defaults
+    i32 r1 = add()  // 10 + 20 = 30
+
+    // Call with named parameters, using some defaults
+    i32 r2 = add(y: 25)  // 10 + 25 = 35
+
+    // Call with named parameters out of order
+    i32 r3 = add(y: 30, x: 25)  // 25 + 30 = 55
+
+    // Call with mixed positional and named with defaults
+    i32 r4 = compute(5, c: 10)  // 5 + 5*10 = 55
+
+    // Call with all named parameters
+    i32 r5 = compute(a: 10, c: 9, b: 5)  // 10 + 5*9 = 55
+
+    return r3 - 55
+}

@@ -1,0 +1,10 @@
+// Test #DEBUG directive returns false by default
+fn main() -> i32 {
+    bool debug = #DEBUG
+
+    if debug {
+        return 0
+    }
+
+    return 0
+}
