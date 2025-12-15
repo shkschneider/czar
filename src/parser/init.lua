@@ -245,6 +245,13 @@ function Parser:parse_type()
         if self:match("STAR") then
             return { kind = "pointer", to = base_type }
         end
+        -- Check if this is an array type (Type[size])
+        if self:match("LBRACKET") then
+            local size_tok = self:expect("INT")
+            local size = tonumber(size_tok.value)
+            self:expect("RBRACKET")
+            return { kind = "array", element_type = base_type, size = size }
+        end
         return base_type
     end
     error(string.format("expected type but found %s", token_label(tok)))
@@ -546,6 +553,11 @@ function Parser:parse_postfix()
             end
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
+        elseif self:match("LBRACKET") then
+            -- Array indexing: arr[index]
+            local index = self:parse_expression()
+            self:expect("RBRACKET")
+            expr = { kind = "index", array = expr, index = index }
         elseif self:match("BANG") then
             -- Null check operator: a! (postfix)
             expr = { kind = "null_check", operand = expr }

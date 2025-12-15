@@ -38,6 +38,8 @@ function Inference.infer_type(typechecker, expr)
         end
     elseif expr.kind == "field" then
         return Inference.infer_field_type(typechecker, expr)
+    elseif expr.kind == "index" then
+        return Inference.infer_index_type(typechecker, expr)
     elseif expr.kind == "binary" then
         return Inference.infer_binary_type(typechecker, expr)
     elseif expr.kind == "unary" then
@@ -137,6 +139,54 @@ function Inference.infer_field_type(typechecker, expr)
     return nil
 end
 
+-- Infer the type of an array index access with bounds checking
+function Inference.infer_index_type(typechecker, expr)
+    local array_type = Inference.infer_type(typechecker, expr.array)
+    local index_type = Inference.infer_type(typechecker, expr.index)
+    
+    if not array_type then
+        return nil
+    end
+    
+    -- Check that array is actually an array type
+    if array_type.kind ~= "array" then
+        typechecker:add_error(string.format(
+            "Cannot index non-array type '%s'",
+            Inference.type_to_string(array_type)
+        ))
+        return nil
+    end
+    
+    -- Check that index is an integer type
+    if not index_type or index_type.kind ~= "named_type" or 
+       not index_type.name:match("^[iu]%d+$") then
+        typechecker:add_error(string.format(
+            "Array index must be an integer type, got '%s'",
+            Inference.type_to_string(index_type)
+        ))
+        return nil
+    end
+    
+    -- Compile-time bounds checking: check if index is a constant integer
+    if expr.index.kind == "int" then
+        local index_value = expr.index.value
+        local array_size = array_type.size
+        
+        if index_value < 0 or index_value >= array_size then
+            typechecker:add_error(string.format(
+                "Array index out of bounds: index %d is out of range [0, %d) for array of size %d. " ..
+                "Czar enforces compile-time bounds checking for memory safety.",
+                index_value, array_size, array_size
+            ))
+            return nil
+        end
+    end
+    
+    -- Return the element type of the array
+    expr.inferred_type = array_type.element_type
+    return array_type.element_type
+end
+
 -- Infer the type of a binary expression
 function Inference.infer_binary_type(typechecker, expr)
     local left_type = Inference.infer_type(typechecker, expr.left)
@@ -151,6 +201,35 @@ function Inference.infer_binary_type(typechecker, expr)
         local inferred = { kind = "named_type", name = "bool" }
         expr.inferred_type = inferred
         return inferred
+    end
+    
+    -- Check for forbidden pointer arithmetic
+    if expr.op == "+" or expr.op == "-" then
+        local left_is_pointer = left_type and left_type.kind == "pointer"
+        local right_is_pointer = right_type and right_type.kind == "pointer"
+        local left_is_numeric = left_type and left_type.kind == "named_type" and 
+                                (left_type.name:match("^[iuf]%d+$") ~= nil)
+        local right_is_numeric = right_type and right_type.kind == "named_type" and 
+                                 (right_type.name:match("^[iuf]%d+$") ~= nil)
+        
+        -- Forbid pointer + numeric, numeric + pointer, pointer - numeric
+        if (left_is_pointer and right_is_numeric) or (left_is_numeric and right_is_pointer) then
+            typechecker:add_error(string.format(
+                "Pointer arithmetic is forbidden. Cannot %s pointer and numeric type. " ..
+                "Czar enforces memory safety by disallowing pointer arithmetic operations.",
+                expr.op == "+" and "add" or "subtract"
+            ))
+            return nil
+        end
+        
+        -- Forbid pointer - pointer (technically could be allowed but we're being strict)
+        if left_is_pointer and right_is_pointer and expr.op == "-" then
+            typechecker:add_error(
+                "Pointer arithmetic is forbidden. Cannot subtract two pointers. " ..
+                "Czar enforces memory safety by disallowing pointer arithmetic operations."
+            )
+            return nil
+        end
     end
     
     -- Arithmetic operators return the left operand's type
@@ -475,6 +554,8 @@ function Inference.type_to_string(type_node)
         else
             return Inference.type_to_string(type_node.to) .. "*"
         end
+    elseif type_node.kind == "array" then
+        return Inference.type_to_string(type_node.element_type) .. "[" .. tostring(type_node.size) .. "]"
     end
     
     return "unknown"
