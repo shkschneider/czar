@@ -1,0 +1,10 @@
+// Test pass immutable to mut pointer
+fn modify(mut i32* p) void {
+    *p = 20
+}
+
+fn main() i32 {
+    i32 x = 10
+    modify(&x)  // ERROR: cannot pass immutable to mut pointer
+    return x
+}

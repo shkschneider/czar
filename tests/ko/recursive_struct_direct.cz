@@ -1,0 +1,9 @@
+// Test recursive struct (direct)
+struct Node {
+    i32 value
+    Node next  // ERROR: recursive struct (should be Node*)
+}
+
+fn main() i32 {
+    return 0
+}

@@ -1,0 +1,14 @@
+// Test duplicate struct definition
+struct Point {
+    i32 x
+    i32 y
+}
+
+struct Point {  // ERROR: duplicate struct definition
+    i32 a
+    i32 b
+}
+
+fn main() i32 {
+    return 0
+}

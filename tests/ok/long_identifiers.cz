@@ -1,0 +1,18 @@
+// Test long identifier names
+struct VeryLongStructNameForTestingPurposes {
+    i32 very_long_field_name_for_testing
+}
+
+fn very_long_function_name_for_testing_purposes(i32 very_long_parameter_name) i32 {
+    return very_long_parameter_name + 1
+}
+
+fn main() i32 {
+    VeryLongStructNameForTestingPurposes very_long_variable_name = VeryLongStructNameForTestingPurposes {
+        very_long_field_name_for_testing: 10
+    }
+    
+    i32 result = very_long_function_name_for_testing_purposes(very_long_variable_name.very_long_field_name_for_testing)
+    
+    return result - 11
+}

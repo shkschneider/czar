@@ -1,0 +1,11 @@
+// Test invalid cast
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() i32 {
+    Point p = Point { x: 1, y: 2 }
+    i32 x = cast<i32> p  // ERROR: cannot cast struct to i32
+    return x
+}

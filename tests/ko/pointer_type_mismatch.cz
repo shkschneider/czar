@@ -1,0 +1,16 @@
+// Test pointer type mismatch
+struct Point {
+    i32 x
+    i32 y
+}
+
+struct Vec {
+    i32 a
+    i32 b
+}
+
+fn main() i32 {
+    Point p = Point { x: 1, y: 2 }
+    Vec* v = &p  // ERROR: cannot assign Point* to Vec*
+    return v.a
+}
