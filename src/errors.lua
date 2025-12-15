@@ -44,25 +44,72 @@ Errors.ErrorType = {
     CODEGEN_FAILED = "CODEGEN_FAILED",
 }
 
--- Format a single error message
+-- Cache for source file contents
+local source_cache = {}
+
+-- Read a source file and cache it
+local function read_source_file(filename)
+    if source_cache[filename] then
+        return source_cache[filename]
+    end
+    
+    local handle, err = io.open(filename, "r")
+    if not handle then
+        return nil
+    end
+    
+    local lines = {}
+    for line in handle:lines() do
+        table.insert(lines, line)
+    end
+    handle:close()
+    
+    source_cache[filename] = lines
+    return lines
+end
+
+-- Format a single error message with multi-line format
 -- severity: "ERROR" or "WARNING"
 -- filename: source filename (e.g., "program.cz")
--- line: line number (optional, can be nil)
+-- line: line number (optional, can be nil or 0)
 -- error_id: error identifier from ErrorType
 -- message: human-readable error message
-function Errors.format(severity, filename, line, error_id, message)
+-- source_path: optional full path to source file for reading line content
+function Errors.format(severity, filename, line, error_id, message, source_path)
     severity = severity or "ERROR"
     filename = filename or "<unknown>"
     error_id = error_id or "UNKNOWN_ERROR"
     
+    -- If line is 0 or nil, we don't have good line info, so don't display it
+    -- This is better than showing line 0
+    local display_line = line
+    if not line or line == 0 then
+        display_line = nil
+    end
+    
     local location
-    if line then
-        location = string.format("%s:%d", filename, line)
+    if display_line then
+        location = string.format("%s:%d", filename, display_line)
     else
         location = filename
     end
     
-    return string.format("%s %s %s %s", severity, location, error_id, message)
+    -- Build error message parts
+    local parts = {}
+    table.insert(parts, string.format("%s %s %s", severity, location, error_id))
+    table.insert(parts, "     " .. message)
+    
+    -- Try to add the source line if we have a valid line number
+    if display_line and source_path then
+        local source_lines = read_source_file(source_path)
+        if source_lines and source_lines[display_line] then
+            local source_line = source_lines[display_line]
+            -- Trim leading whitespace but preserve indentation for display
+            table.insert(parts, "     " .. source_line)
+        end
+    end
+    
+    return table.concat(parts, "\n")
 end
 
 -- Format multiple errors with a phase header
@@ -79,6 +126,11 @@ function Errors.format_phase_errors(phase, errors)
     end
     
     return table.concat(lines, "\n")
+end
+
+-- Clear the source file cache (useful for testing or long-running processes)
+function Errors.clear_cache()
+    source_cache = {}
 end
 
 return Errors
