@@ -4,7 +4,6 @@ set +e
 ./build.sh || exit 1
 
 [[ $# -ge 1 ]] || set -- tests/*.cz
-mkdir -p ./build
 
 ok=0
 ko=0
@@ -13,13 +12,14 @@ for f in $@ ; do
     n=${n##*/}
     n=${n%@*}
     echo -n "- tests/$n..."
-    ./cz build $f -o ./build/$n >/dev/null 2>/tmp/cz
-    if [[ ! -x ./build/$n ]] ; then
+    o=${f/.cz/.out}
+    ./cz build $f -o $o >/dev/null 2>/tmp/cz
+    if [[ ! -x $o ]] ; then
         echo " ERROR:"
         cat /tmp/cz >&2
         (( ko += 1 ))
     else
-        ./build/$n >/dev/null 2>/tmp/cz && {
+        ./$o >/dev/null 2>/tmp/cz && {
             echo " SUCCESS"
             (( ok += 1 ))
         } || {
@@ -29,7 +29,7 @@ for f in $@ ; do
                 (( ko += 1 ))
             }
         }
-        rm -f ./build/$n
+        rm -f ./$o
     fi
     rm -f /tmp/cz
 done
