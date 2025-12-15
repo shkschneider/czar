@@ -22,6 +22,7 @@ function Typechecker.new(ast, options)
             ["String"] = "char*"  -- Built-in alias
         },
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
+        source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
     }
     return setmetatable(self, Typechecker)
 end
@@ -69,7 +70,7 @@ function Typechecker:collect_declarations()
                 local line = item.line or 0
                 local msg = string.format("duplicate #alias for '%s'", item.alias_name)
                 local formatted_error = Errors.format("ERROR", self.source_file, line,
-                    Errors.ErrorType.DUPLICATE_ALIAS, msg)
+                    Errors.ErrorType.DUPLICATE_ALIAS, msg, self.source_path)
                 self:add_error(formatted_error)
             else
                 self.type_aliases[item.alias_name] = item.target_type_str
@@ -169,7 +170,7 @@ function Typechecker:check_var_decl(stmt)
                 Inference.type_to_string(init_type)
             )
             local formatted_error = Errors.format("ERROR", self.source_file, line,
-                Errors.ErrorType.TYPE_MISMATCH, msg)
+                Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
             self:add_error(formatted_error)
         end
         
@@ -205,7 +206,7 @@ function Typechecker:check_assign(stmt)
             Inference.type_to_string(value_type)
         )
         local formatted_error = Errors.format("ERROR", self.source_file, line,
-            Errors.ErrorType.TYPE_MISMATCH, msg)
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
         self:add_error(formatted_error)
     end
     
@@ -235,7 +236,7 @@ function Typechecker:check_assign(stmt)
                     stmt.value.name
                 )
                 local formatted_error = Errors.format("ERROR", self.source_file, line,
-                    Errors.ErrorType.CONST_QUALIFIER_DISCARDED, msg)
+                    Errors.ErrorType.CONST_QUALIFIER_DISCARDED, msg, self.source_path)
                 self:add_error(formatted_error)
             end
         end

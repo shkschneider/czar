@@ -313,17 +313,19 @@ function Parser:parse_statement()
         if is_var_decl then
             -- Parse as variable declaration
             local mutable = false
+            local start_tok = self:current()  -- Save start token for line number
             if self:match("KEYWORD", "mut") then
                 mutable = true
             end
             local type_ = self:parse_type()
-            local name = self:expect("IDENT").value
+            local name_tok = self:expect("IDENT")
+            local name = name_tok.value
             local init = nil
             if self:match("EQUAL") then
                 init = self:parse_expression()
             end
             self:match("SEMICOLON")
-            return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init }
+            return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init, line = start_tok.line, col = start_tok.col }
         else
             -- Reset and parse as expression statement
             self.pos = saved_pos
