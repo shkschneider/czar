@@ -156,8 +156,54 @@ function Typechecker:check_var_decl(stmt)
     local var_type = stmt.type
     local is_mutable = stmt.mutable or false
     
-    -- Type check the initializer if present
-    if stmt.init then
+    -- Check if trying to declare a mutable slice (not allowed)
+    if var_type.kind == "slice" and is_mutable then
+        local line = stmt.line or 0
+        local msg = "Slices cannot be declared as mutable"
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    end
+    
+    -- Handle implicit array size (Type[*])
+    if var_type.kind == "array" and var_type.size == "*" then
+        if not stmt.init then
+            local line = stmt.line or 0
+            local msg = "Arrays with implicit size must have an initializer"
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+            self:add_error(formatted_error)
+        else
+            local init_type = self:check_expression(stmt.init)
+            
+            -- Check that initializer is an array literal or array
+            if init_type and init_type.kind == "array" then
+                -- Infer the size from the initializer
+                var_type.size = init_type.size
+                stmt.type = var_type
+                
+                -- Check element type compatibility
+                if not Inference.types_compatible(var_type.element_type, init_type.element_type, self) then
+                    local line = stmt.line or 0
+                    local msg = string.format(
+                        "Array element type mismatch: expected %s, got %s",
+                        Inference.type_to_string(var_type.element_type),
+                        Inference.type_to_string(init_type.element_type)
+                    )
+                    local formatted_error = Errors.format("ERROR", self.source_file, line,
+                        Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+                    self:add_error(formatted_error)
+                end
+            else
+                local line = stmt.line or 0
+                local msg = "Implicit array size requires array literal or array initializer"
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+                self:add_error(formatted_error)
+            end
+        end
+    elseif stmt.init then
+        -- Type check the initializer if present (for non-implicit arrays)
         local init_type = self:check_expression(stmt.init)
         
         -- Check type compatibility
