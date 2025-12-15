@@ -37,7 +37,7 @@ function Inference.infer_type(typechecker, expr)
             local line = expr.line or 0
             local msg = string.format("Undeclared identifier: %s", expr.name)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg)
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -136,7 +136,7 @@ function Inference.infer_field_type(typechecker, expr)
             expr.field, type_name
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.FIELD_NOT_FOUND, msg)
+            Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
     else
         local line = expr.line or (expr.object and expr.object.line) or 0
@@ -145,7 +145,7 @@ function Inference.infer_field_type(typechecker, expr)
             expr.field, type_name or "unknown"
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.TYPE_MISMATCH, msg)
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
     end
     
@@ -169,7 +169,7 @@ function Inference.infer_index_type(typechecker, expr)
             Inference.type_to_string(array_type)
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.TYPE_MISMATCH, msg)
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
         return nil
     end
@@ -184,7 +184,7 @@ function Inference.infer_index_type(typechecker, expr)
             Inference.type_to_string(index_type)
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.TYPE_MISMATCH, msg)
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
         return nil
     end
@@ -202,7 +202,7 @@ function Inference.infer_index_type(typechecker, expr)
                 index_value, array_size, array_size
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.ARRAY_INDEX_OUT_OF_BOUNDS, msg)
+                Errors.ErrorType.ARRAY_INDEX_OUT_OF_BOUNDS, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -249,7 +249,7 @@ function Inference.infer_binary_type(typechecker, expr)
                 expr.op == "+" and "add" or "subtract"
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.POINTER_ARITHMETIC_FORBIDDEN, msg)
+                Errors.ErrorType.POINTER_ARITHMETIC_FORBIDDEN, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -260,7 +260,7 @@ function Inference.infer_binary_type(typechecker, expr)
             local msg = "Pointer arithmetic is forbidden. Cannot subtract two pointers. " ..
                 "Czar enforces memory safety by disallowing pointer arithmetic operations."
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.POINTER_ARITHMETIC_FORBIDDEN, msg)
+                Errors.ErrorType.POINTER_ARITHMETIC_FORBIDDEN, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -290,7 +290,7 @@ function Inference.infer_unary_type(typechecker, expr)
             local line = expr.line or (expr.operand and expr.operand.line) or 0
             local msg = "Cannot dereference non-pointer type"
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.TYPE_MISMATCH, msg)
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -327,7 +327,7 @@ function Inference.infer_call_type(typechecker, expr)
                             func_name, i, param.type.to.name or "Type"
                         )
                         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                            Errors.ErrorType.MUTABILITY_VIOLATION, msg)
+                            Errors.ErrorType.MUTABILITY_VIOLATION, msg, typechecker.source_path)
                         typechecker:add_error(formatted_error)
                     end
                 end
@@ -339,7 +339,7 @@ function Inference.infer_call_type(typechecker, expr)
             local line = expr.line or (expr.callee and expr.callee.line) or 0
             local msg = string.format("Undefined function: %s", func_name)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.UNDEFINED_FUNCTION, msg)
+                Errors.ErrorType.UNDEFINED_FUNCTION, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -363,7 +363,7 @@ function Inference.infer_call_type(typechecker, expr)
                 expr.callee.method, type_name or "unknown"
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.UNDEFINED_FUNCTION, msg)
+                Errors.ErrorType.UNDEFINED_FUNCTION, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
@@ -392,7 +392,7 @@ function Inference.infer_method_call_type(typechecker, expr)
             expr.method, type_name or "unknown"
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.UNDEFINED_FUNCTION, msg)
+            Errors.ErrorType.UNDEFINED_FUNCTION, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
         return nil
     end
@@ -456,7 +456,7 @@ function Inference.infer_struct_literal_type(typechecker, expr)
         local line = expr.line or 0
         local msg = string.format("Undefined struct: %s", struct_name or "nil")
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.UNDEFINED_STRUCT, msg)
+            Errors.ErrorType.UNDEFINED_STRUCT, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
         return nil
     end
@@ -509,7 +509,7 @@ function Inference.infer_new_type(typechecker, expr)
         local line = expr.line or 0
         local msg = string.format("Undefined struct: %s", expr.type_name or "nil")
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.UNDEFINED_STRUCT, msg)
+            Errors.ErrorType.UNDEFINED_STRUCT, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
         return nil
     end

@@ -15,6 +15,7 @@ function Analysis.new(lowered_ast, options)
         scope_stack = {},    -- Stack of scopes for tracking freed variables
         errors = {},         -- Collected analysis errors
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
+        source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
     }
     return setmetatable(self, Analysis)
 end
@@ -131,7 +132,7 @@ function Analysis:analyze_expression(expr, declaring_var)
                 expr.name
             )
             local formatted_error = Errors.format("ERROR", self.source_file, line, 
-                Errors.ErrorType.USE_AFTER_FREE, msg)
+                Errors.ErrorType.USE_AFTER_FREE, msg, self.source_path)
             self:add_error(formatted_error)
         end
     elseif expr.kind == "binary" then
