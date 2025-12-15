@@ -30,5 +30,5 @@ fn main() -> i32 {
     i32 safe_null = 100  // Since p4 is null, we use fallback directly
 
     // Return combination of tests
-    return result1 + safe_value + safe+null - 120 // 5 + 15 + 100 = 120
+    return result1 + safe_value + safe_null - 120 // 5 + 15 + 100 = 120
 }
