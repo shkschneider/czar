@@ -114,9 +114,10 @@ function Typechecker:collect_declarations()
                 self:add_error(formatted_error)
             else
                 -- Check for duplicate parameter names within the function
+                -- Allow multiple '_' parameters (convention for unused/ignored parameters)
                 local param_names = {}
                 for _, param in ipairs(item.params) do
-                    if param_names[param.name] then
+                    if param.name ~= "_" and param_names[param.name] then
                         local line = item.line or 0
                         local msg = string.format(
                             "Duplicate parameter '%s' in function '%s'",
