@@ -1,0 +1,10 @@
+// Test undefined struct field
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() i32 {
+    Point p = Point { x: 1, y: 2 }
+    return p.z  // ERROR: field 'z' does not exist in struct Point
+}

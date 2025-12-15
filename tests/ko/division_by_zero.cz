@@ -1,0 +1,5 @@
+// Test division by zero literal
+fn main() i32 {
+    i32 x = 10
+    return x / 0  // ERROR: division by zero
+}

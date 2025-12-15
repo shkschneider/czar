@@ -1,0 +1,9 @@
+// Test address-of on non-lvalue
+fn get_value() i32 {
+    return 42
+}
+
+fn main() i32 {
+    i32* p = &get_value()  // ERROR: cannot take address of non-lvalue
+    return p.value
+}

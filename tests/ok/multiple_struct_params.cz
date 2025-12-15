@@ -1,0 +1,20 @@
+// Test multiple struct parameters
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn distance_squared(Point a, Point b) i32 {
+    i32 dx = a.x - b.x
+    i32 dy = a.y - b.y
+    return dx * dx + dy * dy
+}
+
+fn main() i32 {
+    Point p1 = Point { x: 0, y: 0 }
+    Point p2 = Point { x: 3, y: 4 }
+    
+    i32 dist = distance_squared(p1, p2)
+    
+    return dist - 25  // 3^2 + 4^2 = 9 + 16 = 25
+}

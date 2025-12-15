@@ -1,0 +1,14 @@
+// Test method call on wrong type
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn Point:get_x() i32 {
+    return self.x
+}
+
+fn main() i32 {
+    i32 x = 10
+    return x:get_x()  // ERROR: cannot call Point method on i32
+}

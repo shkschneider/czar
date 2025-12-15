@@ -6,6 +6,19 @@
 
 This is a toy language I'm trying to make to learn more about languages and compilation.
 
+## Key Features
+
+- Explicit over magical
+- Static types
+- Value semantics by default
+- Explicit `mut`ability
+- Explicit pointers (`&` and `*`, like Go)
+- Stack/Heap allocations + defer free (no GC)
+- Structs with methods and static functions + extensions
+- Error-as-value
+- C-level performance
+- Goal: Simple, friendly compiler errors
+
 > Someone had good intentions at each step along the way, but nobody stopped to ask why
 
 ## Primary Goals
