@@ -10,26 +10,26 @@ fn main() -> i32 {
     i32 a = 10
     i32 b = 20
     bool test1 = a < b and b < 30  // true
-    
+
     // Test 2: 'or' keyword for logical OR
     bool test2 = a == 5 or a == 10  // true
-    
+
     // Test 3: Simplified null coalescing
-    Node null_ptr = null
-    Node valid_ptr = new Node { value: 50 }
-    Node result = valid_ptr  // Simplified from: null_ptr or valid_ptr
-    
+    Node* null_ptr = null
+    Node* valid_ptr = new Node { value: 50 }
+    Node* result = valid_ptr  // Simplified from: null_ptr or valid_ptr
+
     // Test 4: Underscore in numbers
     i32 thousand = 1_000
     i32 million = 1_000_000
     i32 with_underscores = 1_2_3_4
-    
+
     // Test 5: Single ! for null check
-    Node checked = valid_ptr!  // Should succeed
-    
+    Node* checked = valid_ptr!  // Should succeed
+
     // Test 6: Direct field access (no ?. operator)
     i32 value_from_result = result.value  // Direct access
-    
+
     // Calculate return value
     mut i32 ret = 0
     if test1 and test2 {
@@ -47,6 +47,6 @@ fn main() -> i32 {
     if value_from_result == 50 {
         ret = ret + 10
     }
-    
+
     return ret  // Should return 50
 }
