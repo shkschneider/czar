@@ -28,20 +28,20 @@ function Analysis:analyze()
     -- 3. Verify that pointer lifetimes are valid
     -- 4. Detect use-after-free errors
     -- 5. Annotate AST nodes with allocation strategy
-    
+
     -- Analyze all top-level items
     for _, item in ipairs(self.ast.items) do
         if item.kind == "function" then
             self:analyze_function(item)
         end
     end
-    
+
     -- Report any errors
     if #self.errors > 0 then
         local error_msg = Errors.format_phase_errors("Lifetime analysis", self.errors)
         error(error_msg)
     end
-    
+
     return self.ast
 end
 
@@ -76,7 +76,7 @@ function Analysis:analyze_statement(stmt)
         self:push_scope()
         self:analyze_block(stmt.then_block)
         self:pop_scope()
-        
+
         if stmt.elseif_branches then
             for _, branch in ipairs(stmt.elseif_branches) do
                 self:analyze_expression(branch.condition, nil)
@@ -85,7 +85,7 @@ function Analysis:analyze_statement(stmt)
                 self:pop_scope()
             end
         end
-        
+
         if stmt.else_block then
             self:push_scope()
             self:analyze_block(stmt.else_block)
@@ -121,17 +121,16 @@ function Analysis:analyze_expression(expr, declaring_var)
     if not expr then
         return
     end
-    
+
     if expr.kind == "identifier" then
         -- Check if this variable has been freed
         if self:is_freed(expr.name) and expr.name ~= declaring_var then
             local line = expr.line or 0
             local msg = string.format(
-                "Use-after-free detected: Variable '%s' is used after being freed. " ..
-                "This is a memory safety violation.",
+                "Variable '%s' is used after being freed.",
                 expr.name
             )
-            local formatted_error = Errors.format("ERROR", self.source_file, line, 
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
                 Errors.ErrorType.USE_AFTER_FREE, msg, self.source_path)
             self:add_error(formatted_error)
         end

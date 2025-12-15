@@ -7,12 +7,12 @@ local Errors = {}
 Errors.ErrorType = {
     -- Lexer errors
     LEXER_FAILED = "LEXER_FAILED",
-    
+
     -- Parser errors
     PARSER_FAILED = "PARSER_FAILED",
     UNEXPECTED_TOKEN = "UNEXPECTED_TOKEN",
     EXPECTED_TOKEN = "EXPECTED_TOKEN",
-    
+
     -- Type checking errors
     TYPE_CHECKING_FAILED = "TYPE_CHECKING_FAILED",
     TYPE_MISMATCH = "TYPE_MISMATCH",
@@ -21,25 +21,25 @@ Errors.ErrorType = {
     UNDEFINED_FUNCTION = "UNDEFINED_FUNCTION",
     UNDEFINED_STRUCT = "UNDEFINED_STRUCT",
     DUPLICATE_ALIAS = "DUPLICATE_ALIAS",
-    
+
     -- Pointer arithmetic errors
     POINTER_ARITHMETIC_FORBIDDEN = "POINTER_ARITHMETIC_FORBIDDEN",
-    
+
     -- Array bounds errors
     ARRAY_INDEX_OUT_OF_BOUNDS = "ARRAY_INDEX_OUT_OF_BOUNDS",
-    
+
     -- Memory safety errors
     LIFETIME_ANALYSIS_FAILED = "LIFETIME_ANALYSIS_FAILED",
     USE_AFTER_FREE = "USE_AFTER_FREE",
     RETURN_STACK_REFERENCE = "RETURN_STACK_REFERENCE",
-    
+
     -- Mutability errors
     MUTABILITY_VIOLATION = "MUTABILITY_VIOLATION",
     CONST_QUALIFIER_DISCARDED = "CONST_QUALIFIER_DISCARDED",
-    
+
     -- Lowering errors
     LOWERING_FAILED = "LOWERING_FAILED",
-    
+
     -- Code generation errors
     CODEGEN_FAILED = "CODEGEN_FAILED",
 }
@@ -52,18 +52,18 @@ local function read_source_file(filename)
     if source_cache[filename] then
         return source_cache[filename]
     end
-    
+
     local handle, err = io.open(filename, "r")
     if not handle then
         return nil
     end
-    
+
     local lines = {}
     for line in handle:lines() do
         table.insert(lines, line)
     end
     handle:close()
-    
+
     source_cache[filename] = lines
     return lines
 end
@@ -88,39 +88,39 @@ function Errors.format(severity, filename, line, error_id, message, source_path)
     severity = severity or "ERROR"
     filename = filename or "<unknown>"
     error_id = error_id or "UNKNOWN_ERROR"
-    
+
     -- If line is 0 or nil, we don't have good line info, so don't display it
     -- This is better than showing line 0
     local display_line = line
     if not line or line == 0 then
         display_line = nil
     end
-    
+
     local location
     if display_line then
         location = string.format("%s:%d", filename, display_line)
     else
         location = filename
     end
-    
+
     -- Convert error ID to lowercase-hyphenated format
     local formatted_error_id = format_error_id(error_id)
-    
+
     -- Build error message parts
     local parts = {}
     table.insert(parts, string.format("%s %s %s", severity, location, formatted_error_id))
     table.insert(parts, "\t" .. message)
-    
+
     -- Try to add the source line if we have a valid line number
     if display_line and source_path then
         local source_lines = read_source_file(source_path)
         if source_lines and source_lines[display_line] then
             local source_line = source_lines[display_line]
             -- Trim leading whitespace but preserve indentation for display
-            table.insert(parts, "\t" .. source_line)
+            table.insert(parts, "\t> " .. source_line:gsub("^%s+", ""))
         end
     end
-    
+
     return table.concat(parts, "\n")
 end
 
@@ -131,12 +131,12 @@ function Errors.format_phase_errors(phase, errors)
     if #errors == 0 then
         return nil
     end
-    
+
     local lines = {}
     for _, err in ipairs(errors) do
         table.insert(lines, err)
     end
-    
+
     return table.concat(lines, "\n")
 end
 
