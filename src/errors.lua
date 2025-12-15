@@ -31,6 +31,10 @@ Errors.ErrorType = {
     -- Arithmetic errors
     DIVISION_BY_ZERO = "DIVISION_BY_ZERO",
 
+    -- Function return errors
+    MISSING_RETURN = "MISSING_RETURN",
+    VOID_FUNCTION_RETURNS_VALUE = "VOID_FUNCTION_RETURNS_VALUE",
+
     -- Memory safety errors
     LIFETIME_ANALYSIS_FAILED = "LIFETIME_ANALYSIS_FAILED",
     USE_AFTER_FREE = "USE_AFTER_FREE",

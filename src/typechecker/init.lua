@@ -92,6 +92,9 @@ end
 
 -- Type check a single function
 function Typechecker:check_function(func)
+    -- Store current function for return statement checking
+    self.current_function = func
+    
     -- Create a new scope for this function
     self:push_scope()
     
@@ -113,8 +116,27 @@ function Typechecker:check_function(func)
     -- Type check the function body
     self:check_block(func.body)
     
+    -- Check if non-void function has return statement
+    if func.return_type.kind ~= "named_type" or func.return_type.name ~= "void" then
+        local has_return = self:block_has_return(func.body)
+        if not has_return then
+            local line = func.line or 0
+            local msg = string.format(
+                "Function '%s' with return type '%s' must return a value in all code paths",
+                func.name,
+                self:type_to_string(func.return_type)
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
+                Errors.ErrorType.MISSING_RETURN, msg, self.source_path)
+            self:add_error(formatted_error)
+        end
+    end
+    
     -- Pop the function scope
     self:pop_scope()
+    
+    -- Clear current function
+    self.current_function = nil
 end
 
 -- Type check a block of statements
@@ -394,6 +416,20 @@ end
 -- Type check a return statement
 function Typechecker:check_return(stmt)
     if stmt.value then
+        -- Check if we're in a void function
+        if self.current_function and 
+           self.current_function.return_type.kind == "named_type" and 
+           self.current_function.return_type.name == "void" then
+            local line = stmt.line or 0
+            local msg = string.format(
+                "Function '%s' has void return type but is returning a value",
+                self.current_function.name
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
+                Errors.ErrorType.VOID_FUNCTION_RETURNS_VALUE, msg, self.source_path)
+            self:add_error(formatted_error)
+        end
+        
         local return_type = self:check_expression(stmt.value)
         
         -- Check for returning address to stack variable
@@ -460,6 +496,61 @@ end
 -- Error reporting
 function Typechecker:add_error(msg)
     table.insert(self.errors, msg)
+end
+
+-- Helper: Check if a block has a return statement in all paths
+function Typechecker:block_has_return(block)
+    local statements = block.statements or block
+    
+    for _, stmt in ipairs(statements) do
+        if stmt.kind == "return" then
+            return true
+        elseif stmt.kind == "if" then
+            -- For if statements, all branches must have returns
+            local then_has_return = self:block_has_return(stmt.then_block)
+            
+            -- Check all elseif branches
+            local all_elseif_have_return = true
+            if stmt.elseif_branches then
+                for _, branch in ipairs(stmt.elseif_branches) do
+                    if not self:block_has_return(branch.block) then
+                        all_elseif_have_return = false
+                        break
+                    end
+                end
+            end
+            
+            -- Check else branch
+            local else_has_return = stmt.else_block and self:block_has_return(stmt.else_block) or false
+            
+            -- Only return true if we have an else and all branches return
+            if stmt.else_block and then_has_return and all_elseif_have_return and else_has_return then
+                return true
+            end
+        end
+        -- Note: we don't check while loops as they might not execute
+    end
+    
+    return false
+end
+
+-- Helper: Convert type to string for error messages
+function Typechecker:type_to_string(type_node)
+    if not type_node then
+        return "unknown"
+    end
+    
+    if type_node.kind == "named_type" then
+        return type_node.name
+    elseif type_node.kind == "pointer" then
+        return self:type_to_string(type_node.to) .. "*"
+    elseif type_node.kind == "array" then
+        return self:type_to_string(type_node.element_type) .. "[" .. (type_node.size or "*") .. "]"
+    elseif type_node.kind == "slice" then
+        return self:type_to_string(type_node.element_type) .. "[:]"
+    end
+    
+    return "unknown"
 end
 
 -- Module entry point
