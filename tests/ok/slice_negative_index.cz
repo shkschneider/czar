@@ -1,0 +1,12 @@
+// Test slice with negative end index (means length - N)
+fn main() i32 {
+    i32[5] arr = [ 10, 20, 30, 40, 50 ]
+    
+    // Create a slice from index 1 to length-1 (arr[1:-1] means arr[1:4])
+    i32[] s = arr[1:-1]
+    
+    // Access elements: s[0] should be 20, s[2] should be 40
+    i32 x = s[0] + s[2]
+    
+    return x - 60  // Should return 0 (20 + 40 = 60)
+}
