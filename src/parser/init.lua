@@ -625,7 +625,8 @@ function Parser:parse_postfix()
             local args = {}
             if not self:check("RPAREN") then
                 repeat
-                    -- Check for mut keyword before argument (syntactic sugar for &)
+                    -- Check for mut keyword before argument
+                    -- In caller-controlled mutability: mut means "I allow mutation"
                     local is_mut = self:match("KEYWORD", "mut") ~= nil
                     
                     -- Check for named argument (name: value)
@@ -641,8 +642,9 @@ function Parser:parse_postfix()
                     
                     local arg_expr = self:parse_expression()
                     if is_mut then
-                        -- mut is syntactic sugar for & (address-of)
-                        arg_expr = { kind = "unary", op = "&", operand = arg_expr }
+                        -- Wrap in mut_arg to indicate caller allows mutation
+                        -- The callee can opt-in to receive mut or not
+                        arg_expr = { kind = "mut_arg", expr = arg_expr, allows_mutation = true }
                     end
                     if arg_name then
                         -- This is a named argument
