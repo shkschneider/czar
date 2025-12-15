@@ -196,6 +196,22 @@ function Inference.infer_call_type(typechecker, expr)
         local func_def = Resolver.resolve_function(typechecker, "__global__", func_name)
         
         if func_def then
+            -- Check caller-controlled mutability
+            for i, arg in ipairs(expr.args) do
+                if i <= #func_def.params then
+                    local param = func_def.params[i]
+                    local caller_allows_mut = (arg.kind == "mut_arg" and arg.allows_mutation)
+                    
+                    -- If callee wants mut but caller doesn't give it, error
+                    if param.mutable and param.type.kind == "pointer" and not caller_allows_mut then
+                        typechecker:add_error(string.format(
+                            "Function '%s' parameter %d requires mutable pointer (mut %s*), but caller passes immutable. Use 'mut' at call site.",
+                            func_name, i, param.type.to.name or "Type"
+                        ))
+                    end
+                end
+            end
+            
             expr.inferred_type = func_def.return_type
             return func_def.return_type
         else

@@ -42,6 +42,11 @@ function Expressions.gen_expr(expr)
         end
     elseif expr.kind == "identifier" then
         return expr.name
+    elseif expr.kind == "mut_arg" then
+        -- Caller-controlled mutability: mut arg means caller allows mutation
+        -- Generate &expr to pass pointer
+        local inner_expr = Expressions.gen_expr(expr.expr)
+        return "&" .. inner_expr
     elseif expr.kind == "cast" then
         -- cast<Type> expr -> (Type)expr
         local target_type_str = ctx():c_type(expr.target_type)
@@ -155,6 +160,11 @@ function Expressions.gen_expr(expr)
                 local var_info = ctx():get_var_info(expr.target.name)
                 if var_info and not var_info.mutable then
                     error(string.format("Cannot assign to immutable variable '%s'", expr.target.name))
+                end
+                
+                -- Warning: reassigning a pointer to another address
+                if var_type.kind == "pointer" then
+                    io.stderr:write(string.format("Warning: Reassigning pointer '%s' to another address (potential dangling pointer risk)\n", expr.target.name))
                 end
             end
         elseif expr.target.kind == "field" then
