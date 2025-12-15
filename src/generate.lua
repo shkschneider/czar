@@ -18,6 +18,28 @@ local function read_file(path)
     return content
 end
 
+-- Generate a temporary file path based on source file name
+-- Instead of random names like /tmp/lua_xyz123.c, use /tmp/source_name.c
+local function make_temp_path(source_path, extension)
+    -- Extract base name without extension
+    local basename = source_path:match("([^/]+)$") or source_path
+    basename = basename:gsub("%.%w+$", "")  -- Remove extension
+    
+    -- Try to create in /tmp first, fallback to current directory
+    local tmp_dir = "/tmp/"
+    local temp_path = tmp_dir .. basename .. extension
+    
+    -- Check if we can write to /tmp
+    local test_handle = io.open(temp_path, "w")
+    if test_handle then
+        test_handle:close()
+        return temp_path
+    end
+    
+    -- Fallback to current directory
+    return basename .. extension
+end
+
 local function generate_c(source_path, options)
     options = options or {}
     
@@ -96,5 +118,6 @@ end
 return {
     generate_c = generate_c,
     write_c_file = write_c_file,
-    read_file = read_file
+    read_file = read_file,
+    make_temp_path = make_temp_path
 }

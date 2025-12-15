@@ -37,8 +37,8 @@ local function assemble_to_asm(source_path)
         end
         c_source = c_code
 
-        -- Write to temporary C file
-        c_file_path = os.tmpname() .. ".c"
+        -- Write to temporary C file (named after source file)
+        c_file_path = generate.make_temp_path(source_path, ".c")
         local ok, err = write_file(c_source, c_file_path)
         if not ok then
             return nil, err
@@ -57,7 +57,7 @@ local function assemble_to_asm(source_path)
     end
 
     -- Compile C to assembly using cc -S
-    local asm_temp = os.tmpname() .. ".s"
+    local asm_temp = generate.make_temp_path(source_path, ".s")
     local cmd = string.format("cc -S -o %s %s 2>&1", asm_temp, c_file_path)
     local handle = io.popen(cmd)
     local output = handle:read("*a")
