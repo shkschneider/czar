@@ -68,6 +68,15 @@ local function read_source_file(filename)
     return lines
 end
 
+-- Convert error ID from SCREAMING_SNAKE_CASE to lowercase-hyphenated format
+local function format_error_id(error_id)
+    if not error_id then
+        return "unknown-error"
+    end
+    -- Convert SCREAMING_SNAKE_CASE to lowercase-hyphenated
+    return error_id:lower():gsub("_", "-")
+end
+
 -- Format a single error message with multi-line format
 -- severity: "ERROR" or "WARNING"
 -- filename: source filename (e.g., "program.cz")
@@ -94,10 +103,13 @@ function Errors.format(severity, filename, line, error_id, message, source_path)
         location = filename
     end
     
+    -- Convert error ID to lowercase-hyphenated format
+    local formatted_error_id = format_error_id(error_id)
+    
     -- Build error message parts
     local parts = {}
-    table.insert(parts, string.format("%s %s %s", severity, location, error_id))
-    table.insert(parts, "     " .. message)
+    table.insert(parts, string.format("%s %s %s", severity, location, formatted_error_id))
+    table.insert(parts, "\t" .. message)
     
     -- Try to add the source line if we have a valid line number
     if display_line and source_path then
@@ -105,7 +117,7 @@ function Errors.format(severity, filename, line, error_id, message, source_path)
         if source_lines and source_lines[display_line] then
             local source_line = source_lines[display_line]
             -- Trim leading whitespace but preserve indentation for display
-            table.insert(parts, "     " .. source_line)
+            table.insert(parts, "\t" .. source_line)
         end
     end
     
