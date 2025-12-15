@@ -49,7 +49,36 @@ end
 function Typechecker:collect_declarations()
     for _, item in ipairs(self.ast.items) do
         if item.kind == "struct" then
-            self.structs[item.name] = item
+            -- Check for duplicate struct definition
+            if self.structs[item.name] then
+                local line = item.line or 0
+                local prev_line = self.structs[item.name].line or 0
+                local msg = string.format(
+                    "Duplicate struct definition '%s' (previously defined at line %d)",
+                    item.name, prev_line
+                )
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.DUPLICATE_STRUCT, msg, self.source_path)
+                self:add_error(formatted_error)
+            else
+                -- Check for duplicate field names within the struct
+                local field_names = {}
+                for _, field in ipairs(item.fields) do
+                    if field_names[field.name] then
+                        local line = item.line or 0
+                        local msg = string.format(
+                            "Duplicate field '%s' in struct '%s'",
+                            field.name, item.name
+                        )
+                        local formatted_error = Errors.format("ERROR", self.source_file, line,
+                            Errors.ErrorType.DUPLICATE_FIELD, msg, self.source_path)
+                        self:add_error(formatted_error)
+                    else
+                        field_names[field.name] = true
+                    end
+                end
+                self.structs[item.name] = item
+            end
         elseif item.kind == "function" then
             -- Determine if this is a method or a global function
             local type_name = "__global__"
@@ -63,7 +92,45 @@ function Typechecker:collect_declarations()
             if not self.functions[type_name] then
                 self.functions[type_name] = {}
             end
-            self.functions[type_name][item.name] = item
+            
+            -- Check for duplicate function/method definition
+            if self.functions[type_name][item.name] then
+                local line = item.line or 0
+                local prev_line = self.functions[type_name][item.name].line or 0
+                local msg
+                if type_name == "__global__" then
+                    msg = string.format(
+                        "Duplicate function definition '%s' (previously defined at line %d)",
+                        item.name, prev_line
+                    )
+                else
+                    msg = string.format(
+                        "Duplicate method definition '%s::%s' (previously defined at line %d)",
+                        type_name, item.name, prev_line
+                    )
+                end
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.DUPLICATE_FUNCTION, msg, self.source_path)
+                self:add_error(formatted_error)
+            else
+                -- Check for duplicate parameter names within the function
+                local param_names = {}
+                for _, param in ipairs(item.params) do
+                    if param_names[param.name] then
+                        local line = item.line or 0
+                        local msg = string.format(
+                            "Duplicate parameter '%s' in function '%s'",
+                            param.name, item.name
+                        )
+                        local formatted_error = Errors.format("ERROR", self.source_file, line,
+                            Errors.ErrorType.DUPLICATE_PARAMETER, msg, self.source_path)
+                        self:add_error(formatted_error)
+                    else
+                        param_names[param.name] = true
+                    end
+                end
+                self.functions[type_name][item.name] = item
+            end
         elseif item.kind == "alias_directive" then
             -- Store type aliases
             if self.type_aliases[item.alias_name] then
