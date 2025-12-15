@@ -1,0 +1,12 @@
+// Test duplicate function definition
+fn foo() i32 {
+    return 1
+}
+
+fn foo() i32 {  // ERROR: duplicate function definition
+    return 2
+}
+
+fn main() i32 {
+    return foo()
+}

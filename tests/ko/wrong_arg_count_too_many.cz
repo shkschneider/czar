@@ -1,0 +1,8 @@
+// Test wrong number of function arguments (too many)
+fn takes_one(i32 a) i32 {
+    return a
+}
+
+fn main() i32 {
+    return takes_one(42, 43)  // ERROR: too many arguments
+}

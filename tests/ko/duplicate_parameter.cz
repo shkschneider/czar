@@ -1,0 +1,8 @@
+// Test duplicate function parameter
+fn foo(i32 x, i32 x) i32 {  // ERROR: duplicate parameter
+    return x
+}
+
+fn main() i32 {
+    return foo(1, 2)
+}

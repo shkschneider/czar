@@ -1,0 +1,4 @@
+// Test undefined function
+fn main() i32 {
+    return undefined_function(42)  // ERROR: undefined function
+}

@@ -1,0 +1,9 @@
+// Test void function returning value
+fn returns_void() void {
+    return 42  // ERROR: void function cannot return a value
+}
+
+fn main() i32 {
+    returns_void()
+    return 0
+}

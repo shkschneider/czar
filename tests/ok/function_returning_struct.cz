@@ -1,0 +1,20 @@
+// Test function returning struct
+struct Pair {
+    i32 first
+    i32 second
+}
+
+fn make_pair(i32 a, i32 b) Pair {
+    return Pair { first: a, second: b }
+}
+
+fn swap_pair(Pair p) Pair {
+    return Pair { first: p.second, second: p.first }
+}
+
+fn main() i32 {
+    Pair p1 = make_pair(10, 20)
+    Pair p2 = swap_pair(p1)
+    
+    return p2.first + p2.second - 30  // 20 + 10 = 30
+}

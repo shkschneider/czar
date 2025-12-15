@@ -1,0 +1,14 @@
+// Test casting between different numeric types
+fn main() i32 {
+    // Test various casts
+    i32 i = 42
+    u32 u = cast<u32> i
+    i64 l = cast<i64> u
+    i8 b = cast<i8> 127
+    u16 s = cast<u16> b
+    
+    // Cast back to i32 for comparison
+    i32 result = cast<i32> s
+    
+    return result - 127
+}
