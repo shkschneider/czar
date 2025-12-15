@@ -83,8 +83,20 @@ function Statements.gen_statement(stmt)
 
         -- In explicit pointer model, check if the type itself is a pointer
         local is_pointer_type = stmt.type.kind == "pointer"
+        local is_array_type = stmt.type.kind == "array"
 
-        if is_pointer_type then
+        if is_array_type then
+            -- Array type declaration
+            ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
+            local element_type = Codegen.Types.c_type(stmt.type.element_type)
+            local array_size = stmt.type.size
+            local prefix = stmt.mutable and "" or "const "
+            local decl = string.format("%s%s %s[%d]", prefix, element_type, stmt.name, array_size)
+            if stmt.init then
+                decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
+            end
+            return decl .. ";"
+        elseif is_pointer_type then
             -- This is an explicit pointer type (Type*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
             local base_type = Codegen.Types.c_type(stmt.type.to)
