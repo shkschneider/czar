@@ -319,7 +319,30 @@ end
 -- Type check a return statement
 function Typechecker:check_return(stmt)
     if stmt.value then
-        self:check_expression(stmt.value)
+        local return_type = self:check_expression(stmt.value)
+        
+        -- Check for returning address to stack variable
+        if stmt.value.kind == "unary" and stmt.value.op == "&" then
+            -- User is returning &variable
+            local operand = stmt.value.operand
+            if operand.kind == "identifier" then
+                local var_info = Resolver.resolve_name(self, operand.name)
+                if var_info then
+                    local var_type = var_info.type
+                    -- Check if this is a stack-allocated variable (not a pointer)
+                    if var_type and var_type.kind ~= "pointer" then
+                        self:add_error(string.format(
+                            "Cannot return address of stack variable '%s'. The variable will be destroyed when the function returns. Use 'return clone %s' to return a heap-allocated copy.",
+                            operand.name,
+                            operand.name
+                        ))
+                    end
+                end
+            end
+        end
+        
+        -- Note: 'return clone stack_var' is safe because clone allocates on heap
+        -- and returns a pointer to the heap-allocated copy
     end
 end
 
