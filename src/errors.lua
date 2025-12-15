@@ -28,6 +28,9 @@ Errors.ErrorType = {
     -- Array bounds errors
     ARRAY_INDEX_OUT_OF_BOUNDS = "ARRAY_INDEX_OUT_OF_BOUNDS",
 
+    -- Arithmetic errors
+    DIVISION_BY_ZERO = "DIVISION_BY_ZERO",
+
     -- Memory safety errors
     LIFETIME_ANALYSIS_FAILED = "LIFETIME_ANALYSIS_FAILED",
     USE_AFTER_FREE = "USE_AFTER_FREE",
