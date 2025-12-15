@@ -1,0 +1,12 @@
+// Test compile-time array bounds checking
+fn main() i32 {
+    i32[5] arr = i32[5] { 0: 1, 1: 2, 2: 3, 3: 4, 4: 5 }
+    
+    // This should work: index is in bounds
+    i32 x = arr[2]
+    
+    // This should fail: index out of bounds
+    i32 y = arr[10]
+    
+    return x + y
+}
