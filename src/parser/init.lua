@@ -245,8 +245,19 @@ function Parser:parse_type()
         if self:match("STAR") then
             return { kind = "pointer", to = base_type }
         end
-        -- Check if this is an array type (Type[size])
+        -- Check if this is an array type (Type[size]) or slice type (Type[])
         if self:match("LBRACKET") then
+            -- Check for slice type: Type[]
+            if self:check("RBRACKET") then
+                self:advance()
+                return { kind = "slice", element_type = base_type }
+            end
+            -- Check for implicit size: Type[*]
+            if self:match("STAR") then
+                self:expect("RBRACKET")
+                return { kind = "array", element_type = base_type, size = "*" }
+            end
+            -- Explicit size: Type[N]
             local size_tok = self:expect("INT")
             local size = tonumber(size_tok.value)
             self:expect("RBRACKET")
@@ -577,15 +588,25 @@ function Parser:parse_postfix()
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
         elseif self:match("LBRACKET") then
-            -- Array indexing: arr[index]
-            local index = self:parse_expression()
-            self:expect("RBRACKET")
-            expr = { kind = "index", array = expr, index = index }
+            -- Array indexing: arr[index] or slice: arr[start:end]
+            local start_index = self:parse_expression()
+            
+            -- Check if this is a slice (has a colon)
+            if self:match("COLON") then
+                local end_index = self:parse_expression()
+                self:expect("RBRACKET")
+                expr = { kind = "slice", array = expr, start = start_index, end_expr = end_index }
+            else
+                self:expect("RBRACKET")
+                expr = { kind = "index", array = expr, index = start_index }
+            end
         elseif self:match("BANG") then
             -- Null check operator: a! (postfix)
             expr = { kind = "null_check", operand = expr }
-        elseif self:match("COLON") then
+        elseif self:check("COLON") and self.tokens[self.pos + 1] and self.tokens[self.pos + 1].type == "IDENT" then
             -- Method call using colon: obj:method()
+            -- Only match if followed by identifier (not a slice operator)
+            self:advance()  -- consume colon
             local method_name = self:expect("IDENT").value
             expr = { kind = "method_ref", object = expr, method = method_name }
         elseif self:match("DOT") then
@@ -714,6 +735,17 @@ function Parser:parse_primary()
         local expr = self:parse_expression()
         self:expect("RPAREN")
         return expr
+    elseif tok.type == "LBRACKET" then
+        -- Array literal: [ expr, expr, ... ]
+        self:advance()
+        local elements = {}
+        if not self:check("RBRACKET") then
+            repeat
+                table.insert(elements, self:parse_expression())
+            until not self:match("COMMA")
+        end
+        self:expect("RBRACKET")
+        return { kind = "array_literal", elements = elements }
     else
         error(string.format("unexpected token: %s", token_label(tok)))
     end
