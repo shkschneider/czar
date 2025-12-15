@@ -17,6 +17,9 @@ function Types.c_type(type_node)
         -- Arrays in C are declared with the size after the name, not in the type
         -- So we return just the element type here
         return Types.c_type(type_node.element_type)
+    elseif type_node.kind == "slice" then
+        -- Slices are represented as pointers to the element type
+        return Types.c_type(type_node.element_type) .. "*"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         
