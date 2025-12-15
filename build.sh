@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+RED="\e[31m"
+YELLOW="\e[33m"
+GREEN="\e[32m"
+WHITE="\e[0m"
+
 r=0
 echo "[CHECK] ..."
 for dep in git pkg-config luajit nm ar cc ; do
@@ -8,7 +13,7 @@ for dep in git pkg-config luajit nm ar cc ; do
     if [[ -n "$path" ]] ; then
         echo "$path"
     else
-        echo "MISSING"
+        echo -e $RED"MISSING"$WHITE
         (( r += 1))
     fi
 done
@@ -16,9 +21,8 @@ done
 
 set -e
 
-OUT=cz
-CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) \
--O2"
+OUT="cz"
+CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 
 # Check if luastatic is available for static linking
 if command -v luastatic >/dev/null 2>&1; then
@@ -32,7 +36,7 @@ if command -v luastatic >/dev/null 2>&1; then
 --no-whole-archive -Wl,\
 -E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
 else
-    echo "[LUASTATIC] null -> dynamic"
+    echo -e $YELLOW"[LUASTATIC] null -> dynamic"$WHITE
     LDFLAGS="-L. -L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
@@ -95,7 +99,7 @@ echo "[CC] main.c -lczar ..."
 echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
-echo -n "[CZ] " ; file -b ./$OUT
+echo -e "[CZ] "$GREEN$(file -b ./$OUT)$WHITE
 
 #install -m 755 ./$(OUT) /usr/local/bin/cz
 rm -rf ./build

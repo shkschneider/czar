@@ -3,29 +3,33 @@
 set +e
 ./build.sh || exit 1
 
-ok=0
-ko=0
+OK=0
+KO=0
+RED="\e[31m"
+YELLOW="\e[33m"
+GREEN="\e[32m"
+WHITE="\e[0m"
 
 # expected to exit 0
 check_ok() {
-    local f=$1
-    local n=$f
-    n=${n##*/}
-    echo -n "[tests/ok] $n..."
+    local i=$1
+    local j=$2
+    local f=$3
+    echo -ne "\r[TEST] ($i/$j) $f..."
     local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     if [[ ! -x $o ]] ; then
-        echo " ERROR (compilation failed):"
+        echo -e $RED" ERROR (compilation failed):"$WHITE
         cat /tmp/cz >&2
-        (( ko += 1 ))
+        (( KO += 1 ))
     else
         ./$o >/dev/null 2>/tmp/cz && {
-            echo " SUCCESS"
-            (( ok += 1 ))
+            echo -n " SUCCESS"
+            (( OK += 1 ))
         } || {
             e=$?
-            echo " FAILURE: $e"
-            (( ko += 1 ))
+            echo -e $RED" FAILURE: $e"$WHITE
+            (( KO += 1 ))
         }
         rm -f ./$o
     fi
@@ -34,24 +38,24 @@ check_ok() {
 
 # expected to fail compilation (or exit non-zero)
 check_ko() {
-    local f=$1
-    local n=$f
-    n=${n##*/}
-    echo -n "[test/ko] $n..."
+    local i=$1
+    local j=$2
+    local f=$3
+    echo -ne "\r[TEST] ($i/$j) $f..."
     local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     local e=$?
     if [[ $e -ne 0 ]] ; then
-        echo " SUCCESS"
-        (( ok += 1 ))
+        echo -n " SUCCESS"
+        (( OK += 1 ))
     else
         ./$o >/dev/null 2>/tmp/cz && {
-            echo " FAILURE"
-            (( ko += 1 ))
+            echo -e $RED" FAILURE"$WHITE
+            (( KO += 1 ))
         } || {
             e=$?
-            [[ $e -ne 134 ]] && echo " SUCCESS" # core dump
-            (( ok += 1 ))
+            [[ $e -ne 134 ]] && echo -n " SUCCESS" # core dump
+            (( OK += 1 ))
         }
         rm -f ./$o
     fi
@@ -62,26 +66,29 @@ shopt -s nullglob
 [[ $# -ge 1 ]] || set -- tests/ok/*.cz tests/ko/*.cz tests/*.cz
 
 check() {
+    local i=0
     for t in $@ ; do
+        (( i += 1 ))
         p=${t%/*}
         p=${p##*/}
         if [[ $p == "ko" ]] ; then
-            check_ko "$t"
+            check_ko $i $# "$t"
         else
-            check_ok "$t"
+            check_ok $i $# "$t"
         fi
     done
 }
 
 check $@
+echo
 
-if (( ko == 0 )) ; then
-    echo "$ok/$# SUCCESS"
+if (( KO == 0 )) ; then
+    echo -e $GREEN"$OK/$# SUCCESS"$WHITE
 else
-    echo "$ko/$# FAILURES"
+    echo -e $RED"$KO/$# FAILURES"$WHITE
     rm -f ./cz
 fi
 
-exit $ko
+exit $KO
 
 # EOF
