@@ -11,7 +11,7 @@ function Inference.infer_type(typechecker, expr)
     if not expr then
         return nil
     end
-    
+
     if expr.kind == "int" then
         local inferred = { kind = "named_type", name = "i32" }
         expr.inferred_type = inferred
@@ -109,7 +109,7 @@ function Inference.infer_type(typechecker, expr)
     elseif expr.kind == "compound_assign" then
         return Inference.infer_type(typechecker, expr.target)
     end
-    
+
     return nil
 end
 
@@ -119,10 +119,10 @@ function Inference.infer_field_type(typechecker, expr)
     if not obj_type then
         return nil
     end
-    
+
     local type_name = Inference.get_base_type_name(obj_type)
     local struct_def = Resolver.resolve_struct(typechecker, type_name)
-    
+
     if struct_def then
         for _, field in ipairs(struct_def.fields) do
             if field.name == expr.field then
@@ -148,7 +148,7 @@ function Inference.infer_field_type(typechecker, expr)
             Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
         typechecker:add_error(formatted_error)
     end
-    
+
     return nil
 end
 
@@ -156,11 +156,11 @@ end
 function Inference.infer_index_type(typechecker, expr)
     local array_type = Inference.infer_type(typechecker, expr.array)
     local index_type = Inference.infer_type(typechecker, expr.index)
-    
+
     if not array_type then
         return nil
     end
-    
+
     -- Check that array is actually an array type
     if array_type.kind ~= "array" then
         local line = expr.line or (expr.array and expr.array.line) or 0
@@ -173,10 +173,10 @@ function Inference.infer_index_type(typechecker, expr)
         typechecker:add_error(formatted_error)
         return nil
     end
-    
+
     -- Check that index is an integer type (only i8, i16, i32, i64, u8, u16, u32, u64)
     -- Floating point types are NOT allowed for array indices
-    if not index_type or index_type.kind ~= "named_type" or 
+    if not index_type or index_type.kind ~= "named_type" or
        not index_type.name:match("^[iu]%d+$") then
         local line = expr.line or (expr.index and expr.index.line) or 0
         local msg = string.format(
@@ -188,17 +188,16 @@ function Inference.infer_index_type(typechecker, expr)
         typechecker:add_error(formatted_error)
         return nil
     end
-    
+
     -- Compile-time bounds checking: check if index is a constant integer
     if expr.index.kind == "int" then
         local index_value = expr.index.value
         local array_size = array_type.size
-        
+
         if index_value < 0 or index_value >= array_size then
             local line = expr.line or (expr.index and expr.index.line) or 0
             local msg = string.format(
-                "Array index out of bounds: index %d is out of range [0, %d) for array of size %d. " ..
-                "Czar enforces compile-time bounds checking for memory safety.",
+                "Index %d is out of range [0, %d) for array of size %d.",
                 index_value, array_size, array_size
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
@@ -207,7 +206,7 @@ function Inference.infer_index_type(typechecker, expr)
             return nil
         end
     end
-    
+
     -- Return the element type of the array
     expr.inferred_type = array_type.element_type
     return array_type.element_type
@@ -217,10 +216,10 @@ end
 function Inference.infer_binary_type(typechecker, expr)
     local left_type = Inference.infer_type(typechecker, expr.left)
     local right_type = Inference.infer_type(typechecker, expr.right)
-    
+
     -- Comparison and logical operators return bool
-    if expr.op == "==" or expr.op == "!=" or 
-       expr.op == "<" or expr.op == ">" or 
+    if expr.op == "==" or expr.op == "!=" or
+       expr.op == "<" or expr.op == ">" or
        expr.op == "<=" or expr.op == ">=" or
        expr.op == "and" or expr.op == "or" or
        expr.op == "is" then
@@ -228,24 +227,23 @@ function Inference.infer_binary_type(typechecker, expr)
         expr.inferred_type = inferred
         return inferred
     end
-    
+
     -- Check for forbidden pointer arithmetic
     if expr.op == "+" or expr.op == "-" then
         local left_is_pointer = left_type and left_type.kind == "pointer"
         local right_is_pointer = right_type and right_type.kind == "pointer"
         -- Check for any numeric type including floats (i32, u64, f32, f64, etc.)
         -- We forbid ALL numeric + pointer operations for safety
-        local left_is_numeric = left_type and left_type.kind == "named_type" and 
+        local left_is_numeric = left_type and left_type.kind == "named_type" and
                                 (left_type.name:match("^[iuf]%d+$") ~= nil)
-        local right_is_numeric = right_type and right_type.kind == "named_type" and 
+        local right_is_numeric = right_type and right_type.kind == "named_type" and
                                  (right_type.name:match("^[iuf]%d+$") ~= nil)
-        
+
         -- Forbid pointer + numeric, numeric + pointer, pointer - numeric
         if (left_is_pointer and right_is_numeric) or (left_is_numeric and right_is_pointer) then
             local line = expr.line or (expr.left and expr.left.line) or 0
             local msg = string.format(
-                "Pointer arithmetic is forbidden. Cannot %s pointer and numeric type. " ..
-                "Czar enforces memory safety by disallowing pointer arithmetic operations.",
+                "Cannot %s pointer and numeric type. " ..
                 expr.op == "+" and "add" or "subtract"
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
@@ -253,19 +251,18 @@ function Inference.infer_binary_type(typechecker, expr)
             typechecker:add_error(formatted_error)
             return nil
         end
-        
+
         -- Forbid pointer - pointer (technically could be allowed but we're being strict)
         if left_is_pointer and right_is_pointer and expr.op == "-" then
             local line = expr.line or (expr.left and expr.left.line) or 0
-            local msg = "Pointer arithmetic is forbidden. Cannot subtract two pointers. " ..
-                "Czar enforces memory safety by disallowing pointer arithmetic operations."
+            local msg = "Cannot subtract two pointers."
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                 Errors.ErrorType.POINTER_ARITHMETIC_FORBIDDEN, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
     end
-    
+
     -- Arithmetic operators return the left operand's type
     -- (In a more sophisticated system, we'd do numeric promotion)
     expr.inferred_type = left_type
@@ -275,7 +272,7 @@ end
 -- Infer the type of a unary expression
 function Inference.infer_unary_type(typechecker, expr)
     local operand_type = Inference.infer_type(typechecker, expr.operand)
-    
+
     if expr.op == "&" then
         -- Address-of operator
         local inferred = { kind = "pointer", to = operand_type }
@@ -311,14 +308,14 @@ function Inference.infer_call_type(typechecker, expr)
     if expr.callee.kind == "identifier" then
         local func_name = expr.callee.name
         local func_def = Resolver.resolve_function(typechecker, "__global__", func_name)
-        
+
         if func_def then
             -- Check caller-controlled mutability
             for i, arg in ipairs(expr.args) do
                 if i <= #func_def.params then
                     local param = func_def.params[i]
                     local caller_allows_mut = (arg.kind == "mut_arg" and arg.allows_mutation)
-                    
+
                     -- If callee wants mut but caller doesn't give it, error
                     if param.mutable and param.type.kind == "pointer" and not caller_allows_mut then
                         local line = expr.line or 0
@@ -332,7 +329,7 @@ function Inference.infer_call_type(typechecker, expr)
                     end
                 end
             end
-            
+
             expr.inferred_type = func_def.return_type
             return func_def.return_type
         else
@@ -349,10 +346,10 @@ function Inference.infer_call_type(typechecker, expr)
         if not obj_type then
             return nil
         end
-        
+
         local type_name = Inference.get_base_type_name(obj_type)
         local method_def = Resolver.resolve_function(typechecker, type_name, expr.callee.method)
-        
+
         if method_def then
             expr.inferred_type = method_def.return_type
             return method_def.return_type
@@ -368,7 +365,7 @@ function Inference.infer_call_type(typechecker, expr)
             return nil
         end
     end
-    
+
     return nil
 end
 
@@ -378,10 +375,10 @@ function Inference.infer_method_call_type(typechecker, expr)
     if not obj_type then
         return nil
     end
-    
+
     local type_name = Inference.get_base_type_name(obj_type)
     local method_def = Resolver.resolve_function(typechecker, type_name, expr.method)
-    
+
     if method_def then
         expr.inferred_type = method_def.return_type
         return method_def.return_type
@@ -401,7 +398,7 @@ end
 -- Infer the type of a static method call
 function Inference.infer_static_method_call_type(typechecker, expr)
     local method_def = Resolver.resolve_function(typechecker, expr.type_name, expr.method)
-    
+
     if method_def then
         expr.inferred_type = method_def.return_type
         return method_def.return_type
@@ -420,10 +417,10 @@ function Inference.infer_struct_literal_type(typechecker, expr)
         typechecker:add_error("Struct literal missing type_name")
         return nil
     end
-    
+
     local struct_name = expr.struct_name or expr.type_name
     local struct_def = Resolver.resolve_struct(typechecker, struct_name)
-    
+
     if struct_def then
         -- Type check each field
         for _, field_init in ipairs(expr.fields) do
@@ -434,7 +431,7 @@ function Inference.infer_struct_literal_type(typechecker, expr)
                     break
                 end
             end
-            
+
             if field_type then
                 local value_type = Inference.infer_type(typechecker, field_init.value)
                 if not Inference.types_compatible(field_type, value_type, typechecker) then
@@ -448,7 +445,7 @@ function Inference.infer_struct_literal_type(typechecker, expr)
                 end
             end
         end
-        
+
         local inferred = { kind = "named_type", name = struct_name }
         expr.inferred_type = inferred
         return inferred
@@ -475,7 +472,7 @@ end
 -- Infer the type of a new expression (heap or stack allocation)
 function Inference.infer_new_type(typechecker, expr)
     local struct_def = Resolver.resolve_struct(typechecker, expr.type_name)
-    
+
     if struct_def then
         -- Type check each field (similar to struct literal)
         for _, field_init in ipairs(expr.fields) do
@@ -486,7 +483,7 @@ function Inference.infer_new_type(typechecker, expr)
                     break
                 end
             end
-            
+
             if field_type then
                 local value_type = Inference.infer_type(typechecker, field_init.value)
                 if not Inference.types_compatible(field_type, value_type, typechecker) then
@@ -500,7 +497,7 @@ function Inference.infer_new_type(typechecker, expr)
                 end
             end
         end
-        
+
         -- In explicit pointer model, new returns a pointer to the type
         local inferred = { kind = "pointer", to = { kind = "named_type", name = expr.type_name } }
         expr.inferred_type = inferred
@@ -522,12 +519,12 @@ function Inference.resolve_type_alias(typechecker, type_node)
     if not type_node or type_node.kind ~= "named_type" then
         return type_node
     end
-    
+
     local alias_target = typechecker.type_aliases[type_node.name]
     if not alias_target then
         return type_node
     end
-    
+
     -- Parse the alias target string
     -- Handle pointer types like "char*" or "char *" (with optional spaces)
     local base_type_match = alias_target:match("^(%w+)%s*%*$")
@@ -548,13 +545,13 @@ function Inference.types_compatible(type1, type2, typechecker)
     if not type1 or not type2 then
         return false
     end
-    
+
     -- Resolve type aliases if typechecker is available
     if typechecker then
         type1 = Inference.resolve_type_alias(typechecker, type1)
         type2 = Inference.resolve_type_alias(typechecker, type2)
     end
-    
+
     -- Allow void* (null) to be compatible with any pointer type
     if type1.kind == "pointer" and type1.to and type1.to.name == "void" then
         if type2.kind == "pointer" or type2.kind == "named_type" then
@@ -566,7 +563,7 @@ function Inference.types_compatible(type1, type2, typechecker)
             return true  -- any pointer or struct type can accept null
         end
     end
-    
+
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
     elseif type1.kind == "pointer" and type2.kind == "pointer" then
@@ -576,14 +573,14 @@ function Inference.types_compatible(type1, type2, typechecker)
     elseif type2.kind == "pointer" and type2.is_clone and type1.kind == "named_type" then
         return Inference.types_compatible(type2.to, type1, typechecker)
     end
-    
+
     return false
 end
 
 -- Check if a type is bool
 function Inference.is_bool_type(type_node)
-    return type_node and 
-           type_node.kind == "named_type" and 
+    return type_node and
+           type_node.kind == "named_type" and
            type_node.name == "bool"
 end
 
@@ -592,13 +589,13 @@ function Inference.get_base_type_name(type_node)
     if not type_node then
         return nil
     end
-    
+
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "pointer" then
         return Inference.get_base_type_name(type_node.to)
     end
-    
+
     return nil
 end
 
@@ -607,7 +604,7 @@ function Inference.type_to_string(type_node)
     if not type_node then
         return "unknown"
     end
-    
+
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "pointer" then
@@ -619,7 +616,7 @@ function Inference.type_to_string(type_node)
     elseif type_node.kind == "array" then
         return Inference.type_to_string(type_node.element_type) .. "[" .. tostring(type_node.size) .. "]"
     end
-    
+
     return "unknown"
 end
 
