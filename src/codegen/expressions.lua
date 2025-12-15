@@ -396,6 +396,11 @@ function Expressions.gen_expr(expr)
             return builtin_calls[callee](args)
         end
         return string.format("%s(%s)", callee, join(args, ", "))
+    elseif expr.kind == "index" then
+        -- Array indexing: arr[index]
+        local array_expr = Expressions.gen_expr(expr.array)
+        local index_expr = Expressions.gen_expr(expr.index)
+        return string.format("%s[%s]", array_expr, index_expr)
     elseif expr.kind == "field" then
         local obj_expr = Expressions.gen_expr(expr.object)
         -- Determine if we need -> or .

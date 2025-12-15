@@ -103,8 +103,9 @@ function Analysis:analyze_statement(stmt)
         end
     elseif stmt.kind == "free" then
         -- Mark the variable as freed
-        if stmt.expr and stmt.expr.kind == "identifier" then
-            local var_name = stmt.expr.name
+        local free_expr = stmt.expr or stmt.value
+        if free_expr and free_expr.kind == "identifier" then
+            local var_name = free_expr.name
             self:mark_freed(var_name)
         end
     end
