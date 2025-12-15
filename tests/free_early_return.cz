@@ -4,7 +4,7 @@ struct Data {
     i32 value
 }
 
-fn test_early(i32 x) -> i32 {
+fn test_early(i32 x) i32 {
     Data* d1 = new Data { value: 10 }
     Data* d2 = new Data { value: 20 }
 
@@ -17,7 +17,7 @@ fn test_early(i32 x) -> i32 {
     return d1.value
 }
 
-fn main() -> i32 {
+fn main() i32 {
     i32 r1 = test_early(10)  // Takes early return path: 30
     i32 r2 = test_early(3)   // Takes normal return path: 10
     return r1 + r2 - 40

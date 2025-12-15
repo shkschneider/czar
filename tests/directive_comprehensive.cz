@@ -1,5 +1,5 @@
 // Test all directives together
-fn helper(i32 x) -> i32 {
+fn helper(i32 x) i32 {
     bool is_debug = #DEBUG
 
     if is_debug {
@@ -9,7 +9,7 @@ fn helper(i32 x) -> i32 {
     return x
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test that directives work in expressions
     bool debug_mode = #DEBUG
 

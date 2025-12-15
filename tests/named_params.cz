@@ -1,17 +1,17 @@
 // Test named parameters
-fn add(i32 x, i32 y) -> i32 {
+fn add(i32 x, i32 y) i32 {
     return x + y
 }
 
-fn subtract(i32 a, i32 b) -> i32 {
+fn subtract(i32 a, i32 b) i32 {
     return a - b
 }
 
-fn compute(i32 x, i32 y, i32 z) -> i32 {
+fn compute(i32 x, i32 y, i32 z) i32 {
     return x + y - z
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Call with named parameters in order
     i32 r1 = add(x: 10, y: 20)  // 10 + 20 = 30
 

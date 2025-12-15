@@ -5,7 +5,7 @@ struct Point {
     i32 y
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Test clone without type parameter - clone returns pointer
     mut Point p1 = Point { x: 10, y: 20 }
     Point* p2 = clone p1

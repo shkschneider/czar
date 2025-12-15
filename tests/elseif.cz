@@ -1,5 +1,5 @@
 // Test elseif keyword
-fn classify(i32 x) -> i32 {
+fn classify(i32 x) i32 {
     if x < 0 {
         return 1  // negative
     } elseif x == 0 {
@@ -13,7 +13,7 @@ fn classify(i32 x) -> i32 {
     }
 }
 
-fn main() -> i32 {
+fn main() i32 {
     i32 test1 = classify(-5)   // 1
     i32 test2 = classify(0)     // 2
     i32 test3 = classify(5)     // 3

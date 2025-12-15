@@ -3,11 +3,11 @@ struct Counter {
     i32 value
 }
 
-fn Counter:new() -> void {
+fn Counter:new() void {
     self.value = 42
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Stack allocation - should call constructor
     Counter c = Counter {}
     return c.value - 42

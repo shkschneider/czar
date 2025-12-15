@@ -11,12 +11,12 @@ struct Rect {
 }
 
 // Method syntax on Point
-fn Point:distance_squared() -> i32 {
+fn Point:distance_squared() i32 {
     return self.x * self.x + self.y * self.y
 }
 
 // Extension method on Rect
-fn Rect:area() -> u64 {
+fn Rect:area() u64 {
     u64 w = cast<u64> self.width
     u64 h = cast<u64> self.height
     return w * h
@@ -28,7 +28,7 @@ struct ValidateResult {
     i32 error_msg
 }
 
-fn validate_point(Point p) -> ValidateResult {
+fn validate_point(Point p) ValidateResult {
     if p.x < 0 {
         return ValidateResult { ok: false, error_msg: 1 }
     }
@@ -38,7 +38,7 @@ fn validate_point(Point p) -> ValidateResult {
     return ValidateResult { ok: true, error_msg: 0 }
 }
 
-fn main() -> i32 {
+fn main() i32 {
     Point p = Point { x: 3, y: 4 }
 
     // Test method call with auto-addressing

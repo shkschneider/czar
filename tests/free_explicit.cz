@@ -5,7 +5,7 @@ struct Person {
     i32 score
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Heap allocate a Person
     mut Person* p = new Person { age: 25, score: 50 }
 
