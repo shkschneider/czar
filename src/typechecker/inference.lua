@@ -236,9 +236,66 @@ function Inference.infer_binary_type(typechecker, expr)
     -- Comparison and logical operators return bool
     if expr.op == "==" or expr.op == "!=" or
        expr.op == "<" or expr.op == ">" or
-       expr.op == "<=" or expr.op == ">=" or
-       expr.op == "and" or expr.op == "or" or
-       expr.op == "is" then
+       expr.op == "<=" or expr.op == ">=" then
+        -- Check that both operands are of compatible types
+        if left_type and right_type then
+            local left_is_numeric = left_type.kind == "named_type" and
+                                   (left_type.name:match("^[iuf]%d+$") ~= nil)
+            local right_is_numeric = right_type.kind == "named_type" and
+                                    (right_type.name:match("^[iuf]%d+$") ~= nil)
+            local left_is_bool = left_type.kind == "named_type" and left_type.name == "bool"
+            local right_is_bool = right_type.kind == "named_type" and right_type.name == "bool"
+            local left_is_pointer = left_type.kind == "pointer"
+            local right_is_pointer = right_type.kind == "pointer"
+            
+            -- Check for incompatible type families
+            -- Can't compare numeric with bool, or bool with pointer, etc.
+            if (left_is_numeric and right_is_bool) or (left_is_bool and right_is_numeric) then
+                local line = expr.line or (expr.left and expr.left.line) or 0
+                local msg = string.format(
+                    "Cannot compare %s with %s: incompatible types",
+                    Inference.type_to_string(left_type),
+                    Inference.type_to_string(right_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+            
+            if (left_is_bool and right_is_pointer) or (left_is_pointer and right_is_bool) then
+                local line = expr.line or (expr.left and expr.left.line) or 0
+                local msg = string.format(
+                    "Cannot compare %s with %s: incompatible types",
+                    Inference.type_to_string(left_type),
+                    Inference.type_to_string(right_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+            
+            if (left_is_numeric and right_is_pointer) or (left_is_pointer and right_is_numeric) then
+                local line = expr.line or (expr.left and expr.left.line) or 0
+                local msg = string.format(
+                    "Cannot compare %s with %s: incompatible types",
+                    Inference.type_to_string(left_type),
+                    Inference.type_to_string(right_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+        end
+        
+        local inferred = { kind = "named_type", name = "bool" }
+        expr.inferred_type = inferred
+        return inferred
+    end
+    
+    if expr.op == "and" or expr.op == "or" or expr.op == "is" then
         local inferred = { kind = "named_type", name = "bool" }
         expr.inferred_type = inferred
         return inferred
