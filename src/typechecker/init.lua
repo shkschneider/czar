@@ -196,6 +196,34 @@ function Typechecker:check_assign(stmt)
             Inference.type_to_string(value_type)
         ))
     end
+    
+    -- Check const-correctness: cannot assign immutable value to mutable target
+    -- This prevents discarding const qualifiers in generated C code
+    if stmt.value.kind == "identifier" then
+        local value_var_info = Resolver.resolve_name(self, stmt.value.name)
+        if value_var_info and not value_var_info.mutable then
+            -- Value is immutable (const in C)
+            -- Check if target needs a mutable value
+            local target_needs_mut = false
+            
+            if stmt.target.kind == "identifier" then
+                local target_var_info = Resolver.resolve_name(self, stmt.target.name)
+                target_needs_mut = target_var_info and target_var_info.mutable
+            elseif stmt.target.kind == "field" and stmt.target.object.kind == "identifier" then
+                local obj_var_info = Resolver.resolve_name(self, stmt.target.object.name)
+                -- Field assignment to mutable object means we need non-const value
+                target_needs_mut = obj_var_info and obj_var_info.mutable
+            end
+            
+            if target_needs_mut and value_type and value_type.kind == "pointer" then
+                self:add_error(string.format(
+                    "Cannot assign immutable pointer '%s' to mutable location. The value has const qualifier. Use 'mut %s' if you need to reassign it.",
+                    stmt.value.name,
+                    stmt.value.name
+                ))
+            end
+        end
+    end
 end
 
 -- Type check an if statement
