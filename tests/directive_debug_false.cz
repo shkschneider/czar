@@ -1,5 +1,5 @@
 // Test #DEBUG directive returns false by default
-fn main() -> i32 {
+fn main() i32 {
     bool debug = #DEBUG
 
     if debug {

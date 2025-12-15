@@ -1,5 +1,5 @@
 // Test if-else statements
-fn max(i32 a, i32 b) -> i32 {
+fn max(i32 a, i32 b) i32 {
     if a > b {
         return a
     } else {
@@ -7,7 +7,7 @@ fn max(i32 a, i32 b) -> i32 {
     }
 }
 
-fn main() -> i32 {
+fn main() i32 {
     i32 x = max(15, 20)
     i32 y = max(30, 25)
     return x + y - 50 // 20 + 30 = 50

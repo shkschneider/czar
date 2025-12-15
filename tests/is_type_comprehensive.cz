@@ -4,7 +4,7 @@ struct Point {
     i32 y
 }
 
-fn main() -> i32 {
+fn main() i32 {
     i32 num = 42
     bool flag = true
     Point p = Point { x: 10, y: 20 }

@@ -4,7 +4,7 @@ struct Item {
     i32 id
 }
 
-fn main() -> i32 {
+fn main() i32 {
     Item* i1 = new Item { id: 1 }
     Item* i2 = new Item { id: 2 }
     Item* i3 = new Item { id: 3 }

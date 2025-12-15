@@ -1,5 +1,5 @@
 // Test while loops
-fn sum_to_n(i32 n) -> i32 {
+fn sum_to_n(i32 n) i32 {
     mut i32 sum = 0
     mut i32 i = 1
 
@@ -11,6 +11,6 @@ fn sum_to_n(i32 n) -> i32 {
     return sum
 }
 
-fn main() -> i32 {
+fn main() i32 {
     return sum_to_n(10) - 55 // 1+2+3+...+10 = 55
 }

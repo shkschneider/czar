@@ -1,6 +1,6 @@
 // Test cast<Type> functionality
 
-fn main() -> i32 {
+fn main() i32 {
     // Test basic casting
     i32 num = 42
     bool b = cast<bool> num  // non-zero should be true

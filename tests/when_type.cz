@@ -1,14 +1,16 @@
-// Test when with type checking pattern
-fn test_when_type() -> i32 {
+// Test with type checking using is keyword
+fn test_type_check() i32 {
     i32 x = 42
 
-    when (x) {
-        is i32 -> { return 0 };
-        is bool -> { return 1 };
-        else -> { return 2 }
+    if x is i32 {
+        return 0
+    } elseif x is bool {
+        return 1
+    } else {
+        return 2
     }
 }
 
-fn main() -> i32 {
-    return test_when_type()
+fn main() i32 {
+    return test_type_check()
 }

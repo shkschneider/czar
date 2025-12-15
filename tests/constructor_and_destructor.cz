@@ -4,17 +4,17 @@ struct Resource {
     i32 value
 }
 
-fn Resource:new() -> void {
+fn Resource:new() void {
     self.id = 100
     self.value = 0
 }
 
-fn Resource:free() -> void {
+fn Resource:free() void {
     // Cleanup logic here (for testing, just modify value)
     self.value = 999
 }
 
-fn main() -> i32 {
+fn main() i32 {
     mut Resource* r = new Resource {}
     r.value = 55
 

@@ -4,7 +4,7 @@ struct Person {
     i32 age
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Heap allocation - should be automatically freed at scope exit
     Person* p1 = new Person { age: 25 }
 
