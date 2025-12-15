@@ -1,0 +1,11 @@
+// Test the 'type' built-in function
+fn main() -> i32 {
+    i32 v = 42
+
+    // Test 'type' built-in
+    if type v == "i32" {
+        return 0
+    }
+
+    return 1
+}

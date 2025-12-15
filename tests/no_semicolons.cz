@@ -1,0 +1,15 @@
+// Test optional semicolons
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn add(i32 a, i32 b) -> i32 {
+    return a + b
+}
+
+fn main() -> i32 {
+    Point p = Point { x: 5, y: 10 }
+    i32 sum = add(p.x, p.y)
+    return sum - 15
+}
