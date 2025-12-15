@@ -1,5 +1,5 @@
 // Test the 'type' built-in function
-fn main() -> i32 {
+fn main() i32 {
     i32 v = 42
 
     // Test 'type' built-in

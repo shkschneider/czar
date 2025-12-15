@@ -1,5 +1,5 @@
 // Comprehensive test showing all directives in practical use
-fn validate(i32 value) -> i32 {
+fn validate(i32 value) i32 {
     // Use #DEBUG for conditional validation
     bool should_validate = #DEBUG
 
@@ -13,7 +13,7 @@ fn validate(i32 value) -> i32 {
     return value
 }
 
-fn compute(i32 a, i32 b) -> i32 {
+fn compute(i32 a, i32 b) i32 {
     i32 result = a + b
 
     // Can use #FUNCTION for logging/tracing (if we had print)
@@ -23,7 +23,7 @@ fn compute(i32 a, i32 b) -> i32 {
     return validate(result)
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // All directives can be used in expressions
     // #FILE returns "directive_all_together@0.cz"
     // #FUNCTION returns "main"

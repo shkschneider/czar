@@ -6,15 +6,15 @@ struct Person {
     i32 score
 }
 
-fn update_age(mut Person* p) -> void {
+fn update_age(mut Person* p) void {
     p.age = p.age + 1
 }
 
-fn get_total(Person* p) -> i32 {
+fn get_total(Person* p) i32 {
     return p.age + p.score
 }
 
-fn main() -> i32 {
+fn main() i32 {
     // Heap allocation returns a pointer
     mut Person* person = new Person { age: 25, score: 50 }
 

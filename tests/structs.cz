@@ -10,7 +10,7 @@ struct Rect {
     i32 height
 }
 
-fn main() -> i32 {
+fn main() i32 {
     Point p = Point { x: 5, y: 10 }
     Rect r = Rect {
         top_left: Point { x: 0, y: 0 },

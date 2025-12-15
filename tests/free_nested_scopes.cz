@@ -4,7 +4,7 @@ struct Node {
     i32 value
 }
 
-fn main() -> i32 {
+fn main() i32 {
     mut i32 result = 0
 
     // Outer scope allocation
