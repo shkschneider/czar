@@ -6,10 +6,11 @@ set +e
 ok=0
 ko=0
 
-# First pass: tests that should succeed (exit 0)
-echo "Running tests/ok (expected to pass)..."
-for f in tests/ok/*.cz ; do
-    n=${f##*/}
+# expected to exit 0
+check_ok() {
+    f=$1
+    n=$f
+    n=${n##*/}
     echo -n "- $n..."
     o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
@@ -22,39 +23,63 @@ for f in tests/ok/*.cz ; do
             echo " SUCCESS"
             (( ok += 1 ))
         } || {
-            e=$?
-            [[ $e -eq 134 ]] || { # core dump (wanted crash?)
-                echo " FAILURE: $e"
-                (( ko += 1 ))
-            }
+            echo " FAILURE: $e"
+            (( ko += 1 ))
         }
         rm -f ./$o
     fi
     rm -f /tmp/cz
-done
+}
 
-# Second pass: tests that should fail compilation (exit non-zero)
-echo ""
-echo "Running tests/ko (expected to fail compilation)..."
-for f in tests/ko/*.cz ; do
-    n=${f##*/}
+# expected to fail compilation (or exit non-zero)
+check_ko() {
+    f=$1
+    n=$f
+    n=${n##*/}
     echo -n "- $n..."
-    ./cz build $f >/dev/null 2>/tmp/cz
+    o=${f/.cz/.out}
+    ./cz build $f -o $o >/dev/null 2>/tmp/cz
     if [[ $? -ne 0 ]] ; then
-        echo " SUCCESS (failed as expected)"
+        echo " SUCCESS"
         (( ok += 1 ))
     else
-        echo " ERROR (should have failed compilation):"
-        cat /tmp/cz >&2
-        (( ko += 1 ))
+        ./$o >/dev/null 2>/tmp/cz && {
+            e=$?
+            echo " FAILURE: $e"
+            (( ko += 1 ))
+        } || {
+            e=$?
+            [[ $e -ne 134 ]] && echo " SUCCESS" # core dump
+            (( ok += 1 ))
+        }
+        rm -f ./$o
     fi
     rm -f /tmp/cz
-done
+}
 
-echo ""
-echo "OK=$ok KO=$ko"
+shopt -s nullglob
+[[ $# -ge 1 ]] || set -- tests/ok/*.cz tests/ko/*.cz tests/*.cz
 
-[[ $ko -gt 0 ]] && rm -f ./cz
+check() {
+    for t in $@ ; do
+        p=${t%/*}
+        p=${p##*/}
+        if [[ $p == "ko" ]] ; then
+            check_ko "$t"
+        else
+            check_ok "$t"
+        fi
+    done
+}
+
+check $@
+
+if (( ko == 0 )) ; then
+    echo "$ok/$# SUCCESS"
+else
+    echo "$ko/$# FAILURES"
+    rm -f ./cz
+fi
 
 exit $ko
 
