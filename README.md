@@ -64,7 +64,7 @@ Czar uses a **type-first syntax** where types come before names:
 ```czar
 i32 x = 42                        // immutable variable
 mut Vec2 v = Vec2 { x: 1, y: 2 }  // mutable variable
-fn add(i32 a, i32 b) -> i32       // function parameters
+fn add(i32 a, i32 b) i32          // function parameters
 struct Point {
     i32 x                         // struct fields
     i32 y
@@ -76,7 +76,7 @@ struct Point {
 ```czar
 Vec2 v = Vec2 {}               // value on stack
 Vec2* p = new Vec2 {}          // pointer to heap-allocated Vec2
-fn modify(Vec2* p) -> void     // function taking pointer
+fn modify(Vec2* p) void        // function taking pointer
 modify(&v)                     // explicit address-of
 i32 x = (*p).x                 // explicit dereference (or use p.x with auto-deref)
 ```
@@ -140,7 +140,7 @@ Vec2 v = Vec2 { x: 3, y: 4 }
 ### 5. Functions
 
 ```
-fn add(i32 a, i32 b) -> i32 {
+fn add(i32 a, i32 b) i32 {
     return a + b
 }
 ```
@@ -155,7 +155,7 @@ fn add(i32 a, i32 b) -> i32 {
 Internally, methods are just functions with an explicit receiver:
 
 ```
-fn Vec2:length() -> i32 { // implicit (mutable) self
+fn Vec2:length() i32 { // implicit (mutable) self
     return self.x * self.x + self.y * self.y
 }
 ```
@@ -169,7 +169,7 @@ Later (v1), this becomes: `i32 L = v:length()` with auto-addressing and auto-der
 Any function whose first parameter is T* self or T self becomes callable as a method:
 
 ```
-fn Vec2:clamp(i32 min, i32 max) -> void { ... }
+fn Vec2:clamp(i32 min, i32 max) void { ... }
 
 v:clamp(0, 10)
 ```
@@ -248,7 +248,7 @@ Directives provide compile-time information and control, starting with `#`:
 
 Example:
 ```czar
-fn process(i32 x) -> i32 {
+fn process(i32 x) i32 {
     bool debug = #DEBUG
 
     if debug {
@@ -415,14 +415,14 @@ The compiler has completed v0 and is now halfway to v1 with core ergonomic featu
 - Variables: val (immutable) and var (mutable)
 - Functions with parameters and return values
 - Control flow: if/else and while loops
-- Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (`and`, `or`)
+- Operators: arithmetic (+, -, *, /), comparison (<, >, ==, !=, <=, >=), logical (`and`, `or`, `not`)
 - Null-safety operators: `!` (null-check), `or` (null-coalescing/logical OR)
 - Numeric literals: Underscore `_` separator supported (e.g., `1_000`)
 - Struct literals and field access
 
 **v1 Features (Halfway Complete):**
 - ✅ **Expanded types**: i64, u32, u64, f32, f64 in addition to i32
-- ✅ **Method syntax**: Define methods as `fn Type.method(Type* self) -> ReturnType`
+- ✅ **Method syntax**: Define methods as `fn Type.method(Type* self) ReturnType`
 - ✅ **Extension methods**: Any function with first parameter named `self` is callable as a method
 - ✅ **Auto-addressing**: Methods automatically convert values to pointers when needed
 - ✅ **Error-as-value**: Pattern demonstrated with Result-style structs
