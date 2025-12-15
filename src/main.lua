@@ -365,8 +365,8 @@ local function cmd_build(args)
             os.exit(1)
         end
 
-        -- Write to temporary C file
-        c_file_path = os.tmpname() .. ".c"
+        -- Write to temporary C file (named after source file)
+        c_file_path = generate.make_temp_path(source_path, ".c")
         local ok, err = generate.write_c_file(c_source, c_file_path)
         if not ok then
             io.stderr:write(err .. "\n")
@@ -425,8 +425,8 @@ local function cmd_run(args)
         os.exit(1)
     end
 
-    -- Write to temporary C file
-    local c_temp = os.tmpname() .. ".c"
+    -- Write to temporary C file (named after source file)
+    local c_temp = generate.make_temp_path(source_path, ".c")
     local ok, err = generate.write_c_file(c_source, c_temp)
     if not ok then
         io.stderr:write(err .. "\n")
