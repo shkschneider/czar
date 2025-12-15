@@ -301,10 +301,8 @@ function Parser:parse_statement()
             if success and self:check("IDENT") then
                 local name_tok = self:current()
                 self:advance()
-                -- Variable declaration can be with or without initialization
-                -- Check for = (with init) or semicolon/newline (without init)
-                if self:check("EQUAL") or self:check("SEMICOLON") or self:check("EOF") or 
-                   (self:current() and (self:current().line > name_tok.line or self:current().type == "KEYWORD")) then
+                -- Check if this looks like end of variable declaration
+                if self:is_var_decl_end(name_tok) then
                     -- This is a variable declaration
                     is_var_decl = true
                     self.pos = saved_pos  -- Reset to parse properly
@@ -345,6 +343,26 @@ function Parser:is_type_start()
         return true
     end
     if tok.type == "IDENT" then
+        return true
+    end
+    return false
+end
+
+-- Helper to check if we're at the end of a variable declaration
+-- This checks for patterns that indicate: Type name [= expr] or Type name
+function Parser:is_var_decl_end(name_tok)
+    -- Variable declaration can be with or without initialization
+    -- Check for = (with init) or semicolon/newline (without init)
+    if self:check("EQUAL") or self:check("SEMICOLON") or self:check("EOF") then
+        return true
+    end
+    -- Check if next token is on a new line (implicit statement end)
+    local curr = self:current()
+    if curr and curr.line > name_tok.line then
+        return true
+    end
+    -- Check if next token is a keyword (likely start of new statement)
+    if curr and curr.type == "KEYWORD" then
         return true
     end
     return false
