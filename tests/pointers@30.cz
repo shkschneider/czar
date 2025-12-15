@@ -10,7 +10,7 @@ fn not_modify(Vec2 p) -> void {
     // p.y = 20
 }
 
-fn modify(Vec2* p) -> void {
+fn modify(mut Vec2* p) -> void {
     p.x = 10
     p.y = 20
 }
@@ -18,6 +18,6 @@ fn modify(Vec2* p) -> void {
 fn main() -> i32 {
     mut Vec2 v = Vec2 { x: 1, y: 2 }
     not_modify(v)
-    modify(&v)
+    modify(mut v)
     return v.x + v.y     // should return 30
 }
