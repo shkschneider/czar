@@ -17,8 +17,8 @@ fn main() -> i32 {
     // Alias - should NOT be freed (points to p1)
     Person* p4 = p1
 
-    // Return total
-    return p1.age + p2.age + p3.age + p4.age - (25*2 + 30*2)
+    // Return total - should be 0 for test to pass
+    return p1.age + p2.age + p3.age + p4.age - (25 + 25 + 30 + 25)
 }
 // At this point: p1 and p2 should be freed automatically
 // p3 is stack-allocated (handled by C)

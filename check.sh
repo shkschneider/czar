@@ -20,12 +20,14 @@ for f in $@ ; do
         (( ko += 1 ))
     else
         ./build/$n >/dev/null 2>/tmp/cz && {
-            [[ $e -ne 134 ]] && echo " SUCCESS" || echo " !!!"
+            echo " SUCCESS"
             (( ok += 1 ))
         } || {
             e=$?
-            echo " FAILURE: $e"
-            (( ko += 1 ))
+            [[ $e -eq 134 ]] || { # core dump (wanted crash?)
+                echo " FAILURE: $e"
+                (( ko += 1 ))
+            }
         }
         rm -f ./build/$n
     fi

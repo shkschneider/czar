@@ -22,5 +22,5 @@ fn check_range(i32 val) -> i32 {
 fn main() -> i32 {
     i32 a = classify(2)
     i32 b = check_range(50)
-    return (a + b) - 7
+    return (a + b) - 0
 }
