@@ -44,9 +44,29 @@ function Expressions.gen_expr(expr)
         return expr.name
     elseif expr.kind == "mut_arg" then
         -- Caller-controlled mutability: mut arg means caller allows mutation
-        -- Generate &expr to pass pointer
+        -- If the expression is already a pointer type, just pass it
+        -- If it's a value type, take its address
         local inner_expr = Expressions.gen_expr(expr.expr)
-        return "&" .. inner_expr
+        
+        -- Check if the inner expression is already a pointer
+        local is_pointer = false
+        if expr.expr.kind == "identifier" then
+            local var_type = ctx():get_var_type(expr.expr.name)
+            if var_type and var_type.kind == "pointer" then
+                is_pointer = true
+            end
+        elseif expr.expr.kind == "new_heap" or expr.expr.kind == "clone" then
+            -- new and clone always return pointers
+            is_pointer = true
+        end
+        
+        if is_pointer then
+            -- Already a pointer, just pass it
+            return inner_expr
+        else
+            -- Value type, take address
+            return "&" .. inner_expr
+        end
     elseif expr.kind == "cast" then
         -- cast<Type> expr -> (Type)expr
         local target_type_str = ctx():c_type(expr.target_type)
