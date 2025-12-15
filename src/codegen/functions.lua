@@ -201,6 +201,8 @@ function Functions.gen_params(params)
         -- In explicit pointer model with immutability by default:
         -- - Type* without mut → const Type* (immutable data through pointer)
         -- - mut Type* → Type* (mutable data through pointer)
+        -- - any without mut → const void* (immutable)
+        -- - mut any → void* (mutable)
         if p.type.kind == "pointer" then
             local base_type = Codegen.Types.c_type(p.type.to)
             if p.mutable then
@@ -209,6 +211,13 @@ function Functions.gen_params(params)
             else
                 -- Type* → const Type* (cannot modify through pointer)
                 type_str = "const " .. base_type .. "*"
+            end
+        elseif p.type.kind == "named_type" and p.type.name == "any" then
+            -- any is void* - apply const if not mutable
+            if p.mutable then
+                type_str = "void*"
+            else
+                type_str = "const void*"
             end
         end
 
