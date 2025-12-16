@@ -1,4 +1,4 @@
-// Test that dynamic arrays can be passed as slice parameters
+// Test that dynamic arrays can be passed as<slice> parameters
 fn sum_slice(i32[] arr, i32 len) i32 {
     mut i32 total = 0
     mut i32 i = 0
@@ -13,7 +13,7 @@ fn main() i32 {
     // Create dynamic array
     i32[] numbers = new [10, 20, 30, 40]
     
-    // Pass it as a slice to function
+    // Pass it as<a> slice to function
     i32 result = sum_slice(numbers, 4)
     
     // Expected: 10 + 20 + 30 + 40 = 100

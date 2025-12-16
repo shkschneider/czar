@@ -68,38 +68,18 @@ function Directives.parse_top_level(parser, directive_tok)
     end
 end
 
--- Parse expression-level directives (#FILE, #FUNCTION, #DEBUG, #cast)
+-- Parse expression-level directives (#FILE, #FUNCTION, #DEBUG)
 -- These appear in expressions and get replaced with values
 function Directives.parse_expression(parser, directive_tok)
     local directive_name = directive_tok.value:upper()
     
-    -- Handle #cast<Type>(value, fallback) directive
-    if directive_name == "CAST" then
-        parser:expect("LT")
-        local target_type = parser:parse_type()
-        parser:expect("GT")
-        parser:expect("LPAREN")
-        local value_expr = parser:parse_expression()
-        parser:expect("COMMA")
-        local fallback_expr = parser:parse_expression()
-        parser:expect("RPAREN")
-        return { 
-            kind = "safe_cast", 
-            target_type = target_type, 
-            value = value_expr, 
-            fallback = fallback_expr,
-            line = directive_tok.line, 
-            col = directive_tok.col 
-        }
-    else
-        -- Simple directives like #FILE, #FUNCTION, #DEBUG
-        return { 
-            kind = "directive", 
-            name = directive_tok.value, 
-            line = directive_tok.line, 
-            col = directive_tok.col 
-        }
-    end
+    -- Simple directives like #FILE, #FUNCTION, #DEBUG
+    return { 
+        kind = "directive", 
+        name = directive_tok.value, 
+        line = directive_tok.line, 
+        col = directive_tok.col 
+    }
 end
 
 -- ============================================================================
@@ -158,47 +138,6 @@ function Directives.generate_expression(expr, ctx)
     else
         error(string.format("Unknown directive: #%s at %d:%d", expr.name, expr.line, expr.col))
     end
-end
-
--- Generate code for #cast<Type>(value, fallback) directive
-function Directives.generate_safe_cast(expr, ctx, gen_expr_func, c_type_func)
-    -- #cast<Type>(value, fallback) -> safe cast with fallback
-    -- For now, just performs regular cast (no runtime checking)
-    -- Future: add runtime validation and return fallback on failure
-    local target_type_str = c_type_func(expr.target_type)
-    local value_str = gen_expr_func(expr.value)
-    local fallback_str = gen_expr_func(expr.fallback)
-    
-    -- Handle pointer casting
-    if expr.target_type.kind == "pointer" then
-        target_type_str = c_type_func(expr.target_type.to) .. "*"
-    end
-
-    -- For now, just cast (ignoring fallback)
-    -- TODO: Add runtime check: if cast valid, return cast value, else return fallback
-    return string.format("((%s)%s)", target_type_str, value_str)
-end
-
--- ============================================================================
--- TYPE CHECKER DIRECTIVES
--- ============================================================================
-
--- Type check #cast<Type>(value, fallback) directive
-function Directives.typecheck_safe_cast(expr, typechecker, infer_type_func, types_compatible_func, type_to_string_func)
-    local target_type = expr.target_type
-    infer_type_func(typechecker, expr.value)
-    local fallback_type = infer_type_func(typechecker, expr.fallback)
-    
-    -- Verify fallback type matches target type
-    if not types_compatible_func(target_type, fallback_type, typechecker) then
-        error(string.format("#cast fallback type mismatch: expected %s, got %s at %d:%d",
-            type_to_string_func(target_type),
-            type_to_string_func(fallback_type),
-            expr.line, expr.col))
-    end
-    
-    expr.inferred_type = target_type
-    return target_type
 end
 
 return Directives

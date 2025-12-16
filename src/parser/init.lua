@@ -763,18 +763,48 @@ function Parser:parse_postfix()
                 break
             end
         elseif self:check("KEYWORD", "as") then
-            -- Cast operator: expr as Type or expr as? Type
+            -- Cast operator: expr as<Type> (unsafe) or expr as?<Type>(fallback) (safe)
             self:advance()  -- consume 'as'
-            local is_optional = false
+            
+            -- Check for safe cast: as?<Type>(fallback)
+            local is_safe = false
             if self:match("QUESTION") then
-                -- Optional cast: as?
-                is_optional = true
+                is_safe = true
             end
-            local target_type = self:parse_type_with_map_shorthand()
-            if is_optional then
-                expr = { kind = "optional_cast", target_type = target_type, expr = expr }
+            
+            -- Expect '<' for type parameter
+            if not self:match("LT") then
+                error("Expected '<' after 'as' at line " .. (self:current() and self:current().line or "?"))
+            end
+            
+            local target_type = self:parse_type()
+            
+            -- Expect '>'
+            if not self:match("GT") then
+                error("Expected '>' after type in cast at line " .. (self:current() and self:current().line or "?"))
+            end
+            
+            -- If safe cast, expect (fallback)
+            local fallback_expr = nil
+            if is_safe then
+                -- Expect '(' for fallback
+                if not self:match("LPAREN") then
+                    error("Expected '(' after 'as?<Type>' at line " .. (self:current() and self:current().line or "?"))
+                end
+                
+                -- Parse fallback expression
+                fallback_expr = self:parse_expression()
+                
+                -- Expect ')'
+                if not self:match("RPAREN") then
+                    error("Expected ')' after fallback in safe cast at line " .. (self:current() and self:current().line or "?"))
+                end
+            end
+            
+            if is_safe then
+                expr = { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr }
             else
-                expr = { kind = "cast", target_type = target_type, expr = expr }
+                expr = { kind = "unsafe_cast", target_type = target_type, expr = expr }
             end
         else
             break
