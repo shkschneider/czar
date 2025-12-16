@@ -28,10 +28,10 @@ function Typechecker.new(ast, options)
         require_main = options.require_main or false,  -- Whether to enforce presence of main function
     }
     setmetatable(self, Typechecker)
-    
+
     -- Register builtin functions
     self:register_builtins()
-    
+
     return self
 end
 
@@ -41,7 +41,7 @@ function Typechecker:register_builtins()
     if not self.functions["__global__"] then
         self.functions["__global__"] = {}
     end
-    
+
     -- Register println: takes a string, returns void
     self.functions["__global__"]["println"] = {
         name = "println",
@@ -55,7 +55,7 @@ function Typechecker:register_builtins()
         return_type = { kind = "named_type", name = "void" },
         is_builtin = true
     }
-    
+
     -- Register print: takes a string, returns void
     self.functions["__global__"]["print"] = {
         name = "print",
@@ -69,7 +69,7 @@ function Typechecker:register_builtins()
         return_type = { kind = "named_type", name = "void" },
         is_builtin = true
     }
-    
+
     -- Register printf: takes a format string and variadic arguments, returns void
     -- Note: Uses 'any' type for varargs since C printf accepts multiple types (i32, f32, char*, etc.)
     -- Type safety is enforced by the format string at runtime in C
@@ -90,7 +90,7 @@ function Typechecker:register_builtins()
         return_type = { kind = "named_type", name = "void" },
         is_builtin = true
     }
-    
+
     -- Register print_i32 for compatibility
     self.functions["__global__"]["print_i32"] = {
         name = "print_i32",
@@ -110,21 +110,21 @@ end
 function Typechecker:check()
     -- Pass 1: Collect all top-level declarations (structs, functions)
     self:collect_declarations()
-    
+
     -- Pass 2: Type check all functions
     self:check_all_functions()
-    
+
     -- Pass 3: Validate main function if required for binary output
     if self.require_main then
         self:validate_main_function()
     end
-    
+
     -- Report any errors
     if #self.errors > 0 then
         local error_msg = Errors.format_phase_errors("Type checking", self.errors)
         error(error_msg)
     end
-    
+
     -- Return the annotated AST
     return self.ast
 end
@@ -203,11 +203,11 @@ function Typechecker:collect_declarations()
             elseif item.receiver then
                 type_name = item.receiver.type.name
             end
-            
+
             if not self.functions[type_name] then
                 self.functions[type_name] = {}
             end
-            
+
             -- Check for duplicate function/method definition
             if self.functions[type_name][item.name] then
                 local line = item.line or 0
@@ -277,24 +277,24 @@ end
 function Typechecker:check_function(func)
     -- Store current function for return statement checking
     self.current_function = func
-    
+
     -- Create a new scope for this function
     self:push_scope()
-    
+
     -- Add receiver (self) to scope if this is a method
     if func.receiver then
         local receiver_type = func.receiver.type
         local is_mutable = func.receiver.mutable
         self:add_var("self", receiver_type, is_mutable)
     end
-    
+
     -- Add parameters to scope and validate varargs
     local has_varargs = false
     for i, param in ipairs(func.params) do
         local param_type = param.type
         -- In explicit pointer model, check mutable field directly
         local is_mutable = param.mutable or false
-        
+
         -- Check for varargs
         if param_type.kind == "varargs" then
             has_varargs = true
@@ -315,13 +315,13 @@ function Typechecker:check_function(func)
                 self:add_error(formatted_error)
             end
         end
-        
+
         self:add_var(param.name, param_type, is_mutable)
     end
-    
+
     -- Type check the function body
     self:check_block(func.body)
-    
+
     -- Check if non-void function has return statement
     if func.return_type.kind ~= "named_type" or func.return_type.name ~= "void" then
         local has_return = self:block_has_return(func.body)
@@ -337,10 +337,10 @@ function Typechecker:check_function(func)
             self:add_error(formatted_error)
         end
     end
-    
+
     -- Pop the function scope
     self:pop_scope()
-    
+
     -- Clear current function
     self.current_function = nil
 end
@@ -380,8 +380,6 @@ function Typechecker:check_statement(stmt)
         else
             self:check_expression(stmt.expr or stmt.expression)
         end
-    elseif stmt.kind == "when" then
-        self:check_when(stmt)
     elseif stmt.kind == "free" then
         self:check_expression(stmt.expr)
     end
@@ -391,7 +389,7 @@ end
 function Typechecker:check_var_decl(stmt)
     local var_type = stmt.type
     local is_mutable = stmt.mutable or false
-    
+
     -- Check if trying to declare a mutable slice (not allowed)
     if var_type.kind == "slice" and is_mutable then
         local line = stmt.line or 0
@@ -400,7 +398,7 @@ function Typechecker:check_var_decl(stmt)
             Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
         self:add_error(formatted_error)
     end
-    
+
     -- Handle implicit array size (Type[*])
     if var_type.kind == "array" and var_type.size == "*" then
         if not stmt.init then
@@ -411,13 +409,13 @@ function Typechecker:check_var_decl(stmt)
             self:add_error(formatted_error)
         else
             local init_type = self:check_expression(stmt.init)
-            
+
             -- Check that initializer is an array literal or array
             if init_type and init_type.kind == "array" then
                 -- Infer the size from the initializer
                 var_type.size = init_type.size
                 stmt.type = var_type
-                
+
                 -- Check element type compatibility
                 if not Inference.types_compatible(var_type.element_type, init_type.element_type, self) then
                     local line = stmt.line or 0
@@ -441,7 +439,7 @@ function Typechecker:check_var_decl(stmt)
     elseif stmt.init then
         -- Type check the initializer if present (for non-implicit arrays)
         local init_type = self:check_expression(stmt.init)
-        
+
         -- Check type compatibility
         if not Inference.types_compatible(var_type, init_type, self) then
             local line = stmt.line or 0
@@ -455,14 +453,14 @@ function Typechecker:check_var_decl(stmt)
                 Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
             self:add_error(formatted_error)
         end
-        
+
         -- Annotate the initializer with its type
         stmt.init.inferred_type = init_type
     end
-    
+
     -- Add variable to scope
     self:add_var(stmt.name, var_type, is_mutable)
-    
+
     -- Annotate the statement with type information
     stmt.resolved_type = var_type
 end
@@ -474,11 +472,11 @@ function Typechecker:check_assign(stmt)
         -- Mutability check failed, don't continue with type checking
         return
     end
-    
+
     -- Type check both sides
     local target_type = self:check_expression(stmt.target)
     local value_type = self:check_expression(stmt.value)
-    
+
     -- Check type compatibility
     if not Inference.types_compatible(target_type, value_type, self) then
         local line = stmt.line or (stmt.target and stmt.target.line) or 0
@@ -491,7 +489,7 @@ function Typechecker:check_assign(stmt)
             Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
         self:add_error(formatted_error)
     end
-    
+
     -- Check const-correctness: cannot assign immutable value to mutable target
     -- This prevents discarding const qualifiers in generated C code
     if stmt.value.kind == "identifier" then
@@ -500,7 +498,7 @@ function Typechecker:check_assign(stmt)
             -- Value is immutable (const in C)
             -- Check if target needs a mutable value
             local target_needs_mut = false
-            
+
             if stmt.target.kind == "identifier" then
                 local target_var_info = Resolver.resolve_name(self, stmt.target.name)
                 target_needs_mut = target_var_info and target_var_info.mutable
@@ -509,7 +507,7 @@ function Typechecker:check_assign(stmt)
                 -- Field assignment to mutable object means we need non-const value
                 target_needs_mut = obj_var_info and obj_var_info.mutable
             end
-            
+
             if target_needs_mut and value_type and value_type.kind == "pointer" then
                 local line = stmt.line or stmt.value.line or 0
                 local msg = string.format(
@@ -529,7 +527,7 @@ end
 function Typechecker:check_if(stmt)
     -- Type check condition
     local cond_type = self:check_expression(stmt.condition)
-    
+
     -- Condition should be bool
     if not Inference.is_bool_type(cond_type) then
         local line = stmt.line or (stmt.condition and stmt.condition.line) or 0
@@ -541,12 +539,12 @@ function Typechecker:check_if(stmt)
             Errors.ErrorType.TYPE_MISMATCH, msg)
         self:add_error(formatted_error)
     end
-    
+
     -- Type check branches
     self:push_scope()
     self:check_block(stmt.then_block)
     self:pop_scope()
-    
+
     -- Handle elseif branches
     if stmt.elseif_branches then
         for _, branch in ipairs(stmt.elseif_branches) do
@@ -566,7 +564,7 @@ function Typechecker:check_if(stmt)
             self:pop_scope()
         end
     end
-    
+
     if stmt.else_block then
         self:push_scope()
         self:check_block(stmt.else_block)
@@ -578,7 +576,7 @@ end
 function Typechecker:check_while(stmt)
     -- Type check condition
     local cond_type = self:check_expression(stmt.condition)
-    
+
     -- Condition should be bool
     if not Inference.is_bool_type(cond_type) then
         local line = stmt.line or (stmt.condition and stmt.condition.line) or 0
@@ -590,7 +588,7 @@ function Typechecker:check_while(stmt)
             Errors.ErrorType.TYPE_MISMATCH, msg)
         self:add_error(formatted_error)
     end
-    
+
     -- Type check body (increment loop depth for break/continue)
     self.loop_depth = self.loop_depth + 1
     self:push_scope()
@@ -603,11 +601,11 @@ end
 function Typechecker:check_for(stmt)
     -- Type check the collection
     local collection_type = self:check_expression(stmt.collection)
-    
+
     if not collection_type then
         return
     end
-    
+
     -- Collection must be an array, slice, or varargs
     if collection_type.kind ~= "array" and collection_type.kind ~= "slice" and collection_type.kind ~= "varargs" then
         local line = stmt.line or (stmt.collection and stmt.collection.line) or 0
@@ -620,7 +618,7 @@ function Typechecker:check_for(stmt)
         self:add_error(formatted_error)
         return
     end
-    
+
     -- Check if trying to iterate with mut item on immutable collection
     if stmt.item_mutable and not stmt.item_is_underscore then
         -- Get the collection mutability
@@ -631,7 +629,7 @@ function Typechecker:check_for(stmt)
                 collection_is_mutable = var_info.mutable
             end
         end
-        
+
         -- If collection is not mutable, item cannot be mut
         if not collection_is_mutable then
             local line = stmt.line or 0
@@ -643,7 +641,7 @@ function Typechecker:check_for(stmt)
                 Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
             self:add_error(formatted_error)
         end
-        
+
         -- Slices and varargs are always read-only
         if collection_type.kind == "slice" or collection_type.kind == "varargs" then
             local line = stmt.line or 0
@@ -657,16 +655,16 @@ function Typechecker:check_for(stmt)
             self:add_error(formatted_error)
         end
     end
-    
+
     -- Type check body in new scope (increment loop depth for break/continue)
     self.loop_depth = self.loop_depth + 1
     self:push_scope()
-    
+
     -- Add index variable to scope (always i32)
     if not stmt.index_is_underscore and stmt.index_name then
         self:add_var(stmt.index_name, { kind = "named_type", name = "i32" }, false)
     end
-    
+
     -- Add item variable to scope with element type
     if not stmt.item_is_underscore and stmt.item_name then
         local element_type = collection_type.element_type
@@ -679,7 +677,7 @@ function Typechecker:check_for(stmt)
             self:add_var(stmt.item_name, element_type, false)
         end
     end
-    
+
     self:check_block(stmt.body)
     self:pop_scope()
     self.loop_depth = self.loop_depth - 1
@@ -689,12 +687,12 @@ end
 function Typechecker:check_repeat(stmt)
     -- Type check count expression
     local count_type = self:check_expression(stmt.count)
-    
+
     -- Count must be an integer type (i8, i16, i32, i64, u8, u16, u32, u64)
-    local is_int_type = count_type and 
-                        count_type.kind == "named_type" and 
+    local is_int_type = count_type and
+                        count_type.kind == "named_type" and
                         count_type.name:match("^[iu]%d+$") ~= nil
-    
+
     if not is_int_type then
         local line = stmt.line or (stmt.count and stmt.count.line) or 0
         local msg = string.format(
@@ -705,7 +703,7 @@ function Typechecker:check_repeat(stmt)
             Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
         self:add_error(formatted_error)
     end
-    
+
     -- Type check body (increment loop depth for break/continue)
     self.loop_depth = self.loop_depth + 1
     self:push_scope()
@@ -717,7 +715,7 @@ end
 -- Type check a break statement
 function Typechecker:check_break(stmt)
     local level = stmt.level or 1  -- Default to 1 if not specified
-    
+
     if self.loop_depth == 0 then
         local line = stmt.line or 0
         local msg = "Break statement must be inside a loop"
@@ -748,7 +746,7 @@ end
 -- Type check a continue statement
 function Typechecker:check_continue(stmt)
     local level = stmt.level or 1  -- Default to 1 if not specified
-    
+
     if self.loop_depth == 0 then
         local line = stmt.line or 0
         local msg = "Continue statement must be inside a loop"
@@ -776,42 +774,12 @@ function Typechecker:check_continue(stmt)
     end
 end
 
--- Type check a when statement
-function Typechecker:check_when(stmt)
-    -- Type check the subject
-    local subject_type = self:check_expression(stmt.subject)
-    
-    -- Type check each arm
-    if stmt.arms then
-        for _, arm in ipairs(stmt.arms) do
-            self:push_scope()
-            
-            -- Add variable binding if present
-            if arm.var_name then
-                self:add_var(arm.var_name, subject_type, false)
-            end
-            
-            -- Check the arm condition if present
-            if arm.condition then
-                self:check_expression(arm.condition)
-            end
-            
-            -- Check the arm body (which might be called 'block' or 'body')
-            local arm_block = arm.block or arm.body
-            if arm_block then
-                self:check_block(arm_block)
-            end
-            self:pop_scope()
-        end
-    end
-end
-
 -- Type check a return statement
 function Typechecker:check_return(stmt)
     if stmt.value then
         -- Check if we're in a void function
-        if self.current_function and 
-           self.current_function.return_type.kind == "named_type" and 
+        if self.current_function and
+           self.current_function.return_type.kind == "named_type" and
            self.current_function.return_type.name == "void" then
             local line = stmt.line or 0
             local msg = string.format(
@@ -822,9 +790,9 @@ function Typechecker:check_return(stmt)
                 Errors.ErrorType.VOID_FUNCTION_RETURNS_VALUE, msg, self.source_path)
             self:add_error(formatted_error)
         end
-        
+
         local return_type = self:check_expression(stmt.value)
-        
+
         -- Check for returning address to stack variable
         if stmt.value.kind == "unary" and stmt.value.op == "&" then
             -- User is returning &variable
@@ -848,7 +816,7 @@ function Typechecker:check_return(stmt)
                 end
             end
         end
-        
+
         -- Note: 'return clone stack_var' is safe because clone allocates on heap
         -- and returns a pointer to the heap-allocated copy
     end
@@ -894,14 +862,14 @@ end
 -- Helper: Check if a block has a return statement in all paths
 function Typechecker:block_has_return(block)
     local statements = block.statements or block
-    
+
     for _, stmt in ipairs(statements) do
         if stmt.kind == "return" then
             return true
         elseif stmt.kind == "if" then
             -- For if statements, all branches must have returns
             local then_has_return = self:block_has_return(stmt.then_block)
-            
+
             -- Check all elseif branches
             local all_elseif_have_return = true
             if stmt.elseif_branches then
@@ -912,10 +880,10 @@ function Typechecker:block_has_return(block)
                     end
                 end
             end
-            
+
             -- Check else branch
             local else_has_return = stmt.else_block and self:block_has_return(stmt.else_block) or false
-            
+
             -- Only return true if we have an else and all branches return
             if stmt.else_block and then_has_return and all_elseif_have_return and else_has_return then
                 return true
@@ -923,7 +891,7 @@ function Typechecker:block_has_return(block)
         end
         -- Note: we don't check while loops as they might not execute
     end
-    
+
     return false
 end
 
@@ -932,7 +900,7 @@ function Typechecker:type_to_string(type_node)
     if not type_node then
         return "unknown"
     end
-    
+
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "pointer" then
@@ -944,7 +912,7 @@ function Typechecker:type_to_string(type_node)
     elseif type_node.kind == "varargs" then
         return self:type_to_string(type_node.element_type) .. "..."
     end
-    
+
     return "unknown"
 end
 
@@ -959,16 +927,16 @@ function Typechecker:validate_main_function()
         self:add_error(formatted_error)
         return
     end
-    
+
     -- Validate main function signature
     local main_func = global_functions["main"]
-    
+
     -- Check return type (must be i32)
     local return_type = main_func.return_type
-    local is_valid_return = return_type and 
-                           return_type.kind == "named_type" and 
+    local is_valid_return = return_type and
+                           return_type.kind == "named_type" and
                            return_type.name == "i32"
-    
+
     if not is_valid_return then
         local line = main_func.line or 0
         local actual_return = return_type and self:type_to_string(return_type) or "unknown"
@@ -980,7 +948,7 @@ function Typechecker:validate_main_function()
             Errors.ErrorType.INVALID_MAIN_SIGNATURE, msg, self.source_path)
         self:add_error(formatted_error)
     end
-    
+
     -- Check parameters (must have no parameters)
     if main_func.params and #main_func.params > 0 then
         local line = main_func.line or 0

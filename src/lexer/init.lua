@@ -24,7 +24,6 @@ local keywords = {
     ["false"] = true,
     ["null"] = true,
     ["clone"] = true,
-    ["cast"] = true,
     ["new"] = true,
     ["free"] = true,
     ["is"] = true,
