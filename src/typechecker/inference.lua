@@ -88,6 +88,8 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_struct_literal_type(typechecker, expr)
     elseif expr.kind == "new_heap" or expr.kind == "new_stack" then
         return Inference.infer_new_type(typechecker, expr)
+    elseif expr.kind == "new_array" then
+        return Inference.infer_new_array_type(typechecker, expr)
     elseif expr.kind == "cast" then
         local target_type = expr.to_type or expr.target_type
         expr.inferred_type = target_type
@@ -740,6 +742,44 @@ function Inference.infer_array_literal_type(typechecker, expr)
     
     -- Return array type with inferred size
     local inferred = { kind = "array", element_type = element_type, size = #expr.elements }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a heap-allocated array (new [elements...])
+function Inference.infer_new_array_type(typechecker, expr)
+    -- Similar to array_literal, but returns a pointer to the array
+    if #expr.elements == 0 then
+        local line = expr.line or 0
+        local msg = "Cannot infer type of empty array in 'new' expression"
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return nil
+    end
+    
+    local element_type = Inference.infer_type(typechecker, expr.elements[1])
+    if not element_type then
+        return nil
+    end
+    
+    -- Check that all elements have the same type
+    for i = 2, #expr.elements do
+        local elem_type = Inference.infer_type(typechecker, expr.elements[i])
+        if not Inference.types_compatible(element_type, elem_type, typechecker) then
+            local line = expr.line or 0
+            local msg = string.format(
+                "Array element %d has type '%s', expected '%s'",
+                i, Inference.type_to_string(elem_type), Inference.type_to_string(element_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        end
+    end
+    
+    -- Return a slice type (pointer to element type), which is how dynamic arrays are represented
+    local inferred = { kind = "slice", element_type = element_type }
     expr.inferred_type = inferred
     return inferred
 end

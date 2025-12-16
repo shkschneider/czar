@@ -76,7 +76,7 @@ function Statements.gen_statement(stmt)
         local needs_free = false
         if stmt.init then
             local init_kind = stmt.init.kind
-            if init_kind == "new_heap" or init_kind == "clone" then
+            if init_kind == "new_heap" or init_kind == "clone" or init_kind == "new_array" then
                 needs_free = true
             end
         end
