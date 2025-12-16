@@ -23,17 +23,8 @@ Builtins.calls = {
     
     -- Direct printf binding with format string and variadic arguments
     printf = function(args)
-        if #args == 1 then
-            -- Just format string, no additional arguments
-            return string.format('printf(%s)', args[1])
-        else
-            -- Format string with arguments
-            local arg_list = {}
-            for i = 1, #args do
-                table.insert(arg_list, args[i])
-            end
-            return string.format('printf(%s)', table.concat(arg_list, ", "))
-        end
+        -- Simply pass all arguments to printf
+        return string.format('printf(%s)', table.concat(args, ", "))
     end,
 }
 

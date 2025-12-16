@@ -69,6 +69,8 @@ function Typechecker:register_builtins()
     }
     
     -- Register printf: takes a format string and variadic arguments, returns void
+    -- Note: Uses 'any' type for varargs since C printf accepts multiple types (i32, f32, char*, etc.)
+    -- Type safety is enforced by the format string at runtime in C
     self.functions["__global__"]["printf"] = {
         name = "printf",
         params = {
