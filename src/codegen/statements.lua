@@ -355,10 +355,11 @@ function Statements.gen_repeat(stmt)
     -- Generate count expression
     local count_expr = Codegen.Expressions.gen_expr(stmt.count)
     
-    -- Generate a unique loop counter variable name
-    local loop_var = "_repeat_i"
+    -- Generate a unique loop counter variable name using the repeat_counter
+    ctx().repeat_counter = ctx().repeat_counter + 1
+    local loop_var = "_repeat_i" .. ctx().repeat_counter
     
-    -- Generate for loop header: for (int32_t _repeat_i = 0; _repeat_i < count; _repeat_i++)
+    -- Generate for loop header: for (int32_t _repeat_i1 = 0; _repeat_i1 < count; _repeat_i1++)
     table.insert(parts, string.format("for (int32_t %s = 0; %s < %s; %s++) {",
         loop_var, loop_var, count_expr, loop_var))
     
