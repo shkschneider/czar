@@ -20,7 +20,9 @@ function Memory.add_var(name, type_node, mutable, needs_free)
         ctx().scope_stack[#ctx().scope_stack][name] = {
             type = type_node,
             mutable = mutable or false,
-            needs_free = needs_free or false
+            needs_free = needs_free or false,
+            used = false,  -- Track if variable is used
+            declared_at = debug.getinfo(2, "l").currentline  -- Track declaration location
         }
         if needs_free then
             table.insert(ctx().heap_vars_stack[#ctx().heap_vars_stack], name)
@@ -111,6 +113,37 @@ function Memory.get_var_info(name)
         end
     end
     return nil
+end
+
+-- Mark a variable as used
+function Memory.mark_var_used(name)
+    for i = #ctx().scope_stack, 1, -1 do
+        local var_info = ctx().scope_stack[i][name]
+        if var_info then
+            var_info.used = true
+            return
+        end
+    end
+end
+
+-- Check for unused variables in current scope and emit warnings
+function Memory.check_unused_vars()
+    local Warnings = require("warnings")
+    if #ctx().scope_stack > 0 then
+        local scope = ctx().scope_stack[#ctx().scope_stack]
+        for var_name, var_info in pairs(scope) do
+            -- Skip underscore variables (intentionally unused)
+            if not var_info.used and var_name ~= "_" and not var_name:match("^_unused_") then
+                Warnings.emit(
+                    ctx().source_file,
+                    nil,  -- We don't have line info stored yet
+                    Warnings.WarningType.UNUSED_VARIABLE,
+                    string.format("Variable '%s' is declared but never used", var_name),
+                    ctx().source_path
+                )
+            end
+        end
+    end
 end
 
 function Memory.malloc_call(size_expr, is_explicit)
