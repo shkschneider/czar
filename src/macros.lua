@@ -234,9 +234,10 @@ function Macros.generate_statement(stmt, ctx)
         -- #log("message") -> fprintf(stderr, "filename:linenumber message\n")
         local Expressions = require("codegen.expressions")
         local message_code = Expressions.gen_expr(stmt.message)
-        local filename = ctx.source_file
+        -- Escape % characters in filename to avoid format string issues
+        local filename = ctx.source_file:gsub("%%", "%%%%")
         local line = stmt.line
-        return string.format("fprintf(stderr, \"%s:%d \" %s \"\\n\");", filename, line, message_code)
+        return string.format("fprintf(stderr, \"%s:%d \" %s \"\\n\")", filename, line, message_code)
     else
         error(string.format("Unknown statement macro: %s at %d:%d", stmt.kind, stmt.line, stmt.col))
     end
