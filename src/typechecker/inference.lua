@@ -3,7 +3,7 @@
 
 local Resolver = require("typechecker.resolver")
 local Errors = require("errors")
-local Directives = require("src.directives")
+local Macros = require("src.macros")
 
 local Inference = {}
 
@@ -132,8 +132,10 @@ function Inference.infer_type(typechecker, expr)
         end
         expr.inferred_type = result_type
         return result_type
-    elseif expr.kind == "directive" then
-        return Inference.infer_directive_type(expr)
+    elseif expr.kind == "macro" then
+        return Inference.infer_macro_type(expr)
+    elseif expr.kind == "macro_call" then
+        return Inference.infer_macro_type(expr)
     elseif expr.kind == "compound_assign" then
         return Inference.infer_type(typechecker, expr.target)
     elseif expr.kind == "array_literal" then
@@ -587,11 +589,12 @@ function Inference.infer_struct_literal_type(typechecker, expr)
     end
 end
 
--- Infer the type of a directive
-function Inference.infer_directive_type(expr)
+-- Infer the type of a macro
+function Inference.infer_macro_type(expr)
     if expr.name == "FILE" or expr.name == "FUNCTION" then
         return { kind = "pointer", to = { kind = "named_type", name = "char" } }
     elseif expr.name == "DEBUG" then
+        -- #DEBUG, #DEBUG(), and #DEBUG(bool) all return bool
         return { kind = "named_type", name = "bool" }
     end
     return nil

@@ -1,7 +1,7 @@
 -- Expression generation for code generation
 -- Handles all expression types: literals, operators, calls, casts, etc.
 
-local Directives = require("src.directives")
+local Macros = require("src.macros")
 
 local Expressions = {}
 
@@ -32,10 +32,13 @@ function Expressions.gen_expr(expr)
         return expr.value and "true" or "false"
     elseif expr.kind == "null" then
         return "NULL"
-    elseif expr.kind == "directive" then
-        -- Handle compiler directives: #FILE, #FUNCTION, #DEBUG
-        -- Delegate to Directives module
-        return Directives.generate_expression(expr, ctx())
+    elseif expr.kind == "macro" then
+        -- Handle compiler macros: #FILE, #FUNCTION, #DEBUG
+        -- Delegate to Macros module
+        return Macros.generate_expression(expr, ctx())
+    elseif expr.kind == "macro_call" then
+        -- Handle macro function calls: #DEBUG(), #DEBUG(bool)
+        return Macros.generate_call(expr, ctx())
     elseif expr.kind == "identifier" then
         return expr.name
     elseif expr.kind == "mut_arg" then

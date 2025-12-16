@@ -2,7 +2,7 @@
 -- This is the main entry point for code generation (loaded as src/codegen/init.lua)
 -- It coordinates all the specialized modules using module-level globals for simplicity
 
-local Directives = require("src.directives")
+local Macros = require("src.macros")
 
 -- Module-level globals shared across all codegen modules
 local Codegen = {
@@ -185,9 +185,9 @@ end
 function Codegen:generate()
     self:collect_structs_and_functions()
     
-    -- Process allocator directives (#malloc, #free) and type aliases (#alias)
-    -- Delegate to Directives module
-    Directives.process_top_level(self, self.ast)
+    -- Process allocator macros (#malloc, #free) and type aliases (#alias)
+    -- Delegate to Macros module
+    Macros.process_top_level(self, self.ast)
     
     -- In debug mode, automatically use cz_malloc/cz_free if not already overridden
     if self.debug then
@@ -203,6 +203,10 @@ function Codegen:generate()
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
+    self:emit("")
+    
+    -- Global flag for runtime #DEBUG() support
+    self:emit(string.format("static bool czar_debug_flag = %s;", self.debug and "true" or "false"))
     self:emit("")
 
     if self.debug then
