@@ -122,6 +122,9 @@ function Parser:parse_struct()
         end
         
         table.insert(fields, { name = field_name, type = field_type })
+        
+        -- Support optional comma between fields
+        self:match("COMMA")
     end
     self:expect("RBRACE")
     return { kind = "struct", name = name, fields = fields }
@@ -136,7 +139,14 @@ function Parser:parse_enum()
         repeat
             local value_tok = self:expect("IDENT")
             table.insert(values, { name = value_tok.value, line = value_tok.line, col = value_tok.col })
-        until not self:match("COMMA")
+            if not self:match("COMMA") then
+                break
+            end
+            -- Allow trailing comma: if next token is RBRACE, we're done
+            if self:check("RBRACE") then
+                break
+            end
+        until false
     end
     self:expect("RBRACE")
     return { kind = "enum", name = name, values = values, line = start_tok.line }
@@ -208,10 +218,24 @@ function Parser:parse_function()
             if is_varargs and not self:check("RPAREN") then
                 error(string.format("varargs parameter '%s' must be the last parameter", param_name))
             end
-        until not self:match("COMMA")
+            if not self:match("COMMA") then
+                break
+            end
+            -- Allow trailing comma: if next token is RPAREN, we're done
+            if self:check("RPAREN") then
+                break
+            end
+        until false
     end
     self:expect("RPAREN")
-    local return_type = self:parse_type()
+    -- Return type is optional - if not present, defaults to void
+    local return_type
+    if self:check("LBRACE") then
+        -- No explicit return type, default to void
+        return_type = { kind = "named_type", name = "void" }
+    else
+        return_type = self:parse_type()
+    end
     local body = self:parse_block()
     return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body }
 end
@@ -785,7 +809,14 @@ function Parser:parse_postfix()
                         arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
                     end
                     table.insert(args, arg_expr)
-                until not self:match("COMMA")
+                    if not self:match("COMMA") then
+                        break
+                    end
+                    -- Allow trailing comma: if next token is RPAREN, we're done
+                    if self:check("RPAREN") then
+                        break
+                    end
+                until false
             end
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
@@ -970,7 +1001,14 @@ function Parser:parse_primary()
             if not self:check("RBRACKET") then
                 repeat
                     table.insert(elements, self:parse_expression())
-                until not self:match("COMMA")
+                    if not self:match("COMMA") then
+                        break
+                    end
+                    -- Allow trailing comma: if next token is RBRACKET, we're done
+                    if self:check("RBRACKET") then
+                        break
+                    end
+                until false
             end
             self:expect("RBRACKET")
             return { kind = "new_array", elements = elements }
@@ -986,7 +1024,14 @@ function Parser:parse_primary()
                     self:expect("COLON")
                     local value = self:parse_expression()
                     table.insert(entries, { key = key, value = value })
-                until not self:match("COMMA")
+                    if not self:match("COMMA") then
+                        break
+                    end
+                    -- Allow trailing comma: if next token is RBRACE, we're done
+                    if self:check("RBRACE") then
+                        break
+                    end
+                until false
             end
             self:expect("RBRACE")
             return { kind = "new_map", entries = entries }
@@ -1020,7 +1065,14 @@ function Parser:parse_primary()
                 self:expect("COLON")
                 local value = self:parse_expression()
                 table.insert(fields, { name = name, value = value })
-            until not self:match("COMMA")
+                if not self:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma: if next token is RBRACE, we're done
+                if self:check("RBRACE") then
+                    break
+                end
+            until false
         end
         self:expect("RBRACE")
         return { kind = "new_heap", type_name = type_name, fields = fields }
@@ -1032,7 +1084,14 @@ function Parser:parse_primary()
         if not self:check("RBRACKET") then
             repeat
                 table.insert(elements, self:parse_expression())
-            until not self:match("COMMA")
+                if not self:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma: if next token is RBRACKET, we're done
+                if self:check("RBRACKET") then
+                    break
+                end
+            until false
         end
         self:expect("RBRACKET")
         return { kind = "array_literal", elements = elements }
@@ -1047,7 +1106,14 @@ function Parser:parse_primary()
                 self:expect("COLON")
                 local value = self:parse_expression()
                 table.insert(entries, { key = key, value = value })
-            until not self:match("COMMA")
+                if not self:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma: if next token is RBRACE, we're done
+                if self:check("RBRACE") then
+                    break
+                end
+            until false
         end
         self:expect("RBRACE")
         return { kind = "map_literal", entries = entries }
@@ -1085,7 +1151,14 @@ function Parser:parse_primary()
         if not self:check("RBRACKET") then
             repeat
                 table.insert(elements, self:parse_expression())
-            until not self:match("COMMA")
+                if not self:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma: if next token is RBRACKET, we're done
+                if self:check("RBRACKET") then
+                    break
+                end
+            until false
         end
         self:expect("RBRACKET")
         return { kind = "array_literal", elements = elements }
@@ -1103,7 +1176,14 @@ function Parser:parse_struct_literal(type_ident)
             self:expect("COLON")
             local value = self:parse_expression()
             table.insert(fields, { name = name, value = value })
-        until not self:match("COMMA")
+            if not self:match("COMMA") then
+                break
+            end
+            -- Allow trailing comma: if next token is RBRACE, we're done
+            if self:check("RBRACE") then
+                break
+            end
+        until false
     end
     self:expect("RBRACE")
     return { kind = "struct_literal", type_name = type_ident.name, fields = fields }
