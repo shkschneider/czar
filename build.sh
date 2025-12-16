@@ -19,13 +19,11 @@ for dep in git pkg-config luajit nm ar cc stat file ; do
 done
 (( r == 0 )) || exit 1
 
-set -e
-
 OUT="cz"
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 
 # Check if luastatic is available for static linking
-if command -v luastatic >/dev/null 2>&1; then
+if command -v luastatic >/dev/null 2>&1 ; then
     # Note: luastatic is a tool for creating static Lua binaries.
     echo "[LUASTATIC] $(command -v luastatic) -> static"
     # When statically linking LuaJIT, the linker will produce a dlopen warning
@@ -45,6 +43,10 @@ fi
 
 SOURCES=(
     bin/main.lua
+    bin/generate.lua
+    bin/assemble.lua
+    bin/build.lua
+    bin/run.lua
     lexer/init.lua
     parser/init.lua
     typechecker/init.lua
@@ -59,18 +61,15 @@ SOURCES=(
     codegen/functions.lua
     codegen/statements.lua
     codegen/expressions.lua
-    bin/generate.lua
-    bin/assemble.lua
-    bin/build.lua
-    bin/run.lua
     errors.lua
     warnings.lua
     macros.lua
 )
-
 LIBRARY=libczar.a
-mkdir -p ./build
 
+set -e
+
+mkdir -p ./build
 for src in ${SOURCES[@]} ; do
     # For module naming, use just the base filename (without directory)
     # unless it's in a subdirectory like lexer/init.lua, parser/init.lua, etc.
@@ -108,10 +107,10 @@ echo "[AR] *.o -> $LIBRARY"
 #for o in ./build/*.o ; do echo "- ${o##*/}" ; done
 ar crs ./build/$LIBRARY ./build/*.o # create replace act-as-ranlib
 
-cp ./src/main.c ./build/main.c
 echo "[CC] main.c -lczar ... -> $OUT"
 echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
+cp ./src/bin/main.c ./build/main.c
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
 echo -e "[CZ] "$(stat -c %s ./$OUT)"B "$GREEN$(file -b ./$OUT)$WHITE
 
