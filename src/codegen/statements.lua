@@ -50,6 +50,10 @@ function Statements.gen_statement(stmt)
             -- No cleanup needed, simple return
             return "return " .. Codegen.Expressions.gen_expr(stmt.value) .. ";"
         end
+    elseif stmt.kind == "break" then
+        return "break;"
+    elseif stmt.kind == "continue" then
+        return "continue;"
     elseif stmt.kind == "free" then
         -- Explicit free statement
         local expr = stmt.value
