@@ -1,17 +1,17 @@
-// Test cast<Type> functionality
+// Test 'as' cast functionality
 
 fn main() i32 {
     // Test basic casting
     i32 num = 42
-    bool b = cast<bool> num  // non-zero should be true
+    bool b = num as bool  // non-zero should be true
 
     // Test numeric casts
     i32 small = 100
-    i64 big = cast<i64> small
-    i32 back = cast<i32> big
+    i64 big = small as i64
+    i32 back = big as i32
 
     // Test with expressions
-    i32 result = cast<i32> 10 + 20
+    i32 result = 10 as i32 + 20
 
     if b {
         if back == 100 {

@@ -96,6 +96,13 @@ function Inference.infer_type(typechecker, expr)
         local target_type = expr.to_type or expr.target_type
         expr.inferred_type = target_type
         return target_type
+    elseif expr.kind == "optional_cast" then
+        -- Optional cast returns a nullable pointer to the target type
+        local target_type = expr.to_type or expr.target_type
+        -- Wrap in pointer to make it nullable
+        local result_type = { kind = "pointer", to = target_type }
+        expr.inferred_type = result_type
+        return result_type
     elseif expr.kind == "sizeof" or expr.kind == "type_of" then
         -- sizeof and type return i32 and string respectively
         -- sizeof returns the size in bytes as i32
