@@ -580,8 +580,24 @@ function Inference.infer_call_type(typechecker, expr)
                 local return_type = { kind = "pointer", to = { kind = "string" } }
                 expr.inferred_type = return_type
                 return return_type
-            elseif method == "find" then
+            elseif method == "find" or method == "index" then
                 local return_type = { kind = "named_type", name = "i32" }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "contains" then
+                local return_type = { kind = "named_type", name = "i32" }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "cut" then
+                local return_type = { kind = "pointer", to = { kind = "string" } }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "prefix" or method == "suffix" then
+                local return_type = { kind = "named_type", name = "i32" }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "upper" or method == "lower" then
+                local return_type = { kind = "pointer", to = { kind = "string" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "trim" or method == "ltrim" or method == "rtrim" then
@@ -651,10 +667,42 @@ function Inference.infer_call_type(typechecker, expr)
             return return_type
         end
         
-        -- Special handling for string:find(needle) method
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "find" then
-            -- find() returns i32 (index or -1)
+        -- Special handling for string:find(needle) or string:index(needle) method
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (expr.callee.field == "find" or expr.callee.field == "index") then
+            -- find/index() returns i32 (index or -1)
             local return_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:contains(needle) method
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "contains" then
+            -- contains() returns i32 (bool: 1 or 0)
+            local return_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:cut(separator) method
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "cut" then
+            -- cut() returns a new heap-allocated string*
+            local return_type = { kind = "pointer", to = { kind = "string" } }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:prefix(str) and string:suffix(str) methods
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (expr.callee.field == "prefix" or expr.callee.field == "suffix") then
+            -- prefix/suffix() returns i32 (bool: 1 or 0)
+            local return_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:upper() and string:lower() methods
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (expr.callee.field == "upper" or expr.callee.field == "lower") then
+            -- upper/lower() modifies in place, returns string* (for chaining)
+            local return_type = { kind = "pointer", to = { kind = "string" } }
             expr.inferred_type = return_type
             return return_type
         end
