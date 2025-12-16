@@ -4,13 +4,13 @@ struct Vec2 {
     i32 z,
 }
 
-fn test(i32 x, i32 y, i32 z) {}
+fn test(i32 x, i32 y, i32 z,) {}
 
 fn main() i32 {
     test(
-        x,
-        y,
-        z,
+        1,
+        2,
+        3,
     )
     return 0
 }
