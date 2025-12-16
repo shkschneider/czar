@@ -277,6 +277,16 @@ function Parser:parse_type()
         return base_type
     end
     
+    if self:check("KEYWORD", "string") then
+        self:advance()
+        local base_type = { kind = "string" }
+        -- Check if this is a pointer type (string*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        return base_type
+    end
+    
     if is_type_token(tok) then
         self:advance()
         local base_type = { kind = "named_type", name = tok.value }
@@ -312,7 +322,7 @@ function Parser:parse_type_with_map_shorthand()
     local tok = self:current()
     
     -- Check for explicit container types: array<T>, slice<T>, map<K:V>, pair<T:T>
-    if self:check("KEYWORD", "array") or self:check("KEYWORD", "slice") or self:check("KEYWORD", "map") or self:check("KEYWORD", "pair") then
+    if self:check("KEYWORD", "array") or self:check("KEYWORD", "slice") or self:check("KEYWORD", "map") or self:check("KEYWORD", "pair") or self:check("KEYWORD", "string") then
         return self:parse_type()
     end
     
@@ -438,7 +448,7 @@ function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
     -- Check for container type keywords
-    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair") then
+    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair" or tok.value == "string") then
         return true
     end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
@@ -955,6 +965,12 @@ function Parser:parse_primary()
             return { kind = "new_pair", left = left, right = right }
         end
         
+        if self:check("KEYWORD", "string") then
+            self:advance()
+            local str_tok = self:expect("STRING")
+            return { kind = "new_string", value = str_tok.value }
+        end
+        
         -- Otherwise, it's a struct allocation: new Type { ... }
         local type_name_tok = self:expect("IDENT")
         local type_name = type_name_tok.value
@@ -1007,6 +1023,11 @@ function Parser:parse_primary()
         self:match("COMMA")  -- Optional trailing comma
         self:expect("RBRACKET")
         return { kind = "pair_literal", left = left, right = right }
+    elseif tok.type == "KEYWORD" and tok.value == "string" then
+        -- Stack string literal: string "text"
+        self:advance()
+        local str_tok = self:expect("STRING")
+        return { kind = "string_literal", value = str_tok.value }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }

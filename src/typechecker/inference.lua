@@ -95,10 +95,14 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_new_map_type(typechecker, expr)
     elseif expr.kind == "new_pair" then
         return Inference.infer_new_pair_type(typechecker, expr)
+    elseif expr.kind == "new_string" then
+        return Inference.infer_new_string_type(typechecker, expr)
     elseif expr.kind == "map_literal" then
         return Inference.infer_map_literal_type(typechecker, expr)
     elseif expr.kind == "pair_literal" then
         return Inference.infer_pair_literal_type(typechecker, expr)
+    elseif expr.kind == "string_literal" then
+        return Inference.infer_string_literal_type(typechecker, expr)
     elseif expr.kind == "unsafe_cast" then
         -- Unsafe cast: expr as<Type>
         -- Emit warning during type checking
@@ -239,6 +243,30 @@ function Inference.infer_field_type(typechecker, expr)
             local line = expr.line or (expr.object and expr.object.line) or 0
             local msg = string.format(
                 "Field '%s' not found in pair type (available: left, right)",
+                expr.field
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
+    
+    -- Handle string type fields
+    if base_type.kind == "string" then
+        if expr.field == "data" then
+            expr.inferred_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+            return expr.inferred_type
+        elseif expr.field == "length" then
+            expr.inferred_type = { kind = "named_type", name = "i32" }
+            return expr.inferred_type
+        elseif expr.field == "capacity" then
+            expr.inferred_type = { kind = "named_type", name = "i32" }
+            return expr.inferred_type
+        else
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = string.format(
+                "Field '%s' not found in string type (available: data, length, capacity)",
                 expr.field
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
@@ -787,6 +815,9 @@ function Inference.types_compatible(type1, type2, typechecker)
         -- Pairs are compatible if left and right types match
         return Inference.types_compatible(type1.left_type, type2.left_type, typechecker) and
                Inference.types_compatible(type1.right_type, type2.right_type, typechecker)
+    elseif type1.kind == "string" and type2.kind == "string" then
+        -- Strings are always compatible
+        return true
     end
 
     return false
@@ -838,6 +869,8 @@ function Inference.type_to_string(type_node)
         return "map[" .. Inference.type_to_string(type_node.key_type) .. "]" .. Inference.type_to_string(type_node.value_type)
     elseif type_node.kind == "pair" then
         return "pair<" .. Inference.type_to_string(type_node.left_type) .. ":" .. Inference.type_to_string(type_node.right_type) .. ">"
+    elseif type_node.kind == "string" then
+        return "string"
     end
 
     return "unknown"
@@ -1076,6 +1109,25 @@ function Inference.infer_pair_literal_type(typechecker, expr)
     
     -- Return a pair type (stack allocated)
     local inferred = { kind = "pair", left_type = left_type, right_type = right_type }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a new string (new string "text")
+function Inference.infer_new_string_type(typechecker, expr)
+    -- String literal value is stored in expr.value
+    -- Return a pointer to string type (heap allocated)
+    local string_type = { kind = "string" }
+    local inferred = { kind = "pointer", to = string_type }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a string literal (string "text")
+function Inference.infer_string_literal_type(typechecker, expr)
+    -- String literal value is stored in expr.value
+    -- Return a string type (stack allocated)
+    local inferred = { kind = "string" }
     expr.inferred_type = inferred
     return inferred
 end

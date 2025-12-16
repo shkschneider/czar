@@ -347,6 +347,20 @@ function Expressions.gen_expr(expr)
                 obj_type = ctx():get_var_type(obj.name)
             end
 
+            -- Special handling for string.cstr()
+            if obj_type and obj_type.kind == "string" and method_name == "cstr" then
+                local obj_expr = Expressions.gen_expr(obj)
+                -- Call czar_string_cstr helper function
+                return string.format("czar_string_cstr(&%s)", obj_expr)
+            end
+            
+            -- Special handling for string*.cstr()
+            if obj_type and obj_type.kind == "pointer" and obj_type.to.kind == "string" and method_name == "cstr" then
+                local obj_expr = Expressions.gen_expr(obj)
+                -- Call czar_string_cstr helper function (already a pointer)
+                return string.format("czar_string_cstr(%s)", obj_expr)
+            end
+
             -- Get the receiver type name
             local receiver_type_name = nil
             if obj_type then
@@ -696,6 +710,51 @@ function Expressions.gen_expr(expr)
         local size = #expr.entries
         return string.format("(%s){ .size = %d, .keys = { %s }, .values = { %s } }",
             map_type_name, size, join(key_parts, ", "), join(value_parts, ", "))
+    elseif expr.kind == "new_string" then
+        -- new string "text" - heap-allocated string
+        local str_value = expr.value
+        local str_len = #str_value
+        
+        -- Register string type for later struct generation
+        ctx().has_string_type = true
+        
+        -- Generate code: malloc + initialize
+        local statements = {}
+        table.insert(statements, string.format("czar_string* _str = %s", 
+            ctx():malloc_call("sizeof(czar_string)", true)))
+        -- Allocate capacity with room to grow (next power of 2, minimum 16)
+        local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
+        table.insert(statements, string.format("_str->data = %s",
+            ctx():malloc_call(tostring(capacity), false)))
+        table.insert(statements, string.format("_str->length = %d", str_len))
+        table.insert(statements, string.format("_str->capacity = %d", capacity))
+        -- Copy the string data
+        table.insert(statements, string.format("memcpy(_str->data, \"%s\", %d)", str_value, str_len))
+        table.insert(statements, "_str->data[_str->length] = '\\0'")
+        table.insert(statements, "_str")
+        
+        return string.format("({ %s; })", join(statements, "; "))
+    elseif expr.kind == "string_literal" then
+        -- string "text" - stack-allocated string
+        local str_value = expr.value
+        local str_len = #str_value
+        
+        -- Register string type for later struct generation
+        ctx().has_string_type = true
+        
+        -- For stack allocation, we need to create a compound literal with inline data
+        -- We'll allocate capacity with room to grow (next power of 2, minimum 16)
+        local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
+        
+        -- Generate code: compound literal with malloc for data
+        local statements = {}
+        table.insert(statements, string.format("char* _data = %s",
+            ctx():malloc_call(tostring(capacity), false)))
+        table.insert(statements, string.format("memcpy(_data, \"%s\", %d)", str_value, str_len))
+        table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
+        table.insert(statements, string.format("(czar_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
+        
+        return string.format("({ %s; })", join(statements, "; "))
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
