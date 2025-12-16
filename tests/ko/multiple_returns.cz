@@ -1,0 +1,8 @@
+// Test multiple return paths
+fn multiple() i32, i32 {
+    return 0 1
+}
+
+fn main() i32 {
+    multiple()
+}
