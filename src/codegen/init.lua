@@ -245,11 +245,34 @@ function Codegen:generate()
     end
 
     local has_main = false
+    -- First pass: collect all map types by generating functions into a temporary buffer
+    local saved_out = self.out
+    self.out = {}
     for _, item in ipairs(self.ast.items) do
         if item.kind == "function" then
             if item.name == "main" then has_main = true end
             self:gen_function(item)
         end
+    end
+    local function_code = self.out
+    self.out = saved_out
+    
+    -- Generate map struct definitions if any maps were discovered
+    if self.map_types then
+        for _, map_info in pairs(self.map_types) do
+            self:emit(string.format("typedef struct %s {", map_info.map_type_name))
+            self:emit(string.format("    %s* keys;", map_info.key_type_str))
+            self:emit(string.format("    %s* values;", map_info.value_type_str))
+            self:emit("    int32_t size;")
+            self:emit("    int32_t capacity;")
+            self:emit(string.format("} %s;", map_info.map_type_name))
+            self:emit("")
+        end
+    end
+    
+    -- Now emit the function code
+    for _, line in ipairs(function_code) do
+        self:emit(line)
     end
 
     self:gen_wrapper(has_main)

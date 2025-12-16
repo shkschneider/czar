@@ -23,6 +23,12 @@ function Types.c_type(type_node)
     elseif type_node.kind == "varargs" then
         -- Varargs are represented as pointers to the element type (like slices)
         return Types.c_type(type_node.element_type) .. "*"
+    elseif type_node.kind == "map" then
+        -- Maps are represented as a pointer to a map struct
+        -- We'll generate a generic map structure
+        local key_type_str = Types.c_type(type_node.key_type):gsub("%*", "ptr")
+        local value_type_str = Types.c_type(type_node.value_type):gsub("%*", "ptr")
+        return "czar_map_" .. key_type_str .. "_" .. value_type_str .. "*"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         

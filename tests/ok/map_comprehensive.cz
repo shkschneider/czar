@@ -1,0 +1,44 @@
+// Test map with comprehensive features
+fn main() i32 {
+    // Create an empty map
+    map[i32]i32 empty = new map[i32]i32 {}
+    
+    // Verify empty map has size 0
+    if empty.size != 0 {
+        return 1
+    }
+    
+    // Create a map with bool values
+    map[i32]bool flags = new map[i32]bool {
+        1: true,
+        2: false,
+        3: true
+    }
+    
+    // Access map properties
+    i32 flag_count = flags.size
+    
+    // Verify the size
+    if flag_count != 3 {
+        return 2
+    }
+    
+    // Check values individually
+    bool first = flags.values[0]
+    bool second = flags.values[1]
+    bool third = flags.values[2]
+    
+    if first != true {
+        return 3
+    }
+    
+    if second != false {
+        return 4
+    }
+    
+    if third != true {
+        return 5
+    }
+    
+    return 0  // Success
+}

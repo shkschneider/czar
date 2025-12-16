@@ -90,6 +90,8 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_new_type(typechecker, expr)
     elseif expr.kind == "new_array" then
         return Inference.infer_new_array_type(typechecker, expr)
+    elseif expr.kind == "new_map" then
+        return Inference.infer_new_map_type(typechecker, expr)
     elseif expr.kind == "cast" then
         local target_type = expr.to_type or expr.target_type
         expr.inferred_type = target_type
@@ -124,6 +126,33 @@ function Inference.infer_field_type(typechecker, expr)
     local obj_type = Inference.infer_type(typechecker, expr.object)
     if not obj_type then
         return nil
+    end
+
+    -- Handle map type fields
+    if obj_type.kind == "map" then
+        if expr.field == "keys" then
+            local keys_type = { kind = "slice", element_type = obj_type.key_type }
+            expr.inferred_type = keys_type
+            return keys_type
+        elseif expr.field == "values" then
+            local values_type = { kind = "slice", element_type = obj_type.value_type }
+            expr.inferred_type = values_type
+            return values_type
+        elseif expr.field == "size" or expr.field == "capacity" then
+            local int_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = int_type
+            return int_type
+        else
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = string.format(
+                "Field '%s' not found in map type (available: keys, values, size, capacity)",
+                expr.field
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
     end
 
     local type_name = Inference.get_base_type_name(obj_type)
@@ -656,6 +685,10 @@ function Inference.types_compatible(type1, type2, typechecker)
     elseif type1.kind == "slice" and type2.kind == "slice" then
         -- Slices are compatible if element types match
         return Inference.types_compatible(type1.element_type, type2.element_type, typechecker)
+    elseif type1.kind == "map" and type2.kind == "map" then
+        -- Maps are compatible if key and value types match
+        return Inference.types_compatible(type1.key_type, type2.key_type, typechecker) and
+               Inference.types_compatible(type1.value_type, type2.value_type, typechecker)
     end
 
     return false
@@ -703,6 +736,8 @@ function Inference.type_to_string(type_node)
         return Inference.type_to_string(type_node.element_type) .. "[]"
     elseif type_node.kind == "varargs" then
         return Inference.type_to_string(type_node.element_type) .. "..."
+    elseif type_node.kind == "map" then
+        return "map[" .. Inference.type_to_string(type_node.key_type) .. "]" .. Inference.type_to_string(type_node.value_type)
     end
 
     return "unknown"
@@ -780,6 +815,44 @@ function Inference.infer_new_array_type(typechecker, expr)
     
     -- Return a slice type (pointer to element type), which is how dynamic arrays are represented
     local inferred = { kind = "slice", element_type = element_type }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a map allocation (new map[K]V { key: value, ... })
+function Inference.infer_new_map_type(typechecker, expr)
+    -- Type checking for map entries
+    for i, entry in ipairs(expr.entries) do
+        local key_type = Inference.infer_type(typechecker, entry.key)
+        local value_type = Inference.infer_type(typechecker, entry.value)
+        
+        -- Check key type compatibility
+        if not Inference.types_compatible(expr.key_type, key_type, typechecker) then
+            local line = expr.line or 0
+            local msg = string.format(
+                "Map entry %d has key type '%s', expected '%s'",
+                i, Inference.type_to_string(key_type), Inference.type_to_string(expr.key_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        end
+        
+        -- Check value type compatibility
+        if not Inference.types_compatible(expr.value_type, value_type, typechecker) then
+            local line = expr.line or 0
+            local msg = string.format(
+                "Map entry %d has value type '%s', expected '%s'",
+                i, Inference.type_to_string(value_type), Inference.type_to_string(expr.value_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        end
+    end
+    
+    -- Return a map type
+    local inferred = { kind = "map", key_type = expr.key_type, value_type = expr.value_type }
     expr.inferred_type = inferred
     return inferred
 end
