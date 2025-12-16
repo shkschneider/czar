@@ -965,9 +965,11 @@ function Typechecker:validate_main_function()
     
     -- Check return type (must be i32)
     local return_type = main_func.return_type
-    if not return_type or 
-       return_type.kind ~= "named_type" or 
-       return_type.name ~= "i32" then
+    local is_valid_return = return_type and 
+                           return_type.kind == "named_type" and 
+                           return_type.name == "i32"
+    
+    if not is_valid_return then
         local line = main_func.line or 0
         local actual_return = return_type and self:type_to_string(return_type) or "unknown"
         local msg = string.format(
