@@ -1,7 +1,7 @@
-// Test map with comprehensive features
+// Test map with comprehensive features using new syntax
 fn main() i32 {
     // Create a map with bool values
-    i32{bool} flags = new {
+    map<i32:bool> flags = new map {
         1: true,
         2: false,
         3: true
@@ -12,6 +12,7 @@ fn main() i32 {
     
     // Verify the size
     if flag_count != 3 {
+        free flags
         return 2
     }
     
@@ -21,16 +22,20 @@ fn main() i32 {
     bool third = flags.values[2]
     
     if first != true {
+        free flags
         return 3
     }
     
     if second != false {
+        free flags
         return 4
     }
     
     if third != true {
+        free flags
         return 5
     }
     
+    free flags
     return 0  // Success
 }

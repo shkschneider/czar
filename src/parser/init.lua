@@ -307,8 +307,7 @@ function Parser:parse_type()
     error(string.format("expected type but found %s", token_label(tok)))
 end
 
--- Parse type with map shorthand support (Type{ValueType})
--- This is only safe to use in contexts where { cannot start a block
+-- Parse type (no shortcuts, explicit keywords required)
 function Parser:parse_type_with_map_shorthand()
     local tok = self:current()
     
@@ -323,12 +322,6 @@ function Parser:parse_type_with_map_shorthand()
         -- Check if this is a pointer type (Type*)
         if self:match("STAR") then
             return { kind = "pointer", to = base_type }
-        end
-        -- Check if this is a map type shorthand (KeyType{ValueType})
-        if self:match("LBRACE") then
-            local value_type = self:parse_type()
-            self:expect("RBRACE")
-            return { kind = "map", key_type = base_type, value_type = value_type }
         end
         -- Check if this is an array type (Type[size]) or slice type (Type[])
         if self:match("LBRACKET") then
@@ -915,64 +908,17 @@ function Parser:parse_primary()
             return { kind = "new_array", elements = elements }
         end
         
-        -- Check if this is a brace literal: new { ... }
-        -- Could be either a map or a struct
-        if self:check("LBRACE") then
-            self:advance()
-            
-            -- Empty literal
-            if self:check("RBRACE") then
-                self:advance()
-                -- Return as map literal with no entries (type will be inferred from context)
-                return { kind = "new_map", entries = {} }
-            end
-            
-            -- Parse first entry to determine if it's a map or struct
-            -- Save position to backtrack if needed
-            local saved_pos = self.pos
-            
-            -- Try to parse as map entry (expr : expr)
-            local is_map = false
-            local success = pcall(function() self:parse_expression() end)
-            if success and self:check("COLON") then
-                -- This looks like a map
-                is_map = true
-            end
-            
-            -- Restore position
-            self.pos = saved_pos
-            
-            if is_map then
-                -- Parse as map literal: new { key: value, ... }
-                local entries = {}
-                repeat
-                    local key = self:parse_expression()
-                    self:expect("COLON")
-                    local value = self:parse_expression()
-                    table.insert(entries, { key = key, value = value })
-                until not self:match("COMMA")
-                self:expect("RBRACE")
-                return { kind = "new_map", entries = entries }
-            else
-                -- Parse as struct literal: new { field: value, ... }
-                -- Need to get struct type from identifier before the brace
-                -- But we already consumed "new {", so we can't parse this way
-                -- This case should not happen with the new syntax
-                error("new { ... } with field names requires struct type: use 'new StructName { ... }' for structs")
-            end
-        end
-        
-        -- Check for new array { ... }, new map { ... }, or new pair { ... }
+        -- Check for new array [ ... ], new map { ... }, or new pair [ ... ]
         if self:check("KEYWORD", "array") then
             self:advance()
-            self:expect("LBRACE")
+            self:expect("LBRACKET")
             local elements = {}
-            if not self:check("RBRACE") then
+            if not self:check("RBRACKET") then
                 repeat
                     table.insert(elements, self:parse_expression())
                 until not self:match("COMMA")
             end
-            self:expect("RBRACE")
+            self:expect("RBRACKET")
             return { kind = "new_array", elements = elements }
         end
         
@@ -994,12 +940,12 @@ function Parser:parse_primary()
         
         if self:check("KEYWORD", "pair") then
             self:advance()
-            self:expect("LBRACE")
+            self:expect("LBRACKET")
             local left = self:parse_expression()
-            self:expect("COMMA")
+            self:expect("COLON")
             local right = self:parse_expression()
             self:match("COMMA")  -- Optional trailing comma
-            self:expect("RBRACE")
+            self:expect("RBRACKET")
             return { kind = "new_pair", left = left, right = right }
         end
         
@@ -1019,16 +965,16 @@ function Parser:parse_primary()
         self:expect("RBRACE")
         return { kind = "new_heap", type_name = type_name, fields = fields }
     elseif tok.type == "KEYWORD" and tok.value == "array" then
-        -- Stack array literal: array { expr, expr, ... }
+        -- Stack array literal: array [ expr, expr, ... ]
         self:advance()
-        self:expect("LBRACE")
+        self:expect("LBRACKET")
         local elements = {}
-        if not self:check("RBRACE") then
+        if not self:check("RBRACKET") then
             repeat
                 table.insert(elements, self:parse_expression())
             until not self:match("COMMA")
         end
-        self:expect("RBRACE")
+        self:expect("RBRACKET")
         return { kind = "array_literal", elements = elements }
     elseif tok.type == "KEYWORD" and tok.value == "map" then
         -- Stack map literal: map { key: value, ... }
@@ -1046,14 +992,14 @@ function Parser:parse_primary()
         self:expect("RBRACE")
         return { kind = "map_literal", entries = entries }
     elseif tok.type == "KEYWORD" and tok.value == "pair" then
-        -- Stack pair literal: pair { left, right }
+        -- Stack pair literal: pair [ left: right ]
         self:advance()
-        self:expect("LBRACE")
+        self:expect("LBRACKET")
         local left = self:parse_expression()
-        self:expect("COMMA")
+        self:expect("COLON")
         local right = self:parse_expression()
         self:match("COMMA")  -- Optional trailing comma
-        self:expect("RBRACE")
+        self:expect("RBRACKET")
         return { kind = "pair_literal", left = left, right = right }
     elseif tok.type == "IDENT" then
         local ident = self:advance()

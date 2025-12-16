@@ -1,7 +1,7 @@
-// Test new map syntax
+// Test new map syntax with explicit keyword
 fn main() i32 {
-    // Create a map with new simplified syntax
-    i32{i32} numbers = new {
+    // Create a map with new explicit syntax
+    map<i32:i32> numbers = new map {
         1: 10,
         2: 20,
         3: 30
@@ -10,6 +10,7 @@ fn main() i32 {
     // Access map elements
     i32 sum = numbers.values[0] + numbers.values[1] + numbers.values[2]
     
+    free numbers
     // Expected: 10 + 20 + 30 = 60
     return sum - 60
 }

@@ -1,7 +1,7 @@
-// Test basic map type with key-value pairs
+// Test basic map type with key-value pairs using new syntax
 fn main() i32 {
     // Create a map with new syntax
-    i32{i32} numbers = new {
+    map<i32:i32> numbers = new map {
         1: 10,
         2: 20,
         3: 30
@@ -11,5 +11,6 @@ fn main() i32 {
     i32 sum = numbers.values[0] + numbers.values[1] + numbers.values[2]
     
     // Expected: 10 + 20 + 30 = 60
+    free numbers
     return sum - 60
 }
