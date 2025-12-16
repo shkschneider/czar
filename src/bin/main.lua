@@ -15,6 +15,12 @@ local generate = require("generate")
 local assemble = require("assemble")
 local build = require("build")
 local run = require("run")
+local c_module = require("c")
+local s_module = require("s")
+local compile = require("compile")
+local test = require("test")
+local format = require("format")
+local clean = require("clean")
 
 -- Simple file reader utility
 -- Note: This is duplicated in generate.lua to avoid circular dependencies
@@ -30,32 +36,35 @@ local function read_file(path)
 end
 
 local function usage()
-    io.stderr:write("Usage: cz <command> <path> [options]\n")
+    io.stderr:write("Usage: cz [command] [path] [options]\n")
     io.stderr:write("\nCommands:\n")
+    io.stderr:write("  (no arguments)          Show this help message\n")
+    io.stderr:write("  c <file.cz>             Generate C code from .cz file (produces .c file)\n")
+    io.stderr:write("  s <file.c>              Generate assembly from .c file (produces .s file)\n")
+    io.stderr:write("  compile <file.cz>       Generate C and assembly from .cz file (produces .c and .s files)\n")
+    io.stderr:write("  build <file.cz>         Build binary from .cz file (depends on compile, produces a.out)\n")
+    io.stderr:write("                          Options: -o <output> (default: a.out), --debug\n")
+    io.stderr:write("  run <file.cz>           Build and run binary (depends on build, then clean)\n")
+    io.stderr:write("                          Options: --debug\n")
+    io.stderr:write("  test <file.cz>          Compile, run, and expect exit code 0\n")
+    io.stderr:write("  format <file.cz>        Format .cz file (TODO: not implemented)\n")
+    io.stderr:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
+    io.stderr:write("\nLegacy commands (for development/debugging):\n")
     io.stderr:write("  lexer <file.cz>         Print all tokens to stdout\n")
     io.stderr:write("  parser <file.cz>        Print AST to stdout\n")
     io.stderr:write("  typechecker <file.cz>   Type check and print annotated AST to stdout\n")
     io.stderr:write("  generate <file.cz>      Generate C code from .cz file (prints to stdout and saves as .c)\n")
     io.stderr:write("  assemble <file.c|.cz>   Generate assembly from .c or .cz file (prints to stdout and saves as .s)\n")
-    io.stderr:write("  build <file.c|.cz>      Compile .c or .cz file to binary\n")
-    io.stderr:write("                          Options: -o <output> (default: a.out), --debug\n")
-    io.stderr:write("  run <file.cz>           Compile and run a.out binary\n")
-    io.stderr:write("                          Options: --debug\n")
     io.stderr:write("\nOptions:\n")
     io.stderr:write("  --debug                 Enable memory tracking and print statistics on exit\n")
-    io.stderr:write("\nNote: Each command depends on the ones before it.\n")
     io.stderr:write("\nExamples:\n")
-    io.stderr:write("  cz lexer program.cz\n")
-    io.stderr:write("  cz parser program.cz\n")
-    io.stderr:write("  cz typechecker program.cz\n")
-    io.stderr:write("  cz generate program.cz\n")
-    io.stderr:write("  cz generate program.cz --debug\n")
-    io.stderr:write("  cz assemble program.cz\n")
-    io.stderr:write("  cz build program.c\n")
+    io.stderr:write("  cz c program.cz\n")
+    io.stderr:write("  cz s program.c\n")
+    io.stderr:write("  cz compile program.cz\n")
     io.stderr:write("  cz build program.cz -o myapp\n")
-    io.stderr:write("  cz build program.cz --debug\n")
     io.stderr:write("  cz run program.cz\n")
-    io.stderr:write("  cz run program.cz --debug\n")
+    io.stderr:write("  cz test program.cz\n")
+    io.stderr:write("  cz clean\n")
     os.exit(1)
 end
 
@@ -448,7 +457,145 @@ local function cmd_run(args)
 
     -- Run the binary
     local exit_code = run.run_binary(output_path)
+    
+    -- Clean up after running
+    os.remove(output_path)
+    
     os.exit(exit_code)
+end
+
+local function cmd_c(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'c' requires a source file\n")
+        usage()
+    end
+
+    local opts = parse_options(args)
+    local source_path = opts.source_path
+
+    if not source_path then
+        io.stderr:write("Error: 'c' requires a source file\n")
+        usage()
+    end
+
+    local ok, result = c_module.cz_to_c(source_path, { debug = opts.debug })
+    if not ok then
+        io.stderr:write(result .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Generated: %s\n", result))
+    return 0
+end
+
+local function cmd_s(args)
+    if #args < 1 then
+        io.stderr:write("Error: 's' requires a source file\n")
+        usage()
+    end
+
+    local source_path = args[1]
+
+    local ok, result = s_module.c_to_s(source_path)
+    if not ok then
+        io.stderr:write(result .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Generated: %s\n", result))
+    return 0
+end
+
+local function cmd_compile(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'compile' requires a source file\n")
+        usage()
+    end
+
+    local opts = parse_options(args)
+    local source_path = opts.source_path
+
+    if not source_path then
+        io.stderr:write("Error: 'compile' requires a source file\n")
+        usage()
+    end
+
+    local ok, result = compile.compile(source_path, { debug = opts.debug })
+    if not ok then
+        io.stderr:write(result .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Generated: %s, %s\n", result.c_path, result.s_path))
+    return 0
+end
+
+local function cmd_test(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'test' requires a source file\n")
+        usage()
+    end
+
+    local opts = parse_options(args)
+    local source_path = opts.source_path
+
+    if not source_path then
+        io.stderr:write("Error: 'test' requires a source file\n")
+        usage()
+    end
+
+    local ok, err = test.test(source_path, { debug = opts.debug })
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Test passed: %s\n", source_path))
+    return 0
+end
+
+local function cmd_format(args)
+    if #args < 1 then
+        io.stderr:write("Error: 'format' requires a source file\n")
+        usage()
+    end
+
+    local source_path = args[1]
+
+    local ok, err = format.format(source_path)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    io.stderr:write(string.format("Formatted: %s\n", source_path))
+    return 0
+end
+
+local function cmd_clean(args)
+    local path = args[1] or "."
+
+    local ok, result = clean.clean(path)
+    
+    if #result.removed > 0 then
+        io.stderr:write("Removed files:\n")
+        for _, file in ipairs(result.removed) do
+            io.stderr:write(string.format("  %s\n", file))
+        end
+    end
+    
+    if #result.errors > 0 then
+        io.stderr:write("Errors:\n")
+        for _, err in ipairs(result.errors) do
+            io.stderr:write(string.format("  %s\n", err))
+        end
+    end
+    
+    if not ok then
+        os.exit(1)
+    end
+
+    return 0
 end
 
 local function main()
@@ -462,7 +609,23 @@ local function main()
         table.insert(cmd_args, arg[i])
     end
 
-    if command == "lexer" then
+    if command == "c" then
+        cmd_c(cmd_args)
+    elseif command == "s" then
+        cmd_s(cmd_args)
+    elseif command == "compile" then
+        cmd_compile(cmd_args)
+    elseif command == "build" then
+        cmd_build(cmd_args)
+    elseif command == "run" then
+        cmd_run(cmd_args)
+    elseif command == "test" then
+        cmd_test(cmd_args)
+    elseif command == "format" then
+        cmd_format(cmd_args)
+    elseif command == "clean" then
+        cmd_clean(cmd_args)
+    elseif command == "lexer" then
         cmd_lexer(cmd_args)
     elseif command == "parser" then
         cmd_parser(cmd_args)
@@ -472,10 +635,6 @@ local function main()
         cmd_generate(cmd_args)
     elseif command == "assemble" then
         cmd_assemble(cmd_args)
-    elseif command == "build" then
-        cmd_build(cmd_args)
-    elseif command == "run" then
-        cmd_run(cmd_args)
     else
         io.stderr:write(string.format("Unknown command: %s\n", command))
         usage()

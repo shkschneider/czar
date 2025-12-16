@@ -47,6 +47,12 @@ SOURCES=(
     bin/assemble.lua
     bin/build.lua
     bin/run.lua
+    bin/c.lua
+    bin/s.lua
+    bin/compile.lua
+    bin/test.lua
+    bin/format.lua
+    bin/clean.lua
     lexer/init.lua
     parser/init.lua
     typechecker/init.lua
