@@ -1,0 +1,31 @@
+// Comprehensive test of all print functions
+fn main() i32 {
+    // Test println
+    println("=== Testing println ===")
+    println("Line 1")
+    println("Line 2")
+    
+    // Test print
+    print("=== Testing print ===")
+    print("\n")
+    print("A")
+    print("B")
+    print("C")
+    println("")
+    
+    // Test printf with various types
+    println("=== Testing printf ===")
+    i32 age = 25
+    i32 year = 2024
+    printf("Age: %d, Year: %d\n", age, year)
+    
+    i32 a = 10
+    i32 b = 20
+    i32 c = 30
+    printf("Values: %d, %d, %d\n", a, b, c)
+    
+    // Printf without arguments
+    printf("Done!\n")
+    
+    return 0
+}
