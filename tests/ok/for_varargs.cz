@@ -1,0 +1,12 @@
+// Test for loop with varargs
+fn sum_varargs(i32... nums) i32 {
+    mut i32 total = 0
+    for _, val in nums {
+        total = total + val
+    }
+    return total
+}
+
+fn main() i32 {
+    return sum_varargs(10, 20, 30, 40) - 100
+}

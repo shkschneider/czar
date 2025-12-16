@@ -1,0 +1,12 @@
+// Test for loop with mutable array but immutable item
+fn main() i32 {
+    mut i32[3] arr = [ 10, 20, 30 ]
+    mut i32 sum = 0
+    
+    // item is immutable - can only read
+    for idx, item in arr {
+        sum = sum + item
+    }
+    
+    return sum - 60
+}

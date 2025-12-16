@@ -1,0 +1,11 @@
+// Test error: cannot have mut item with immutable array
+fn main() i32 {
+    i32[3] arr = [ 10, 20, 30 ]
+    
+    // Error: arr is immutable, so item cannot be mut
+    for idx, mut item in arr {
+        *item = 42
+    }
+    
+    return 0
+}
