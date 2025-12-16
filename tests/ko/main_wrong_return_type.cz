@@ -1,0 +1,6 @@
+// Test main function with wrong return type
+// ERROR: main must return i32
+
+fn main() void {
+    // Wrong return type
+}

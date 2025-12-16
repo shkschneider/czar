@@ -1,0 +1,6 @@
+// Test main function with parameters
+// ERROR: main must not have parameters
+
+fn main(i32 x) i32 {
+    return x
+}
