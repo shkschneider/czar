@@ -209,7 +209,12 @@ function Parser:parse_type()
         local element_type = self:parse_type()
         self:expect("GT")
         -- array<Type> is represented as a slice internally (dynamic size)
-        return { kind = "slice", element_type = element_type }
+        local base_type = { kind = "slice", element_type = element_type }
+        -- Check if this is a pointer type (array<T>*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        return base_type
     end
     
     if self:check("KEYWORD", "slice") then
@@ -217,7 +222,12 @@ function Parser:parse_type()
         self:expect("LT")
         local element_type = self:parse_type()
         self:expect("GT")
-        return { kind = "slice", element_type = element_type }
+        local base_type = { kind = "slice", element_type = element_type }
+        -- Check if this is a pointer type (slice<T>*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        return base_type
     end
     
     if self:check("KEYWORD", "map") then
@@ -227,7 +237,12 @@ function Parser:parse_type()
         self:expect("COLON")
         local value_type = self:parse_type()
         self:expect("GT")
-        return { kind = "map", key_type = key_type, value_type = value_type }
+        local base_type = { kind = "map", key_type = key_type, value_type = value_type }
+        -- Check if this is a pointer type (map<K:V>*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        return base_type
     end
     
     if self:check("KEYWORD", "pair") then
@@ -237,7 +252,12 @@ function Parser:parse_type()
         self:expect("COLON")
         local right_type = self:parse_type()
         self:expect("GT")
-        return { kind = "pair", left_type = left_type, right_type = right_type }
+        local base_type = { kind = "pair", left_type = left_type, right_type = right_type }
+        -- Check if this is a pointer type (pair<T:T>*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        return base_type
     end
     
     if is_type_token(tok) then
@@ -402,7 +422,7 @@ function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
     -- Check for container type keywords
-    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map") then
+    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair") then
         return true
     end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)

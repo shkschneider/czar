@@ -159,15 +159,21 @@ function Inference.infer_field_type(typechecker, expr)
     if not obj_type then
         return nil
     end
+    
+    -- Dereference pointer if accessing field through pointer
+    local base_type = obj_type
+    if obj_type.kind == "pointer" then
+        base_type = obj_type.to
+    end
 
     -- Handle map type fields
-    if obj_type.kind == "map" then
+    if base_type.kind == "map" then
         if expr.field == "keys" then
-            local keys_type = { kind = "slice", element_type = obj_type.key_type }
+            local keys_type = { kind = "slice", element_type = base_type.key_type }
             expr.inferred_type = keys_type
             return keys_type
         elseif expr.field == "values" then
-            local values_type = { kind = "slice", element_type = obj_type.value_type }
+            local values_type = { kind = "slice", element_type = base_type.value_type }
             expr.inferred_type = values_type
             return values_type
         elseif expr.field == "size" or expr.field == "capacity" then
@@ -186,8 +192,29 @@ function Inference.infer_field_type(typechecker, expr)
             return nil
         end
     end
+    
+    -- Handle pair type fields
+    if base_type.kind == "pair" then
+        if expr.field == "left" then
+            expr.inferred_type = base_type.left_type
+            return base_type.left_type
+        elseif expr.field == "right" then
+            expr.inferred_type = base_type.right_type
+            return base_type.right_type
+        else
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = string.format(
+                "Field '%s' not found in pair type (available: left, right)",
+                expr.field
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
 
-    local type_name = Inference.get_base_type_name(obj_type)
+    local type_name = Inference.get_base_type_name(base_type)
     local struct_def = Resolver.resolve_struct(typechecker, type_name)
 
     if struct_def then
