@@ -710,9 +710,29 @@ end
 
 -- Type check a break statement
 function Typechecker:check_break(stmt)
+    local level = stmt.level or 1  -- Default to 1 if not specified
+    
     if self.loop_depth == 0 then
         local line = stmt.line or 0
         local msg = "Break statement must be inside a loop"
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    elseif level > self.loop_depth then
+        local line = stmt.line or 0
+        local msg = string.format(
+            "Break level %d exceeds loop depth %d",
+            level, self.loop_depth
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    elseif level < 1 then
+        local line = stmt.line or 0
+        local msg = string.format(
+            "Break level must be at least 1, got %d",
+            level
+        )
         local formatted_error = Errors.format("ERROR", self.source_file, line,
             Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
         self:add_error(formatted_error)
@@ -721,9 +741,29 @@ end
 
 -- Type check a continue statement
 function Typechecker:check_continue(stmt)
+    local level = stmt.level or 1  -- Default to 1 if not specified
+    
     if self.loop_depth == 0 then
         local line = stmt.line or 0
         local msg = "Continue statement must be inside a loop"
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    elseif level > self.loop_depth then
+        local line = stmt.line or 0
+        local msg = string.format(
+            "Continue level %d exceeds loop depth %d",
+            level, self.loop_depth
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    elseif level < 1 then
+        local line = stmt.line or 0
+        local msg = string.format(
+            "Continue level must be at least 1, got %d",
+            level
+        )
         local formatted_error = Errors.format("ERROR", self.source_file, line,
             Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
         self:add_error(formatted_error)

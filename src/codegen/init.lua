@@ -40,6 +40,8 @@ function Codegen.new(ast, options)
             ["String"] = "char*"
         },
         repeat_counter = 0,  -- Counter for generating unique repeat loop variables
+        loop_label_counter = 0,  -- Counter for generating unique loop labels
+        loop_stack = {},  -- Stack of loop info for multi-level break/continue
     }
     return setmetatable(self, Codegen)
 end
