@@ -277,66 +277,23 @@ function Codegen:generate()
         end
     end
     
-    -- Generate string struct definition if any strings were discovered
+    -- Include string implementation if any strings were discovered
     if self.has_string_type then
-        self:emit("typedef struct czar_string {")
-        self:emit("    char* data;")
-        self:emit("    int32_t length;")
-        self:emit("    int32_t capacity;")
-        self:emit("} czar_string;")
-        self:emit("")
-        
-        -- Generate string helper functions with memory safety
-        self:emit("// String helper function: get C-style null-terminated string")
-        self:emit("static inline char* czar_string_cstr(czar_string* s) {")
-        self:emit("    return s->data;")
-        self:emit("}")
-        self:emit("")
-        
-        self:emit("// String helper function: ensure capacity with dynamic resizing")
-        self:emit("static inline void czar_string_ensure_capacity(czar_string* s, int32_t required_capacity) {")
-        self:emit("    if (s->capacity >= required_capacity) return;")
-        self:emit("    // Grow to next power of 2, minimum 16")
-        self:emit("    int32_t new_capacity = s->capacity ? s->capacity : 16;")
-        self:emit("    while (new_capacity < required_capacity) {")
-        self:emit("        new_capacity *= 2;")
-        self:emit("    }")
-        self:emit("    char* new_data = (char*)realloc(s->data, new_capacity);")
-        self:emit("    if (!new_data) {")
-        self:emit("        fprintf(stderr, \"ERROR: String realloc failed\\n\");")
-        self:emit("        exit(1);")
-        self:emit("    }")
-        self:emit("    s->data = new_data;")
-        self:emit("    s->capacity = new_capacity;")
-        self:emit("}")
-        self:emit("")
-        
-        self:emit("// String helper function: safe append (dynamically resizes, bounds-checked)")
-        self:emit("static inline void czar_string_append(czar_string* dest, const char* src, int32_t src_len) {")
-        self:emit("    int32_t required = dest->length + src_len + 1; // +1 for null terminator")
-        self:emit("    czar_string_ensure_capacity(dest, required);")
-        self:emit("    // Safe copy: we know we have enough space")
-        self:emit("    memcpy(dest->data + dest->length, src, src_len);")
-        self:emit("    dest->length += src_len;")
-        self:emit("    dest->data[dest->length] = '\\0';")
-        self:emit("}")
-        self:emit("")
-        
-        self:emit("// String helper function: safe concatenate two strings (bounds-checked)")
-        self:emit("static inline void czar_string_concat(czar_string* dest, czar_string* src) {")
-        self:emit("    czar_string_append(dest, src->data, src->length);")
-        self:emit("}")
-        self:emit("")
-        
-        self:emit("// String helper function: safe copy (bounds-checked, no buffer overrun)")
-        self:emit("static inline void czar_string_copy(czar_string* dest, const char* src, int32_t src_len) {")
-        self:emit("    int32_t required = src_len + 1; // +1 for null terminator")
-        self:emit("    czar_string_ensure_capacity(dest, required);")
-        self:emit("    memcpy(dest->data, src, src_len);")
-        self:emit("    dest->length = src_len;")
-        self:emit("    dest->data[dest->length] = '\\0';")
-        self:emit("}")
-        self:emit("")
+        -- Read the string implementation from cz_string.c
+        local string_impl_path = "src/codegen/cz_string.c"
+        local file = io.open(string_impl_path, "r")
+        if file then
+            local content = file:read("*all")
+            file:close()
+            -- Emit the entire string implementation
+            self:emit("// String implementation from cz_string.c")
+            for line in content:gmatch("[^\r\n]+") do
+                self:emit(line)
+            end
+            self:emit("")
+        else
+            error("Failed to open string implementation file: " .. string_impl_path)
+        end
     end
     
     -- Now emit the function code

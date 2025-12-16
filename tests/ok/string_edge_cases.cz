@@ -1,0 +1,33 @@
+// Test various string edge cases
+fn main() i32 {
+    // Empty string
+    string empty = string ""
+    if empty.length != 0 {
+        return 1
+    }
+    
+    // String with spaces
+    string spaces = string "   "
+    if spaces.length != 3 {
+        return 2
+    }
+    
+    // String with special characters (escape sequences as literals)
+    string special = string "hello\nworld\ttab"
+    if special.length != 17 {
+        return 3
+    }
+    
+    // Long string
+    string longstr = string "This is a much longer string that should test capacity allocation properly"
+    if longstr.length != 74 {
+        return 4
+    }
+    
+    // Verify capacity is reasonable
+    if longstr.capacity < longstr.length {
+        return 5
+    }
+    
+    return 0
+}
