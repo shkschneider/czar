@@ -306,6 +306,8 @@ function Parser:parse_statement()
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then
         return self:parse_while()
+    elseif self:check("KEYWORD", "for") then
+        return self:parse_for()
     else
         -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
@@ -443,6 +445,51 @@ function Parser:parse_while()
     local condition = self:parse_expression()
     local body = self:parse_block()
     return { kind = "while", condition = condition, body = body }
+end
+
+function Parser:parse_for()
+    self:expect("KEYWORD", "for")
+    
+    -- Parse index variable (can be _ or identifier)
+    local index_name = nil
+    local index_is_underscore = false
+    if self:check("IDENT") and self:current().value == "_" then
+        index_is_underscore = true
+        self:advance()
+    else
+        index_name = self:expect("IDENT").value
+    end
+    
+    self:expect("COMMA")
+    
+    -- Parse item variable (can be _ or identifier, and can have mut)
+    local item_mutable = self:match("KEYWORD", "mut") ~= nil
+    local item_name = nil
+    local item_is_underscore = false
+    if self:check("IDENT") and self:current().value == "_" then
+        item_is_underscore = true
+        self:advance()
+    else
+        item_name = self:expect("IDENT").value
+    end
+    
+    self:expect("KEYWORD", "in")
+    
+    -- Parse the collection expression
+    local collection = self:parse_expression()
+    
+    local body = self:parse_block()
+    
+    return {
+        kind = "for",
+        index_name = index_name,
+        index_is_underscore = index_is_underscore,
+        item_name = item_name,
+        item_is_underscore = item_is_underscore,
+        item_mutable = item_mutable,
+        collection = collection,
+        body = body
+    }
 end
 
 -- Expression parsing

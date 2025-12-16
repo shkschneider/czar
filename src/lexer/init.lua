@@ -14,6 +14,8 @@ local keywords = {
     ["else"] = true,
     ["elseif"] = true,
     ["while"] = true,
+    ["for"] = true,
+    ["in"] = true,
     ["true"] = true,
     ["false"] = true,
     ["null"] = true,
@@ -40,8 +42,6 @@ local keywords = {
     ["and"] = true,
     ["or"] = true,
     ["not"] = true,
-    -- for ...
-    -- for each ...
     -- is/type
     -- import
 }

@@ -248,6 +248,8 @@ function Typechecker:check_statement(stmt)
         self:check_if(stmt)
     elseif stmt.kind == "while" then
         self:check_while(stmt)
+    elseif stmt.kind == "for" then
+        self:check_for(stmt)
     elseif stmt.kind == "return" then
         self:check_return(stmt)
     elseif stmt.kind == "expr_stmt" then
@@ -470,6 +472,90 @@ function Typechecker:check_while(stmt)
     
     -- Type check body
     self:push_scope()
+    self:check_block(stmt.body)
+    self:pop_scope()
+end
+
+-- Type check a for statement
+function Typechecker:check_for(stmt)
+    -- Type check the collection
+    local collection_type = self:check_expression(stmt.collection)
+    
+    if not collection_type then
+        return
+    end
+    
+    -- Collection must be an array, slice, or varargs
+    if collection_type.kind ~= "array" and collection_type.kind ~= "slice" and collection_type.kind ~= "varargs" then
+        local line = stmt.line or (stmt.collection and stmt.collection.line) or 0
+        local msg = string.format(
+            "For loop collection must be an array, slice, or varargs, got '%s'",
+            self:type_to_string(collection_type)
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+        return
+    end
+    
+    -- Check if trying to iterate with mut item on immutable collection
+    if stmt.item_mutable and not stmt.item_is_underscore then
+        -- Get the collection mutability
+        local collection_is_mutable = false
+        if stmt.collection.kind == "identifier" then
+            local var_info = self:get_var_info(stmt.collection.name)
+            if var_info then
+                collection_is_mutable = var_info.mutable
+            end
+        end
+        
+        -- If collection is not mutable, item cannot be mut
+        if not collection_is_mutable then
+            local line = stmt.line or 0
+            local msg = string.format(
+                "Cannot declare mutable item '%s' when iterating over immutable collection",
+                stmt.item_name
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+            self:add_error(formatted_error)
+        end
+        
+        -- Slices and varargs are always read-only
+        if collection_type.kind == "slice" or collection_type.kind == "varargs" then
+            local line = stmt.line or 0
+            local msg = string.format(
+                "Cannot declare mutable item '%s' when iterating over %s (slices and varargs are read-only)",
+                stmt.item_name,
+                collection_type.kind
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+            self:add_error(formatted_error)
+        end
+    end
+    
+    -- Type check body in new scope
+    self:push_scope()
+    
+    -- Add index variable to scope (always i32)
+    if not stmt.index_is_underscore and stmt.index_name then
+        self:add_var(stmt.index_name, { kind = "named_type", name = "i32" }, false)
+    end
+    
+    -- Add item variable to scope with element type
+    if not stmt.item_is_underscore and stmt.item_name then
+        local element_type = collection_type.element_type
+        if stmt.item_mutable then
+            -- Mutable item: pointer to element
+            local pointer_type = { kind = "pointer", to = element_type }
+            self:add_var(stmt.item_name, pointer_type, true)
+        else
+            -- Immutable item: value copy
+            self:add_var(stmt.item_name, element_type, false)
+        end
+    end
+    
     self:check_block(stmt.body)
     self:pop_scope()
 end
