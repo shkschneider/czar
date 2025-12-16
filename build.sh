@@ -43,7 +43,7 @@ fi
 
 SOURCES=(
     bin/main.lua
-    bin/generate.lua
+    bin/transpiler.lua
     bin/assemble.lua
     bin/build.lua
     bin/run.lua

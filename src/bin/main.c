@@ -23,10 +23,23 @@ extern const char luaJIT_BC_codegen_memory[];
 extern const char luaJIT_BC_codegen_functions[];
 extern const char luaJIT_BC_codegen_statements[];
 extern const char luaJIT_BC_codegen_expressions[];
-extern const char luaJIT_BC_generate[];
+extern const char luaJIT_BC_codegen_expressions_literals[];
+extern const char luaJIT_BC_codegen_expressions_operators[];
+extern const char luaJIT_BC_codegen_expressions_calls[];
+extern const char luaJIT_BC_codegen_expressions_collections[];
+extern const char luaJIT_BC_errors[];
+extern const char luaJIT_BC_warnings[];
+extern const char luaJIT_BC_macros[];
+extern const char luaJIT_BC_transpiler[];
 extern const char luaJIT_BC_assemble[];
 extern const char luaJIT_BC_build[];
 extern const char luaJIT_BC_run[];
+extern const char luaJIT_BC_c[];
+extern const char luaJIT_BC_s[];
+extern const char luaJIT_BC_compile[];
+extern const char luaJIT_BC_test[];
+extern const char luaJIT_BC_format[];
+extern const char luaJIT_BC_clean[];
 
 // Declare external size symbols (defined in bytecode_sizes.c)
 extern const size_t luaJIT_BC_main_size;
@@ -44,10 +57,23 @@ extern const size_t luaJIT_BC_codegen_memory_size;
 extern const size_t luaJIT_BC_codegen_functions_size;
 extern const size_t luaJIT_BC_codegen_statements_size;
 extern const size_t luaJIT_BC_codegen_expressions_size;
-extern const size_t luaJIT_BC_generate_size;
+extern const size_t luaJIT_BC_codegen_expressions_literals_size;
+extern const size_t luaJIT_BC_codegen_expressions_operators_size;
+extern const size_t luaJIT_BC_codegen_expressions_calls_size;
+extern const size_t luaJIT_BC_codegen_expressions_collections_size;
+extern const size_t luaJIT_BC_errors_size;
+extern const size_t luaJIT_BC_warnings_size;
+extern const size_t luaJIT_BC_macros_size;
+extern const size_t luaJIT_BC_transpiler_size;
 extern const size_t luaJIT_BC_assemble_size;
 extern const size_t luaJIT_BC_build_size;
 extern const size_t luaJIT_BC_run_size;
+extern const size_t luaJIT_BC_c_size;
+extern const size_t luaJIT_BC_s_size;
+extern const size_t luaJIT_BC_compile_size;
+extern const size_t luaJIT_BC_test_size;
+extern const size_t luaJIT_BC_format_size;
+extern const size_t luaJIT_BC_clean_size;
 
 // Helper to load bytecode into package.preload
 static int load_module(lua_State *L, const char *name, const char *bytecode, size_t size) {
@@ -106,10 +132,23 @@ int main(int argc, char **argv) {
         load_module(L, "codegen.functions", luaJIT_BC_codegen_functions, luaJIT_BC_codegen_functions_size) != 0 ||
         load_module(L, "codegen.statements", luaJIT_BC_codegen_statements, luaJIT_BC_codegen_statements_size) != 0 ||
         load_module(L, "codegen.expressions", luaJIT_BC_codegen_expressions, luaJIT_BC_codegen_expressions_size) != 0 ||
-        load_module(L, "generate", luaJIT_BC_generate, luaJIT_BC_generate_size) != 0 ||
+        load_module(L, "codegen.expressions.literals", luaJIT_BC_codegen_expressions_literals, luaJIT_BC_codegen_expressions_literals_size) != 0 ||
+        load_module(L, "codegen.expressions.operators", luaJIT_BC_codegen_expressions_operators, luaJIT_BC_codegen_expressions_operators_size) != 0 ||
+        load_module(L, "codegen.expressions.calls", luaJIT_BC_codegen_expressions_calls, luaJIT_BC_codegen_expressions_calls_size) != 0 ||
+        load_module(L, "codegen.expressions.collections", luaJIT_BC_codegen_expressions_collections, luaJIT_BC_codegen_expressions_collections_size) != 0 ||
+        load_module(L, "errors", luaJIT_BC_errors, luaJIT_BC_errors_size) != 0 ||
+        load_module(L, "warnings", luaJIT_BC_warnings, luaJIT_BC_warnings_size) != 0 ||
+        load_module(L, "macros", luaJIT_BC_macros, luaJIT_BC_macros_size) != 0 ||
+        load_module(L, "transpiler", luaJIT_BC_transpiler, luaJIT_BC_transpiler_size) != 0 ||
         load_module(L, "assemble", luaJIT_BC_assemble, luaJIT_BC_assemble_size) != 0 ||
         load_module(L, "build", luaJIT_BC_build, luaJIT_BC_build_size) != 0 ||
-        load_module(L, "run", luaJIT_BC_run, luaJIT_BC_run_size) != 0) {
+        load_module(L, "run", luaJIT_BC_run, luaJIT_BC_run_size) != 0 ||
+        load_module(L, "c", luaJIT_BC_c, luaJIT_BC_c_size) != 0 ||
+        load_module(L, "s", luaJIT_BC_s, luaJIT_BC_s_size) != 0 ||
+        load_module(L, "compile", luaJIT_BC_compile, luaJIT_BC_compile_size) != 0 ||
+        load_module(L, "test", luaJIT_BC_test, luaJIT_BC_test_size) != 0 ||
+        load_module(L, "format", luaJIT_BC_format, luaJIT_BC_format_size) != 0 ||
+        load_module(L, "clean", luaJIT_BC_clean, luaJIT_BC_clean_size) != 0) {
         lua_close(L);
         return 1;
     }

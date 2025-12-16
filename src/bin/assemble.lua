@@ -1,7 +1,7 @@
 -- Assemble module: generates assembly code from .cz or .c source file
 -- Wraps the C compilation process to output assembly instead of binary
 
-local generate = require("generate")
+local transpiler = require("transpiler")
 
 local function read_file(path)
     local handle, err = io.open(path, "r")
@@ -31,14 +31,14 @@ local function assemble_to_asm(source_path)
 
     if source_path:match("%.cz$") then
         -- Generate C code from .cz file
-        local c_code, err = generate.generate_c(source_path)
+        local c_code, err = transpiler.generate_c(source_path)
         if not c_code then
             return nil, err
         end
         c_source = c_code
 
         -- Write to temporary C file (named after source file)
-        c_file_path = generate.make_temp_path(source_path, ".c")
+        c_file_path = transpiler.make_temp_path(source_path, ".c")
         local ok, err = write_file(c_source, c_file_path)
         if not ok then
             return nil, err
@@ -57,7 +57,7 @@ local function assemble_to_asm(source_path)
     end
 
     -- Compile C to assembly using cc -S
-    local asm_temp = generate.make_temp_path(source_path, ".s")
+    local asm_temp = transpiler.make_temp_path(source_path, ".s")
     local cmd = string.format("cc -S -o %s %s 2>&1", asm_temp, c_file_path)
     local handle = io.popen(cmd)
     local output = handle:read("*a")
