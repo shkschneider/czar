@@ -900,7 +900,7 @@ function Parser:parse_primary()
             
             -- Try to parse as map entry (expr : expr)
             local is_map = false
-            local success, first_key = pcall(function() return self:parse_expression() end)
+            local success = pcall(function() self:parse_expression() end)
             if success and self:check("COLON") then
                 -- This looks like a map
                 is_map = true
