@@ -93,6 +93,12 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_new_array_type(typechecker, expr)
     elseif expr.kind == "new_map" then
         return Inference.infer_new_map_type(typechecker, expr)
+    elseif expr.kind == "new_pair" then
+        return Inference.infer_new_pair_type(typechecker, expr)
+    elseif expr.kind == "map_literal" then
+        return Inference.infer_map_literal_type(typechecker, expr)
+    elseif expr.kind == "pair_literal" then
+        return Inference.infer_pair_literal_type(typechecker, expr)
     elseif expr.kind == "unsafe_cast" then
         -- Unsafe cast: expr as<Type>
         -- Emit warning during type checking
@@ -716,6 +722,10 @@ function Inference.types_compatible(type1, type2, typechecker)
         -- Maps are compatible if key and value types match
         return Inference.types_compatible(type1.key_type, type2.key_type, typechecker) and
                Inference.types_compatible(type1.value_type, type2.value_type, typechecker)
+    elseif type1.kind == "pair" and type2.kind == "pair" then
+        -- Pairs are compatible if left and right types match
+        return Inference.types_compatible(type1.left_type, type2.left_type, typechecker) and
+               Inference.types_compatible(type1.right_type, type2.right_type, typechecker)
     end
 
     return false
@@ -765,6 +775,8 @@ function Inference.type_to_string(type_node)
         return Inference.type_to_string(type_node.element_type) .. "..."
     elseif type_node.kind == "map" then
         return "map[" .. Inference.type_to_string(type_node.key_type) .. "]" .. Inference.type_to_string(type_node.value_type)
+    elseif type_node.kind == "pair" then
+        return "pair<" .. Inference.type_to_string(type_node.left_type) .. ":" .. Inference.type_to_string(type_node.right_type) .. ">"
     end
 
     return "unknown"
@@ -964,6 +976,113 @@ function Inference.infer_slice_type(typechecker, expr)
     local slice_type = { kind = "slice", element_type = array_type.element_type }
     expr.inferred_type = slice_type
     return slice_type
+end
+
+-- Infer the type of a pair allocation (new pair { left, right })
+function Inference.infer_new_pair_type(typechecker, expr)
+    -- Infer types from the left and right expressions
+    local left_type = Inference.infer_type(typechecker, expr.left)
+    local right_type = Inference.infer_type(typechecker, expr.right)
+    
+    if not left_type or not right_type then
+        return nil
+    end
+    
+    -- Store inferred types back in expr for code generation
+    expr.left_type = left_type
+    expr.right_type = right_type
+    
+    -- Return a pointer to pair type (heap allocated)
+    local pair_type = { kind = "pair", left_type = left_type, right_type = right_type }
+    local inferred = { kind = "pointer", to = pair_type }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a pair literal (pair { left, right })
+function Inference.infer_pair_literal_type(typechecker, expr)
+    -- Infer types from the left and right expressions
+    local left_type = Inference.infer_type(typechecker, expr.left)
+    local right_type = Inference.infer_type(typechecker, expr.right)
+    
+    if not left_type or not right_type then
+        return nil
+    end
+    
+    -- Store inferred types back in expr for code generation
+    expr.left_type = left_type
+    expr.right_type = right_type
+    
+    -- Return a pair type (stack allocated)
+    local inferred = { kind = "pair", left_type = left_type, right_type = right_type }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer the type of a map literal (map { key: value, ... })
+function Inference.infer_map_literal_type(typechecker, expr)
+    -- Similar to infer_new_map_type but returns non-pointer type
+    local key_type = expr.key_type
+    local value_type = expr.value_type
+    
+    if not key_type or not value_type then
+        if #expr.entries == 0 then
+            -- Empty map - cannot infer types
+            local line = expr.line or 0
+            local msg = "Cannot infer type of empty map literal, use explicit type annotation"
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- Infer from first entry
+        key_type = Inference.infer_type(typechecker, expr.entries[1].key)
+        value_type = Inference.infer_type(typechecker, expr.entries[1].value)
+        
+        if not key_type or not value_type then
+            return nil
+        end
+        
+        -- Store inferred types back in expr for code generation
+        expr.key_type = key_type
+        expr.value_type = value_type
+    end
+    
+    -- Type checking for map entries
+    for i, entry in ipairs(expr.entries) do
+        local entry_key_type = Inference.infer_type(typechecker, entry.key)
+        local entry_value_type = Inference.infer_type(typechecker, entry.value)
+        
+        -- Check key type compatibility
+        if not Inference.types_compatible(key_type, entry_key_type, typechecker) then
+            local line = expr.line or 0
+            local msg = string.format(
+                "Map entry %d has key type '%s', expected '%s'",
+                i, Inference.type_to_string(entry_key_type), Inference.type_to_string(key_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        end
+        
+        -- Check value type compatibility
+        if not Inference.types_compatible(value_type, entry_value_type, typechecker) then
+            local line = expr.line or 0
+            local msg = string.format(
+                "Map entry %d has value type '%s', expected '%s'",
+                i, Inference.type_to_string(entry_value_type), Inference.type_to_string(value_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        end
+    end
+    
+    -- Return a map type (stack allocated)
+    local inferred = { kind = "map", key_type = key_type, value_type = value_type }
+    expr.inferred_type = inferred
+    return inferred
 end
 
 return Inference

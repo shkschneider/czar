@@ -589,6 +589,104 @@ function Expressions.gen_expr(expr)
         local array_expr = Expressions.gen_expr(expr.array)
         local start_expr = Expressions.gen_expr(expr.start)
         return string.format("&%s[%s]", array_expr, start_expr)
+    elseif expr.kind == "new_pair" then
+        -- new pair { left, right } - heap-allocated pair
+        local left_type = expr.left_type
+        local right_type = expr.right_type
+        local left_type_str = ctx():c_type(left_type)
+        local right_type_str = ctx():c_type(right_type)
+        
+        -- Generate pair struct type name
+        local pair_type_name = "czar_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
+        
+        -- Register pair type for later struct generation
+        if not ctx().pair_types then
+            ctx().pair_types = {}
+        end
+        local pair_key = left_type_str .. "_" .. right_type_str
+        if not ctx().pair_types[pair_key] then
+            ctx().pair_types[pair_key] = {
+                pair_type_name = pair_type_name,
+                left_type = left_type,
+                right_type = right_type,
+            }
+        end
+        
+        -- Generate code: malloc + initialize
+        local left_expr = Expressions.gen_expr(expr.left)
+        local right_expr = Expressions.gen_expr(expr.right)
+        
+        local statements = {}
+        table.insert(statements, string.format("%s* _pair = %s", 
+            pair_type_name,
+            ctx():malloc_call(string.format("sizeof(%s)", pair_type_name), true)))
+        table.insert(statements, string.format("_pair->left = %s", left_expr))
+        table.insert(statements, string.format("_pair->right = %s", right_expr))
+        table.insert(statements, "_pair")
+        
+        return string.format("({ %s; })", join(statements, "; "))
+    elseif expr.kind == "pair_literal" then
+        -- pair { left, right } - stack-allocated pair
+        local left_type = expr.left_type
+        local right_type = expr.right_type
+        local left_type_str = ctx():c_type(left_type)
+        local right_type_str = ctx():c_type(right_type)
+        
+        -- Generate pair struct type name
+        local pair_type_name = "czar_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
+        
+        -- Register pair type for later struct generation
+        if not ctx().pair_types then
+            ctx().pair_types = {}
+        end
+        local pair_key = left_type_str .. "_" .. right_type_str
+        if not ctx().pair_types[pair_key] then
+            ctx().pair_types[pair_key] = {
+                pair_type_name = pair_type_name,
+                left_type = left_type,
+                right_type = right_type,
+            }
+        end
+        
+        -- Generate code: compound literal
+        local left_expr = Expressions.gen_expr(expr.left)
+        local right_expr = Expressions.gen_expr(expr.right)
+        
+        return string.format("(%s){ .left = %s, .right = %s }", pair_type_name, left_expr, right_expr)
+    elseif expr.kind == "map_literal" then
+        -- map { key: value, ... } - stack-allocated map (similar to new_map but without malloc)
+        local key_type = expr.key_type
+        local value_type = expr.value_type
+        local key_type_str = ctx():c_type(key_type)
+        local value_type_str = ctx():c_type(value_type)
+        
+        -- Generate map struct type name
+        local map_type_name = "czar_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
+        
+        -- Register map type for later struct generation
+        if not ctx().map_types then
+            ctx().map_types = {}
+        end
+        local map_key = key_type_str .. "_" .. value_type_str
+        if not ctx().map_types[map_key] then
+            ctx().map_types[map_key] = {
+                map_type_name = map_type_name,
+                key_type = key_type,
+                value_type = value_type,
+            }
+        end
+        
+        -- Generate arrays for keys and values
+        local key_parts = {}
+        local value_parts = {}
+        for _, entry in ipairs(expr.entries) do
+            table.insert(key_parts, Expressions.gen_expr(entry.key))
+            table.insert(value_parts, Expressions.gen_expr(entry.value))
+        end
+        
+        local size = #expr.entries
+        return string.format("(%s){ .size = %d, .keys = { %s }, .values = { %s } }",
+            map_type_name, size, join(key_parts, ", "), join(value_parts, ", "))
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
