@@ -230,80 +230,68 @@ function Parser:parse_type()
         return { kind = "map", key_type = key_type, value_type = value_type }
     end
     
-    if is_type_token(tok) then
-        self:advance()
-        local base_type = { kind = "named_type", name = tok.value }
-        -- Check if this is a pointer type (Type*)
-        if self:match("STAR") then
-            return { kind = "pointer", to = base_type }
+    -- Check for pointer type (*Type)
+    if self:match("STAR") then
+        local element_type = self:parse_type()
+        return { kind = "pointer", to = element_type }
+    end
+    
+    -- Check for array/slice/map type with bracket syntax
+    if self:match("LBRACKET") then
+        -- Check for slice type: []Type
+        if self:check("RBRACKET") then
+            self:advance()
+            local element_type = self:parse_type()
+            return { kind = "slice", element_type = element_type }
         end
-        -- Check if this is an array type (Type[size]) or slice type (Type[])
-        if self:match("LBRACKET") then
-            -- Check for slice type: Type[]
-            if self:check("RBRACKET") then
-                self:advance()
-                return { kind = "slice", element_type = base_type }
-            end
-            -- Check for implicit size: Type[*]
-            if self:match("STAR") then
-                self:expect("RBRACKET")
-                return { kind = "array", element_type = base_type, size = "*" }
-            end
-            -- Explicit size: Type[N]
+        
+        -- Check for implicit size array: [*]Type
+        if self:match("STAR") then
+            self:expect("RBRACKET")
+            local element_type = self:parse_type()
+            return { kind = "array", element_type = element_type, size = "*" }
+        end
+        
+        -- Check if this could be a map type: [KeyType]ValueType
+        -- We need to parse what's inside the brackets and see if it's a type
+        local saved_pos = self.pos
+        local is_map = false
+        local key_type = nil
+        
+        -- Try to parse a type inside the brackets
+        local success = pcall(function()
+            key_type = self:parse_type()
+        end)
+        
+        if success and self:check("RBRACKET") then
+            -- This looks like it could be a map: [KeyType]
+            self:advance()  -- consume RBRACKET
+            local value_type = self:parse_type()
+            return { kind = "map", key_type = key_type, value_type = value_type }
+        else
+            -- Not a map, must be an array with explicit size: [N]Type
+            self.pos = saved_pos
             local size_tok = self:expect("INT")
             local size = tonumber(size_tok.value)
             self:expect("RBRACKET")
-            return { kind = "array", element_type = base_type, size = size }
+            local element_type = self:parse_type()
+            return { kind = "array", element_type = element_type, size = size }
         end
+    end
+    
+    if is_type_token(tok) then
+        self:advance()
+        local base_type = { kind = "named_type", name = tok.value }
         return base_type
     end
     error(string.format("expected type but found %s", token_label(tok)))
 end
 
--- Parse type with map shorthand support (Type{ValueType})
--- This is only safe to use in contexts where { cannot start a block
+-- Parse type with map shorthand support
+-- Note: With new syntax [KeyType]ValueType, there's no ambiguity with blocks anymore
+-- This function now just delegates to parse_type
 function Parser:parse_type_with_map_shorthand()
-    local tok = self:current()
-    
-    -- Check for explicit container types: array<T>, slice<T>, map<K:V>
-    if self:check("KEYWORD", "array") or self:check("KEYWORD", "slice") or self:check("KEYWORD", "map") then
-        return self:parse_type()
-    end
-    
-    if is_type_token(tok) then
-        self:advance()
-        local base_type = { kind = "named_type", name = tok.value }
-        -- Check if this is a pointer type (Type*)
-        if self:match("STAR") then
-            return { kind = "pointer", to = base_type }
-        end
-        -- Check if this is a map type shorthand (KeyType{ValueType})
-        if self:match("LBRACE") then
-            local value_type = self:parse_type()
-            self:expect("RBRACE")
-            return { kind = "map", key_type = base_type, value_type = value_type }
-        end
-        -- Check if this is an array type (Type[size]) or slice type (Type[])
-        if self:match("LBRACKET") then
-            -- Check for slice type: Type[]
-            if self:check("RBRACKET") then
-                self:advance()
-                return { kind = "slice", element_type = base_type }
-            end
-            -- Check for implicit size: Type[*]
-            if self:match("STAR") then
-                self:expect("RBRACKET")
-                return { kind = "array", element_type = base_type, size = "*" }
-            end
-            -- Explicit size: Type[N]
-            local size_tok = self:expect("INT")
-            local size = tonumber(size_tok.value)
-            self:expect("RBRACKET")
-            return { kind = "array", element_type = base_type, size = size }
-        end
-        return base_type
-    end
-    error(string.format("expected type but found %s", token_label(tok)))
+    return self:parse_type()
 end
 
 function Parser:parse_block()
@@ -393,6 +381,14 @@ function Parser:is_type_start()
     if not tok then return false end
     -- Check for container type keywords
     if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map") then
+        return true
+    end
+    -- Check for pointer type: *Type
+    if tok.type == "STAR" then
+        return true
+    end
+    -- Check for array/slice/map type: [...]Type
+    if tok.type == "LBRACKET" then
         return true
     end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
