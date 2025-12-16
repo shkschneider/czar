@@ -1,0 +1,42 @@
+// Example demonstrating dynamic arrays (lists) in Czar
+//
+// Dynamic arrays are heap-allocated and created with the `new [...]` syntax.
+// They return as Type[] (slices), making them compatible with slice parameters.
+//
+// Syntax: Type[] name = new [elem1, elem2, elem3]
+
+fn print_array(i32[] arr, i32 len) void {
+    // Process array as slice parameter
+    mut i32 i = 0
+    while i < len {
+        // In a real program, you'd use print_i32(arr[i])
+        i = i + 1
+    }
+}
+
+fn main() i32 {
+    // Create a dynamic array on the heap
+    i32[] numbers = new [10, 20, 30, 40, 50]
+    
+    // Access elements like regular arrays
+    i32 first = numbers[0]    // 10
+    i32 second = numbers[1]   // 20
+    
+    // Pass to functions expecting slices
+    print_array(numbers, 5)
+    
+    // Memory is automatically freed at scope exit
+    
+    return 0
+}
+
+// Key differences:
+//
+// Stack arrays (fixed size):
+//   i32[5] arr = [1, 2, 3, 4, 5]      // Stack-allocated
+//
+// Dynamic arrays (heap-allocated):
+//   i32[] arr = new [1, 2, 3, 4, 5]   // Heap-allocated, freed at scope exit
+//
+// Slices (views into arrays):
+//   i32[] slice = arr[0:3]             // View into existing array
