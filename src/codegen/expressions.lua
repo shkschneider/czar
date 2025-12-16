@@ -1,6 +1,8 @@
 -- Expression generation for code generation
 -- Handles all expression types: literals, operators, calls, casts, etc.
 
+local Directives = require("src.directives")
+
 local Expressions = {}
 
 local function ctx() return _G.Codegen end
@@ -32,17 +34,8 @@ function Expressions.gen_expr(expr)
         return "NULL"
     elseif expr.kind == "directive" then
         -- Handle compiler directives: #FILE, #FUNCTION, #DEBUG
-        local directive_name = expr.name:upper()
-        if directive_name == "FILE" then
-            return string.format("\"%s\"", ctx().source_file)
-        elseif directive_name == "FUNCTION" then
-            local func_name = ctx().current_function or "unknown"
-            return string.format("\"%s\"", func_name)
-        elseif directive_name == "DEBUG" then
-            return ctx().debug and "true" or "false"
-        else
-            error(string.format("Unknown directive: #%s at %d:%d", expr.name, expr.line, expr.col))
-        end
+        -- Delegate to Directives module
+        return Directives.generate_expression(expr, ctx())
     elseif expr.kind == "identifier" then
         return expr.name
     elseif expr.kind == "mut_arg" then
@@ -97,20 +90,8 @@ function Expressions.gen_expr(expr)
         return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "safe_cast" then
         -- #cast<Type>(value, fallback) -> safe cast with fallback
-        -- For now, just performs regular cast (no runtime checking)
-        -- Future: add runtime validation and return fallback on failure
-        local target_type_str = ctx():c_type(expr.target_type)
-        local value_str = Expressions.gen_expr(expr.value)
-        local fallback_str = Expressions.gen_expr(expr.fallback)
-        
-        -- Handle pointer casting
-        if expr.target_type.kind == "pointer" then
-            target_type_str = ctx():c_type(expr.target_type.to) .. "*"
-        end
-
-        -- For now, just cast (ignoring fallback)
-        -- TODO: Add runtime check: if cast valid, return cast value, else return fallback
-        return string.format("((%s)%s)", target_type_str, value_str)
+        -- Delegate to Directives module
+        return Directives.generate_safe_cast(expr, ctx(), Expressions.gen_expr, function(t) return ctx():c_type(t) end)
     elseif expr.kind == "clone" then
         -- clone(expr) or clone<Type>(expr)
         -- Allocate on heap and copy the value
