@@ -29,6 +29,11 @@ function Types.c_type(type_node)
         local key_type_str = Types.c_type(type_node.key_type):gsub("%*", "ptr")
         local value_type_str = Types.c_type(type_node.value_type):gsub("%*", "ptr")
         return "czar_map_" .. key_type_str .. "_" .. value_type_str .. "*"
+    elseif type_node.kind == "pair" then
+        -- Pairs are represented as a struct with left and right fields
+        local left_type_str = Types.c_type(type_node.left_type):gsub("%*", "ptr")
+        local right_type_str = Types.c_type(type_node.right_type):gsub("%*", "ptr")
+        return "czar_pair_" .. left_type_str .. "_" .. right_type_str
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         

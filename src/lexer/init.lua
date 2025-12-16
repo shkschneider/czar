@@ -47,6 +47,7 @@ local keywords = {
     ["array"] = true,
     ["slice"] = true,
     ["map"] = true,
+    ["pair"] = true,
     -- is/type
     -- import
 }

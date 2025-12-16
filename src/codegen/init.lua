@@ -263,6 +263,19 @@ function Codegen:generate()
         end
     end
     
+    -- Generate pair struct definitions if any pairs were discovered
+    if self.pair_types then
+        for _, pair_info in pairs(self.pair_types) do
+            local left_type_str = self:c_type(pair_info.left_type)
+            local right_type_str = self:c_type(pair_info.right_type)
+            self:emit(string.format("typedef struct %s {", pair_info.pair_type_name))
+            self:emit(string.format("    %s left;", left_type_str))
+            self:emit(string.format("    %s right;", right_type_str))
+            self:emit(string.format("} %s;", pair_info.pair_type_name))
+            self:emit("")
+        end
+    end
+    
     -- Now emit the function code
     for _, line in ipairs(function_code) do
         self:emit(line)
