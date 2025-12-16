@@ -954,8 +954,31 @@ function Parser:parse_primary()
         local ident = self:advance()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
     elseif tok.type == "DIRECTIVE" then
-        local directive = self:advance()
-        return { kind = "directive", name = directive.value, line = directive.line, col = directive.col }
+        local directive_tok = self:advance()
+        local directive_name = directive_tok.value:upper()
+        
+        -- Handle #cast<Type>(value, fallback) directive
+        if directive_name == "CAST" then
+            self:expect("LT")
+            local target_type = self:parse_type()
+            self:expect("GT")
+            self:expect("LPAREN")
+            local value_expr = self:parse_expression()
+            self:expect("COMMA")
+            local fallback_expr = self:parse_expression()
+            self:expect("RPAREN")
+            return { 
+                kind = "safe_cast", 
+                target_type = target_type, 
+                value = value_expr, 
+                fallback = fallback_expr,
+                line = directive_tok.line, 
+                col = directive_tok.col 
+            }
+        else
+            -- Simple directives like #FILE, #FUNCTION, #DEBUG
+            return { kind = "directive", name = directive_tok.value, line = directive_tok.line, col = directive_tok.col }
+        end
     elseif tok.type == "LPAREN" then
         self:advance()
         local expr = self:parse_expression()
