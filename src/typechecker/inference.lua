@@ -568,6 +568,32 @@ function Inference.infer_call_type(typechecker, expr)
         if not obj_type then
             return nil
         end
+        
+        -- Special handling for string methods with : syntax
+        if obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string") then
+            local method = expr.callee.method
+            if method == "append" then
+                local return_type = { kind = "named_type", name = "void" }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "substring" then
+                local return_type = { kind = "pointer", to = { kind = "string" } }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "find" then
+                local return_type = { kind = "named_type", name = "i32" }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "trim" or method == "ltrim" or method == "rtrim" then
+                local return_type = { kind = "pointer", to = { kind = "string" } }
+                expr.inferred_type = return_type
+                return return_type
+            elseif method == "cstr" then
+                local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+                expr.inferred_type = return_type
+                return return_type
+            end
+        end
 
         local type_name = Inference.get_base_type_name(obj_type)
         local method_def = Resolver.resolve_function(typechecker, type_name, expr.callee.method)
@@ -605,6 +631,39 @@ function Inference.infer_call_type(typechecker, expr)
         if obj_type.kind == "pointer" and obj_type.to.kind == "string" and expr.callee.field == "cstr" then
             -- cstr() returns char* (pointer to i8)
             local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:append(str) method
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "append" then
+            -- append() modifies in place, returns void (but we'll return the string pointer for chaining)
+            local return_type = { kind = "named_type", name = "void" }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:substring(start, end) method
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "substring" then
+            -- substring() returns a new heap-allocated string*
+            local return_type = { kind = "pointer", to = { kind = "string" } }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:find(needle) method
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "find" then
+            -- find() returns i32 (index or -1)
+            local return_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string:trim/ltrim/rtrim() methods
+        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and 
+           (expr.callee.field == "trim" or expr.callee.field == "ltrim" or expr.callee.field == "rtrim") then
+            -- trim() modifies in place, returns string* (for chaining)
+            local return_type = { kind = "pointer", to = { kind = "string" } }
             expr.inferred_type = return_type
             return return_type
         end
