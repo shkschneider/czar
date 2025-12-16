@@ -251,6 +251,35 @@ end
 
 function Parser:parse_type()
     local tok = self:current()
+    
+    -- Check for explicit container types: array<T>, slice<T>, map<K:V>
+    if self:check("KEYWORD", "array") then
+        self:advance()
+        self:expect("LT")
+        local element_type = self:parse_type()
+        self:expect("GT")
+        -- array<Type> is represented as a slice internally (dynamic size)
+        return { kind = "slice", element_type = element_type }
+    end
+    
+    if self:check("KEYWORD", "slice") then
+        self:advance()
+        self:expect("LT")
+        local element_type = self:parse_type()
+        self:expect("GT")
+        return { kind = "slice", element_type = element_type }
+    end
+    
+    if self:check("KEYWORD", "map") then
+        self:advance()
+        self:expect("LT")
+        local key_type = self:parse_type()
+        self:expect("COLON")
+        local value_type = self:parse_type()
+        self:expect("GT")
+        return { kind = "map", key_type = key_type, value_type = value_type }
+    end
+    
     if is_type_token(tok) then
         self:advance()
         local base_type = { kind = "named_type", name = tok.value }
@@ -258,7 +287,7 @@ function Parser:parse_type()
         if self:match("STAR") then
             return { kind = "pointer", to = base_type }
         end
-        -- Check if this is a map type (KeyType{ValueType})
+        -- Check if this is a map type shorthand (KeyType{ValueType})
         if self:match("LBRACE") then
             local value_type = self:parse_type()
             self:expect("RBRACE")
@@ -372,6 +401,10 @@ end
 function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
+    -- Check for container type keywords
+    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map") then
+        return true
+    end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
     if tok.type == "KEYWORD" and TYPE_KEYWORDS[tok.value] then
         return true
@@ -793,16 +826,34 @@ function Parser:parse_primary()
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "clone", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "new" then
-        -- new Type { fields... } or new [ elements... ] or new map[K]V { key: value, ... }
+        -- new array<T> [...] or new map<K:V> { ... } or new Type { ... } or new [...]
         self:advance()
         
-        -- Check if this is a map: new map[K]V { ... }
+        -- Check if this is: new array<T> [...]
+        if self:check("KEYWORD", "array") then
+            self:advance()
+            self:expect("LT")
+            local element_type = self:parse_type()
+            self:expect("GT")
+            self:expect("LBRACKET")
+            local elements = {}
+            if not self:check("RBRACKET") then
+                repeat
+                    table.insert(elements, self:parse_expression())
+                until not self:match("COMMA")
+            end
+            self:expect("RBRACKET")
+            return { kind = "new_array", elements = elements, explicit_type = element_type }
+        end
+        
+        -- Check if this is: new map<K:V> { ... }
         if self:check("KEYWORD", "map") then
             self:advance()
-            self:expect("LBRACKET")
+            self:expect("LT")
             local key_type = self:parse_type()
-            self:expect("RBRACKET")
+            self:expect("COLON")
             local value_type = self:parse_type()
+            self:expect("GT")
             self:expect("LBRACE")
             local entries = {}
             if not self:check("RBRACE") then
@@ -845,6 +896,41 @@ function Parser:parse_primary()
         end
         self:expect("RBRACE")
         return { kind = "new_heap", type_name = type_name, fields = fields }
+    elseif tok.type == "KEYWORD" and tok.value == "map" then
+        -- Stack map literal: map<K:V> { key: value, ... }
+        self:advance()
+        self:expect("LT")
+        local key_type = self:parse_type()
+        self:expect("COLON")
+        local value_type = self:parse_type()
+        self:expect("GT")
+        self:expect("LBRACE")
+        local entries = {}
+        if not self:check("RBRACE") then
+            repeat
+                local key = self:parse_expression()
+                self:expect("COLON")
+                local value = self:parse_expression()
+                table.insert(entries, { key = key, value = value })
+            until not self:match("COMMA")
+        end
+        self:expect("RBRACE")
+        return { kind = "map_literal", key_type = key_type, value_type = value_type, entries = entries }
+    elseif tok.type == "KEYWORD" and tok.value == "array" then
+        -- Stack array literal: array<T> [...]
+        self:advance()
+        self:expect("LT")
+        local element_type = self:parse_type()
+        self:expect("GT")
+        self:expect("LBRACKET")
+        local elements = {}
+        if not self:check("RBRACKET") then
+            repeat
+                table.insert(elements, self:parse_expression())
+            until not self:match("COMMA")
+        end
+        self:expect("RBRACKET")
+        return { kind = "array_literal", elements = elements, explicit_type = element_type }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
