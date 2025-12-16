@@ -324,7 +324,6 @@ function Parser:parse_statement()
     else
         -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
-        io.stderr:write(string.format("DEBUG: parse_statement at pos %d, token: %s\n", self.pos, token_label(self:current())))
         local saved_pos = self.pos
         local is_var_decl = false
         local is_mutable = false
@@ -335,34 +334,19 @@ function Parser:parse_statement()
             self:advance()
         end
         
-        io.stderr:write(string.format("DEBUG: about to check is_type_start at pos %d\n", self.pos))
         -- Check if this looks like a type declaration
         if self:is_type_start() then
-            io.stderr:write(string.format("DEBUG: is_type_start returned true at pos %d, token: %s\n", self.pos, token_label(self:current())))
             local success, type_node = pcall(function() return self:parse_type_with_map_shorthand() end)
-            if not success then
-                -- Debug: print the error
-                io.stderr:write(string.format("DEBUG: pcall failed with error: %s\n", tostring(type_node)))
-            else
-                io.stderr:write(string.format("DEBUG: pcall succeeded, now at pos %d, token: %s\n", self.pos, token_label(self:current())))
-            end
             if success and self:check("IDENT") then
-                io.stderr:write(string.format("DEBUG: Found IDENT after type\n"))
                 local name_tok = self:current()
                 self:advance()
                 -- Check if this looks like end of variable declaration
                 if self:is_var_decl_end(name_tok) then
                     -- This is a variable declaration
-                    io.stderr:write(string.format("DEBUG: Recognized as var_decl\n"))
                     is_var_decl = true
-                else
-                    io.stderr:write(string.format("DEBUG: NOT var_decl (is_var_decl_end returned false)\n"))
                 end
-            else
-                io.stderr:write(string.format("DEBUG: No IDENT after type, success=%s\n", tostring(success)))
             end
             -- Always reset position after lookahead
-            io.stderr:write(string.format("DEBUG: Resetting pos from %d to %d\n", self.pos, saved_pos))
             self.pos = saved_pos
         end
         
@@ -647,6 +631,17 @@ function Parser:parse_binary_chain(next_parser, ops)
     while true do
         local tok = self:current()
         if tok and ops[tok.type] then
+            -- Special check for STAR: if it's on a new line and followed by a type token,
+            -- it's likely the start of a pointer type declaration, not multiplication
+            if tok.type == "STAR" then
+                local next_tok = self.tokens[self.pos + 1]
+                if next_tok and is_type_token(next_tok) and next_tok.line > tok.line then
+                    -- STAR is on one line, type token is on the next line
+                    -- This looks like the start of a new statement with pointer type
+                    break
+                end
+            end
+            
             self:advance()
             local right = next_parser(self)
             left = { kind = "binary", op = tok.value, left = left, right = right }
