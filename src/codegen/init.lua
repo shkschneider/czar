@@ -2,6 +2,8 @@
 -- This is the main entry point for code generation (loaded as src/codegen/init.lua)
 -- It coordinates all the specialized modules using module-level globals for simplicity
 
+local Directives = require("src.directives")
+
 -- Module-level globals shared across all codegen modules
 local Codegen = {
     -- Load all modules for cross-module access
@@ -183,40 +185,9 @@ end
 function Codegen:generate()
     self:collect_structs_and_functions()
     
-    -- Process allocator directives from AST and check for duplicates
-    local malloc_directive_count = 0
-    local free_directive_count = 0
-    local malloc_directive_line = nil
-    local free_directive_line = nil
-    
-    for _, item in ipairs(self.ast.items) do
-        if item.kind == "allocator_directive" then
-            if item.directive_type == "malloc" then
-                malloc_directive_count = malloc_directive_count + 1
-                if malloc_directive_count > 1 then
-                    error(string.format("duplicate #malloc directive at %d:%d (previous at %d:%d)", 
-                        item.line, item.col, malloc_directive_line.line, malloc_directive_line.col))
-                end
-                self.custom_malloc = item.function_name
-                malloc_directive_line = item
-            elseif item.directive_type == "free" then
-                free_directive_count = free_directive_count + 1
-                if free_directive_count > 1 then
-                    error(string.format("duplicate #free directive at %d:%d (previous at %d:%d)", 
-                        item.line, item.col, free_directive_line.line, free_directive_line.col))
-                end
-                self.custom_free = item.function_name
-                free_directive_line = item
-            end
-        elseif item.kind == "alias_directive" then
-            -- Store type alias for replacement
-            if self.type_aliases[item.alias_name] then
-                error(string.format("duplicate #alias for '%s' at %d:%d", 
-                    item.alias_name, item.line, item.col))
-            end
-            self.type_aliases[item.alias_name] = item.target_type_str
-        end
-    end
+    -- Process allocator directives (#malloc, #free) and type aliases (#alias)
+    -- Delegate to Directives module
+    Directives.process_top_level(self, self.ast)
     
     -- In debug mode, automatically use cz_malloc/cz_free if not already overridden
     if self.debug then
