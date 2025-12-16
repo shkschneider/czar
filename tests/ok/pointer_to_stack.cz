@@ -3,12 +3,12 @@ struct Vec2 {
     i32 y
 }
 
-fn test() Vec2* {
+fn test() *Vec2 {
     Vec2 v = Vec2 {}
     return clone v
 }
 
 fn main() i32 {
-    Vec2* v = test()
+    *Vec2 v = test()
     return 0
 }

@@ -1,6 +1,6 @@
 // Test for loop with mutable array and mutable item
 fn main() i32 {
-    mut i32[3] arr = [ 10, 20, 30 ]
+    mut [3]i32 arr = [ 10, 20, 30 ]
     
     // Modify items using mut item
     for idx, mut item in arr {

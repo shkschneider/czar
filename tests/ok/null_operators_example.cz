@@ -12,11 +12,11 @@ struct Service {
 }
 
 // Returns null if flag is true
-fn maybe_service(bool should_fail) Service* {
+fn maybe_service(bool should_fail) *Service {
     if should_fail {
         return null
     } else {
-        Service* svc = new Service {
+        *Service svc = new Service {
             name: 100,
             config: Config { timeout: 30, retries: 3 }
         }
@@ -26,18 +26,18 @@ fn maybe_service(bool should_fail) Service* {
 
 fn main() i32 {
     // Example 1: Null pointer
-    Service* service1 = null
-    Service* fallback = new Service {
+    *Service service1 = null
+    *Service fallback = new Service {
         name: 200,
         config: Config { timeout: 10, retries: 1 }
     }
-    Service* result1 = fallback
+    *Service result1 = fallback
 
     // Example 2: Direct field access
-    Service* service2 = null
+    *Service service2 = null
     i32 timeout1 = 5  // Default for null service
 
-    Service* service3 = new Service {
+    *Service service3 = new Service {
         name: 300,
         config: Config { timeout: 20, retries: 2 }
     }
@@ -45,17 +45,17 @@ fn main() i32 {
 
     // Example 3: Null-check operator (!!)
     // Crashes the program if the value is null
-    Service* service4 = new Service {
+    *Service service4 = new Service {
         name: 400,
         config: Config { timeout: 15, retries: 4 }
     }
-    Service* checked = service4!!  // Succeeds, service4 is not null
+    *Service checked = service4!!  // Succeeds, service4 is not null
 
     // Example 4: Using fallback values
-    Service* service5 = null
+    *Service service5 = null
     i32 chained_timeout = 99  // Fallback value
 
-    Service* service6 = new Service {
+    *Service service6 = new Service {
         name: 500,
         config: Config { timeout: 25, retries: 5 }
     }

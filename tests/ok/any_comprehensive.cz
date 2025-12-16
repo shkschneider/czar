@@ -16,7 +16,7 @@ struct GenericContainer {
     any ptr2
 }
 
-fn swap_pointers(mut GenericContainer* container) void {
+fn swap_pointers(mut *GenericContainer container) void {
     // Swap the two any pointers
     mut any temp = container.ptr1
     container.ptr1 = container.ptr2
@@ -24,19 +24,19 @@ fn swap_pointers(mut GenericContainer* container) void {
 }
 
 fn get_point_x(any ptr) i32 {
-    Point* p = ptr as<Point*>
+    *Point p = ptr as<*Point>
     return p.x
 }
 
 fn get_box_width(any ptr) i32 {
-    Box* b = ptr as<Box*>
+    *Box b = ptr as<*Box>
     return b.width
 }
 
 fn main() i32 {
     // Create different struct types on heap
-    Point* p = new Point { x: 5, y: 10 }
-    Box* b = new Box { width: 20, height: 30 }
+    *Point p = new Point { x: 5, y: 10 }
+    *Box b = new Box { width: 20, height: 30 }
 
     // Store both in a container as 'any'
     mut GenericContainer container = GenericContainer {

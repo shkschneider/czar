@@ -1,7 +1,7 @@
 // Test map with comprehensive features
 fn main() i32 {
     // Create a map with bool values
-    i32{bool} flags = new {
+    [i32]bool flags = new {
         1: true,
         2: false,
         3: true

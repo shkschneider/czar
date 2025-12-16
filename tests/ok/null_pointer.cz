@@ -5,11 +5,11 @@ struct Node {
 
 fn main() i32 {
     // Null can be assigned to pointer types
-    mut Node* p = null
+    mut *Node p = null
 
     // Check if we can assign null and non-null
     if p == null {
-        mut Node* n = new Node { value: 42 }
+        mut *Node n = new Node { value: 42 }
         p = n
         if p.value == 42 {
             return 0

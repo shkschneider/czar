@@ -10,7 +10,7 @@ struct Container {
     any data
 }
 
-fn create_vec_container(mut Vec2* vec) Container {
+fn create_vec_container(mut *Vec2 vec) Container {
     // Create a container holding a struct pointer cast to any
     Container c = Container { data: vec as<any> }
     return c
@@ -18,19 +18,19 @@ fn create_vec_container(mut Vec2* vec) Container {
 
 fn get_x_from_any(any ptr) i32 {
     // Cast any back to Vec2 pointer and get x field
-    Vec2* v = ptr as<Vec2*>
+    *Vec2 v = ptr as<*Vec2>
     return v.x
 }
 
 fn main() i32 {
     // Test storing a struct pointer in 'any'
-    Vec2* v = new Vec2 { x: 10, y: 20 }
+    *Vec2 v = new Vec2 { x: 10, y: 20 }
     any generic_ptr = v as<any>
-    Vec2* retrieved = generic_ptr as<Vec2*>
+    *Vec2 retrieved = generic_ptr as<*Vec2>
 
     // Test with container
     Container c = create_vec_container(mut v)
-    Vec2* from_container = c.data as<Vec2*>
+    *Vec2 from_container = c.data as<*Vec2>
 
     // Test passing any to function
     i32 x_value = get_x_from_any(generic_ptr)

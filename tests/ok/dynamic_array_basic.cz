@@ -1,7 +1,7 @@
 // Test basic dynamic array allocation with new [...]
 fn main() i32 {
     // Create a dynamic array on the heap
-    i32[] numbers = new [1, 2, 3, 4, 5]
+    []i32 numbers = new [1, 2, 3, 4, 5]
     
     // Access elements
     i32 sum = numbers[0] + numbers[1] + numbers[2] + numbers[3] + numbers[4]

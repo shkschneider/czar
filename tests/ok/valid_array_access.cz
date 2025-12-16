@@ -1,6 +1,6 @@
 // Test that valid array access works
 fn main() i32 {
-    mut i32[5] arr
+    mut [5]i32 arr
     
     // Valid index access
     arr[0] = 10

@@ -1,7 +1,7 @@
 // Test map shorthand syntax
 fn main() i32 {
-    // Test shorthand syntax: Type{ValueType}
-    i32{i32} numbers = new {
+    // Test shorthand syntax: [Type]ValueType
+    [i32]i32 numbers = new {
         1: 10,
         2: 20
     }

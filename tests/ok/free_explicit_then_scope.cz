@@ -5,9 +5,9 @@ struct Item {
 }
 
 fn main() i32 {
-    Item* i1 = new Item { id: 1 }
-    Item* i2 = new Item { id: 2 }
-    Item* i3 = new Item { id: 3 }
+    *Item i1 = new Item { id: 1 }
+    *Item i2 = new Item { id: 2 }
+    *Item i3 = new Item { id: 3 }
 
     mut i32 result = i1.id + i2.id + i3.id
 

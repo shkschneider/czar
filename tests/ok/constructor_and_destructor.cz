@@ -15,7 +15,7 @@ fn Resource:free() void {
 }
 
 fn main() i32 {
-    mut Resource* r = new Resource {}
+    mut *Resource r = new Resource {}
     r.value = 55
 
     // Explicit free - should call destructor before freeing

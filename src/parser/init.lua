@@ -324,6 +324,7 @@ function Parser:parse_statement()
     else
         -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
+        io.stderr:write(string.format("DEBUG: parse_statement at pos %d, token: %s\n", self.pos, token_label(self:current())))
         local saved_pos = self.pos
         local is_var_decl = false
         local is_mutable = false
@@ -334,19 +335,35 @@ function Parser:parse_statement()
             self:advance()
         end
         
+        io.stderr:write(string.format("DEBUG: about to check is_type_start at pos %d\n", self.pos))
         -- Check if this looks like a type declaration
         if self:is_type_start() then
+            io.stderr:write(string.format("DEBUG: is_type_start returned true at pos %d, token: %s\n", self.pos, token_label(self:current())))
             local success, type_node = pcall(function() return self:parse_type_with_map_shorthand() end)
+            if not success then
+                -- Debug: print the error
+                io.stderr:write(string.format("DEBUG: pcall failed with error: %s\n", tostring(type_node)))
+            else
+                io.stderr:write(string.format("DEBUG: pcall succeeded, now at pos %d, token: %s\n", self.pos, token_label(self:current())))
+            end
             if success and self:check("IDENT") then
+                io.stderr:write(string.format("DEBUG: Found IDENT after type\n"))
                 local name_tok = self:current()
                 self:advance()
                 -- Check if this looks like end of variable declaration
                 if self:is_var_decl_end(name_tok) then
                     -- This is a variable declaration
+                    io.stderr:write(string.format("DEBUG: Recognized as var_decl\n"))
                     is_var_decl = true
-                    self.pos = saved_pos  -- Reset to parse properly
+                else
+                    io.stderr:write(string.format("DEBUG: NOT var_decl (is_var_decl_end returned false)\n"))
                 end
+            else
+                io.stderr:write(string.format("DEBUG: No IDENT after type, success=%s\n", tostring(success)))
             end
+            -- Always reset position after lookahead
+            io.stderr:write(string.format("DEBUG: Resetting pos from %d to %d\n", self.pos, saved_pos))
+            self.pos = saved_pos
         end
         
         if is_var_decl then

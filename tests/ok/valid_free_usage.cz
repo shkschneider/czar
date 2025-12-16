@@ -4,7 +4,7 @@ struct Data {
 }
 
 fn main() i32 {
-    Data* p = new Data { value: 42 }
+    *Data p = new Data { value: 42 }
     i32 x = p.value
     free p
     // After freeing, don't use it anymore

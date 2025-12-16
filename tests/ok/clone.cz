@@ -8,7 +8,7 @@ struct Point {
 fn main() i32 {
     // Test clone without type parameter - clone returns pointer
     mut Point p1 = Point { x: 10, y: 20 }
-    Point* p2 = clone p1
+    *Point p2 = clone p1
 
     // Modify original
     p1.x = 100
@@ -20,7 +20,7 @@ fn main() i32 {
 
     // Test clone with type parameter (casting) - returns pointer
     i32 num = 42
-    i64* num_clone = clone<i64> num
+    *i64 num_clone = clone<i64> num
 
     i32 result = (*num_clone) as<i32>  // should be 42
 

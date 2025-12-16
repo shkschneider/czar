@@ -1,6 +1,6 @@
 // Test demonstrating stack vs heap allocation with explicit pointer syntax
 // "Node n = Node { value: 42 }" allocates on stack (value)
-// "Node* n = new Node { value: 42 }" allocates on heap (pointer)
+// "*Node n = new Node { value: 42 }" allocates on heap (pointer)
 
 struct Node {
     i32 value
@@ -11,7 +11,7 @@ fn modify_by_copy(Node n) void {
     // ERROR n.value = 999 (n is immutable)
 }
 
-fn modify_by_ptr(mut Node* n) void {
+fn modify_by_ptr(mut *Node n) void {
     // This modifies through pointer
     n.value = 100
 }
@@ -21,7 +21,7 @@ fn main() i32 {
     mut Node stack_node = Node { value: 10 }
 
     // Heap allocation (pointer)
-    Node* heap_node = new Node { value: 20 }
+    *Node heap_node = new Node { value: 20 }
 
     // Test 1: Copy semantics (pass by value)
     modify_by_copy(stack_node)

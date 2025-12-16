@@ -4,8 +4,8 @@ struct Node {
     i32 value
 }
 
-fn create_node(i32 v) Node* {
-    Node* n = new Node { value: v }
+fn create_node(i32 v) *Node {
+    *Node n = new Node { value: v }
     return n
 }
 
@@ -14,24 +14,24 @@ fn main() i32 {
     i32 test1 = 10  // Simplified from: 0 or 10
 
     // Test 2: Null coalescing with struct values - simplified
-    Node* null_node = null
+    *Node null_node = null
     Node n1 = Node { value: 5 }
-    Node* valid_node = &n1
-    Node* result_node = valid_node  // Simplified from: null_node or valid_node
+    *Node valid_node = &n1
+    *Node result_node = valid_node  // Simplified from: null_node or valid_node
 
     // Test 3: Direct field access on null (returns 0)
-    Node* n2 = null
+    *Node n2 = null
     i32 safe1 = 100  // Fallback value when pointer is null
 
     // Test 4: Direct field access on valid value
     Node n3 = Node { value: 25 }
-    Node* p3 = &n3
+    *Node p3 = &n3
     i32 safe2 = p3.value  // Should be 25
 
     // Test 5: Null check on valid value (should not crash)
     Node n4 = Node { value: 15 }
-    Node* p4 = &n4
-    Node* checked = p4!  // Should succeed
+    *Node p4 = &n4
+    *Node checked = p4!  // Should succeed
 
     // Return sum (test1=10, safe1=100, safe2=25)
     return test1 + safe1 + safe2 - 135

@@ -1,6 +1,6 @@
 // Test negative array index
 fn main() i32 {
-    i32[5] arr
+    [5]i32 arr
     arr[0] = 10
     return arr[-1]  // ERROR: negative array index
 }

@@ -1,7 +1,7 @@
 // Test new map syntax
 fn main() i32 {
     // Create a map with new simplified syntax
-    i32{i32} numbers = new {
+    [i32]i32 numbers = new {
         1: 10,
         2: 20,
         3: 30

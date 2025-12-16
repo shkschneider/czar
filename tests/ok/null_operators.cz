@@ -4,29 +4,29 @@ struct Node {
     i32 value
 }
 
-fn maybe_null_ptr(bool should_be_null) Node* {
+fn maybe_null_ptr(bool should_be_null) *Node {
     if should_be_null {
         return null
     } else {
-        Node* result = new Node { value: 10 }
+        *Node result = new Node { value: 10 }
         return result
     }
 }
 
 fn main() i32 {
     // Test null coalescing operator 'or'
-    Node* p1 = null
+    *Node p1 = null
     i32 result1 = 5  // Simplified from: 0 or 5
 
     // Test with heap-allocated node (using new without pointer type)
-    Node* p2 = new Node { value: 20 }
+    *Node p2 = new Node { value: 20 }
 
     // Direct field access - node on heap
-    Node* p3 = new Node { value: 15 }
+    *Node p3 = new Node { value: 15 }
     i32 safe_value = p3.value  // Should be 15
 
     // Null pointer with fallback using 'or'
-    Node* p4 = null
+    *Node p4 = null
     i32 safe_null = 100  // Since p4 is null, we use fallback directly
 
     // Return combination of tests

@@ -1,6 +1,6 @@
 // Test compile-time array bounds checking - constant index out of bounds
 fn main() i32 {
-    i32[5] arr
+    [5]i32 arr
     
     // This should fail: index out of bounds at compile time
     i32 y = arr[10]

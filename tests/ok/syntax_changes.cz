@@ -15,9 +15,9 @@ fn main() i32 {
     bool test2 = a == 5 or a == 10  // true
 
     // Test 3: Simplified null coalescing
-    Node* null_ptr = null
-    Node* valid_ptr = new Node { value: 50 }
-    Node* result = valid_ptr  // Simplified from: null_ptr or valid_ptr
+    *Node null_ptr = null
+    *Node valid_ptr = new Node { value: 50 }
+    *Node result = valid_ptr  // Simplified from: null_ptr or valid_ptr
 
     // Test 4: Underscore in numbers
     i32 thousand = 1_000
@@ -25,7 +25,7 @@ fn main() i32 {
     i32 with_underscores = 1_2_3_4
 
     // Test 5: Single ! for null check
-    Node* checked = valid_ptr!  // Should succeed
+    *Node checked = valid_ptr!  // Should succeed
 
     // Test 6: Direct field access (no ?. operator)
     i32 value_from_result = result.value  // Direct access

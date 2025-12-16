@@ -1,5 +1,5 @@
 // Test that empty dynamic arrays are rejected
 fn main() i32 {
-    i32[] empty = new []
+    []i32 empty = new []
     return 0
 }

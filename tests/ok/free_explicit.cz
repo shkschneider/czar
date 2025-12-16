@@ -7,7 +7,7 @@ struct Person {
 
 fn main() i32 {
     // Heap allocate a Person
-    mut Person* p = new Person { age: 25, score: 50 }
+    mut *Person p = new Person { age: 25, score: 50 }
 
     // Use the person
     i32 total = p.age + p.score
