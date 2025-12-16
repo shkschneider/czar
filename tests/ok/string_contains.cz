@@ -1,0 +1,38 @@
+// Test string:contains() method
+fn main() i32 {
+    string s = string "Hello World"
+    string needle = string "World"
+    
+    // Check if substring exists
+    i32 found = s.contains(needle)
+    
+    if found != 1 {
+        return 1
+    }
+    
+    // Test not found
+    string missing = string "xyz"
+    i32 not_found = s.contains(missing)
+    
+    if not_found != 0 {
+        return 2
+    }
+    
+    // Test empty needle (should be found)
+    string empty = string ""
+    i32 empty_found = s.contains(empty)
+    
+    if empty_found != 1 {
+        return 3
+    }
+    
+    // Test partial match
+    string partial = string "Hel"
+    i32 partial_found = s.contains(partial)
+    
+    if partial_found != 1 {
+        return 4
+    }
+    
+    return 0
+}

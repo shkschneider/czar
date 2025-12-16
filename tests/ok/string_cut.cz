@@ -1,0 +1,36 @@
+// Test string:cut() method
+fn main() i32 {
+    string s = string "Hello,World,Test"
+    string sep = string ","
+    
+    // Cut at first separator
+    string* result = s.cut(sep)
+    
+    if result.length != 5 {
+        free result
+        return 1
+    }
+    
+    // Verify content is "Hello"
+    string expected = string "Hello"
+    i32 match = result.prefix(expected)
+    
+    free result
+    
+    if match != 1 {
+        return 2
+    }
+    
+    // Test when separator not found (should return copy of entire string)
+    string s2 = string "NoSeparator"
+    string sep2 = string ","
+    string* result2 = s2.cut(sep2)
+    
+    if result2.length != 11 {
+        free result2
+        return 3
+    }
+    
+    free result2
+    return 0
+}
