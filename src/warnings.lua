@@ -14,6 +14,9 @@ Warnings.WarningType = {
     
     -- Pointer warnings
     POINTER_REASSIGNMENT = "POINTER_REASSIGNMENT",
+    
+    -- Enum warnings
+    ENUM_VALUE_NOT_UPPERCASE = "ENUM_VALUE_NOT_UPPERCASE",
 }
 
 -- Cache for source file contents

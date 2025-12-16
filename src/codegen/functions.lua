@@ -93,6 +93,8 @@ function Functions.collect_structs_and_functions()
     for _, item in ipairs(ctx().ast.items or {}) do
         if item.kind == "struct" then
             ctx().structs[item.name] = item
+        elseif item.kind == "enum" then
+            ctx().enums[item.name] = item
         elseif item.kind == "function" then
             -- Validate constructor/destructor signatures (new requirement)
             if item.receiver_type and (item.name == "new" or item.name == "free") then
@@ -328,6 +330,37 @@ function Functions.gen_struct(item)    ctx():emit("typedef struct " .. item.name
         ctx():emit(string.format("    %s %s;", Codegen.Types.c_type_in_struct(field.type, item.name), field.name))
     end
     ctx():emit("} " .. item.name .. ";")
+    ctx():emit("")
+end
+
+function Functions.gen_enum(item)
+    local Warnings = require("warnings")
+    
+    -- Check for non-uppercase enum values and emit warnings
+    for _, value in ipairs(item.values) do
+        local name = value.name
+        if name ~= name:upper() then
+            local msg = string.format(
+                "Enum value '%s' in enum '%s' should be all uppercase (e.g., '%s')",
+                name, item.name, name:upper()
+            )
+            Warnings.emit(
+                ctx().source_file,
+                value.line,
+                Warnings.WarningType.ENUM_VALUE_NOT_UPPERCASE,
+                msg,
+                ctx().source_path
+            )
+        end
+    end
+    
+    -- Generate typedef for enum type (as int32_t in C)
+    ctx():emit(string.format("typedef int32_t %s;", item.name))
+    
+    -- Generate constants for enum values (e.g., MyEnum_ONE, MyEnum_TWO)
+    for i, value in ipairs(item.values) do
+        ctx():emit(string.format("#define %s_%s %d", item.name, value.name, i - 1))
+    end
     ctx():emit("")
 end
 
