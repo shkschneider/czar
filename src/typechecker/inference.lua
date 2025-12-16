@@ -165,8 +165,8 @@ function Inference.infer_index_type(typechecker, expr)
         return nil
     end
 
-    -- Check that array is actually an array or slice type
-    if array_type.kind ~= "array" and array_type.kind ~= "slice" then
+    -- Check that array is actually an array, slice, or varargs type
+    if array_type.kind ~= "array" and array_type.kind ~= "slice" and array_type.kind ~= "varargs" then
         local line = expr.line or (expr.array and expr.array.line) or 0
         local msg = string.format(
             "Cannot index non-array type '%s'",
@@ -193,7 +193,7 @@ function Inference.infer_index_type(typechecker, expr)
         return nil
     end
 
-    -- Compile-time bounds checking: check if index is a constant integer (only for arrays, not slices)
+    -- Compile-time bounds checking: check if index is a constant integer (only for arrays, not slices or varargs)
     if array_type.kind == "array" and expr.index.kind == "int" then
         local index_value = expr.index.value
         local array_size = array_type.size
@@ -699,6 +699,8 @@ function Inference.type_to_string(type_node)
         return Inference.type_to_string(type_node.element_type) .. "[" .. tostring(type_node.size) .. "]"
     elseif type_node.kind == "slice" then
         return Inference.type_to_string(type_node.element_type) .. "[]"
+    elseif type_node.kind == "varargs" then
+        return Inference.type_to_string(type_node.element_type) .. "..."
     end
 
     return "unknown"

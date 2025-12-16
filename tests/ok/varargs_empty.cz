@@ -1,0 +1,10 @@
+// Test varargs with no arguments
+fn sum(i32... nums) i32 {
+    return 0
+}
+
+fn main() i32 {
+    i32 result = sum()
+    // Should return 0 (no args)
+    return result
+}

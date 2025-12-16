@@ -20,6 +20,9 @@ function Types.c_type(type_node)
     elseif type_node.kind == "slice" then
         -- Slices are represented as pointers to the element type
         return Types.c_type(type_node.element_type) .. "*"
+    elseif type_node.kind == "varargs" then
+        -- Varargs are represented as pointers to the element type (like slices)
+        return Types.c_type(type_node.element_type) .. "*"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         

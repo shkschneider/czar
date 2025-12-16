@@ -31,9 +31,14 @@ function Functions.resolve_arguments(func_name, args, params)
         end
     end
 
+    -- Check if last parameter is varargs
+    local has_varargs = #params > 0 and params[#params].type.kind == "varargs"
+    local fixed_param_count = has_varargs and (#params - 1) or #params
+
     -- Second pass: fill in resolved array with arguments in parameter order
     local positional_index = 1
-    for i, param in ipairs(params) do
+    for i = 1, fixed_param_count do
+        local param = params[i]
         if named_args[param.name] then
             -- Named argument provided
             resolved[i] = named_args[param.name]
@@ -58,6 +63,27 @@ function Functions.resolve_arguments(func_name, args, params)
             -- No argument and no default - this is an error
             error(string.format("Missing argument for parameter '%s' in call to function '%s' (no default value provided)", param.name, func_name))
         end
+    end
+
+    -- Handle varargs: collect remaining arguments
+    if has_varargs then
+        local varargs_list = {}
+        -- Collect all remaining positional arguments
+        while positional_index <= positional_count do
+            local arg_index = 1
+            for j, arg in ipairs(args) do
+                if arg.kind ~= "named_arg" then
+                    if arg_index == positional_index then
+                        table.insert(varargs_list, arg)
+                        break
+                    end
+                    arg_index = arg_index + 1
+                end
+            end
+            positional_index = positional_index + 1
+        end
+        -- Store varargs list as a special marker
+        resolved[#params] = { kind = "varargs_list", args = varargs_list }
     end
 
     return resolved
@@ -198,30 +224,38 @@ function Functions.gen_params(params)
 
         local type_str = Codegen.Types.c_type(p.type)
         
-        -- In explicit pointer model with immutability by default:
-        -- - Type* without mut → const Type* (immutable data through pointer)
-        -- - mut Type* → Type* (mutable data through pointer)
-        -- - any without mut → const void* (immutable)
-        -- - mut any → void* (mutable)
-        if p.type.kind == "pointer" then
-            local base_type = Codegen.Types.c_type(p.type.to)
-            if p.mutable then
-                -- mut Type* → Type* (can modify through pointer)
-                type_str = base_type .. "*"
-            else
-                -- Type* → const Type* (cannot modify through pointer)
-                type_str = "const " .. base_type .. "*"
+        -- Handle varargs: generate pointer and count parameters (like slices)
+        if p.type.kind == "varargs" then
+            local element_type = Codegen.Types.c_type(p.type.element_type)
+            -- Varargs are read-only (const), generate pointer and count
+            table.insert(parts, string.format("const %s* %s", element_type, param_name))
+            table.insert(parts, string.format("size_t %s_count", param_name))
+        else
+            -- In explicit pointer model with immutability by default:
+            -- - Type* without mut → const Type* (immutable data through pointer)
+            -- - mut Type* → Type* (mutable data through pointer)
+            -- - any without mut → const void* (immutable)
+            -- - mut any → void* (mutable)
+            if p.type.kind == "pointer" then
+                local base_type = Codegen.Types.c_type(p.type.to)
+                if p.mutable then
+                    -- mut Type* → Type* (can modify through pointer)
+                    type_str = base_type .. "*"
+                else
+                    -- Type* → const Type* (cannot modify through pointer)
+                    type_str = "const " .. base_type .. "*"
+                end
+            elseif p.type.kind == "named_type" and p.type.name == "any" then
+                -- any is void* - apply const if not mutable
+                if p.mutable then
+                    type_str = "void*"
+                else
+                    type_str = "const void*"
+                end
             end
-        elseif p.type.kind == "named_type" and p.type.name == "any" then
-            -- any is void* - apply const if not mutable
-            if p.mutable then
-                type_str = "void*"
-            else
-                type_str = "const void*"
-            end
-        end
 
-        table.insert(parts, string.format("%s %s", type_str, param_name))
+            table.insert(parts, string.format("%s %s", type_str, param_name))
+        end
     end
     return join(parts, ", ")
 end
