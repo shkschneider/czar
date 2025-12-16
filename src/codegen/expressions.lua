@@ -2,6 +2,7 @@
 -- Handles all expression types: literals, operators, calls, casts, etc.
 
 local Macros = require("src.macros")
+local Builtins = require("src.builtins")
 
 local Expressions = {}
 
@@ -9,12 +10,6 @@ local function ctx() return _G.Codegen end
 
 -- Constants
 local MAP_MIN_CAPACITY = 16  -- Minimum capacity for newly allocated maps
-
-local builtin_calls = {
-    print_i32 = function(args)
-        return string.format('printf("%%d\\n", %s)', args[1])
-    end,
-}
 
 local function join(list, sep)
     return table.concat(list, sep or "")
@@ -447,8 +442,8 @@ function Expressions.gen_expr(expr)
             end
         end
 
-        if builtin_calls[callee] then
-            return builtin_calls[callee](args)
+        if Builtins.calls[callee] then
+            return Builtins.calls[callee](args)
         end
         return string.format("%s(%s)", callee, join(args, ", "))
     elseif expr.kind == "index" then
