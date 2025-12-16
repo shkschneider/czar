@@ -62,3 +62,13 @@ Czar is "C with sane defaults" with some of my own "twists":
 - Zero magic conversions.
 
 Compiler produces straightforward portable C.
+
+## Steps
+
+- lexer -> tokens
+- parser -> ast
+- typechecker
+- lowering
+- analysis
+- codegen -> c
++ macros builtins warning serrors
