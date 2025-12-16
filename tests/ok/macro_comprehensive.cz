@@ -1,0 +1,23 @@
+// Test that macros (formerly directives) still work
+// This replaces directive_comprehensive.cz with macro terminology
+
+fn helper(i32 x) i32 {
+    bool is_debug = #DEBUG
+
+    if is_debug {
+        return x + 10
+    }
+
+    return x
+}
+
+fn main() i32 {
+    // Test that macros work in expressions
+    bool debug_mode = #DEBUG
+
+    if #DEBUG {
+        return helper(0) - 10
+    } else {
+        return helper(1) - 1
+    }
+}
