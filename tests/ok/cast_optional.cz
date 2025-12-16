@@ -1,0 +1,18 @@
+// Test optional cast (as?) syntax
+fn main() i32 {
+    // Test optional cast - currently behaves like regular cast
+    i32 i = 1000
+    
+    // as? returns the target type directly (not pointer)
+    u8 u = i as? u8  // Cast directly to u8
+    i64 big = i as? i64  // Cast to i64
+    
+    // For now, as? performs same cast as 'as'
+    // Future: will add runtime validation and support fallback with 'or'
+    
+    if big == 1000 {
+        return 0  // success
+    }
+    
+    return 1
+}
