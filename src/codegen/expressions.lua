@@ -5,6 +5,9 @@ local Expressions = {}
 
 local function ctx() return _G.Codegen end
 
+-- Constants
+local MAP_MIN_CAPACITY = 16  -- Minimum capacity for newly allocated maps
+
 local builtin_calls = {
     print_i32 = function(args)
         return string.format('printf("%%d\\n", %s)', args[1])
@@ -522,7 +525,7 @@ function Expressions.gen_expr(expr)
         
         -- Build initialization code
         local statements = {}
-        local capacity = math.max(16, #expr.entries * 2)
+        local capacity = math.max(MAP_MIN_CAPACITY, #expr.entries * 2)
         table.insert(statements, string.format("%s* _map = %s", 
             map_type_name, 
             ctx():malloc_call(string.format("sizeof(%s)", map_type_name), true)))
