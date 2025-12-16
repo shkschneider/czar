@@ -187,8 +187,8 @@ function Functions.function_returns_null(fn)
                 if val.kind == "identifier" and Codegen.Types.is_pointer_var(val.name) then
                     return true
                 end
-                -- Returns new_heap, clone, null_check, etc.
-                if val.kind == "new_heap" or val.kind == "clone" or val.kind == "null_check" then
+                -- Returns new_heap, clone, null_check, new_array, etc.
+                if val.kind == "new_heap" or val.kind == "clone" or val.kind == "null_check" or val.kind == "new_array" then
                     return true
                 end
             end

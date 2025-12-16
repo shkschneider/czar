@@ -787,8 +787,23 @@ function Parser:parse_primary()
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "clone", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "new" then
-        -- new Type { fields... }
+        -- new Type { fields... } or new [ elements... ]
         self:advance()
+        
+        -- Check if this is a dynamic array: new [...]
+        if self:check("LBRACKET") then
+            self:advance()
+            local elements = {}
+            if not self:check("RBRACKET") then
+                repeat
+                    table.insert(elements, self:parse_expression())
+                until not self:match("COMMA")
+            end
+            self:expect("RBRACKET")
+            return { kind = "new_array", elements = elements }
+        end
+        
+        -- Otherwise, it's a struct allocation: new Type { ... }
         local type_name_tok = self:expect("IDENT")
         local type_name = type_name_tok.value
         self:expect("LBRACE")

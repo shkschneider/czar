@@ -55,8 +55,8 @@ function Expressions.gen_expr(expr)
             if var_type and var_type.kind == "pointer" then
                 is_pointer = true
             end
-        elseif expr.expr.kind == "new_heap" or expr.expr.kind == "clone" then
-            -- new and clone always return pointers
+        elseif expr.expr.kind == "new_heap" or expr.expr.kind == "clone" or expr.expr.kind == "new_array" then
+            -- new, new_array, and clone always return pointers
             is_pointer = true
         end
         
@@ -457,6 +457,35 @@ function Expressions.gen_expr(expr)
         -- Explicit allocation with 'new' keyword
         return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
             expr.type_name, ctx():malloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
+    elseif expr.kind == "new_array" then
+        -- new [elements...] - heap-allocated array
+        -- Generate: ({ Type* _ptr = malloc(sizeof(Type) * N); _ptr[0] = elem1; _ptr[1] = elem2; ...; _ptr; })
+        local element_parts = {}
+        for i, elem in ipairs(expr.elements) do
+            table.insert(element_parts, Expressions.gen_expr(elem))
+        end
+        
+        -- Get element type from inferred type
+        local element_type = expr.inferred_type and expr.inferred_type.element_type
+        if not element_type then
+            error("new_array expression missing inferred type")
+        end
+        local element_type_str = ctx():c_type(element_type)
+        local array_size = #expr.elements
+        
+        -- Build the expression statement block
+        local statements = {}
+        table.insert(statements, string.format("%s* _ptr = %s", 
+            element_type_str, 
+            ctx():malloc_call(string.format("sizeof(%s) * %d", element_type_str, array_size), true)))
+        
+        for i, elem_expr in ipairs(element_parts) do
+            table.insert(statements, string.format("_ptr[%d] = %s", i-1, elem_expr))
+        end
+        
+        table.insert(statements, "_ptr")
+        
+        return string.format("({ %s; })", join(statements, "; "))
     elseif expr.kind == "array_literal" then
         -- Array literal: { expr1, expr2, ... }
         local parts = {}

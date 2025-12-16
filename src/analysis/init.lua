@@ -160,6 +160,10 @@ function Analysis:analyze_expression(expr, declaring_var)
         for _, field in ipairs(expr.fields) do
             self:analyze_expression(field.value, declaring_var)
         end
+    elseif expr.kind == "new_array" then
+        for _, elem in ipairs(expr.elements) do
+            self:analyze_expression(elem, declaring_var)
+        end
     elseif expr.kind == "method_ref" then
         self:analyze_expression(expr.object, declaring_var)
     elseif expr.kind == "method_call" then
