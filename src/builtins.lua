@@ -10,6 +10,31 @@ Builtins.calls = {
     print_i32 = function(args)
         return string.format('printf("%%d\\n", %s)', args[1])
     end,
+    
+    -- Print string with automatic newline
+    println = function(args)
+        return string.format('printf("%%s\\n", %s)', args[1])
+    end,
+    
+    -- Print string without newline
+    print = function(args)
+        return string.format('printf("%%s", %s)', args[1])
+    end,
+    
+    -- Direct printf binding with format string and variadic arguments
+    printf = function(args)
+        if #args == 1 then
+            -- Just format string, no additional arguments
+            return string.format('printf(%s)', args[1])
+        else
+            -- Format string with arguments
+            local arg_list = {}
+            for i = 1, #args do
+                table.insert(arg_list, args[i])
+            end
+            return string.format('printf(%s)', table.concat(arg_list, ", "))
+        end
+    end,
 }
 
 -- Builtin features/keywords

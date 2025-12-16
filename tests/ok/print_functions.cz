@@ -1,0 +1,8 @@
+// Test print functions: println, print, printf
+fn main() i32 {
+    println("Hello, World!")
+    print("No")
+    print(" newline")
+    println(" here")
+    return 0
+}
