@@ -18,6 +18,9 @@ function Run.run(source_path, options)
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
     end
 
+    -- When running a binary, require a main function
+    options.require_main = true
+
     -- Step 1: Build binary (calls build.lua which calls compile.lua)
     local output_path = "a.out"
     local ok, result = build_module.build(source_path, output_path, options)
