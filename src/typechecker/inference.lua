@@ -821,17 +821,45 @@ end
 
 -- Infer the type of a map allocation (new map[K]V { key: value, ... })
 function Inference.infer_new_map_type(typechecker, expr)
+    -- If key_type and value_type are not provided, infer from first entry
+    local key_type = expr.key_type
+    local value_type = expr.value_type
+    
+    if not key_type or not value_type then
+        if #expr.entries == 0 then
+            -- Empty map - cannot infer types
+            local line = expr.line or 0
+            local msg = "Cannot infer type of empty map literal, use explicit type annotation"
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- Infer from first entry
+        key_type = Inference.infer_type(typechecker, expr.entries[1].key)
+        value_type = Inference.infer_type(typechecker, expr.entries[1].value)
+        
+        if not key_type or not value_type then
+            return nil
+        end
+        
+        -- Store inferred types back in expr for code generation
+        expr.key_type = key_type
+        expr.value_type = value_type
+    end
+    
     -- Type checking for map entries
     for i, entry in ipairs(expr.entries) do
-        local key_type = Inference.infer_type(typechecker, entry.key)
-        local value_type = Inference.infer_type(typechecker, entry.value)
+        local entry_key_type = Inference.infer_type(typechecker, entry.key)
+        local entry_value_type = Inference.infer_type(typechecker, entry.value)
         
         -- Check key type compatibility
-        if not Inference.types_compatible(expr.key_type, key_type, typechecker) then
+        if not Inference.types_compatible(key_type, entry_key_type, typechecker) then
             local line = expr.line or 0
             local msg = string.format(
                 "Map entry %d has key type '%s', expected '%s'",
-                i, Inference.type_to_string(key_type), Inference.type_to_string(expr.key_type)
+                i, Inference.type_to_string(entry_key_type), Inference.type_to_string(key_type)
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                 Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
@@ -839,11 +867,11 @@ function Inference.infer_new_map_type(typechecker, expr)
         end
         
         -- Check value type compatibility
-        if not Inference.types_compatible(expr.value_type, value_type, typechecker) then
+        if not Inference.types_compatible(value_type, entry_value_type, typechecker) then
             local line = expr.line or 0
             local msg = string.format(
                 "Map entry %d has value type '%s', expected '%s'",
-                i, Inference.type_to_string(value_type), Inference.type_to_string(expr.value_type)
+                i, Inference.type_to_string(entry_value_type), Inference.type_to_string(value_type)
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                 Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
@@ -852,7 +880,7 @@ function Inference.infer_new_map_type(typechecker, expr)
     end
     
     -- Return a map type
-    local inferred = { kind = "map", key_type = expr.key_type, value_type = expr.value_type }
+    local inferred = { kind = "map", key_type = key_type, value_type = value_type }
     expr.inferred_type = inferred
     return inferred
 end
