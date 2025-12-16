@@ -367,6 +367,12 @@ function Parser:parse_statement()
         local expr = self:parse_expression()
         self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "free", value = expr }
+    elseif self:check("DIRECTIVE") then
+        -- Statement-level directives like #assert and #log
+        local directive_tok = self:advance()
+        local stmt = Macros.parse_statement(self, directive_tok)
+        self:match("SEMICOLON")  -- semicolons are optional
+        return stmt
     elseif self:check("KEYWORD", "if") then
         return self:parse_if()
     elseif self:check("KEYWORD", "while") then

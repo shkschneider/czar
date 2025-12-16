@@ -1,0 +1,14 @@
+// Test #log macro
+// Verifies that #log prints to stderr with filename:line prefix
+
+fn test_log() i32 {
+    #log("Starting test")
+    i32 x = 42
+    #log("Variable initialized")
+    #log("Test complete")
+    return 0
+}
+
+fn main() i32 {
+    return test_log()
+}

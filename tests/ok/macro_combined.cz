@@ -1,0 +1,22 @@
+// Test both #assert and #log macros together
+// Verifies they work correctly in combination
+
+fn test_combined() i32 {
+    #log("Test starting")
+    
+    i32 x = 10
+    i32 y = 20
+    
+    #assert(x < y)
+    #log("First assertion passed")
+    
+    #assert(x + 10 == y)
+    #log("Second assertion passed")
+    
+    #log("Test complete")
+    return 0
+}
+
+fn main() i32 {
+    return test_combined()
+}
