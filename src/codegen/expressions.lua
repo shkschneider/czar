@@ -312,15 +312,75 @@ function Expressions.gen_expr(expr)
                     else
                         return string.format("czar_string_substring(%s, %s, %s)", obj_expr, start_expr, end_expr)
                     end
-                elseif method_name == "find" then
+                elseif method_name == "find" or method_name == "index" then
                     if #expr.args ~= 1 then
-                        error("find() requires exactly 1 argument")
+                        error(method_name .. "() requires exactly 1 argument")
                     end
                     local needle_expr = Expressions.gen_expr(expr.args[1])
                     if obj_type.kind == "string" then
-                        return string.format("czar_string_find(&%s, &%s)", obj_expr, needle_expr)
+                        return string.format("czar_string_index(&%s, &%s)", obj_expr, needle_expr)
                     else
-                        return string.format("czar_string_find(%s, &%s)", obj_expr, needle_expr)
+                        return string.format("czar_string_index(%s, &%s)", obj_expr, needle_expr)
+                    end
+                elseif method_name == "contains" then
+                    if #expr.args ~= 1 then
+                        error("contains() requires exactly 1 argument")
+                    end
+                    local needle_expr = Expressions.gen_expr(expr.args[1])
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_contains(&%s, &%s)", obj_expr, needle_expr)
+                    else
+                        return string.format("czar_string_contains(%s, &%s)", obj_expr, needle_expr)
+                    end
+                elseif method_name == "cut" then
+                    if #expr.args ~= 1 then
+                        error("cut() requires exactly 1 argument")
+                    end
+                    local sep_expr = Expressions.gen_expr(expr.args[1])
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_cut(&%s, &%s)", obj_expr, sep_expr)
+                    else
+                        return string.format("czar_string_cut(%s, &%s)", obj_expr, sep_expr)
+                    end
+                elseif method_name == "prefix" then
+                    if #expr.args ~= 1 then
+                        error("prefix() requires exactly 1 argument")
+                    end
+                    local prefix_expr = Expressions.gen_expr(expr.args[1])
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_prefix(&%s, &%s)", obj_expr, prefix_expr)
+                    else
+                        return string.format("czar_string_prefix(%s, &%s)", obj_expr, prefix_expr)
+                    end
+                elseif method_name == "suffix" then
+                    if #expr.args ~= 1 then
+                        error("suffix() requires exactly 1 argument")
+                    end
+                    local suffix_expr = Expressions.gen_expr(expr.args[1])
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_suffix(&%s, &%s)", obj_expr, suffix_expr)
+                    else
+                        return string.format("czar_string_suffix(%s, &%s)", obj_expr, suffix_expr)
+                    end
+                elseif method_name == "upper" or method_name == "lower" then
+                    if #expr.args ~= 0 then
+                        error(method_name .. "() takes no arguments")
+                    end
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_%s(&%s)", method_name, obj_expr)
+                    else
+                        return string.format("czar_string_%s(%s)", method_name, obj_expr)
+                    end
+                elseif method_name == "words" then
+                    if #expr.args ~= 0 then
+                        error("words() takes no arguments")
+                    end
+                    -- words() returns czar_string** and an out_count parameter
+                    -- This needs special handling in the type system
+                    if obj_type.kind == "string" then
+                        error("words() is not yet fully implemented for value types")
+                    else
+                        error("words() is not yet fully implemented")
                     end
                 elseif method_name == "trim" or method_name == "ltrim" or method_name == "rtrim" then
                     if #expr.args ~= 0 then
@@ -459,17 +519,86 @@ function Expressions.gen_expr(expr)
                 end
             end
             
-            -- Special handling for string:find(needle) - returns i32
-            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "find" then
+            -- Special handling for string:find(needle) or string:index(needle) - returns i32
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (method_name == "find" or method_name == "index") then
                 local obj_expr = Expressions.gen_expr(obj)
                 if #expr.args ~= 1 then
-                    error("find() requires exactly 1 argument")
+                    error(method_name .. "() requires exactly 1 argument")
                 end
                 local needle_expr = Expressions.gen_expr(expr.args[1])
                 if obj_type.kind == "string" then
-                    return string.format("czar_string_find(&%s, &%s)", obj_expr, needle_expr)
+                    return string.format("czar_string_index(&%s, &%s)", obj_expr, needle_expr)
                 else
-                    return string.format("czar_string_find(%s, &%s)", obj_expr, needle_expr)
+                    return string.format("czar_string_index(%s, &%s)", obj_expr, needle_expr)
+                end
+            end
+            
+            -- Special handling for string:contains(needle) - returns i32 (bool)
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "contains" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("contains() requires exactly 1 argument")
+                end
+                local needle_expr = Expressions.gen_expr(expr.args[1])
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_contains(&%s, &%s)", obj_expr, needle_expr)
+                else
+                    return string.format("czar_string_contains(%s, &%s)", obj_expr, needle_expr)
+                end
+            end
+            
+            -- Special handling for string:cut(separator) - returns string*
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "cut" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("cut() requires exactly 1 argument")
+                end
+                local sep_expr = Expressions.gen_expr(expr.args[1])
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_cut(&%s, &%s)", obj_expr, sep_expr)
+                else
+                    return string.format("czar_string_cut(%s, &%s)", obj_expr, sep_expr)
+                end
+            end
+            
+            -- Special handling for string:prefix(str) - returns i32 (bool)
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "prefix" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("prefix() requires exactly 1 argument")
+                end
+                local prefix_expr = Expressions.gen_expr(expr.args[1])
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_prefix(&%s, &%s)", obj_expr, prefix_expr)
+                else
+                    return string.format("czar_string_prefix(%s, &%s)", obj_expr, prefix_expr)
+                end
+            end
+            
+            -- Special handling for string:suffix(str) - returns i32 (bool)
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "suffix" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("suffix() requires exactly 1 argument")
+                end
+                local suffix_expr = Expressions.gen_expr(expr.args[1])
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_suffix(&%s, &%s)", obj_expr, suffix_expr)
+                else
+                    return string.format("czar_string_suffix(%s, &%s)", obj_expr, suffix_expr)
+                end
+            end
+            
+            -- Special handling for string:upper() and string:lower() - modifies in place, returns string*
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (method_name == "upper" or method_name == "lower") then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 0 then
+                    error(method_name .. "() takes no arguments")
+                end
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_%s(&%s)", method_name, obj_expr)
+                else
+                    return string.format("czar_string_%s(%s)", method_name, obj_expr)
                 end
             end
             
