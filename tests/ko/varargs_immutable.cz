@@ -1,0 +1,9 @@
+// Test that varargs cannot be mutated (should fail)
+fn try_mutate(i32... nums) i32 {
+    nums[0] = 42  // This should fail - varargs are read-only
+    return 0
+}
+
+fn main() i32 {
+    return try_mutate(1, 2, 3)
+}
