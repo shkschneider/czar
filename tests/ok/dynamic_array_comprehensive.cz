@@ -4,10 +4,10 @@
 // - Dynamic arrays: Type[] = new [...]  (heap-allocated)
 // - Slices: Type[] = array[start:end]  (view into array)
 
-fn modify_slice(mut i32[] slice, i32 len) void {
+fn modify_slice(mut i32[] arr_slice, i32 len) void {
     mut i32 i = 0
     while i < len {
-        slice[i] = slice[i] * 2
+        arr_slice[i] = arr_slice[i] * 2
         i = i + 1
     }
 }
