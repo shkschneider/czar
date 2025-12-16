@@ -812,6 +812,20 @@ function Parser:parse_postfix()
             else
                 break
             end
+        elseif self:check("KEYWORD", "as") then
+            -- Cast operator: expr as Type or expr as? Type
+            self:advance()  -- consume 'as'
+            local is_optional = false
+            if self:match("QUESTION") then
+                -- Optional cast: as?
+                is_optional = true
+            end
+            local target_type = self:parse_type_with_map_shorthand()
+            if is_optional then
+                expr = { kind = "optional_cast", target_type = target_type, expr = expr }
+            else
+                expr = { kind = "cast", target_type = target_type, expr = expr }
+            end
         else
             break
         end
@@ -847,14 +861,6 @@ function Parser:parse_primary()
         self:advance()
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "sizeof", expr = expr }
-    elseif tok.type == "KEYWORD" and tok.value == "cast" then
-        -- cast<Type> expr
-        self:advance()
-        self:expect("LT")
-        local target_type = self:parse_type()
-        self:expect("GT")
-        local expr = self:parse_unary()  -- Parse next expression at unary level
-        return { kind = "cast", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "clone" then
         -- clone expr or clone<Type> expr
         self:advance()

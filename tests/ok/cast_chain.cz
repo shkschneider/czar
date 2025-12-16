@@ -2,13 +2,13 @@
 fn main() i32 {
     // Test various casts
     i32 i = 42
-    u32 u = cast<u32> i
-    i64 l = cast<i64> u
-    i8 b = cast<i8> 127
-    u16 s = cast<u16> b
+    u32 u = i as u32
+    i64 l = u as i64
+    i8 b = 127 as i8
+    u16 s = b as u16
     
     // Cast back to i32 for comparison
-    i32 result = cast<i32> s
+    i32 result = s as i32
     
     return result - 127
 }
