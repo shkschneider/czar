@@ -10,15 +10,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
+    - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y luajit libluajit-5.1-dev gcc make
-
-    - name: Run test suite
+    - name: Setup
+      uses: leafo/gh-actions-lua@v12
+      with:
+        luaVersion: "luajit"
+    - name: Test
       run: ./check.sh
