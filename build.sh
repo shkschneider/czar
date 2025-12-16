@@ -44,7 +44,7 @@ else
 fi
 
 SOURCES=(
-    main.lua
+    bin/main.lua
     lexer/init.lua
     parser/init.lua
     typechecker/init.lua
@@ -59,10 +59,10 @@ SOURCES=(
     codegen/functions.lua
     codegen/statements.lua
     codegen/expressions.lua
-    generate.lua
-    assemble.lua
-    build.lua
-    run.lua
+    bin/generate.lua
+    bin/assemble.lua
+    bin/build.lua
+    bin/run.lua
     errors.lua
     warnings.lua
     macros.lua
@@ -72,8 +72,16 @@ LIBRARY=libczar.a
 mkdir -p ./build
 
 for src in ${SOURCES[@]} ; do
+    # For module naming, use just the base filename (without directory)
+    # unless it's in a subdirectory like lexer/init.lua, parser/init.lua, etc.
+    # In those cases, we want lexer_init, parser_init, etc.
     name=${src//\//_}
     name="$(basename $name .lua)"
+    # Special case: if the module is in bin/, we want just the base name
+    # e.g., bin/main.lua -> main, not bin_main
+    if [[ $src == bin/* ]]; then
+        name="$(basename $src .lua)"
+    fi
     obj="$name.o"
     echo "[LUAJIT] $src -> $obj"
     luajit -b -n $name ./src/$src ./build/$obj # bytecode module-name
@@ -85,6 +93,10 @@ echo "// Auto-generated" > ./build/main.h
 echo "#include <stddef.h>" >> ./build/main.h
 for src in ${SOURCES[@]} ; do
     name="$(basename ${src//\//_} .lua)"
+    # Special case: if the module is in bin/, we want just the base name
+    if [[ $src == bin/* ]]; then
+        name="$(basename $src .lua)"
+    fi
     obj="$name.o"
     size=$(nm -S ./build/$obj | grep luaJIT_BC | awk '{print "0x" $2}')
     echo "const size_t luaJIT_BC_${name}_size = $size;" >> ./build/main.h
