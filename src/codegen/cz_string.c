@@ -1,0 +1,266 @@
+// czar_string.c - Safe string implementation for Czar language
+// This file contains all string helper functions that are memory-safe and bounds-checked.
+// Generated code will include this file to provide string functionality.
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+
+// String struct definition
+typedef struct czar_string {
+    char* data;
+    int32_t length;
+    int32_t capacity;
+} czar_string;
+
+// String helper function: get C-style null-terminated string
+static inline char* czar_string_cstr(czar_string* s) {
+    return s->data;
+}
+
+// String helper function: ensure capacity with dynamic resizing
+static inline void czar_string_ensure_capacity(czar_string* s, int32_t required_capacity) {
+    if (s->capacity >= required_capacity) return;
+    // Grow to next power of 2, minimum 16
+    int32_t new_capacity = s->capacity ? s->capacity : 16;
+    while (new_capacity < required_capacity) {
+        new_capacity *= 2;
+    }
+    char* new_data = (char*)realloc(s->data, new_capacity);
+    if (!new_data) {
+        fprintf(stderr, "ERROR: String realloc failed\n");
+        exit(1);
+    }
+    s->data = new_data;
+    s->capacity = new_capacity;
+}
+
+// String helper function: safe append (dynamically resizes, bounds-checked)
+// This is the instance method version: string:append(str)
+static inline void czar_string_append_cstr(czar_string* dest, const char* src, int32_t src_len) {
+    int32_t required = dest->length + src_len + 1; // +1 for null terminator
+    czar_string_ensure_capacity(dest, required);
+    // Safe copy: we know we have enough space
+    memcpy(dest->data + dest->length, src, src_len);
+    dest->length += src_len;
+    dest->data[dest->length] = '\0';
+}
+
+// String helper function: append another string (instance method)
+static inline void czar_string_append_string(czar_string* dest, czar_string* src) {
+    czar_string_append_cstr(dest, src->data, src->length);
+}
+
+// String helper function: static concatenate - returns a new string
+// This is the static method version: string.concat(s1, s2)
+static inline czar_string* czar_string_concat_static(czar_string* s1, czar_string* s2) {
+    int32_t total_len = s1->length + s2->length;
+    int32_t capacity = 16;
+    while (capacity < total_len + 1) {
+        capacity *= 2;
+    }
+    
+    czar_string* result = (czar_string*)malloc(sizeof(czar_string));
+    if (!result) {
+        fprintf(stderr, "ERROR: String malloc failed\n");
+        exit(1);
+    }
+    
+    result->data = (char*)malloc(capacity);
+    if (!result->data) {
+        fprintf(stderr, "ERROR: String data malloc failed\n");
+        exit(1);
+    }
+    
+    result->capacity = capacity;
+    result->length = total_len;
+    
+    memcpy(result->data, s1->data, s1->length);
+    memcpy(result->data + s1->length, s2->data, s2->length);
+    result->data[result->length] = '\0';
+    
+    return result;
+}
+
+// String helper function: safe copy (bounds-checked, no buffer overrun)
+static inline void czar_string_copy(czar_string* dest, const char* src, int32_t src_len) {
+    int32_t required = src_len + 1; // +1 for null terminator
+    czar_string_ensure_capacity(dest, required);
+    memcpy(dest->data, src, src_len);
+    dest->length = src_len;
+    dest->data[dest->length] = '\0';
+}
+
+// String helper function: substring - extract a portion of the string
+// Returns a new heap-allocated string
+static inline czar_string* czar_string_substring(czar_string* s, int32_t start, int32_t end) {
+    // Handle negative indices
+    if (start < 0) start = 0;
+    if (end < 0) end = s->length;
+    
+    // Clamp to valid range
+    if (start > s->length) start = s->length;
+    if (end > s->length) end = s->length;
+    if (start > end) start = end;
+    
+    int32_t sub_len = end - start;
+    int32_t capacity = 16;
+    while (capacity < sub_len + 1) {
+        capacity *= 2;
+    }
+    
+    czar_string* result = (czar_string*)malloc(sizeof(czar_string));
+    if (!result) {
+        fprintf(stderr, "ERROR: String malloc failed\n");
+        exit(1);
+    }
+    
+    result->data = (char*)malloc(capacity);
+    if (!result->data) {
+        fprintf(stderr, "ERROR: String data malloc failed\n");
+        exit(1);
+    }
+    
+    result->capacity = capacity;
+    result->length = sub_len;
+    
+    if (sub_len > 0) {
+        memcpy(result->data, s->data + start, sub_len);
+    }
+    result->data[result->length] = '\0';
+    
+    return result;
+}
+
+// String helper function: find substring using safe strstr()
+// Returns index of first occurrence, or -1 if not found
+static inline int32_t czar_string_find(czar_string* haystack, czar_string* needle) {
+    if (needle->length == 0) return 0;
+    if (needle->length > haystack->length) return -1;
+    
+    char* pos = strstr(haystack->data, needle->data);
+    if (pos == NULL) return -1;
+    
+    return (int32_t)(pos - haystack->data);
+}
+
+// String helper function: find C-string using safe strstr()
+static inline int32_t czar_string_find_cstr(czar_string* haystack, const char* needle) {
+    char* pos = strstr(haystack->data, needle);
+    if (pos == NULL) return -1;
+    
+    return (int32_t)(pos - haystack->data);
+}
+
+// String helper function: left trim whitespace
+// Modifies the string in place, returns the string
+static inline czar_string* czar_string_ltrim(czar_string* s) {
+    if (s->length == 0) return s;
+    
+    // Find first non-whitespace using strspn (safe)
+    int32_t leading = (int32_t)strspn(s->data, " \t\n\r\v\f");
+    
+    if (leading == 0) return s;
+    if (leading >= s->length) {
+        // All whitespace
+        s->length = 0;
+        s->data[0] = '\0';
+        return s;
+    }
+    
+    // Move data to the beginning
+    int32_t new_len = s->length - leading;
+    memmove(s->data, s->data + leading, new_len);
+    s->length = new_len;
+    s->data[s->length] = '\0';
+    
+    return s;
+}
+
+// String helper function: right trim whitespace
+// Modifies the string in place, returns the string
+static inline czar_string* czar_string_rtrim(czar_string* s) {
+    if (s->length == 0) return s;
+    
+    // Find trailing whitespace from the end
+    int32_t i = s->length - 1;
+    while (i >= 0 && isspace((unsigned char)s->data[i])) {
+        i--;
+    }
+    
+    s->length = i + 1;
+    s->data[s->length] = '\0';
+    
+    return s;
+}
+
+// String helper function: trim whitespace from both ends
+// Modifies the string in place, returns the string
+static inline czar_string* czar_string_trim(czar_string* s) {
+    czar_string_ltrim(s);
+    czar_string_rtrim(s);
+    return s;
+}
+
+// String helper function: split string by delimiter
+// Returns a dynamically allocated array of strings
+// The count is stored in the out_count parameter
+static inline czar_string** czar_string_split(czar_string* s, char delimiter, int32_t* out_count) {
+    if (s->length == 0) {
+        *out_count = 0;
+        return NULL;
+    }
+    
+    // Count occurrences of delimiter using strchr (safe)
+    int32_t count = 1;  // At least one part
+    for (int32_t i = 0; i < s->length; i++) {
+        if (s->data[i] == delimiter) count++;
+    }
+    
+    // Allocate array of string pointers
+    czar_string** parts = (czar_string**)malloc(sizeof(czar_string*) * count);
+    if (!parts) {
+        fprintf(stderr, "ERROR: String split malloc failed\n");
+        exit(1);
+    }
+    
+    int32_t part_idx = 0;
+    int32_t start = 0;
+    
+    for (int32_t i = 0; i <= s->length; i++) {
+        if (i == s->length || s->data[i] == delimiter) {
+            int32_t part_len = i - start;
+            int32_t capacity = 16;
+            while (capacity < part_len + 1) {
+                capacity *= 2;
+            }
+            
+            parts[part_idx] = (czar_string*)malloc(sizeof(czar_string));
+            if (!parts[part_idx]) {
+                fprintf(stderr, "ERROR: String part malloc failed\n");
+                exit(1);
+            }
+            
+            parts[part_idx]->data = (char*)malloc(capacity);
+            if (!parts[part_idx]->data) {
+                fprintf(stderr, "ERROR: String part data malloc failed\n");
+                exit(1);
+            }
+            
+            parts[part_idx]->capacity = capacity;
+            parts[part_idx]->length = part_len;
+            
+            if (part_len > 0) {
+                memcpy(parts[part_idx]->data, s->data + start, part_len);
+            }
+            parts[part_idx]->data[part_len] = '\0';
+            
+            part_idx++;
+            start = i + 1;
+        }
+    }
+    
+    *out_count = count;
+    return parts;
+}

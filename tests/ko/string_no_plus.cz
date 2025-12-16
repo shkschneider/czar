@@ -1,0 +1,11 @@
+// FAIL TEST: String concatenation with + operator should not work
+// Strings cannot be added with + operator
+fn main() i32 {
+    string s1 = string "one"
+    string s2 = string "two"
+    
+    // This should fail - no + operator for strings
+    string s3 = s1 + s2
+    
+    return 0
+}
