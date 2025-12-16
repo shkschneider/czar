@@ -40,6 +40,8 @@ function Expressions.gen_expr(expr)
         -- Handle macro function calls: #DEBUG(), #DEBUG(bool)
         return Macros.generate_call(expr, ctx())
     elseif expr.kind == "identifier" then
+        -- Mark variable as used
+        ctx():mark_var_used(expr.name)
         return expr.name
     elseif expr.kind == "mut_arg" then
         -- Caller-controlled mutability: mut arg means caller allows mutation
@@ -68,7 +70,21 @@ function Expressions.gen_expr(expr)
         end
     elseif expr.kind == "unsafe_cast" then
         -- Unsafe cast: expr as<Type> -> (Type)expr
+        -- Emit warning for unsafe cast
+        local Warnings = require("warnings")
         local target_type_str = ctx():c_type(expr.target_type)
+        local source_type = ctx():infer_type(expr.expr)
+        local source_type_str = source_type and ctx():type_name_string(source_type) or "unknown"
+        
+        Warnings.emit(
+            ctx().source_file,
+            expr.line,
+            Warnings.WarningType.UNSAFE_CAST,
+            string.format("Unsafe cast from '%s' to '%s' - type safety not guaranteed", 
+                source_type_str, target_type_str),
+            ctx().source_path
+        )
+        
         local expr_str = Expressions.gen_expr(expr.expr)
         
         -- Handle pointer casting
@@ -201,7 +217,14 @@ function Expressions.gen_expr(expr)
                 
                 -- Warning: reassigning a pointer to another address
                 if var_type.kind == "pointer" then
-                    io.stderr:write(string.format("Warning: Reassigning pointer '%s' to another address (potential dangling pointer risk)\n", expr.target.name))
+                    local Warnings = require("warnings")
+                    Warnings.emit(
+                        ctx().source_file,
+                        expr.line,
+                        Warnings.WarningType.POINTER_REASSIGNMENT,
+                        string.format("Reassigning pointer '%s' to another address (potential dangling pointer risk)", expr.target.name),
+                        ctx().source_path
+                    )
                 end
             end
         elseif expr.target.kind == "field" then

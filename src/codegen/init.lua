@@ -30,6 +30,7 @@ function Codegen.new(ast, options)
         heap_vars_stack = {},
         debug = options.debug or false,
         source_file = options.source_file or "unknown",
+        source_path = options.source_path or options.source_file or "unknown",
         current_function = nil,
         custom_malloc = nil,
         custom_free = nil,
@@ -59,6 +60,8 @@ function Codegen:push_scope()
 end
 
 function Codegen:pop_scope()
+    -- Check for unused variables before popping
+    Codegen.Memory.check_unused_vars()
     Codegen.Memory.pop_scope()
 end
 
@@ -84,6 +87,14 @@ end
 
 function Codegen:get_var_info(name)
     return Codegen.Memory.get_var_info(name)
+end
+
+function Codegen:mark_var_used(name)
+    return Codegen.Memory.mark_var_used(name)
+end
+
+function Codegen:check_unused_vars()
+    return Codegen.Memory.check_unused_vars()
 end
 
 function Codegen:is_pointer_type(type_node)
