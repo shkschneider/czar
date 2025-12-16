@@ -247,6 +247,16 @@ function Parser:parse_type()
         return { kind = "map", key_type = key_type, value_type = value_type }
     end
     
+    if self:check("KEYWORD", "pair") then
+        self:advance()
+        self:expect("LT")
+        local left_type = self:parse_type()
+        self:expect("COLON")
+        local right_type = self:parse_type()
+        self:expect("GT")
+        return { kind = "pair", left_type = left_type, right_type = right_type }
+    end
+    
     if is_type_token(tok) then
         self:advance()
         local base_type = { kind = "named_type", name = tok.value }
@@ -282,8 +292,8 @@ end
 function Parser:parse_type_with_map_shorthand()
     local tok = self:current()
     
-    -- Check for explicit container types: array<T>, slice<T>, map<K:V>
-    if self:check("KEYWORD", "array") or self:check("KEYWORD", "slice") or self:check("KEYWORD", "map") then
+    -- Check for explicit container types: array<T>, slice<T>, map<K:V>, pair<T:T>
+    if self:check("KEYWORD", "array") or self:check("KEYWORD", "slice") or self:check("KEYWORD", "map") or self:check("KEYWORD", "pair") then
         return self:parse_type()
     end
     
@@ -932,6 +942,47 @@ function Parser:parse_primary()
             end
         end
         
+        -- Check for new array { ... }, new map { ... }, or new pair { ... }
+        if self:check("KEYWORD", "array") then
+            self:advance()
+            self:expect("LBRACE")
+            local elements = {}
+            if not self:check("RBRACE") then
+                repeat
+                    table.insert(elements, self:parse_expression())
+                until not self:match("COMMA")
+            end
+            self:expect("RBRACE")
+            return { kind = "new_array", elements = elements }
+        end
+        
+        if self:check("KEYWORD", "map") then
+            self:advance()
+            self:expect("LBRACE")
+            local entries = {}
+            if not self:check("RBRACE") then
+                repeat
+                    local key = self:parse_expression()
+                    self:expect("COLON")
+                    local value = self:parse_expression()
+                    table.insert(entries, { key = key, value = value })
+                until not self:match("COMMA")
+            end
+            self:expect("RBRACE")
+            return { kind = "new_map", entries = entries }
+        end
+        
+        if self:check("KEYWORD", "pair") then
+            self:advance()
+            self:expect("LBRACE")
+            local left = self:parse_expression()
+            self:expect("COMMA")
+            local right = self:parse_expression()
+            self:match("COMMA")  -- Optional trailing comma
+            self:expect("RBRACE")
+            return { kind = "new_pair", left = left, right = right }
+        end
+        
         -- Otherwise, it's a struct allocation: new Type { ... }
         local type_name_tok = self:expect("IDENT")
         local type_name = type_name_tok.value
@@ -947,6 +998,43 @@ function Parser:parse_primary()
         end
         self:expect("RBRACE")
         return { kind = "new_heap", type_name = type_name, fields = fields }
+    elseif tok.type == "KEYWORD" and tok.value == "array" then
+        -- Stack array literal: array { expr, expr, ... }
+        self:advance()
+        self:expect("LBRACE")
+        local elements = {}
+        if not self:check("RBRACE") then
+            repeat
+                table.insert(elements, self:parse_expression())
+            until not self:match("COMMA")
+        end
+        self:expect("RBRACE")
+        return { kind = "array_literal", elements = elements }
+    elseif tok.type == "KEYWORD" and tok.value == "map" then
+        -- Stack map literal: map { key: value, ... }
+        self:advance()
+        self:expect("LBRACE")
+        local entries = {}
+        if not self:check("RBRACE") then
+            repeat
+                local key = self:parse_expression()
+                self:expect("COLON")
+                local value = self:parse_expression()
+                table.insert(entries, { key = key, value = value })
+            until not self:match("COMMA")
+        end
+        self:expect("RBRACE")
+        return { kind = "map_literal", entries = entries }
+    elseif tok.type == "KEYWORD" and tok.value == "pair" then
+        -- Stack pair literal: pair { left, right }
+        self:advance()
+        self:expect("LBRACE")
+        local left = self:parse_expression()
+        self:expect("COMMA")
+        local right = self:parse_expression()
+        self:match("COMMA")  -- Optional trailing comma
+        self:expect("RBRACE")
+        return { kind = "pair_literal", left = left, right = right }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
