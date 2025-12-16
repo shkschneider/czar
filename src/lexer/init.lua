@@ -42,7 +42,6 @@ local keywords = {
     ["and"] = true,
     ["or"] = true,
     ["not"] = true,
-    ["map"] = true,
     -- is/type
     -- import
 }
