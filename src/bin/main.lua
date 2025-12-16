@@ -11,20 +11,16 @@ end
 local lexer = require("lexer")
 local parser = require("parser")
 local typechecker = require("typechecker")
-local transpiler = require("transpiler")
-local assemble = require("assemble")
+local asm_module = require("asm")
+local compile = require("compile")
 local build = require("build")
 local run = require("run")
-local c_module = require("c")
-local s_module = require("s")
-local compile = require("compile")
 local test = require("test")
 local format = require("format")
 local clean = require("clean")
 
 -- Simple file reader utility
--- Note: This is duplicated in transpiler.lua to avoid circular dependencies
--- (transpiler needs it for its API, and main needs it for lexer/parser commands)
+-- Note: This is for legacy commands (lexer, parser, typechecker)
 local function read_file(path)
     local handle, err = io.open(path, "r")
     if not handle then
@@ -38,9 +34,8 @@ end
 local function usage()
     io.stdout:write("Usage: cz [command] [path] [options]\n")
     io.stdout:write("\nCommands:\n")
-    io.stdout:write("  c <file.cz>             Generate C code from .cz file (produces .c file)\n")
-    io.stdout:write("  s <file.c>              Generate assembly from .c file (produces .s file)\n")
-    io.stdout:write("  compile <file.cz>       Generate C and assembly from .cz file (produces .c and .s files)\n")
+    io.stdout:write("  compile <file.cz>       Generate C code from .cz file (produces .c file)\n")
+    io.stdout:write("  asm <file.c>            Generate assembly from .c file (produces .s file)\n")
     io.stdout:write("  build <file.cz>         Build binary from .cz file (depends on compile, produces a.out)\n")
     io.stdout:write("  run <file.cz>           Build and run binary (depends on build, then clean)\n")
     io.stdout:write("  test <file.cz>          Compile, run, and expect exit code 0\n")
@@ -130,7 +125,7 @@ end
 
 local function cmd_build(args)
     if #args < 1 then
-        io.stderr:write("Error: 'build' requires a source file (.c or .cz)\n")
+        io.stderr:write("Error: 'build' requires a source file\n")
         usage()
     end
 
@@ -143,45 +138,10 @@ local function cmd_build(args)
         usage()
     end
 
-    -- Check if source is .cz or .c
-    local c_file_path
-    local cleanup_c = false
-
-    if source_path:match("%.cz$") then
-        -- Generate C code from .cz file with options
-        local c_source, err = transpiler.generate_c(source_path, { debug = opts.debug })
-        if not c_source then
-            io.stderr:write(err .. "\n")
-            os.exit(1)
-        end
-
-        -- Write to temporary C file (named after source file)
-        c_file_path = transpiler.make_temp_path(source_path, ".c")
-        local ok, err = transpiler.write_c_file(c_source, c_file_path)
-        if not ok then
-            io.stderr:write(err .. "\n")
-            os.exit(1)
-        end
-        cleanup_c = true
-    elseif source_path:match("%.c$") then
-        -- It's a .c file
-        c_file_path = source_path
-    else
-        -- Invalid file extension
-        io.stderr:write(string.format("Error: source file must have .c or .cz extension, got: %s\n", source_path))
-        os.exit(1)
-    end
-
-    -- Compile C to binary
-    local ok, err = build.compile_c_to_binary(c_file_path, output_path)
-
-    -- Clean up temporary C file if we created one
-    if cleanup_c then
-        os.remove(c_file_path)
-    end
-
+    -- Call build.lua (which calls compile.lua internally)
+    local ok, result = build.build(source_path, output_path, { debug = opts.debug })
     if not ok then
-        io.stderr:write(err .. "\n")
+        io.stderr:write(result .. "\n")
         os.exit(1)
     end
 
@@ -202,81 +162,25 @@ local function cmd_run(args)
         usage()
     end
 
-    -- Validate that the source file has a .cz extension
-    if not source_path:match("%.cz$") then
-        io.stderr:write(string.format("Error: source file must have .cz extension, got: %s\n", source_path))
-        os.exit(1)
-    end
-
-    -- Generate C code with options
-    local c_source, err = transpiler.generate_c(source_path, { debug = opts.debug })
-    if not c_source then
-        io.stderr:write(err .. "\n")
-        os.exit(1)
-    end
-
-    -- Write to temporary C file (named after source file)
-    local c_temp = transpiler.make_temp_path(source_path, ".c")
-    local ok, err = transpiler.write_c_file(c_source, c_temp)
+    -- Call run.lua (which calls build.lua which calls compile.lua internally)
+    local ok, exit_code = run.run(source_path, { debug = opts.debug })
     if not ok then
-        io.stderr:write(err .. "\n")
+        io.stderr:write(exit_code .. "\n")
         os.exit(1)
     end
-
-    -- Compile to a.out
-    local output_path = "a.out"
-    local ok, err = build.compile_c_to_binary(c_temp, output_path)
-
-    -- Clean up temporary C file
-    os.remove(c_temp)
-
-    if not ok then
-        io.stderr:write(err .. "\n")
-        os.exit(1)
-    end
-
-    -- Run the binary
-    local exit_code = run.run_binary(output_path)
-
-    -- Clean up after running
-    os.remove(output_path)
 
     os.exit(exit_code)
 end
 
-local function cmd_c(args)
+local function cmd_asm(args)
     if #args < 1 then
-        io.stderr:write("Error: 'c' requires a source file\n")
-        usage()
-    end
-
-    local opts = parse_options(args)
-    local source_path = opts.source_path
-
-    if not source_path then
-        io.stderr:write("Error: 'c' requires a source file\n")
-        usage()
-    end
-
-    local ok, result = c_module.cz_to_c(source_path, { debug = opts.debug })
-    if not ok then
-        io.stderr:write(result .. "\n")
-        os.exit(1)
-    end
-
-    io.stderr:write(string.format("Generated: %s\n", result))
-    return 0
-end
-
-local function cmd_s(args)
-    if #args < 1 then
-        io.stderr:write("Error: 's' requires a source file\n")
+        io.stderr:write("Error: 'asm' requires a source file\n")
         usage()
     end
 
     local source_path = args[1]
 
-    local ok, result = s_module.c_to_s(source_path)
+    local ok, result = asm_module.c_to_asm(source_path)
     if not ok then
         io.stderr:write(result .. "\n")
         os.exit(1)
@@ -306,7 +210,7 @@ local function cmd_compile(args)
         os.exit(1)
     end
 
-    io.stderr:write(string.format("Generated: %s, %s\n", result.c_path, result.s_path))
+    io.stderr:write(string.format("Generated: %s\n", result))
     return 0
 end
 
@@ -389,12 +293,10 @@ local function main()
         table.insert(cmd_args, arg[i])
     end
 
-    if command == "c" then
-        cmd_c(cmd_args)
-    elseif command == "s" then
-        cmd_s(cmd_args)
-    elseif command == "compile" then
+    if command == "compile" then
         cmd_compile(cmd_args)
+    elseif command == "asm" then
+        cmd_asm(cmd_args)
     elseif command == "build" then
         cmd_build(cmd_args)
     elseif command == "run" then
