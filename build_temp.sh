@@ -7,7 +7,7 @@ WHITE="\e[0m"
 
 r=0
 echo "[CHECK] ..."
-for dep in git pkg-config luajit nm ar cc stat file ; do
+for dep in git pkg-config lua5.1 nm ar cc stat file ; do
     echo -n "- $dep: "
     path=$(command -v $dep 2>/dev/null)
     if [[ -n "$path" ]] ; then
@@ -22,7 +22,7 @@ done
 set -e
 
 OUT="cz"
-CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
+CFLAGS="$(pkg-config --cflags lua5.1 2>/dev/null) -O2"
 
 # Check if luastatic is available for static linking
 if command -v luastatic >/dev/null 2>&1; then
@@ -34,13 +34,13 @@ if command -v luastatic >/dev/null 2>&1; then
     LDFLAGS="-static -L. -L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
--E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
+-E $(pkg-config --libs lua5.1 2>/dev/null) -lm -ldl -s"
 else
     echo -e $YELLOW"[LUASTATIC] null -> dynamic"$WHITE
     LDFLAGS="-L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
--E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
+-E $(pkg-config --libs lua5.1 2>/dev/null) -lm -ldl -s"
 fi
 
 SOURCES=(
@@ -76,7 +76,7 @@ for src in ${SOURCES[@]} ; do
     name="$(basename $name .lua)"
     obj="$name.o"
     echo "[LUAJIT] $src -> $obj"
-    luajit -b -n $name ./src/$src ./build/$obj # bytecode module-name
+    lua5.1 -b -n $name ./src/$src ./build/$obj # bytecode module-name
 done
 
 echo -n "[NM] main.h"
