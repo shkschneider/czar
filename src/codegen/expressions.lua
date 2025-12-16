@@ -63,8 +63,8 @@ function Expressions.gen_expr(expr)
             -- Value type, take address
             return "&" .. inner_expr
         end
-    elseif expr.kind == "cast" then
-        -- expr as Type -> (Type)expr
+    elseif expr.kind == "unsafe_cast" then
+        -- Unsafe cast: expr as<Type> -> (Type)expr
         local target_type_str = ctx():c_type(expr.target_type)
         local expr_str = Expressions.gen_expr(expr.expr)
         
@@ -73,25 +73,21 @@ function Expressions.gen_expr(expr)
             target_type_str = ctx():c_type(expr.target_type.to) .. "*"
         end
 
-        return string.format("((%s)%s)", target_type_str, expr_str)
-    elseif expr.kind == "optional_cast" then
-        -- expr as? Type -> returns Type directly (not pointer)
-        -- For now, performs regular cast. Future: add runtime validation
-        local target_type_str = ctx():c_type(expr.target_type)
-        local expr_str = Expressions.gen_expr(expr.expr)
-        
-        -- Handle pointer casting
-        if expr.target_type.kind == "pointer" then
-            target_type_str = ctx():c_type(expr.target_type.to) .. "*"
-        end
-
-        -- Perform the cast (same as regular cast for now)
-        -- TODO: Add runtime type checking to return sentinel/zero on failure
         return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "safe_cast" then
-        -- #cast<Type>(value, fallback) -> safe cast with fallback
-        -- Delegate to Directives module
-        return Directives.generate_safe_cast(expr, ctx(), Expressions.gen_expr, function(t) return ctx():c_type(t) end)
+        -- Safe cast: expr as?<Type>(fallback)
+        -- For now, just performs the cast. Future: add runtime validation
+        local target_type_str = ctx():c_type(expr.target_type)
+        local expr_str = Expressions.gen_expr(expr.expr)
+        local fallback_str = Expressions.gen_expr(expr.fallback)
+        
+        -- Handle pointer casting
+        if expr.target_type.kind == "pointer" then
+            target_type_str = ctx():c_type(expr.target_type.to) .. "*"
+        end
+
+        -- For now, just cast. Future: add try_cast logic and use fallback on failure
+        return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "clone" then
         -- clone(expr) or clone<Type>(expr)
         -- Allocate on heap and copy the value

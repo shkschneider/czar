@@ -171,8 +171,11 @@ function Analysis:analyze_expression(expr, declaring_var)
         for _, arg in ipairs(expr.args) do
             self:analyze_expression(arg, declaring_var)
         end
-    elseif expr.kind == "cast" or expr.kind == "clone" then
+    elseif expr.kind == "unsafe_cast" or expr.kind == "safe_cast" or expr.kind == "clone" then
         self:analyze_expression(expr.expr, declaring_var)
+        if expr.kind == "safe_cast" and expr.fallback then
+            self:analyze_expression(expr.fallback, declaring_var)
+        end
     elseif expr.kind == "null_check" then
         self:analyze_expression(expr.operand, declaring_var)
     end
