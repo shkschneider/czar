@@ -1,0 +1,16 @@
+// Test basic map type with key-value pairs
+fn main() i32 {
+    // Create a map from i32 to i32
+    map[i32]i32 numbers = new map[i32]i32 {
+        1: 10,
+        2: 20,
+        3: 30
+    }
+    
+    // Access map elements manually (for now, just verify it compiles)
+    // In a full implementation, we would have get/set methods
+    i32 sum = numbers.values[0] + numbers.values[1] + numbers.values[2]
+    
+    // Expected: 10 + 20 + 30 = 60
+    return sum - 60
+}
