@@ -285,6 +285,60 @@ function Expressions.gen_expr(expr)
             if obj.kind == "identifier" then
                 obj_type = ctx():get_var_type(obj.name)
             end
+            
+            -- Special handling for string methods with : syntax
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) then
+                local obj_expr = Expressions.gen_expr(obj)
+                
+                if method_name == "append" then
+                    if #expr.args ~= 1 then
+                        error("append() requires exactly 1 argument")
+                    end
+                    local arg = expr.args[1]
+                    local arg_expr = Expressions.gen_expr(arg)
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_append_string(&%s, &%s)", obj_expr, arg_expr)
+                    else
+                        return string.format("czar_string_append_string(%s, &%s)", obj_expr, arg_expr)
+                    end
+                elseif method_name == "substring" then
+                    if #expr.args ~= 2 then
+                        error("substring() requires exactly 2 arguments")
+                    end
+                    local start_expr = Expressions.gen_expr(expr.args[1])
+                    local end_expr = Expressions.gen_expr(expr.args[2])
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_substring(&%s, %s, %s)", obj_expr, start_expr, end_expr)
+                    else
+                        return string.format("czar_string_substring(%s, %s, %s)", obj_expr, start_expr, end_expr)
+                    end
+                elseif method_name == "find" then
+                    if #expr.args ~= 1 then
+                        error("find() requires exactly 1 argument")
+                    end
+                    local needle_expr = Expressions.gen_expr(expr.args[1])
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_find(&%s, &%s)", obj_expr, needle_expr)
+                    else
+                        return string.format("czar_string_find(%s, &%s)", obj_expr, needle_expr)
+                    end
+                elseif method_name == "trim" or method_name == "ltrim" or method_name == "rtrim" then
+                    if #expr.args ~= 0 then
+                        error(method_name .. "() takes no arguments")
+                    end
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_%s(&%s)", method_name, obj_expr)
+                    else
+                        return string.format("czar_string_%s(%s)", method_name, obj_expr)
+                    end
+                elseif method_name == "cstr" then
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_cstr(&%s)", obj_expr)
+                    else
+                        return string.format("czar_string_cstr(%s)", obj_expr)
+                    end
+                end
+            end
 
             -- Get the receiver type name
             local receiver_type_name = nil
@@ -359,6 +413,79 @@ function Expressions.gen_expr(expr)
                 local obj_expr = Expressions.gen_expr(obj)
                 -- Call czar_string_cstr helper function (already a pointer)
                 return string.format("czar_string_cstr(%s)", obj_expr)
+            end
+            
+            -- Special handling for string:append(str) - instance method
+            if obj_type and obj_type.kind == "string" and method_name == "append" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("append() requires exactly 1 argument")
+                end
+                local arg = expr.args[1]
+                local arg_expr = Expressions.gen_expr(arg)
+                -- Call czar_string_append_string helper function
+                return string.format("czar_string_append_string(&%s, &%s)", obj_expr, arg_expr)
+            end
+            
+            -- Special handling for string*:append(str)
+            if obj_type and obj_type.kind == "pointer" and obj_type.to.kind == "string" and method_name == "append" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("append() requires exactly 1 argument")
+                end
+                local arg = expr.args[1]
+                local arg_expr = Expressions.gen_expr(arg)
+                -- Check if arg is string or string*
+                local arg_type = arg.inferred_type
+                if arg_type and arg_type.kind == "pointer" and arg_type.to.kind == "string" then
+                    return string.format("czar_string_append_string(%s, %s)", obj_expr, arg_expr)
+                else
+                    return string.format("czar_string_append_string(%s, &%s)", obj_expr, arg_expr)
+                end
+            end
+            
+            -- Special handling for string:substring(start, end) - returns new string*
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "substring" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 2 then
+                    error("substring() requires exactly 2 arguments")
+                end
+                local start_expr = Expressions.gen_expr(expr.args[1])
+                local end_expr = Expressions.gen_expr(expr.args[2])
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_substring(&%s, %s, %s)", obj_expr, start_expr, end_expr)
+                else
+                    return string.format("czar_string_substring(%s, %s, %s)", obj_expr, start_expr, end_expr)
+                end
+            end
+            
+            -- Special handling for string:find(needle) - returns i32
+            if obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and method_name == "find" then
+                local obj_expr = Expressions.gen_expr(obj)
+                if #expr.args ~= 1 then
+                    error("find() requires exactly 1 argument")
+                end
+                local needle_expr = Expressions.gen_expr(expr.args[1])
+                if obj_type.kind == "string" then
+                    return string.format("czar_string_find(&%s, &%s)", obj_expr, needle_expr)
+                else
+                    return string.format("czar_string_find(%s, &%s)", obj_expr, needle_expr)
+                end
+            end
+            
+            -- Special handling for string:trim/ltrim/rtrim() - modifies in place, returns string*
+            if obj_type and method_name == "trim" or method_name == "ltrim" or method_name == "rtrim" then
+                if obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string") then
+                    local obj_expr = Expressions.gen_expr(obj)
+                    if #expr.args ~= 0 then
+                        error(method_name .. "() takes no arguments")
+                    end
+                    if obj_type.kind == "string" then
+                        return string.format("czar_string_%s(&%s)", method_name, obj_expr)
+                    else
+                        return string.format("czar_string_%s(%s)", method_name, obj_expr)
+                    end
+                end
             end
 
             -- Get the receiver type name

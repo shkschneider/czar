@@ -1,0 +1,22 @@
+// Test string:find() method
+fn main() i32 {
+    string s = string "Hello World"
+    string needle = string "World"
+    
+    // Find substring
+    i32 index = s.find(needle)
+    
+    if index != 6 {
+        return 1
+    }
+    
+    // Test not found
+    string missing = string "xyz"
+    i32 not_found = s.find(missing)
+    
+    if not_found != -1 {
+        return 2
+    }
+    
+    return 0
+}
