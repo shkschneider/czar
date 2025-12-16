@@ -15,6 +15,7 @@ function Typechecker.new(ast, options)
     local self = {
         ast = ast,
         structs = {},      -- struct_name -> struct_def
+        enums = {},        -- enum_name -> enum_def
         functions = {},    -- type_name -> { method_name -> func_def } or "__global__" -> { func_name -> func_def }
         scope_stack = {},  -- stack of scopes for variable lookups
         errors = {},       -- collected type errors
@@ -78,6 +79,37 @@ function Typechecker:collect_declarations()
                     end
                 end
                 self.structs[item.name] = item
+            end
+        elseif item.kind == "enum" then
+            -- Check for duplicate enum definition
+            if self.enums[item.name] then
+                local line = item.line or 0
+                local prev_line = self.enums[item.name].line or 0
+                local msg = string.format(
+                    "Duplicate enum definition '%s' (previously defined at line %d)",
+                    item.name, prev_line
+                )
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.DUPLICATE_ENUM, msg, self.source_path)
+                self:add_error(formatted_error)
+            else
+                -- Check for duplicate value names within the enum
+                local value_names = {}
+                for _, value in ipairs(item.values) do
+                    if value_names[value.name] then
+                        local line = item.line or 0
+                        local msg = string.format(
+                            "Duplicate value '%s' in enum '%s'",
+                            value.name, item.name
+                        )
+                        local formatted_error = Errors.format("ERROR", self.source_file, line,
+                            Errors.ErrorType.DUPLICATE_FIELD, msg, self.source_path)
+                        self:add_error(formatted_error)
+                    else
+                        value_names[value.name] = true
+                    end
+                end
+                self.enums[item.name] = item
             end
         elseif item.kind == "function" then
             -- Determine if this is a method or a global function

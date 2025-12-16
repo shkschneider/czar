@@ -24,6 +24,7 @@ function Codegen.new(ast, options)
     local self = {
         ast = ast,
         structs = {},
+        enums = {},
         functions = {},
         out = {},
         scope_stack = {},
@@ -173,6 +174,10 @@ function Codegen:gen_struct(item)
     Codegen.Functions.gen_struct(item)
 end
 
+function Codegen:gen_enum(item)
+    Codegen.Functions.gen_enum(item)
+end
+
 function Codegen:gen_function(fn)
     Codegen.Functions.gen_function(fn)
 end
@@ -227,6 +232,8 @@ function Codegen:generate()
     for _, item in ipairs(self.ast.items) do
         if item.kind == "struct" then
             self:gen_struct(item)
+        elseif item.kind == "enum" then
+            self:gen_enum(item)
         end
     end
 

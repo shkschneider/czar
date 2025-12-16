@@ -1,0 +1,14 @@
+// Test duplicate enum definition (should fail)
+enum Color {
+    RED,
+    GREEN
+}
+
+enum Color {
+    BLUE,
+    YELLOW
+}
+
+fn main() i32 {
+    return 0
+}

@@ -85,6 +85,8 @@ end
 function Parser:parse_top_level()
     if self:check("KEYWORD", "struct") then
         return self:parse_struct()
+    elseif self:check("KEYWORD", "enum") then
+        return self:parse_enum()
     elseif self:check("KEYWORD", "fn") then
         return self:parse_function()
     elseif self:check("DIRECTIVE") then
@@ -123,6 +125,21 @@ function Parser:parse_struct()
     end
     self:expect("RBRACE")
     return { kind = "struct", name = name, fields = fields }
+end
+
+function Parser:parse_enum()
+    local start_tok = self:expect("KEYWORD", "enum")
+    local name = self:expect("IDENT").value
+    self:expect("LBRACE")
+    local values = {}
+    if not self:check("RBRACE") then
+        repeat
+            local value_tok = self:expect("IDENT")
+            table.insert(values, { name = value_tok.value, line = value_tok.line, col = value_tok.col })
+        until not self:match("COMMA")
+    end
+    self:expect("RBRACE")
+    return { kind = "enum", name = name, values = values, line = start_tok.line }
 end
 
 function Parser:parse_function()
