@@ -67,6 +67,9 @@ local simple_tokens = {
     ["<"] = "LT",
     [">"] = "GT",
     ["="] = "EQUAL",
+    ["~"] = "TILDE",
+    ["|"] = "PIPE",
+    ["^"] = "CARET",
     -- := declares = assigns == checks
 }
 
@@ -80,6 +83,8 @@ local compound_tokens = {
     ["*="] = "STAREQUAL",
     ["/="] = "SLASHEQUAL",
     ["%="] = "PERCENTEQUAL",
+    ["<<"] = "SHL",
+    [">>"] = "SHR",
 }
 
 local function is_alpha(c)

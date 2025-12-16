@@ -538,18 +538,30 @@ function Parser:parse_binary_or()
 end
 
 function Parser:parse_binary_and()
-    local left = self:parse_equality()
+    local left = self:parse_bitwise_or()
     while true do
         local tok = self:current()
         if tok and tok.type == "KEYWORD" and tok.value == "and" then
             self:advance()
-            local right = self:parse_equality()
+            local right = self:parse_bitwise_or()
             left = { kind = "binary", op = "and", left = left, right = right }
         else
             break
         end
     end
     return left
+end
+
+function Parser:parse_bitwise_or()
+    return self:parse_binary_chain(self.parse_bitwise_xor, { PIPE = true })
+end
+
+function Parser:parse_bitwise_xor()
+    return self:parse_binary_chain(self.parse_bitwise_and, { CARET = true })
+end
+
+function Parser:parse_bitwise_and()
+    return self:parse_binary_chain(self.parse_equality, { AMPERSAND = true })
 end
 
 function Parser:parse_equality()
@@ -573,7 +585,11 @@ function Parser:parse_equality()
 end
 
 function Parser:parse_relational()
-    return self:parse_binary_chain(self.parse_additive, { LT = true, GT = true, LTE = true, GTE = true })
+    return self:parse_binary_chain(self.parse_shift, { LT = true, GT = true, LTE = true, GTE = true })
+end
+
+function Parser:parse_shift()
+    return self:parse_binary_chain(self.parse_additive, { SHL = true, SHR = true })
 end
 
 function Parser:parse_additive()
@@ -601,7 +617,7 @@ end
 
 function Parser:parse_unary()
     local tok = self:current()
-    if tok and (tok.type == "MINUS" or tok.type == "AMPERSAND" or tok.type == "STAR") then
+    if tok and (tok.type == "MINUS" or tok.type == "AMPERSAND" or tok.type == "STAR" or tok.type == "TILDE") then
         self:advance()
         local operand = self:parse_unary()
         return { kind = "unary", op = tok.value, operand = operand }
