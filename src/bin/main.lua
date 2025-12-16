@@ -4,7 +4,8 @@
 -- Get the directory where this script is located
 local script_dir = arg[0]:match("(.*/)")
 if script_dir then
-    package.path = script_dir .. "?.lua;" .. package.path
+    -- Since we're in src/bin/, add both bin/ and parent src/ to the path
+    package.path = script_dir .. "?.lua;" .. script_dir .. "../?.lua;" .. package.path
 end
 
 local lexer = require("lexer")
