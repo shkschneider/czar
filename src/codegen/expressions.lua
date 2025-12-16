@@ -82,9 +82,8 @@ function Expressions.gen_expr(expr)
 
         return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "optional_cast" then
-        -- expr as? Type -> returns pointer to Type or NULL
-        -- For now, implement as regular cast (will return garbage if invalid, not NULL)
-        -- TODO: Implement proper runtime type checking
+        -- expr as? Type -> returns Type directly (not pointer)
+        -- For now, performs regular cast. Future: add runtime validation
         local target_type_str = ctx():c_type(expr.target_type)
         local expr_str = Expressions.gen_expr(expr.expr)
         
@@ -93,9 +92,9 @@ function Expressions.gen_expr(expr)
             target_type_str = ctx():c_type(expr.target_type.to) .. "*"
         end
 
-        -- For now, just cast and wrap in pointer
-        -- Real implementation would need runtime type checking
-        return string.format("((%s*)&((%s)%s))", target_type_str, target_type_str, expr_str)
+        -- Perform the cast (same as regular cast for now)
+        -- TODO: Add runtime type checking to return sentinel/zero on failure
+        return string.format("((%s)%s)", target_type_str, expr_str)
     elseif expr.kind == "clone" then
         -- clone(expr) or clone<Type>(expr)
         -- Allocate on heap and copy the value
