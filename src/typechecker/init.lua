@@ -24,6 +24,7 @@ function Typechecker.new(ast, options)
         },
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
         source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
+        loop_depth = 0,    -- Track if we're inside a loop for break/continue validation
     }
     setmetatable(self, Typechecker)
     
@@ -360,6 +361,10 @@ function Typechecker:check_statement(stmt)
         self:check_for(stmt)
     elseif stmt.kind == "repeat" then
         self:check_repeat(stmt)
+    elseif stmt.kind == "break" then
+        self:check_break(stmt)
+    elseif stmt.kind == "continue" then
+        self:check_continue(stmt)
     elseif stmt.kind == "return" then
         self:check_return(stmt)
     elseif stmt.kind == "expr_stmt" then
@@ -580,10 +585,12 @@ function Typechecker:check_while(stmt)
         self:add_error(formatted_error)
     end
     
-    -- Type check body
+    -- Type check body (increment loop depth for break/continue)
+    self.loop_depth = self.loop_depth + 1
     self:push_scope()
     self:check_block(stmt.body)
     self:pop_scope()
+    self.loop_depth = self.loop_depth - 1
 end
 
 -- Type check a for statement
@@ -645,7 +652,8 @@ function Typechecker:check_for(stmt)
         end
     end
     
-    -- Type check body in new scope
+    -- Type check body in new scope (increment loop depth for break/continue)
+    self.loop_depth = self.loop_depth + 1
     self:push_scope()
     
     -- Add index variable to scope (always i32)
@@ -668,6 +676,7 @@ function Typechecker:check_for(stmt)
     
     self:check_block(stmt.body)
     self:pop_scope()
+    self.loop_depth = self.loop_depth - 1
 end
 
 -- Type check a repeat statement
@@ -691,10 +700,34 @@ function Typechecker:check_repeat(stmt)
         self:add_error(formatted_error)
     end
     
-    -- Type check body
+    -- Type check body (increment loop depth for break/continue)
+    self.loop_depth = self.loop_depth + 1
     self:push_scope()
     self:check_block(stmt.body)
     self:pop_scope()
+    self.loop_depth = self.loop_depth - 1
+end
+
+-- Type check a break statement
+function Typechecker:check_break(stmt)
+    if self.loop_depth == 0 then
+        local line = stmt.line or 0
+        local msg = "Break statement must be inside a loop"
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    end
+end
+
+-- Type check a continue statement
+function Typechecker:check_continue(stmt)
+    if self.loop_depth == 0 then
+        local line = stmt.line or 0
+        local msg = "Continue statement must be inside a loop"
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    end
 end
 
 -- Type check a when statement
