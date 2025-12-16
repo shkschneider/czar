@@ -218,7 +218,7 @@ function Parser:parse_function()
     if not self:check("RPAREN") then
         repeat
             local is_mut = self:match("KEYWORD", "mut") ~= nil
-            local param_type = self:parse_type()
+            local param_type = self:parse_type_with_map_shorthand()
             -- Check for varargs syntax (Type...)
             local is_varargs = self:match("ELLIPSIS") ~= nil
             if is_varargs then
@@ -278,6 +278,46 @@ function Parser:parse_type()
         local value_type = self:parse_type()
         self:expect("GT")
         return { kind = "map", key_type = key_type, value_type = value_type }
+    end
+    
+    if is_type_token(tok) then
+        self:advance()
+        local base_type = { kind = "named_type", name = tok.value }
+        -- Check if this is a pointer type (Type*)
+        if self:match("STAR") then
+            return { kind = "pointer", to = base_type }
+        end
+        -- Check if this is an array type (Type[size]) or slice type (Type[])
+        if self:match("LBRACKET") then
+            -- Check for slice type: Type[]
+            if self:check("RBRACKET") then
+                self:advance()
+                return { kind = "slice", element_type = base_type }
+            end
+            -- Check for implicit size: Type[*]
+            if self:match("STAR") then
+                self:expect("RBRACKET")
+                return { kind = "array", element_type = base_type, size = "*" }
+            end
+            -- Explicit size: Type[N]
+            local size_tok = self:expect("INT")
+            local size = tonumber(size_tok.value)
+            self:expect("RBRACKET")
+            return { kind = "array", element_type = base_type, size = size }
+        end
+        return base_type
+    end
+    error(string.format("expected type but found %s", token_label(tok)))
+end
+
+-- Parse type with map shorthand support (Type{ValueType})
+-- This is only safe to use in contexts where { cannot start a block
+function Parser:parse_type_with_map_shorthand()
+    local tok = self:current()
+    
+    -- Check for explicit container types: array<T>, slice<T>, map<K:V>
+    if self:check("KEYWORD", "array") or self:check("KEYWORD", "slice") or self:check("KEYWORD", "map") then
+        return self:parse_type()
     end
     
     if is_type_token(tok) then
@@ -358,7 +398,7 @@ function Parser:parse_statement()
         
         -- Check if this looks like a type declaration
         if self:is_type_start() then
-            local success, type_node = pcall(function() return self:parse_type() end)
+            local success, type_node = pcall(function() return self:parse_type_with_map_shorthand() end)
             if success and self:check("IDENT") then
                 local name_tok = self:current()
                 self:advance()
@@ -378,7 +418,7 @@ function Parser:parse_statement()
             if self:match("KEYWORD", "mut") then
                 mutable = true
             end
-            local type_ = self:parse_type()
+            local type_ = self:parse_type_with_map_shorthand()
             local name_tok = self:expect("IDENT")
             local name = name_tok.value
             local init = nil
