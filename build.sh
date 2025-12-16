@@ -43,13 +43,10 @@ fi
 
 SOURCES=(
     bin/main.lua
-    bin/transpiler.lua
-    bin/assemble.lua
+    bin/compile.lua
+    bin/asm.lua
     bin/build.lua
     bin/run.lua
-    bin/c.lua
-    bin/s.lua
-    bin/compile.lua
     bin/test.lua
     bin/format.lua
     bin/clean.lua

@@ -1,11 +1,15 @@
 -- test module: compile, build, and run with expected exit code 0
+-- Depends on compile and build modules
 
 local compile_module = require("compile")
-local build = require("build")
-local run = require("run")
+local build_module = require("build")
 
 local Test = {}
 Test.__index = Test
+
+local function shell_escape(str)
+    return "'" .. str:gsub("'", "'\\''") .. "'"
+end
 
 function Test.test(source_path, options)
     options = options or {}
@@ -15,32 +19,44 @@ function Test.test(source_path, options)
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
     end
 
-    -- Compile to .c and .s
-    local ok, result = compile_module.compile(source_path, options)
+    -- Step 1: Compile to .c (calls compile.lua)
+    local ok, c_path = compile_module.compile(source_path, options)
     if not ok then
-        return false, result  -- result contains error message
+        return false, c_path  -- c_path contains error message
     end
 
-    local c_path = result.c_path
-
-    -- Build binary
+    -- Step 2: Build binary
     local output_path = "a.out"
-    local ok, err = build.compile_c_to_binary(c_path, output_path)
-    if not ok then
-        return false, err
+    local cc_cmd = string.format("cc %s -o %s 2>&1; echo \"EXIT_CODE:$?\"",
+        shell_escape(c_path), shell_escape(output_path))
+    local cc_output = io.popen(cc_cmd)
+    local cc_result = cc_output:read("*a")
+    cc_output:close()
+
+    local exit_code = cc_result:match("EXIT_CODE:(%d+)")
+    if exit_code and tonumber(exit_code) ~= 0 then
+        return false, "C compilation failed:\n" .. cc_result:gsub("EXIT_CODE:%d+%s*$", "")
     end
 
-    -- Run the binary
-    local exit_code = run.run_binary(output_path)
+    -- Step 3: Run the binary and capture exit code
+    local run_cmd = shell_escape("./" .. output_path)
+    local ret = os.execute(run_cmd)
+
+    local run_exit_code
+    if type(ret) == "number" then
+        run_exit_code = math.floor(ret / 256)
+    else
+        local ok, _, code = ret
+        run_exit_code = code or (ok and 0 or 1)
+    end
     
-    -- Clean up (remove binary, .c, and .s files)
+    -- Step 4: Clean up (remove binary and .c file)
     os.remove(output_path)
     os.remove(c_path)
-    os.remove(result.s_path)
     
     -- Check exit code
-    if exit_code ~= 0 then
-        return false, string.format("Test failed with exit code %d (expected 0)", exit_code)
+    if run_exit_code ~= 0 then
+        return false, string.format("Test failed with exit code %d (expected 0)", run_exit_code)
     end
 
     return true, nil

@@ -1,37 +1,48 @@
--- Run module: executes compiled binaries
+-- Run module: builds and runs binary from .cz source file
+-- Depends on build module (calls build.lua first, then runs and cleans up)
+
+local build_module = require("build")
 
 local Run = {}
 Run.__index = Run
 
 local function shell_escape(str)
-    -- Escape shell metacharacters by wrapping in single quotes
-    -- and escaping any single quotes in the string
     return "'" .. str:gsub("'", "'\\''") .. "'"
 end
 
-function Run.run_binary(binary_path)
-    -- Run the binary and capture exit code
-    local run_cmd = shell_escape("./" .. binary_path)
+function Run.run(source_path, options)
+    options = options or {}
+    
+    -- Validate that the source file has a .cz extension
+    if not source_path:match("%.cz$") then
+        return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
+    end
+
+    -- Step 1: Build binary (calls build.lua which calls compile.lua)
+    local output_path = "a.out"
+    local ok, result = build_module.build(source_path, output_path, options)
+    if not ok then
+        return false, result  -- result contains error message
+    end
+
+    -- Step 2: Run the binary and capture exit code
+    local run_cmd = shell_escape("./" .. output_path)
     local ret = os.execute(run_cmd)
 
-    -- In LuaJIT, os.execute returns the raw system return value
-    -- The exit code is in the high byte (shifted left by 8), so we need to shift right by 8
-    -- This is done via division by 256, which is equivalent to right-shifting by 8 bits
-    -- Example: if program exits with code 42, os.execute returns 42 << 8 = 10752
-    --          and we extract 42 via 10752 / 256 = 42
+    local exit_code
     if type(ret) == "number" then
         -- LuaJIT/Lua 5.1 behavior: return value contains exit code shifted left by 8
-        local exit_code = math.floor(ret / 256)
-        return exit_code
+        exit_code = math.floor(ret / 256)
     else
         -- Lua 5.2+ behavior: returns (true/nil, "exit", code)
         local ok, _, code = ret
-        if ok then
-            return code or 0
-        else
-            return code or 1
-        end
+        exit_code = code or (ok and 0 or 1)
     end
+
+    -- Step 3: Clean up binary
+    os.remove(output_path)
+
+    return true, exit_code
 end
 
 return Run
