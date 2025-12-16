@@ -1,0 +1,7 @@
+// Test #assert with false condition
+// This should abort when the assertion fails
+
+fn main() i32 {
+    #assert(false)
+    return 0
+}
