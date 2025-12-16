@@ -1,0 +1,19 @@
+// Test string:append() method
+fn main() i32 {
+    string* s = new string "Hello"
+    string s2 = string " World"
+    
+    // Append to the string
+    s:append(s2)
+    
+    // Check new length
+    if s.length != 11 {
+        return 1
+    }
+    
+    // Verify content
+    print(s.cstr())
+    
+    free s
+    return 0
+}
