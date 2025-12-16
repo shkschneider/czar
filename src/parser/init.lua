@@ -148,10 +148,10 @@ function Parser:parse_function()
     local is_static_method = false
     local name = self:expect("IDENT").value
     
-    -- Helper to parse method name (allows 'new' and 'free' as special method names)
+    -- Helper to parse method name (allows 'new' as special method name)
     local function parse_method_name(self)
         local tok = self:current()
-        if tok and tok.type == "KEYWORD" and (tok.value == "new" or tok.value == "free") then
+        if tok and tok.type == "KEYWORD" and tok.value == "new" then
             return self:advance().value  -- Accept keyword as method name
         else
             return self:expect("IDENT").value  -- Normal identifier
@@ -392,11 +392,6 @@ function Parser:parse_statement()
         end
         self:match("SEMICOLON")  -- semicolons are optional
         return { kind = "continue", level = level }
-    elseif self:check("KEYWORD", "free") then
-        self:advance()
-        local expr = self:parse_expression()
-        self:match("SEMICOLON")  -- semicolons are optional
-        return { kind = "free", value = expr }
     elseif self:check("DIRECTIVE") then
         -- Statement-level directives like #assert and #log
         local directive_tok = self:advance()
@@ -696,7 +691,7 @@ function Parser:parse_equality()
             local right = self:parse_relational()
             left = { kind = "binary", op = tok.value, left = left, right = right }
         elseif tok and tok.type == "KEYWORD" and tok.value == "is" then
-            -- Handle 'is' keyword for type checking
+            -- Handle 'is' keyword for type checking: x is Type
             self:advance()
             local type_node = self:parse_type()
             left = { kind = "is_check", expr = left, type = type_node }
@@ -756,6 +751,32 @@ function Parser:parse_postfix()
     local expr = self:parse_primary()
     while true do
         if self:match("LPAREN") then
+            -- Check if this is a special builtin function call
+            if expr.kind == "identifier" then
+                if expr.name == "typeof" then
+                    -- typeof(expr)
+                    local arg = self:parse_expression()
+                    self:expect("RPAREN")
+                    return { kind = "type_of", expr = arg }
+                elseif expr.name == "sizeof" then
+                    -- sizeof(expr)
+                    local arg = self:parse_expression()
+                    self:expect("RPAREN")
+                    return { kind = "sizeof", expr = arg }
+                elseif expr.name == "clone" then
+                    -- clone(expr) - without type parameter
+                    local arg = self:parse_expression()
+                    self:expect("RPAREN")
+                    return { kind = "clone", target_type = nil, expr = arg }
+                elseif expr.name == "free" then
+                    -- free(expr) - returns a special node that can be used as statement or expression
+                    local arg = self:parse_expression()
+                    self:expect("RPAREN")
+                    return { kind = "free", value = arg }
+                end
+            end
+            
+            -- Regular function call
             local args = {}
             if not self:check("RPAREN") then
                 repeat
@@ -845,6 +866,15 @@ function Parser:parse_postfix()
                 -- Regular field access
                 expr = { kind = "field", object = expr, field = field }
             end
+        elseif expr.kind == "identifier" and expr.name == "clone" and self:check("LT") then
+            -- clone<Type>(expr)
+            self:advance()  -- consume '<'
+            local target_type = self:parse_type()
+            self:expect("GT")
+            self:expect("LPAREN")
+            local arg = self:parse_expression()
+            self:expect("RPAREN")
+            return { kind = "clone", target_type = target_type, expr = arg }
         elseif expr.kind == "identifier" and self:check("LBRACE") then
             -- Struct literal: only parse if we're not in a context where { starts a block
             -- We can check if the previous tokens/context suggests this is a struct literal
@@ -925,26 +955,6 @@ function Parser:parse_primary()
     elseif tok.type == "KEYWORD" and tok.value == "null" then
         self:advance()
         return { kind = "null" }
-    elseif tok.type == "KEYWORD" and tok.value == "type" then
-        -- type expr - returns a const string with the type name
-        self:advance()
-        local expr = self:parse_unary()  -- Parse next expression at unary level
-        return { kind = "type_of", expr = expr }
-    elseif tok.type == "KEYWORD" and tok.value == "sizeof" then
-        -- sizeof expr - returns the size in bytes of the type
-        self:advance()
-        local expr = self:parse_unary()  -- Parse next expression at unary level
-        return { kind = "sizeof", expr = expr }
-    elseif tok.type == "KEYWORD" and tok.value == "clone" then
-        -- clone expr or clone<Type> expr
-        self:advance()
-        local target_type = nil
-        if self:match("LT") then
-            target_type = self:parse_type()
-            self:expect("GT")
-        end
-        local expr = self:parse_unary()  -- Parse next expression at unary level
-        return { kind = "clone", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "new" then
         -- new [ elements... ] or new { key: value, ... } or new Type { ... }
         self:advance()

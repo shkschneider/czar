@@ -33,17 +33,17 @@ Builtins.calls = {
 -- This is for documentation purposes - they are implemented in parser/codegen
 Builtins.features = {
     -- Type introspection
-    type = {
+    typeof = {
         description = "Returns the type name of an expression as a string",
-        syntax = "type expr",
-        example = 'type x  // Returns "i32" if x is i32',
+        syntax = "typeof(expr)",
+        example = 'typeof(x)  // Returns "i32" if x is i32',
         kind = "type_of"
     },
     
     sizeof = {
         description = "Returns the size in bytes of an expression's type",
-        syntax = "sizeof expr",
-        example = "sizeof x  // Returns 4 for i32",
+        syntax = "sizeof(expr)",
+        example = "sizeof(x)  // Returns 4 for i32",
         kind = "sizeof"
     },
     
@@ -72,8 +72,8 @@ Builtins.features = {
     -- Memory operations
     clone = {
         description = "Clone an expression to heap",
-        syntax = "clone expr or clone<Type> expr",
-        example = "clone mystruct",
+        syntax = "clone(expr) or clone<Type>(expr)",
+        example = "clone(mystruct)",
         kind = "clone"
     },
     
@@ -86,8 +86,8 @@ Builtins.features = {
     
     free = {
         description = "Explicitly free heap memory",
-        syntax = "free ptr",
-        example = "free myptr",
+        syntax = "free(ptr)",
+        example = "free(myptr)",
         kind = "free"
     },
 }
