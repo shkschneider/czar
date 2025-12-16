@@ -836,9 +836,9 @@ function Parser:parse_postfix()
         elseif self:match("BANG") then
             -- Null check operator: a! (postfix)
             expr = { kind = "null_check", operand = expr }
-        elseif self:check("COLON") and self.tokens[self.pos + 1] and self.tokens[self.pos + 1].type == "IDENT" then
+        elseif self:check("COLON") and self.tokens[self.pos + 1] and self.tokens[self.pos + 1].type == "IDENT" and self.tokens[self.pos + 2] and self.tokens[self.pos + 2].type == "LPAREN" then
             -- Method call using colon: obj:method()
-            -- Only match if followed by identifier (not a slice operator)
+            -- Must be followed by LPAREN to distinguish from map entry syntax (key: value)
             self:advance()  -- consume colon
             local method_name = self:expect("IDENT").value
             expr = { kind = "method_ref", object = expr, method = method_name }
