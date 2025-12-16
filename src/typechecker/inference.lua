@@ -3,6 +3,7 @@
 
 local Resolver = require("typechecker.resolver")
 local Errors = require("errors")
+local Directives = require("src.directives")
 
 local Inference = {}
 
@@ -104,20 +105,8 @@ function Inference.infer_type(typechecker, expr)
         return target_type
     elseif expr.kind == "safe_cast" then
         -- #cast<Type>(value, fallback) - safe cast with fallback
-        local target_type = expr.target_type
-        Inference.infer_type(typechecker, expr.value)
-        local fallback_type = Inference.infer_type(typechecker, expr.fallback)
-        
-        -- Verify fallback type matches target type
-        if not Inference.types_compatible(target_type, fallback_type, typechecker) then
-            error(string.format("#cast fallback type mismatch: expected %s, got %s at %d:%d",
-                Inference.type_to_string(target_type),
-                Inference.type_to_string(fallback_type),
-                expr.line, expr.col))
-        end
-        
-        expr.inferred_type = target_type
-        return target_type
+        -- Delegate to Directives module
+        return Directives.typecheck_safe_cast(expr, typechecker, Inference.infer_type, Inference.types_compatible, Inference.type_to_string)
     elseif expr.kind == "sizeof" or expr.kind == "type_of" then
         -- sizeof and type return i32 and string respectively
         -- sizeof returns the size in bytes as i32
