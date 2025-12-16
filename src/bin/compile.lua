@@ -1,11 +1,36 @@
--- compile module: generates both C and assembly from .cz source file
--- This depends on both c and s modules
+-- compile module: generates C code from .cz source file
+-- Contains all transpilation logic (lexer, parser, typechecker, lowering, analysis, codegen)
+-- This is the main compilation step that produces .c files
 
-local c_module = require("c")
-local s_module = require("s")
+local lexer = require("lexer")
+local parser = require("parser")
+local typechecker = require("typechecker")
+local lowering = require("lowering")
+local analysis = require("analysis")
+local codegen = require("codegen")
 
 local Compile = {}
 Compile.__index = Compile
+
+local function read_file(path)
+    local handle, err = io.open(path, "r")
+    if not handle then
+        return nil, err
+    end
+    local content = handle:read("*a")
+    handle:close()
+    return content
+end
+
+local function write_file(content, output_path)
+    local handle, err = io.open(output_path, "w")
+    if not handle then
+        return false, string.format("Failed to create '%s': %s", output_path, err or "unknown error")
+    end
+    handle:write(content)
+    handle:close()
+    return true, nil
+end
 
 function Compile.compile(source_path, options)
     options = options or {}
@@ -15,19 +40,69 @@ function Compile.compile(source_path, options)
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
     end
 
-    -- Generate .c file
-    local ok, c_path = c_module.cz_to_c(source_path, options)
-    if not ok then
-        return false, c_path  -- c_path contains error message
+    -- Extract just the filename (not the full path) for #FILE
+    local filename = source_path:match("([^/]+)$") or source_path
+    options.source_file = filename
+    options.source_path = source_path  -- Full path for reading source lines
+    
+    -- Read source file
+    local source, err = read_file(source_path)
+    if not source then
+        return false, string.format("Failed to read '%s': %s", source_path, err or "unknown error")
     end
 
-    -- Generate .s file from .c file
-    local ok, s_path = s_module.c_to_s(c_path)
+    -- Lex
+    local ok, tokens = pcall(lexer, source)
     if not ok then
-        return false, s_path  -- s_path contains error message
+        local clean_error = tokens:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return false, string.format("Lexer error: %s", clean_error)
     end
 
-    return true, { c_path = c_path, s_path = s_path }
+    -- Parse
+    local ok, ast = pcall(parser, tokens)
+    if not ok then
+        local clean_error = ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return false, string.format("Parser error: %s", clean_error)
+    end
+
+    -- Type check
+    local ok, typed_ast = pcall(typechecker, ast, options)
+    if not ok then
+        local clean_error = typed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return false, clean_error
+    end
+
+    -- Lowering
+    local ok, lowered_ast = pcall(lowering, typed_ast, options)
+    if not ok then
+        local clean_error = lowered_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return false, clean_error
+    end
+
+    -- Analysis
+    local ok, analyzed_ast = pcall(analysis, lowered_ast, options)
+    if not ok then
+        local clean_error = analyzed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return false, clean_error
+    end
+
+    -- Generate C code
+    local ok, c_source = pcall(codegen, analyzed_ast, options)
+    if not ok then
+        local clean_error = c_source:gsub("^%[string [^%]]+%]:%d+: ", "")
+        return false, string.format("Codegen error: %s", clean_error)
+    end
+
+    -- Determine output path (.cz -> .c)
+    local output_path = source_path:gsub("%.cz$", ".c")
+
+    -- Write C file
+    local ok, err = write_file(c_source, output_path)
+    if not ok then
+        return false, err
+    end
+
+    return true, output_path
 end
 
 return Compile
