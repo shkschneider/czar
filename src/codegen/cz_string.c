@@ -219,6 +219,8 @@ static inline czar_string* czar_string_lower(czar_string* s) {
 // String helper function: words - split string by whitespace
 // Returns a dynamically allocated array of strings
 // The count is stored in the out_count parameter
+// NOTE: This function is implemented but not yet exposed to the language
+// because it requires support for returning arrays from methods.
 static inline czar_string** czar_string_words(czar_string* s, int32_t* out_count) {
     if (s->length == 0) {
         *out_count = 0;
@@ -302,6 +304,8 @@ static inline czar_string** czar_string_words(czar_string* s, int32_t* out_count
 
 // String helper function: join - static method to concatenate multiple strings
 // Takes an array of strings and concatenates them
+// NOTE: This function is implemented but not yet exposed to the language
+// because it requires support for variadic static methods or array parameters.
 static inline czar_string* czar_string_join_array(czar_string** strings, int32_t count) {
     if (count == 0) {
         czar_string* result = (czar_string*)malloc(sizeof(czar_string));
