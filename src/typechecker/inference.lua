@@ -767,6 +767,14 @@ end
 
 -- Infer the type of a static method call
 function Inference.infer_static_method_call_type(typechecker, expr)
+    -- Special handling for string.format() static method
+    if expr.type_name == "string" and expr.method == "format" then
+        -- format() returns a new heap-allocated string*
+        local return_type = { kind = "pointer", to = { kind = "string" } }
+        expr.inferred_type = return_type
+        return return_type
+    end
+    
     local method_def = Resolver.resolve_function(typechecker, expr.type_name, expr.method)
 
     if method_def then

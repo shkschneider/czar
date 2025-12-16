@@ -471,3 +471,108 @@ static inline czar_string** czar_string_split(czar_string* s, char delimiter, in
     *out_count = count;
     return parts;
 }
+
+// String helper function: format - mustache-like template substitution
+// Replaces {} with positional arguments, supports \{\} for literal braces
+// Returns a new heap-allocated string*
+static inline czar_string* czar_string_format(czar_string* format, int32_t arg_count, czar_string** args) {
+    if (!format || !format->data) {
+        czar_string* result = (czar_string*)malloc(sizeof(czar_string));
+        if (!result) {
+            fprintf(stderr, "ERROR: String malloc failed\n");
+            exit(1);
+        }
+        result->data = (char*)malloc(16);
+        if (!result->data) {
+            fprintf(stderr, "ERROR: String data malloc failed\n");
+            exit(1);
+        }
+        result->capacity = 16;
+        result->length = 0;
+        result->data[0] = '\0';
+        return result;
+    }
+    
+    const char* format_str = format->data;
+    int32_t format_len = format->length;
+    
+    // First pass: calculate required capacity
+    int32_t required_len = 0;
+    int32_t arg_idx = 0;
+    int32_t i = 0;
+    
+    while (i < format_len) {
+        if (format_str[i] == '\\' && i + 1 < format_len && format_str[i + 1] == '{') {
+            // Escaped brace: \{ -> {
+            required_len += 1;
+            i += 2;
+        } else if (format_str[i] == '\\' && i + 1 < format_len && format_str[i + 1] == '}') {
+            // Escaped brace: \} -> }
+            required_len += 1;
+            i += 2;
+        } else if (format_str[i] == '{' && i + 1 < format_len && format_str[i + 1] == '}') {
+            // Placeholder: {}
+            if (arg_idx < arg_count) {
+                required_len += args[arg_idx]->length;
+                arg_idx++;
+            }
+            i += 2;
+        } else {
+            // Regular character
+            required_len += 1;
+            i++;
+        }
+    }
+    
+    // Allocate result string
+    int32_t capacity = 16;
+    while (capacity < required_len + 1) {
+        capacity *= 2;
+    }
+    
+    czar_string* result = (czar_string*)malloc(sizeof(czar_string));
+    if (!result) {
+        fprintf(stderr, "ERROR: String malloc failed\n");
+        exit(1);
+    }
+    
+    result->data = (char*)malloc(capacity);
+    if (!result->data) {
+        fprintf(stderr, "ERROR: String data malloc failed\n");
+        exit(1);
+    }
+    
+    result->capacity = capacity;
+    result->length = 0;
+    
+    // Second pass: build the result string
+    arg_idx = 0;
+    i = 0;
+    
+    while (i < format_len) {
+        if (format_str[i] == '\\' && i + 1 < format_len && format_str[i + 1] == '{') {
+            // Escaped brace: \{ -> {
+            result->data[result->length++] = '{';
+            i += 2;
+        } else if (format_str[i] == '\\' && i + 1 < format_len && format_str[i + 1] == '}') {
+            // Escaped brace: \} -> }
+            result->data[result->length++] = '}';
+            i += 2;
+        } else if (format_str[i] == '{' && i + 1 < format_len && format_str[i + 1] == '}') {
+            // Placeholder: {}
+            if (arg_idx < arg_count) {
+                memcpy(result->data + result->length, args[arg_idx]->data, args[arg_idx]->length);
+                result->length += args[arg_idx]->length;
+                arg_idx++;
+            }
+            i += 2;
+        } else {
+            // Regular character
+            result->data[result->length++] = format_str[i];
+            i++;
+        }
+    }
+    
+    result->data[result->length] = '\0';
+    return result;
+}

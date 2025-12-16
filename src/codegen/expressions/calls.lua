@@ -17,6 +17,52 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     local type_name = expr.type_name
     local method_name = expr.method
 
+    -- Special handling for string.format()
+    if type_name == "string" and method_name == "format" then
+        if #expr.args < 1 then
+            error("string.format() requires at least 1 argument (format string)")
+        end
+        
+        -- First argument is the format string (needs to be address if value)
+        local format_arg = expr.args[1]
+        local format_expr = gen_expr_fn(format_arg)
+        
+        -- Check if format_arg is a string value or pointer
+        local format_type = format_arg.inferred_type
+        if format_type and format_type.kind == "string" then
+            -- Stack-allocated string, take address
+            format_expr = "&(" .. format_expr .. ")"
+        end
+        -- If it's already a pointer, use as-is
+        
+        -- Remaining arguments are the values to substitute
+        local value_args = {}
+        for i = 2, #expr.args do
+            local arg = expr.args[i]
+            local arg_expr = gen_expr_fn(arg)
+            local arg_type = arg.inferred_type
+            
+            -- If arg is a string value, take its address
+            if arg_type and arg_type.kind == "string" then
+                arg_expr = "&(" .. arg_expr .. ")"
+            end
+            -- If it's already a pointer, use as-is
+            
+            table.insert(value_args, arg_expr)
+        end
+        
+        -- Generate array of string pointers for arguments
+        local args_count = #value_args
+        if args_count == 0 then
+            -- No arguments to substitute
+            return string.format("czar_string_format(%s, 0, NULL)", format_expr)
+        else
+            -- Create array of argument pointers
+            local args_array = string.format("(czar_string*[]){ %s }", join(value_args, ", "))
+            return string.format("czar_string_format(%s, %d, %s)", format_expr, args_count, args_array)
+        end
+    end
+
     -- Look up the method
     local method = nil
     if ctx().functions[type_name] then

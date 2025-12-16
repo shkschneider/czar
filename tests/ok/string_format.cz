@@ -1,0 +1,85 @@
+// Test string.format() function
+fn main() i32 {
+    // Test simple positional substitution
+    string name = string "World"
+    string* result1 = string.format(string "Hello {}", name)
+    
+    // Verify result
+    string expected1 = string "Hello World"
+    if result1.length != expected1.length {
+        free result1
+        return 1
+    }
+    
+    // Check prefix to verify content
+    i32 matches1 = result1.prefix(expected1)
+    free result1
+    if matches1 != 1 {
+        return 2
+    }
+    
+    // Test multiple arguments
+    string first = string "Alice"
+    string second = string "Bob"
+    string* result2 = string.format(string "{} and {}", first, second)
+    
+    string expected2 = string "Alice and Bob"
+    if result2.length != expected2.length {
+        free result2
+        return 3
+    }
+    
+    i32 matches2 = result2.prefix(expected2)
+    free result2
+    if matches2 != 1 {
+        return 4
+    }
+    
+    // Test escaped braces
+    string* result3 = string.format(string "Use \\{\\} for braces")
+    
+    string expected3 = string "Use {} for braces"
+    if result3.length != expected3.length {
+        free result3
+        return 5
+    }
+    
+    i32 matches3 = result3.prefix(expected3)
+    free result3
+    if matches3 != 1 {
+        return 6
+    }
+    
+    // Test mixed: escaped braces and substitution
+    string val = string "42"
+    string* result4 = string.format(string "Value: {} \\{not a placeholder\\}", val)
+    
+    string expected4 = string "Value: 42 {not a placeholder}"
+    if result4.length != expected4.length {
+        free result4
+        return 7
+    }
+    
+    i32 matches4 = result4.prefix(expected4)
+    free result4
+    if matches4 != 1 {
+        return 8
+    }
+    
+    // Test with no substitutions
+    string* result5 = string.format(string "No placeholders here")
+    
+    string expected5 = string "No placeholders here"
+    if result5.length != expected5.length {
+        free result5
+        return 9
+    }
+    
+    i32 matches5 = result5.prefix(expected5)
+    free result5
+    if matches5 != 1 {
+        return 10
+    }
+    
+    return 0
+}
