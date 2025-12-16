@@ -305,6 +305,7 @@ function Parser:parse_block()
 end
 
 function Parser:parse_statement()
+    io.stderr:write(string.format("DEBUG: parse_statement at pos %d, token: %s\n", self.pos, token_label(self:current())))
     if self:check("KEYWORD", "return") then
         self:advance()
         local expr = self:parse_expression()
@@ -336,7 +337,12 @@ function Parser:parse_statement()
         
         -- Check if this looks like a type declaration
         if self:is_type_start() then
+            io.stderr:write(string.format("DEBUG: Trying lookahead for type at pos %d, token: %s\n", self.pos, token_label(self:current())))
             local success, type_node = pcall(function() return self:parse_type_with_map_shorthand() end)
+            io.stderr:write(string.format("DEBUG: Lookahead %s, now at pos %d\n", success and "succeeded" or "failed", self.pos))
+            if not success then
+                io.stderr:write(string.format("DEBUG: Error was: %s\n", tostring(type_node)))
+            end
             if success and self:check("IDENT") then
                 local name_tok = self:current()
                 self:advance()
