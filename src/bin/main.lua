@@ -11,7 +11,7 @@ end
 local lexer = require("lexer")
 local parser = require("parser")
 local typechecker = require("typechecker")
-local generate = require("generate")
+local transpiler = require("transpiler")
 local assemble = require("assemble")
 local build = require("build")
 local run = require("run")
@@ -23,8 +23,8 @@ local format = require("format")
 local clean = require("clean")
 
 -- Simple file reader utility
--- Note: This is duplicated in generate.lua to avoid circular dependencies
--- (generate needs it for its API, and main needs it for lexer/parser commands)
+-- Note: This is duplicated in transpiler.lua to avoid circular dependencies
+-- (transpiler needs it for its API, and main needs it for lexer/parser commands)
 local function read_file(path)
     local handle, err = io.open(path, "r")
     if not handle then
@@ -289,7 +289,7 @@ local function cmd_generate(args)
     end
 
     -- Generate C code with options
-    local c_source, err = generate.generate_c(source_path, { debug = opts.debug })
+    local c_source, err = transpiler.generate_c(source_path, { debug = opts.debug })
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
@@ -302,7 +302,7 @@ local function cmd_generate(args)
     local output_path = source_path:gsub("%.cz$", ".c")
 
     -- Write C file
-    local ok, err = generate.write_c_file(c_source, output_path)
+    local ok, err = transpiler.write_c_file(c_source, output_path)
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
@@ -369,15 +369,15 @@ local function cmd_build(args)
 
     if source_path:match("%.cz$") then
         -- Generate C code from .cz file with options
-        local c_source, err = generate.generate_c(source_path, { debug = opts.debug })
+        local c_source, err = transpiler.generate_c(source_path, { debug = opts.debug })
         if not c_source then
             io.stderr:write(err .. "\n")
             os.exit(1)
         end
 
         -- Write to temporary C file (named after source file)
-        c_file_path = generate.make_temp_path(source_path, ".c")
-        local ok, err = generate.write_c_file(c_source, c_file_path)
+        c_file_path = transpiler.make_temp_path(source_path, ".c")
+        local ok, err = transpiler.write_c_file(c_source, c_file_path)
         if not ok then
             io.stderr:write(err .. "\n")
             os.exit(1)
@@ -429,15 +429,15 @@ local function cmd_run(args)
     end
 
     -- Generate C code with options
-    local c_source, err = generate.generate_c(source_path, { debug = opts.debug })
+    local c_source, err = transpiler.generate_c(source_path, { debug = opts.debug })
     if not c_source then
         io.stderr:write(err .. "\n")
         os.exit(1)
     end
 
     -- Write to temporary C file (named after source file)
-    local c_temp = generate.make_temp_path(source_path, ".c")
-    local ok, err = generate.write_c_file(c_source, c_temp)
+    local c_temp = transpiler.make_temp_path(source_path, ".c")
+    local ok, err = transpiler.write_c_file(c_source, c_temp)
     if not ok then
         io.stderr:write(err .. "\n")
         os.exit(1)
