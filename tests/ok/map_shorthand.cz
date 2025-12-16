@@ -1,0 +1,13 @@
+// Test map shorthand syntax
+fn main() i32 {
+    // Test shorthand syntax: Type{ValueType}
+    i32{i32} numbers = new map<i32:i32> {
+        1: 10,
+        2: 20
+    }
+    
+    // Access elements
+    i32 sum = numbers.values[0] + numbers.values[1]
+    
+    return sum - 30  // 10 + 20 = 30
+}
