@@ -22,7 +22,7 @@ fn main() i32 {
     // 3. Slice of stack array (view)
     i32[] slice_of_stack = stack_array[1:4]  // elements 1, 2, 3
     
-    // 4. Dynamic array can be passed as slice
+    // 4. Dynamic array can be passed as<slice>
     modify_slice(dynamic_array, 4)
     
     // 5. Verify results

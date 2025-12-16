@@ -93,20 +93,33 @@ function Inference.infer_type(typechecker, expr)
         return Inference.infer_new_array_type(typechecker, expr)
     elseif expr.kind == "new_map" then
         return Inference.infer_new_map_type(typechecker, expr)
-    elseif expr.kind == "cast" then
+    elseif expr.kind == "unsafe_cast" then
+        -- Unsafe cast: expr as<Type>
+        -- Emit warning during type checking
         local target_type = expr.to_type or expr.target_type
-        expr.inferred_type = target_type
-        return target_type
-    elseif expr.kind == "optional_cast" then
-        -- Optional cast returns the target type directly
-        -- On failure, returns default/zero value that can be overridden by 'or'
-        local target_type = expr.to_type or expr.target_type
+        local source_type = Inference.infer_type(typechecker, expr.expr)
+        
+        -- Print warning for unsafe cast
+        print("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type))
+        
         expr.inferred_type = target_type
         return target_type
     elseif expr.kind == "safe_cast" then
-        -- #cast<Type>(value, fallback) - safe cast with fallback
-        -- Delegate to Directives module
-        return Directives.typecheck_safe_cast(expr, typechecker, Inference.infer_type, Inference.types_compatible, Inference.type_to_string)
+        -- Safe cast: expr as?<Type>(fallback)
+        -- Type-check that fallback matches target type
+        local target_type = expr.to_type or expr.target_type
+        Inference.infer_type(typechecker, expr.expr)
+        
+        local fallback_type = Inference.infer_type(typechecker, expr.fallback)
+        
+        -- Check that fallback type matches target type
+        if not Inference.types_compatible(target_type, fallback_type) then
+            error("Safe cast fallback type mismatch: expected " .. Inference.type_to_string(target_type) .. 
+                  ", got " .. Inference.type_to_string(fallback_type))
+        end
+        
+        expr.inferred_type = target_type
+        return target_type
     elseif expr.kind == "sizeof" or expr.kind == "type_of" then
         -- sizeof and type return i32 and string respectively
         -- sizeof returns the size in bytes as i32

@@ -1,17 +1,17 @@
-// Test 'as' cast functionality
+// Test 'as<Type>' unsafe cast functionality
 
 fn main() i32 {
     // Test basic casting
     i32 num = 42
-    bool b = num as bool  // non-zero should be true
+    bool b = num as<bool>  // non-zero should be true
 
     // Test numeric casts
     i32 small = 100
-    i64 big = small as i64
-    i32 back = big as i32
+    i64 big = small as<i64>
+    i32 back = big as<i32>
 
     // Test with expressions
-    i32 result = 10 as i32 + 20
+    i32 result = 10 as<i32> + 20
 
     if b {
         if back == 100 {
