@@ -1,7 +1,7 @@
 -- c module: generates C code from .cz source file
--- This is a thin wrapper around the generate module
+-- This is a thin wrapper around the transpiler module
 
-local generate = require("generate")
+local transpiler = require("transpiler")
 
 local C = {}
 C.__index = C
@@ -15,7 +15,7 @@ function C.cz_to_c(source_path, options)
     end
 
     -- Generate C code
-    local c_source, err = generate.generate_c(source_path, options)
+    local c_source, err = transpiler.generate_c(source_path, options)
     if not c_source then
         return false, err
     end
@@ -24,7 +24,7 @@ function C.cz_to_c(source_path, options)
     local output_path = source_path:gsub("%.cz$", ".c")
 
     -- Write C file
-    local ok, err = generate.write_c_file(c_source, output_path)
+    local ok, err = transpiler.write_c_file(c_source, output_path)
     if not ok then
         return false, err
     end
