@@ -866,47 +866,8 @@ function Parser:parse_primary()
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "clone", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "new" then
-        -- new array<T> [...] or new map<K:V> { ... } or new Type { ... } or new [...]
+        -- new [ elements... ] or new { key: value, ... } or new Type { ... }
         self:advance()
-        
-        -- Check if this is: new array<T> [...]
-        if self:check("KEYWORD", "array") then
-            self:advance()
-            self:expect("LT")
-            local element_type = self:parse_type()
-            self:expect("GT")
-            self:expect("LBRACKET")
-            local elements = {}
-            if not self:check("RBRACKET") then
-                repeat
-                    table.insert(elements, self:parse_expression())
-                until not self:match("COMMA")
-            end
-            self:expect("RBRACKET")
-            return { kind = "new_array", elements = elements, explicit_type = element_type }
-        end
-        
-        -- Check if this is: new map<K:V> { ... }
-        if self:check("KEYWORD", "map") then
-            self:advance()
-            self:expect("LT")
-            local key_type = self:parse_type()
-            self:expect("COLON")
-            local value_type = self:parse_type()
-            self:expect("GT")
-            self:expect("LBRACE")
-            local entries = {}
-            if not self:check("RBRACE") then
-                repeat
-                    local key = self:parse_expression()
-                    self:expect("COLON")
-                    local value = self:parse_expression()
-                    table.insert(entries, { key = key, value = value })
-                until not self:match("COMMA")
-            end
-            self:expect("RBRACE")
-            return { kind = "new_map", key_type = key_type, value_type = value_type, entries = entries }
-        end
         
         -- Check if this is a dynamic array: new [...]
         if self:check("LBRACKET") then
@@ -919,6 +880,53 @@ function Parser:parse_primary()
             end
             self:expect("RBRACKET")
             return { kind = "new_array", elements = elements }
+        end
+        
+        -- Check if this is a brace literal: new { ... }
+        -- Could be either a map or a struct
+        if self:check("LBRACE") then
+            self:advance()
+            
+            -- Empty literal
+            if self:check("RBRACE") then
+                self:advance()
+                -- Return as map literal with no entries (type will be inferred from context)
+                return { kind = "new_map", entries = {} }
+            end
+            
+            -- Parse first entry to determine if it's a map or struct
+            -- Save position to backtrack if needed
+            local saved_pos = self.pos
+            
+            -- Try to parse as map entry (expr : expr)
+            local is_map = false
+            local success, first_key = pcall(function() return self:parse_expression() end)
+            if success and self:check("COLON") then
+                -- This looks like a map
+                is_map = true
+            end
+            
+            -- Restore position
+            self.pos = saved_pos
+            
+            if is_map then
+                -- Parse as map literal: new { key: value, ... }
+                local entries = {}
+                repeat
+                    local key = self:parse_expression()
+                    self:expect("COLON")
+                    local value = self:parse_expression()
+                    table.insert(entries, { key = key, value = value })
+                until not self:match("COMMA")
+                self:expect("RBRACE")
+                return { kind = "new_map", entries = entries }
+            else
+                -- Parse as struct literal: new { field: value, ... }
+                -- Need to get struct type from identifier before the brace
+                -- But we already consumed "new {", so we can't parse this way
+                -- This case should not happen with the new syntax
+                error("new { ... } with field names requires struct type: use 'new StructName { ... }' for structs")
+            end
         end
         
         -- Otherwise, it's a struct allocation: new Type { ... }
@@ -936,41 +944,6 @@ function Parser:parse_primary()
         end
         self:expect("RBRACE")
         return { kind = "new_heap", type_name = type_name, fields = fields }
-    elseif tok.type == "KEYWORD" and tok.value == "map" then
-        -- Stack map literal: map<K:V> { key: value, ... }
-        self:advance()
-        self:expect("LT")
-        local key_type = self:parse_type()
-        self:expect("COLON")
-        local value_type = self:parse_type()
-        self:expect("GT")
-        self:expect("LBRACE")
-        local entries = {}
-        if not self:check("RBRACE") then
-            repeat
-                local key = self:parse_expression()
-                self:expect("COLON")
-                local value = self:parse_expression()
-                table.insert(entries, { key = key, value = value })
-            until not self:match("COMMA")
-        end
-        self:expect("RBRACE")
-        return { kind = "map_literal", key_type = key_type, value_type = value_type, entries = entries }
-    elseif tok.type == "KEYWORD" and tok.value == "array" then
-        -- Stack array literal: array<T> [...]
-        self:advance()
-        self:expect("LT")
-        local element_type = self:parse_type()
-        self:expect("GT")
-        self:expect("LBRACKET")
-        local elements = {}
-        if not self:check("RBRACKET") then
-            repeat
-                table.insert(elements, self:parse_expression())
-            until not self:match("COMMA")
-        end
-        self:expect("RBRACKET")
-        return { kind = "array_literal", elements = elements, explicit_type = element_type }
     elseif tok.type == "IDENT" then
         local ident = self:advance()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
