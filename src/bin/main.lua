@@ -31,15 +31,74 @@ local function read_file(path)
     return content
 end
 
+-- Check if path is a directory
+local function is_directory(path)
+    local handle = io.popen("test -d " .. path:gsub("'", "'\\''") .. " && echo yes || echo no")
+    local result = handle:read("*a"):match("^%s*(.-)%s*$")
+    handle:close()
+    return result == "yes"
+end
+
+-- Get all .cz files from a directory
+local function get_cz_files_in_dir(dir)
+    local files = {}
+    local handle = io.popen("find " .. dir:gsub("'", "'\\''") .. " -type f -name '*.cz' 2>/dev/null")
+    if handle then
+        for file in handle:lines() do
+            table.insert(files, file)
+        end
+        handle:close()
+    end
+    return files
+end
+
+-- Expand arguments to handle directories and multiple files
+local function expand_file_args(args)
+    local files = {}
+    local options = {}
+    
+    local i = 1
+    while i <= #args do
+        if args[i] == "--debug" then
+            options.debug = true
+        elseif args[i] == "-o" then
+            i = i + 1
+            if i > #args then
+                io.stderr:write("Error: -o requires an argument\n")
+                return nil, "Missing argument for -o"
+            end
+            options.output = args[i]
+        elseif args[i]:sub(1, 1) == "-" then
+            return nil, string.format("Unknown option: %s", args[i])
+        else
+            -- It's a file or directory
+            local path = args[i]
+            if is_directory(path) then
+                local dir_files = get_cz_files_in_dir(path)
+                for _, file in ipairs(dir_files) do
+                    table.insert(files, file)
+                end
+            else
+                table.insert(files, path)
+            end
+        end
+        i = i + 1
+    end
+    
+    return files, options
+end
+
 local function usage()
-    io.stdout:write("Usage: cz [command] [path] [options]\n")
+    io.stdout:write("Usage: cz [command] [files...] [options]\n")
     io.stdout:write("\nCommands:\n")
-    io.stdout:write("  compile <file.cz>       Generate C code from .cz file (produces .c file)\n")
-    io.stdout:write("  asm <file.c>            Generate assembly from .c file (produces .s file)\n")
+    io.stdout:write("  compile <files...>      Generate C code from .cz files (produces .c files)\n")
+    io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
+    io.stdout:write("  asm <files...>          Generate assembly from .cz files (produces .s files)\n")
+    io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
     io.stdout:write("  build <file.cz>         Build binary from .cz file (depends on compile, produces a.out)\n")
     io.stdout:write("  run <file.cz>           Build and run binary (depends on build, then clean)\n")
-    io.stdout:write("  test <file.cz>          Compile, run, and expect exit code 0\n")
-    io.stdout:write("  format <file.cz>        Format .cz file (TODO: not implemented)\n")
+    io.stdout:write("  test <files...>         Compile, run, and expect exit code 0 for each file\n")
+    io.stdout:write("  format <files...>       Format .cz files (TODO: not implemented)\n")
     io.stdout:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
     io.stdout:write("\nOptions:\n")
     io.stdout:write("  --debug                 Enable memory tracking and print statistics on exit\n")
@@ -174,85 +233,147 @@ end
 
 local function cmd_asm(args)
     if #args < 1 then
-        io.stderr:write("Error: 'asm' requires a source file\n")
+        io.stderr:write("Error: 'asm' requires at least one source file or directory\n")
         usage()
     end
 
-    local source_path = args[1]
-
-    local ok, result = asm_module.c_to_asm(source_path)
-    if not ok then
-        io.stderr:write(result .. "\n")
+    local files, options = expand_file_args(args)
+    if not files then
+        io.stderr:write(options .. "\n")  -- options contains error message
         os.exit(1)
     end
 
-    io.stderr:write(string.format("Generated: %s\n", result))
+    if #files == 0 then
+        io.stderr:write("Error: no .cz files found\n")
+        os.exit(1)
+    end
+
+    local success_count = 0
+    local fail_count = 0
+
+    for _, source_path in ipairs(files) do
+        local ok, result = asm_module.generate_asm(source_path, options)
+        if not ok then
+            io.stderr:write(string.format("%s: %s\n", source_path, result))
+            fail_count = fail_count + 1
+        else
+            io.stderr:write(string.format("Generated: %s\n", result))
+            success_count = success_count + 1
+        end
+    end
+
+    if fail_count > 0 then
+        io.stderr:write(string.format("\nCompleted: %d succeeded, %d failed\n", success_count, fail_count))
+        os.exit(1)
+    end
+
     return 0
 end
 
 local function cmd_compile(args)
     if #args < 1 then
-        io.stderr:write("Error: 'compile' requires a source file\n")
+        io.stderr:write("Error: 'compile' requires at least one source file or directory\n")
         usage()
     end
 
-    local opts = parse_options(args)
-    local source_path = opts.source_path
-
-    if not source_path then
-        io.stderr:write("Error: 'compile' requires a source file\n")
-        usage()
-    end
-
-    local ok, result = compile.compile(source_path, { debug = opts.debug })
-    if not ok then
-        io.stderr:write(result .. "\n")
+    local files, options = expand_file_args(args)
+    if not files then
+        io.stderr:write(options .. "\n")  -- options contains error message
         os.exit(1)
     end
 
-    io.stderr:write(string.format("Generated: %s\n", result))
+    if #files == 0 then
+        io.stderr:write("Error: no .cz files found\n")
+        os.exit(1)
+    end
+
+    local success_count = 0
+    local fail_count = 0
+
+    for _, source_path in ipairs(files) do
+        local ok, result = compile.compile(source_path, options)
+        if not ok then
+            io.stderr:write(string.format("%s: %s\n", source_path, result))
+            fail_count = fail_count + 1
+        else
+            io.stderr:write(string.format("Generated: %s\n", result))
+            success_count = success_count + 1
+        end
+    end
+
+    if fail_count > 0 then
+        io.stderr:write(string.format("\nCompleted: %d succeeded, %d failed\n", success_count, fail_count))
+        os.exit(1)
+    end
+
     return 0
 end
 
 local function cmd_test(args)
     if #args < 1 then
-        io.stderr:write("Error: 'test' requires a source file\n")
+        io.stderr:write("Error: 'test' requires at least one source file or directory\n")
         usage()
     end
 
-    local opts = parse_options(args)
-    local source_path = opts.source_path
-
-    if not source_path then
-        io.stderr:write("Error: 'test' requires a source file\n")
-        usage()
-    end
-
-    local ok, err = test.test(source_path, { debug = opts.debug })
-    if not ok then
-        io.stderr:write(err .. "\n")
+    local files, options = expand_file_args(args)
+    if not files then
+        io.stderr:write(options .. "\n")  -- options contains error message
         os.exit(1)
     end
 
-    io.stderr:write(string.format("Test passed: %s\n", source_path))
+    if #files == 0 then
+        io.stderr:write("Error: no .cz files found\n")
+        os.exit(1)
+    end
+
+    local success_count = 0
+    local fail_count = 0
+
+    for _, source_path in ipairs(files) do
+        local ok, err = test.test(source_path, options)
+        if not ok then
+            io.stderr:write(string.format("%s: %s\n", source_path, err))
+            fail_count = fail_count + 1
+        else
+            io.stderr:write(string.format("Test passed: %s\n", source_path))
+            success_count = success_count + 1
+        end
+    end
+
+    if fail_count > 0 then
+        io.stderr:write(string.format("\nCompleted: %d passed, %d failed\n", success_count, fail_count))
+        os.exit(1)
+    end
+
     return 0
 end
 
 local function cmd_format(args)
     if #args < 1 then
-        io.stderr:write("Error: 'format' requires a source file\n")
+        io.stderr:write("Error: 'format' requires at least one source file or directory\n")
         usage()
     end
 
-    local source_path = args[1]
-
-    local ok, err = format.format(source_path)
-    if not ok then
-        io.stderr:write(err .. "\n")
+    local files, options = expand_file_args(args)
+    if not files then
+        io.stderr:write(options .. "\n")  -- options contains error message
         os.exit(1)
     end
 
-    io.stderr:write(string.format("Formatted: %s\n", source_path))
+    if #files == 0 then
+        io.stderr:write("Error: no .cz files found\n")
+        os.exit(1)
+    end
+
+    for _, source_path in ipairs(files) do
+        local ok, err = format.format(source_path)
+        if not ok then
+            io.stderr:write(string.format("%s: %s\n", source_path, err))
+            os.exit(1)
+        end
+        io.stderr:write(string.format("Formatted: %s\n", source_path))
+    end
+
     return 0
 end
 
