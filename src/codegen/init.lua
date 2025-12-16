@@ -219,6 +219,7 @@ function Codegen:generate()
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
+    self:emit("#include <string.h>")
     self:emit("")
     
     -- Global flag for runtime #DEBUG() support
@@ -274,6 +275,23 @@ function Codegen:generate()
             self:emit(string.format("} %s;", pair_info.pair_type_name))
             self:emit("")
         end
+    end
+    
+    -- Generate string struct definition if any strings were discovered
+    if self.has_string_type then
+        self:emit("typedef struct czar_string {")
+        self:emit("    char* data;")
+        self:emit("    int32_t length;")
+        self:emit("    int32_t capacity;")
+        self:emit("} czar_string;")
+        self:emit("")
+        
+        -- Generate string helper functions
+        self:emit("// String helper function: get C-style null-terminated string")
+        self:emit("static inline char* czar_string_cstr(czar_string* s) {")
+        self:emit("    return s->data;")
+        self:emit("}")
+        self:emit("")
     end
     
     -- Now emit the function code
