@@ -172,6 +172,8 @@ function Statements.gen_statement(stmt)
         return Statements.gen_while(stmt)
     elseif stmt.kind == "for" then
         return Statements.gen_for(stmt)
+    elseif stmt.kind == "repeat" then
+        return Statements.gen_repeat(stmt)
     else
         error("unknown statement kind: " .. tostring(stmt.kind))
     end
@@ -337,6 +339,38 @@ function Statements.gen_for(stmt)
     end
     
     -- Insert cleanup for for body
+    local cleanup = ctx():get_scope_cleanup()
+    for _, cleanup_code in ipairs(cleanup) do
+        table.insert(parts, "    " .. cleanup_code)
+    end
+    ctx():pop_scope()
+
+    table.insert(parts, "}")
+    return join(parts, "\n    ")
+end
+
+function Statements.gen_repeat(stmt)
+    local parts = {}
+    
+    -- Generate count expression
+    local count_expr = Codegen.Expressions.gen_expr(stmt.count)
+    
+    -- Generate a unique loop counter variable name
+    local loop_var = "_repeat_i"
+    
+    -- Generate for loop header: for (int32_t _repeat_i = 0; _repeat_i < count; _repeat_i++)
+    table.insert(parts, string.format("for (int32_t %s = 0; %s < %s; %s++) {",
+        loop_var, loop_var, count_expr, loop_var))
+    
+    -- Push scope for repeat body
+    ctx():push_scope()
+    
+    -- Generate body statements
+    for _, s in ipairs(stmt.body.statements) do
+        table.insert(parts, "    " .. Statements.gen_statement(s))
+    end
+    
+    -- Insert cleanup for repeat body
     local cleanup = ctx():get_scope_cleanup()
     for _, cleanup_code in ipairs(cleanup) do
         table.insert(parts, "    " .. cleanup_code)

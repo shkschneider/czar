@@ -358,6 +358,8 @@ function Typechecker:check_statement(stmt)
         self:check_while(stmt)
     elseif stmt.kind == "for" then
         self:check_for(stmt)
+    elseif stmt.kind == "repeat" then
+        self:check_repeat(stmt)
     elseif stmt.kind == "return" then
         self:check_return(stmt)
     elseif stmt.kind == "expr_stmt" then
@@ -664,6 +666,33 @@ function Typechecker:check_for(stmt)
         end
     end
     
+    self:check_block(stmt.body)
+    self:pop_scope()
+end
+
+-- Type check a repeat statement
+function Typechecker:check_repeat(stmt)
+    -- Type check count expression
+    local count_type = self:check_expression(stmt.count)
+    
+    -- Count must be an integer type (i8, i16, i32, i64, u8, u16, u32, u64)
+    local is_int_type = count_type and 
+                        count_type.kind == "named_type" and 
+                        count_type.name:match("^[iu]%d+$") ~= nil
+    
+    if not is_int_type then
+        local line = stmt.line or (stmt.count and stmt.count.line) or 0
+        local msg = string.format(
+            "Repeat count must be an integer type, got %s",
+            Inference.type_to_string(count_type)
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+        self:add_error(formatted_error)
+    end
+    
+    -- Type check body
+    self:push_scope()
     self:check_block(stmt.body)
     self:pop_scope()
 end

@@ -389,6 +389,8 @@ function Parser:parse_statement()
         return self:parse_while()
     elseif self:check("KEYWORD", "for") then
         return self:parse_for()
+    elseif self:check("KEYWORD", "repeat") then
+        return self:parse_repeat()
     else
         -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
@@ -573,6 +575,22 @@ function Parser:parse_for()
         item_is_underscore = item_is_underscore,
         item_mutable = item_mutable,
         collection = collection,
+        body = body
+    }
+end
+
+function Parser:parse_repeat()
+    self:expect("KEYWORD", "repeat")
+    
+    -- Parse the count expression
+    local count = self:parse_expression()
+    
+    -- Parse the body block
+    local body = self:parse_block()
+    
+    return {
+        kind = "repeat",
+        count = count,
         body = body
     }
 end
