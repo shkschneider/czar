@@ -1,0 +1,24 @@
+// Test new array syntax
+fn main() i32 {
+    // Test heap-allocated array with new keyword
+    array<i32>* a1 = new array { 1, 2, 3 }
+    
+    // Test accessing elements
+    i32 val1 = a1[0]
+    i32 val2 = a1[1]
+    i32 val3 = a1[2]
+    
+    // Verify values
+    if val1 != 1 {
+        return 1
+    }
+    if val2 != 2 {
+        return 2
+    }
+    if val3 != 3 {
+        return 3
+    }
+    
+    free a1
+    return 0
+}
