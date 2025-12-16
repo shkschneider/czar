@@ -348,19 +348,53 @@ function Codegen:generate()
 
     local result = join(self.out, "\n") .. "\n"
     
-    -- Safety check: warn about unsafe C string functions in generated code
+    -- Safety check: warn about unsafe C functions in generated code
     local unsafe_functions = {
+        -- Unsafe string operations (no bounds checking)
         "strcpy", "strcat", "strncpy", "strncat",
-        "gets", "sprintf"  -- Also check other notoriously unsafe functions
+        "gets", "sprintf", "vsprintf",
+        
+        -- Unsafe string conversion functions (no error handling, undefined behavior on overflow)
+        "atoi", "atof", "atol", "atoll",
+        
+        -- Unsafe formatted I/O (buffer overflow risks)
+        "scanf", "sscanf", "vscanf", "vsscanf",
+        
+        -- Other commonly unsafe functions
+        "strncpy",  -- Doesn't guarantee null termination
+        "strtok",   -- Not thread-safe, modifies input
+        "tmpnam",   -- Race condition vulnerability
+        "getenv",   -- Returns pointer to internal data
     }
+    
+    local safer_alternatives = {
+        strcpy = "snprintf, memcpy with length check",
+        strcat = "snprintf, strncat with proper length calculation",
+        strncpy = "memcpy with explicit null termination",
+        strncat = "snprintf or manual bounds checking",
+        gets = "fgets with size limit",
+        sprintf = "snprintf with buffer size",
+        vsprintf = "vsnprintf with buffer size",
+        atoi = "strtol with error checking",
+        atof = "strtod with error checking",
+        atol = "strtol with error checking",
+        atoll = "strtoll with error checking",
+        scanf = "fgets + sscanf or custom parsing",
+        sscanf = "manual parsing with bounds checks",
+        strtok = "strtok_r (reentrant) or manual parsing",
+        tmpnam = "mkstemp",
+        getenv = "secure_getenv or careful handling",
+    }
+    
     for _, unsafe_func in ipairs(unsafe_functions) do
         -- Match function calls: funcname( with possible whitespace
         if result:match(unsafe_func .. "%s*%(") then
             local Warnings = require("src.warnings")
+            local alternative = safer_alternatives[unsafe_func] or "safer alternatives"
             print(Warnings.format("WARNING", self.source_file, 0, "unsafe-c-function",
                 string.format("Generated code contains unsafe C function '%s'. " ..
-                    "Consider using safer alternatives (memcpy, strchr, strstr, strspn, strcspn).",
-                    unsafe_func), self.source_path))
+                    "Consider using: %s",
+                    unsafe_func, alternative), self.source_path))
         end
     end
     
