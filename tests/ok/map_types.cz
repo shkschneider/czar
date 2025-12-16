@@ -1,12 +1,13 @@
-// Test map with multiple types
+// Test map with multiple types using new syntax
 fn main() i32 {
     // Test with i32 -> i32
-    i32{i32} numbers = new {
+    map<i32:i32> numbers = new map {
         1: 10,
         2: 20
     }
     
     i32 val = numbers.values[0]
     
+    free numbers
     return val - 10
 }

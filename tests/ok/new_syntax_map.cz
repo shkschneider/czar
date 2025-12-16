@@ -1,7 +1,7 @@
 // Test new map syntax with explicit map keyword
 fn main() i32 {
     // Test heap-allocated map with new keyword
-    map<i32:bool>* m1 = new map { 1: true, 2: false }
+    map<i32:bool> m1 = new map { 1: true, 2: false }
     
     // Access map properties
     i32 size = m1.size
