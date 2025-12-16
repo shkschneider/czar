@@ -251,21 +251,18 @@ end
 
 function Parser:parse_type()
     local tok = self:current()
-    -- Check for map type: map[KeyType]ValueType
-    if self:check("KEYWORD", "map") then
-        self:advance()
-        self:expect("LBRACKET")
-        local key_type = self:parse_type()
-        self:expect("RBRACKET")
-        local value_type = self:parse_type()
-        return { kind = "map", key_type = key_type, value_type = value_type }
-    end
     if is_type_token(tok) then
         self:advance()
         local base_type = { kind = "named_type", name = tok.value }
         -- Check if this is a pointer type (Type*)
         if self:match("STAR") then
             return { kind = "pointer", to = base_type }
+        end
+        -- Check if this is a map type (KeyType{ValueType})
+        if self:match("LBRACE") then
+            local value_type = self:parse_type()
+            self:expect("RBRACE")
+            return { kind = "map", key_type = base_type, value_type = value_type }
         end
         -- Check if this is an array type (Type[size]) or slice type (Type[])
         if self:match("LBRACKET") then
@@ -375,10 +372,6 @@ end
 function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
-    -- Check for map keyword
-    if tok.type == "KEYWORD" and tok.value == "map" then
-        return true
-    end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
     if tok.type == "KEYWORD" and TYPE_KEYWORDS[tok.value] then
         return true
