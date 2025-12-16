@@ -68,6 +68,11 @@ shopt -s nullglob
 check() {
     local i=0
     for t in $@ ; do
+        if [[ ! -f "$t" ]] ; then
+            echo -e $RED"$t: Not a file!"$WHITE
+            (( KO += 1 ))
+            continue
+        fi
         (( i += 1 ))
         p=${t%/*}
         p=${p##*/}
