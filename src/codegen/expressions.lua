@@ -379,7 +379,26 @@ function Expressions.gen_expr(expr)
                 -- Resolve arguments (handle named args and defaults)
                 local resolved_args = ctx():resolve_arguments(expr.callee.name, expr.args, func_def.params)
                 for _, a in ipairs(resolved_args) do
-                    table.insert(args, Expressions.gen_expr(a))
+                    if a.kind == "varargs_list" then
+                        -- Generate varargs array
+                        if #a.args == 0 then
+                            -- No varargs provided, pass NULL and 0
+                            table.insert(args, "NULL")
+                            table.insert(args, "0")
+                        else
+                            -- Generate compound literal for varargs array
+                            local varargs_exprs = {}
+                            for _, varg in ipairs(a.args) do
+                                table.insert(varargs_exprs, Expressions.gen_expr(varg))
+                            end
+                            local element_type = Codegen.Types.c_type(func_def.params[#func_def.params].type.element_type)
+                            local array_literal = string.format("(%s[]){%s}", element_type, join(varargs_exprs, ", "))
+                            table.insert(args, array_literal)
+                            table.insert(args, tostring(#a.args))
+                        end
+                    else
+                        table.insert(args, Expressions.gen_expr(a))
+                    end
                 end
             else
                 for _, a in ipairs(expr.args) do

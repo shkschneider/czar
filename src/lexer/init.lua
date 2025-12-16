@@ -240,6 +240,14 @@ function Lexer:next_token()
     local ch = self:peek()
     if not ch then return nil end
 
+    -- Check for ellipsis (...) before checking for compound operators
+    if ch == "." and self:peek(1) == "." and self:peek(2) == "." then
+        local line, col = self.line, self.col
+        self:advance(); self:advance(); self:advance()
+        self:add_token("ELLIPSIS", "...", line, col)
+        return true
+    end
+
     -- compound operators
     local pair = ch .. (self:peek(1) or "")
     local compound = compound_tokens[pair]

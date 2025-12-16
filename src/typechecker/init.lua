@@ -173,11 +173,34 @@ function Typechecker:check_function(func)
         self:add_var("self", receiver_type, is_mutable)
     end
     
-    -- Add parameters to scope
-    for _, param in ipairs(func.params) do
+    -- Add parameters to scope and validate varargs
+    local has_varargs = false
+    for i, param in ipairs(func.params) do
         local param_type = param.type
         -- In explicit pointer model, check mutable field directly
         local is_mutable = param.mutable or false
+        
+        -- Check for varargs
+        if param_type.kind == "varargs" then
+            has_varargs = true
+            -- Varargs cannot be mutable
+            if is_mutable then
+                local line = func.line or 0
+                local msg = string.format("varargs parameter '%s' cannot be mutable (varargs are read-only like slices)", param.name)
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+                self:add_error(formatted_error)
+            end
+            -- Varargs must be the last parameter (already checked in parser, but double-check)
+            if i ~= #func.params then
+                local line = func.line or 0
+                local msg = string.format("varargs parameter '%s' must be the last parameter", param.name)
+                local formatted_error = Errors.format("ERROR", self.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, self.source_path)
+                self:add_error(formatted_error)
+            end
+        end
+        
         self:add_var(param.name, param_type, is_mutable)
     end
     
@@ -616,6 +639,8 @@ function Typechecker:type_to_string(type_node)
         return self:type_to_string(type_node.element_type) .. "[" .. (type_node.size or "*") .. "]"
     elseif type_node.kind == "slice" then
         return self:type_to_string(type_node.element_type) .. "[:]"
+    elseif type_node.kind == "varargs" then
+        return self:type_to_string(type_node.element_type) .. "..."
     end
     
     return "unknown"

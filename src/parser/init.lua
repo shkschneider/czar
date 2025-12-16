@@ -219,15 +219,28 @@ function Parser:parse_function()
         repeat
             local is_mut = self:match("KEYWORD", "mut") ~= nil
             local param_type = self:parse_type()
+            -- Check for varargs syntax (Type...)
+            local is_varargs = self:match("ELLIPSIS") ~= nil
+            if is_varargs then
+                -- Convert type to varargs type
+                param_type = { kind = "varargs", element_type = param_type }
+            end
             -- In explicit pointer model, mut is just a mutability flag, not an implicit pointer
             -- The user must use Type* for pointer parameters
             local param_name = self:expect("IDENT").value
             local default_value = nil
-            -- Check for default value
+            -- Check for default value (not allowed for varargs)
             if self:match("EQUAL") then
+                if is_varargs then
+                    error(string.format("varargs parameter '%s' cannot have a default value", param_name))
+                end
                 default_value = self:parse_expression()
             end
             table.insert(params, { name = param_name, type = param_type, mutable = is_mut, default_value = default_value })
+            -- Varargs must be the last parameter
+            if is_varargs and not self:check("RPAREN") then
+                error(string.format("varargs parameter '%s' must be the last parameter", param_name))
+            end
         until not self:match("COMMA")
     end
     self:expect("RPAREN")
