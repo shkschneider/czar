@@ -149,6 +149,40 @@ end
 
 -- Infer the type of a field access
 function Inference.infer_field_type(typechecker, expr)
+    -- Check if this is enum member access (e.g., Status.SUCCESS)
+    -- This happens when object is an identifier that refers to an enum type name
+    if expr.object.kind == "identifier" then
+        local enum_name = expr.object.name
+        local enum_def = typechecker.enums[enum_name]
+        if enum_def then
+            -- This is an enum member access
+            -- Check if the field is a valid enum value
+            local found = false
+            for _, value in ipairs(enum_def.values) do
+                if value.name == expr.field then
+                    found = true
+                    break
+                end
+            end
+            if found then
+                -- Enum member access returns the enum type
+                local enum_type = { kind = "named_type", name = enum_name }
+                expr.inferred_type = enum_type
+                return enum_type
+            else
+                local line = expr.line or (expr.object and expr.object.line) or 0
+                local msg = string.format(
+                    "Enum value '%s' not found in enum '%s'",
+                    expr.field, enum_name
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+        end
+    end
+    
     local obj_type = Inference.infer_type(typechecker, expr.object)
     if not obj_type then
         return nil

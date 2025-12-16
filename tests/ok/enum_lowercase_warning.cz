@@ -1,0 +1,15 @@
+// Test enum with non-uppercase values (should warn)
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+fn get_color() Color {
+    return 0  // Color_Red
+}
+
+fn main() i32 {
+    Color c = get_color()
+    return 0
+}

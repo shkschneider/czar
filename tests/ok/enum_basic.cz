@@ -1,0 +1,18 @@
+// Test basic enum functionality with actual enum usage
+enum Status {
+    SUCCESS,
+    PENDING,
+    FAILED
+}
+
+fn get_status() Status {
+    return Status.SUCCESS
+}
+
+fn main() i32 {
+    Status s = get_status()
+    if s == Status.SUCCESS {
+        return 0
+    }
+    return 1
+}

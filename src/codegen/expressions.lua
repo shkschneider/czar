@@ -452,6 +452,15 @@ function Expressions.gen_expr(expr)
         local index_expr = Expressions.gen_expr(expr.index)
         return string.format("%s[%s]", array_expr, index_expr)
     elseif expr.kind == "field" then
+        -- Check if this is enum member access (e.g., Status.SUCCESS)
+        if expr.object.kind == "identifier" then
+            local enum_name = expr.object.name
+            if ctx().enums[enum_name] then
+                -- This is an enum member access, generate: EnumName_VALUE
+                return string.format("%s_%s", enum_name, expr.field)
+            end
+        end
+        
         local obj_expr = Expressions.gen_expr(expr.object)
         -- Determine if we need -> or .
         -- Check if the object is an identifier and if its type is a pointer or map
