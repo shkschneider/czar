@@ -1,7 +1,7 @@
-// Test map shorthand syntax
+// Test map with explicit syntax (no more shorthand)
 fn main() i32 {
-    // Test shorthand syntax: Type{ValueType}
-    i32{i32} numbers = new {
+    // Test explicit syntax: map<KeyType:ValueType>
+    map<i32:i32> numbers = new map {
         1: 10,
         2: 20
     }
@@ -9,5 +9,6 @@ fn main() i32 {
     // Access elements
     i32 sum = numbers.values[0] + numbers.values[1]
     
+    free numbers
     return sum - 30  // 10 + 20 = 30
 }

@@ -979,7 +979,7 @@ function Inference.infer_new_map_type(typechecker, expr)
         end
     end
     
-    -- Return a map type
+    -- Return a map type (which is already represented as a pointer in C)
     local inferred = { kind = "map", key_type = key_type, value_type = value_type }
     expr.inferred_type = inferred
     return inferred
