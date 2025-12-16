@@ -7,7 +7,7 @@ WHITE="\e[0m"
 
 r=0
 echo "[CHECK] ..."
-for dep in git pkg-config luajit nm ar cc ; do
+for dep in git pkg-config luajit nm ar cc stat file ; do
     echo -n "- $dep: "
     path=$(command -v $dep 2>/dev/null)
     if [[ -n "$path" ]] ; then
@@ -37,7 +37,7 @@ if command -v luastatic >/dev/null 2>&1; then
 -E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
 else
     echo -e $YELLOW"[LUASTATIC] null -> dynamic"$WHITE
-    LDFLAGS="-L. -L./build -Wl,\
+    LDFLAGS="-L./build -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
 -E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
@@ -95,11 +95,11 @@ echo "[AR] *.o -> $LIBRARY"
 ar crs ./build/$LIBRARY ./build/*.o # create replace act-as-ranlib
 
 cp ./src/main.c ./build/main.c
-echo "[CC] main.c -lczar ..."
+echo "[CC] main.c -lczar ... -> $OUT"
 echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
-echo -e "[CZ] "$GREEN$(file -b ./$OUT)$WHITE
+echo -e "[CZ] "$(stat -c %s ./$OUT)"B "$GREEN$(file -b ./$OUT)$WHITE
 
 #install -m 755 ./$(OUT) /usr/local/bin/cz
 rm -rf ./build
