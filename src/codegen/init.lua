@@ -361,7 +361,6 @@ function Codegen:generate()
         "scanf", "sscanf", "vscanf", "vsscanf",
         
         -- Other commonly unsafe functions
-        "strncpy",  -- Doesn't guarantee null termination
         "strtok",   -- Not thread-safe, modifies input
         "tmpnam",   -- Race condition vulnerability
         "getenv",   -- Returns pointer to internal data

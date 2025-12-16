@@ -252,12 +252,9 @@ function Inference.infer_field_type(typechecker, expr)
         end
     end
     
-    -- Handle string type fields
+    -- Handle string type fields (memory-safe: no direct data access)
     if base_type.kind == "string" then
-        if expr.field == "data" then
-            expr.inferred_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
-            return expr.inferred_type
-        elseif expr.field == "length" then
+        if expr.field == "length" then
             expr.inferred_type = { kind = "named_type", name = "i32" }
             return expr.inferred_type
         elseif expr.field == "capacity" then
@@ -266,7 +263,7 @@ function Inference.infer_field_type(typechecker, expr)
         else
             local line = expr.line or (expr.object and expr.object.line) or 0
             local msg = string.format(
-                "Field '%s' not found in string type (available: data, length, capacity)",
+                "Field '%s' not found in string type (available: length, capacity). Use .cstr() method for C-string access.",
                 expr.field
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
@@ -583,6 +580,47 @@ function Inference.infer_call_type(typechecker, expr)
             local msg = string.format(
                 "Method '%s' not found on type '%s'",
                 expr.callee.method, type_name or "unknown"
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.UNDEFINED_FUNCTION, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    elseif expr.callee.kind == "field" then
+        -- Handle field-based method calls (e.g., obj.method())
+        local obj_type = Inference.infer_type(typechecker, expr.callee.object)
+        if not obj_type then
+            return nil
+        end
+        
+        -- Special handling for string.cstr() method
+        if obj_type.kind == "string" and expr.callee.field == "cstr" then
+            -- cstr() returns char* (pointer to i8)
+            local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Special handling for string*.cstr() method
+        if obj_type.kind == "pointer" and obj_type.to.kind == "string" and expr.callee.field == "cstr" then
+            -- cstr() returns char* (pointer to i8)
+            local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+            expr.inferred_type = return_type
+            return return_type
+        end
+        
+        -- Try to resolve as a method on the type
+        local type_name = Inference.get_base_type_name(obj_type)
+        local method_def = Resolver.resolve_function(typechecker, type_name, expr.callee.field)
+        
+        if method_def then
+            expr.inferred_type = method_def.return_type
+            return method_def.return_type
+        else
+            local line = expr.line or (expr.callee and expr.callee.object and expr.callee.object.line) or 0
+            local msg = string.format(
+                "Method '%s' not found on type '%s'",
+                expr.callee.field, type_name or "unknown"
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                 Errors.ErrorType.UNDEFINED_FUNCTION, msg, typechecker.source_path)
