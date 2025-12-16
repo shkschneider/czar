@@ -48,7 +48,7 @@ local function usage()
     io.stdout:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
     io.stdout:write("\nOptions:\n")
     io.stdout:write("  --debug                 Enable memory tracking and print statistics on exit\n")
-    os.exit(1)
+    os.exit(0)
 end
 
 -- Parse common options from args

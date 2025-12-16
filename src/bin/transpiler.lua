@@ -1,4 +1,4 @@
--- Generator module: generates C code from .cz source file
+-- Transpiler module: generates C code from .cz source file
 -- Wraps lexer, parser, typechecker, lowering, analysis, and codegen functionality
 
 local lexer = require("lexer")
