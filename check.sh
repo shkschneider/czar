@@ -19,16 +19,16 @@ check_ok() {
     local o=${f/.cz/.out}
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     if [[ ! -x $o ]] ; then
-        echo -e $RED" ERROR (compilation failed):"$WHITE
+        echo -e $RED" ERROR:"$WHITE" "
         cat /tmp/cz >&2
         (( KO += 1 ))
     else
         ./$o >/dev/null 2>/tmp/cz && {
-            echo -n " SUCCESS"
+            echo -n " SUCCESS "
             (( OK += 1 ))
         } || {
             e=$?
-            echo -e $RED" FAILURE: $e"$WHITE
+            echo -e $RED" FAILURE: $e"$WHITE" "
             (( KO += 1 ))
         }
         rm -f ./$o
@@ -46,15 +46,15 @@ check_ko() {
     ./cz build $f -o $o >/dev/null 2>/tmp/cz
     local e=$?
     if [[ $e -ne 0 ]] ; then
-        echo -n " SUCCESS"
+        echo -n " SUCCESS "
         (( OK += 1 ))
     else
         ./$o >/dev/null 2>/tmp/cz && {
-            echo -e $RED" FAILURE"$WHITE
+            echo -e $RED" FAILURE"$WHITE" "
             (( KO += 1 ))
         } || {
             e=$?
-            [[ $e -ne 134 ]] && echo -n " SUCCESS" # core dump
+            [[ $e -ne 134 ]] && echo -n " SUCCESS " # core dump
             (( OK += 1 ))
         }
         rm -f ./$o
