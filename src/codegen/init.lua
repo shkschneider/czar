@@ -39,6 +39,7 @@ function Codegen.new(ast, options)
             -- Built-in alias for String -> char*
             ["String"] = "char*"
         },
+        repeat_counter = 0,  -- Counter for generating unique repeat loop variables
     }
     return setmetatable(self, Codegen)
 end
