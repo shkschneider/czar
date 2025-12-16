@@ -423,16 +423,24 @@ function Expressions.gen_expr(expr)
     elseif expr.kind == "field" then
         local obj_expr = Expressions.gen_expr(expr.object)
         -- Determine if we need -> or .
-        -- Check if the object is an identifier and if its type is a pointer
+        -- Check if the object is an identifier and if its type is a pointer or map
         local use_arrow = false
         if expr.object.kind == "identifier" then
             local var_type = ctx():get_var_type(expr.object.name)
-            if var_type and ctx():is_pointer_type(var_type) then
-                use_arrow = true
+            if var_type then
+                if ctx():is_pointer_type(var_type) then
+                    use_arrow = true
+                elseif var_type.kind == "map" then
+                    -- Maps are always pointers
+                    use_arrow = true
+                end
             end
         elseif expr.object.kind == "unary" and expr.object.op == "*" then
             -- Explicit dereference, use .
             use_arrow = false
+        elseif expr.object.inferred_type and expr.object.inferred_type.kind == "map" then
+            -- Map type always uses arrow
+            use_arrow = true
         end
         local accessor = use_arrow and "->" or "."
         return string.format("%s%s%s", obj_expr, accessor, expr.field)
@@ -484,6 +492,56 @@ function Expressions.gen_expr(expr)
         end
         
         table.insert(statements, "_ptr")
+        
+        return string.format("({ %s; })", join(statements, "; "))
+    elseif expr.kind == "new_map" then
+        -- new map[K]V { key: value, ... } - heap-allocated map
+        -- Generate a simple linear search implementation for now
+        local key_type = expr.key_type
+        local value_type = expr.value_type
+        local key_type_str = ctx():c_type(key_type)
+        local value_type_str = ctx():c_type(value_type)
+        
+        -- Generate map struct type name
+        local map_type_name = "czar_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
+        
+        -- Register map type for later struct generation
+        if not ctx().map_types then
+            ctx().map_types = {}
+        end
+        local map_key = key_type_str .. "_" .. value_type_str
+        if not ctx().map_types[map_key] then
+            ctx().map_types[map_key] = {
+                map_type_name = map_type_name,
+                key_type = key_type,
+                value_type = value_type,
+                key_type_str = key_type_str,
+                value_type_str = value_type_str
+            }
+        end
+        
+        -- Build initialization code
+        local statements = {}
+        local capacity = math.max(16, #expr.entries * 2)
+        table.insert(statements, string.format("%s* _map = %s", 
+            map_type_name, 
+            ctx():malloc_call(string.format("sizeof(%s)", map_type_name), true)))
+        table.insert(statements, string.format("_map->capacity = %d", capacity))
+        table.insert(statements, string.format("_map->size = %d", #expr.entries))
+        table.insert(statements, string.format("_map->keys = %s", 
+            ctx():malloc_call(string.format("sizeof(%s) * %d", key_type_str, capacity), true)))
+        table.insert(statements, string.format("_map->values = %s", 
+            ctx():malloc_call(string.format("sizeof(%s) * %d", value_type_str, capacity), true)))
+        
+        -- Initialize entries
+        for i, entry in ipairs(expr.entries) do
+            local key_expr = Expressions.gen_expr(entry.key)
+            local value_expr = Expressions.gen_expr(entry.value)
+            table.insert(statements, string.format("_map->keys[%d] = %s", i-1, key_expr))
+            table.insert(statements, string.format("_map->values[%d] = %s", i-1, value_expr))
+        end
+        
+        table.insert(statements, "_map")
         
         return string.format("({ %s; })", join(statements, "; "))
     elseif expr.kind == "array_literal" then

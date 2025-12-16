@@ -1,0 +1,15 @@
+// Test map with bool values
+fn main() i32 {
+    map[i32]bool flags = new map[i32]bool {
+        1: true,
+        2: false
+    }
+    
+    bool val = flags.values[0]
+    
+    if val == true {
+        return 0
+    }
+    
+    return 1
+}
