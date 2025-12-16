@@ -1,16 +1,16 @@
-// Test #cast<Type>(value, fallback) directive
+// Test safe cast as?<Type>(fallback) directive (renamed from #cast)
 fn main() i32 {
-    // Test safe cast with fallback
+    // Test safe cast with fallback using new syntax
     i32 i = 1000
     
-    // Use #cast directive with fallback value
+    // Use as?<Type>(fallback) for safe casts with fallback value
     // For now, performs regular cast (no runtime checking)
     // Fallback must match target type exactly
-    i64 big = #cast<i64>(i, 0 as i64)
-    u8 small = #cast<u8>(i, 255 as u8)
+    i64 big = i as?<i64>(0 as<i64>)
+    u8 small = i as?<u8>(255 as<u8>)
     
     // Fallback must be same type as target
-    i32 result = #cast<i32>(big, 42)
+    i32 result = big as?<i32>(42)
     
     if big == 1000 {
         return 0  // success

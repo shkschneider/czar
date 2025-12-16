@@ -1,13 +1,13 @@
 // Test dynamic array with different element types
 fn main() i32 {
     // u8 dynamic array
-    u8[] bytes = new [10 as u8, 20 as u8, 30 as u8]
+    u8[] bytes = new [10 as<u8>, 20 as<u8>, 30 as<u8>]
     
     // bool dynamic array
     bool[] flags = new [true, false, true, true]
     
     // Calculate result
-    i32 byte_sum = bytes[0] as i32 + bytes[1] as i32 + bytes[2] as i32
+    i32 byte_sum = bytes[0] as<i32> + bytes[1] as<i32> + bytes[2] as<i32>
     
     mut i32 flag_count = 0
     if flags[0] {

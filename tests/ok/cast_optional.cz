@@ -1,14 +1,14 @@
-// Test optional cast (as?) syntax
+// Test safe cast as?<Type>(fallback) syntax
 fn main() i32 {
-    // Test optional cast - currently behaves like regular cast
+    // Test safe cast with fallback
     i32 i = 1000
     
-    // as? returns the target type directly (not pointer)
-    u8 u = i as? u8  // Cast directly to u8
-    i64 big = i as? i64  // Cast to i64
+    // as?<Type>(fallback) returns the target type with type-checked fallback
+    u8 u = i as?<u8>(255 as<u8>)  // Safe cast to u8 with fallback
+    i64 big = i as?<i64>(0 as<i64>)  // Safe cast to i64 with fallback
     
-    // For now, as? performs same cast as 'as'
-    // Future: will add runtime validation and support fallback with 'or'
+    // For now, as? performs same cast as 'as<Type>'
+    // Future: will add runtime validation to use fallback on cast failure
     
     if big == 1000 {
         return 0  // success
