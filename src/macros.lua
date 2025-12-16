@@ -68,6 +68,41 @@ function Macros.parse_top_level(parser, macro_tok)
     end
 end
 
+-- Parse statement-level macros (#assert, #log)
+-- These appear as statements and execute actions
+function Macros.parse_statement(parser, macro_tok)
+    local macro_name = macro_tok.value:upper()
+    
+    if macro_name == "ASSERT" then
+        -- #assert(condition)
+        parser:expect("LPAREN")
+        local condition = parser:parse_expression()
+        parser:expect("RPAREN")
+        
+        return {
+            kind = "assert_stmt",
+            condition = condition,
+            line = macro_tok.line,
+            col = macro_tok.col
+        }
+    elseif macro_name == "LOG" then
+        -- #log("message")
+        parser:expect("LPAREN")
+        local message = parser:parse_expression()
+        parser:expect("RPAREN")
+        
+        return {
+            kind = "log_stmt",
+            message = message,
+            line = macro_tok.line,
+            col = macro_tok.col
+        }
+    else
+        error(string.format("unknown statement macro: #%s at %d:%d", 
+            macro_tok.value, macro_tok.line, macro_tok.col))
+    end
+end
+
 -- Parse expression-level macros (#FILE, #FUNCTION, #DEBUG)
 -- These appear in expressions and get replaced with values
 -- #DEBUG can also be a function call: #DEBUG() or #DEBUG(true/false)
@@ -185,6 +220,25 @@ function Macros.generate_call(expr, ctx)
         end
     else
         error(string.format("Unknown macro call: #%s() at %d:%d", expr.name, expr.line, expr.col))
+    end
+end
+
+-- Generate code for statement macros (#assert, #log)
+function Macros.generate_statement(stmt, ctx)
+    if stmt.kind == "assert_stmt" then
+        -- #assert(condition) -> if (!(condition)) { abort(); }
+        local Expressions = require("codegen.expressions")
+        local condition_code = Expressions.gen_expr(stmt.condition)
+        return string.format("if (!(%s)) { abort(); }", condition_code)
+    elseif stmt.kind == "log_stmt" then
+        -- #log("message") -> fprintf(stderr, "filename:linenumber message\n")
+        local Expressions = require("codegen.expressions")
+        local message_code = Expressions.gen_expr(stmt.message)
+        local filename = ctx.source_file
+        local line = stmt.line
+        return string.format("fprintf(stderr, \"%s:%d \" %s \"\\n\");", filename, line, message_code)
+    else
+        error(string.format("Unknown statement macro: %s at %d:%d", stmt.kind, stmt.line, stmt.col))
     end
 end
 

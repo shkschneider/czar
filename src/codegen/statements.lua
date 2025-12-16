@@ -1,6 +1,8 @@
 -- Statement generation for code generation
 -- Handles all statement types: return, free, var_decl, if, while, blocks
 
+local Macros = require("src.macros")
+
 local Statements = {}
 
 local function ctx() return _G.Codegen end
@@ -68,6 +70,9 @@ function Statements.gen_statement(stmt)
 
         ctx():mark_freed(expr.name)
         return destructor_code .. ctx():free_call(expr.name, true) .. ";"  -- Explicit free statement
+    elseif stmt.kind == "assert_stmt" or stmt.kind == "log_stmt" then
+        -- Handle statement-level macros (#assert, #log)
+        return Macros.generate_statement(stmt, ctx()) .. ";"
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. Codegen.Expressions.gen_expr(stmt.value) .. ");"
