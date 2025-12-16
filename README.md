@@ -19,6 +19,8 @@ This is a toy language I'm trying to make to learn more about languages and comp
 - Type casting with  cast<Type>  syntax
 - Arrays with compile-time bounds checking
 - Dynamic arrays (lists) with  new [...]  syntax for heap allocation
+- Internal types: pair<T:U>, array<T>, map<K:V> as struct-like types
+- Stack and heap allocation for internal types (heap with  new  keyword)
 - Directives for compile-time configuration (#FILE, #FUNCTION, #DEBUG, etc.)
 
 > Someone had good intentions at each step along the way, but nobody stopped to ask why
