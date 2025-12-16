@@ -122,6 +122,16 @@ function Parser:parse_struct()
         end
         
         table.insert(fields, { name = field_name, type = field_type })
+        
+        -- Commas are optional field separators (can use newlines instead)
+        -- Check for comma - if present and followed by RBRACE, it's a trailing comma
+        if self:match("COMMA") then
+            if self:check("RBRACE") then
+                break  -- Trailing comma before closing brace
+            end
+            -- Otherwise, continue to parse next field
+        end
+        -- If no comma, check if there's another field or closing brace
     end
     self:expect("RBRACE")
     return { kind = "struct", name = name, fields = fields }
@@ -208,7 +218,14 @@ function Parser:parse_function()
             if is_varargs and not self:check("RPAREN") then
                 error(string.format("varargs parameter '%s' must be the last parameter", param_name))
             end
-        until not self:match("COMMA")
+            -- Check for comma - if present and followed by RPAREN, it's a trailing comma
+            if not self:match("COMMA") then
+                break  -- No comma, this is the last parameter
+            end
+            if self:check("RPAREN") then
+                break  -- Trailing comma before closing paren
+            end
+        until false
     end
     self:expect("RPAREN")
     local return_type = self:parse_type()
@@ -731,7 +748,14 @@ function Parser:parse_postfix()
                         arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
                     end
                     table.insert(args, arg_expr)
-                until not self:match("COMMA")
+                    -- Check for comma - if present and followed by RPAREN, it's a trailing comma
+                    if not self:match("COMMA") then
+                        break  -- No comma, this is the last argument
+                    end
+                    if self:check("RPAREN") then
+                        break  -- Trailing comma before closing paren
+                    end
+                until false
             end
             self:expect("RPAREN")
             expr = { kind = "call", callee = expr, args = args }
@@ -783,7 +807,14 @@ function Parser:parse_postfix()
                             arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
                         end
                         table.insert(args, arg_expr)
-                    until not self:match("COMMA")
+                        -- Check for comma - if present and followed by RPAREN, it's a trailing comma
+                        if not self:match("COMMA") then
+                            break  -- No comma, this is the last argument
+                        end
+                        if self:check("RPAREN") then
+                            break  -- Trailing comma before closing paren
+                        end
+                    until false
                 end
                 self:expect("RPAREN")
                 expr = { kind = "static_method_call", type_name = expr.name, method = field, args = args }
@@ -1020,7 +1051,14 @@ function Parser:parse_primary()
         if not self:check("RBRACKET") then
             repeat
                 table.insert(elements, self:parse_expression())
-            until not self:match("COMMA")
+                -- Check for comma - if present and followed by RBRACKET, it's a trailing comma
+                if not self:match("COMMA") then
+                    break  -- No comma, this is the last element
+                end
+                if self:check("RBRACKET") then
+                    break  -- Trailing comma before closing bracket
+                end
+            until false
         end
         self:expect("RBRACKET")
         return { kind = "array_literal", elements = elements }
@@ -1038,7 +1076,14 @@ function Parser:parse_struct_literal(type_ident)
             self:expect("COLON")
             local value = self:parse_expression()
             table.insert(fields, { name = name, value = value })
-        until not self:match("COMMA")
+            -- Check for comma - if present and followed by RBRACE, it's a trailing comma
+            if not self:match("COMMA") then
+                break  -- No comma, this is the last field
+            end
+            if self:check("RBRACE") then
+                break  -- Trailing comma before closing brace
+            end
+        until false
     end
     self:expect("RBRACE")
     return { kind = "struct_literal", type_name = type_ident.name, fields = fields }
