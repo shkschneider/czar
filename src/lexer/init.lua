@@ -61,6 +61,7 @@ local simple_tokens = {
     ["-"] = "MINUS",
     ["*"] = "STAR",
     ["/"] = "SLASH",
+    ["%"] = "PERCENT",
     ["&"] = "AMPERSAND",
     ["!"] = "BANG",
     ["<"] = "LT",
@@ -78,6 +79,7 @@ local compound_tokens = {
     ["-="] = "MINUSEQUAL",
     ["*="] = "STAREQUAL",
     ["/="] = "SLASHEQUAL",
+    ["%="] = "PERCENTEQUAL",
 }
 
 local function is_alpha(c)

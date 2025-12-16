@@ -515,6 +515,9 @@ function Parser:parse_assignment()
     elseif self:match("SLASHEQUAL") then
         local value = self:parse_assignment()
         return { kind = "compound_assign", target = expr, operator = "/", value = value }
+    elseif self:match("PERCENTEQUAL") then
+        local value = self:parse_assignment()
+        return { kind = "compound_assign", target = expr, operator = "%", value = value }
     end
     return expr
 end
@@ -578,7 +581,7 @@ function Parser:parse_additive()
 end
 
 function Parser:parse_multiplicative()
-    return self:parse_binary_chain(self.parse_unary, { STAR = true, SLASH = true })
+    return self:parse_binary_chain(self.parse_unary, { STAR = true, SLASH = true, PERCENT = true })
 end
 
 function Parser:parse_binary_chain(next_parser, ops)
