@@ -286,10 +286,55 @@ function Codegen:generate()
         self:emit("} czar_string;")
         self:emit("")
         
-        -- Generate string helper functions
+        -- Generate string helper functions with memory safety
         self:emit("// String helper function: get C-style null-terminated string")
         self:emit("static inline char* czar_string_cstr(czar_string* s) {")
         self:emit("    return s->data;")
+        self:emit("}")
+        self:emit("")
+        
+        self:emit("// String helper function: ensure capacity with dynamic resizing")
+        self:emit("static inline void czar_string_ensure_capacity(czar_string* s, int32_t required_capacity) {")
+        self:emit("    if (s->capacity >= required_capacity) return;")
+        self:emit("    // Grow to next power of 2, minimum 16")
+        self:emit("    int32_t new_capacity = s->capacity ? s->capacity : 16;")
+        self:emit("    while (new_capacity < required_capacity) {")
+        self:emit("        new_capacity *= 2;")
+        self:emit("    }")
+        self:emit("    char* new_data = (char*)realloc(s->data, new_capacity);")
+        self:emit("    if (!new_data) {")
+        self:emit("        fprintf(stderr, \"ERROR: String realloc failed\\n\");")
+        self:emit("        exit(1);")
+        self:emit("    }")
+        self:emit("    s->data = new_data;")
+        self:emit("    s->capacity = new_capacity;")
+        self:emit("}")
+        self:emit("")
+        
+        self:emit("// String helper function: safe append (dynamically resizes, bounds-checked)")
+        self:emit("static inline void czar_string_append(czar_string* dest, const char* src, int32_t src_len) {")
+        self:emit("    int32_t required = dest->length + src_len + 1; // +1 for null terminator")
+        self:emit("    czar_string_ensure_capacity(dest, required);")
+        self:emit("    // Safe copy: we know we have enough space")
+        self:emit("    memcpy(dest->data + dest->length, src, src_len);")
+        self:emit("    dest->length += src_len;")
+        self:emit("    dest->data[dest->length] = '\\0';")
+        self:emit("}")
+        self:emit("")
+        
+        self:emit("// String helper function: safe concatenate two strings (bounds-checked)")
+        self:emit("static inline void czar_string_concat(czar_string* dest, czar_string* src) {")
+        self:emit("    czar_string_append(dest, src->data, src->length);")
+        self:emit("}")
+        self:emit("")
+        
+        self:emit("// String helper function: safe copy (bounds-checked, no buffer overrun)")
+        self:emit("static inline void czar_string_copy(czar_string* dest, const char* src, int32_t src_len) {")
+        self:emit("    int32_t required = src_len + 1; // +1 for null terminator")
+        self:emit("    czar_string_ensure_capacity(dest, required);")
+        self:emit("    memcpy(dest->data, src, src_len);")
+        self:emit("    dest->length = src_len;")
+        self:emit("    dest->data[dest->length] = '\\0';")
         self:emit("}")
         self:emit("")
     end
@@ -302,6 +347,23 @@ function Codegen:generate()
     self:gen_wrapper(has_main)
 
     local result = join(self.out, "\n") .. "\n"
+    
+    -- Safety check: warn about unsafe C string functions in generated code
+    local unsafe_functions = {
+        "strcpy", "strcat", "strncpy", "strncat",
+        "gets", "sprintf"  -- Also check other notoriously unsafe functions
+    }
+    for _, unsafe_func in ipairs(unsafe_functions) do
+        -- Match function calls: funcname( with possible whitespace
+        if result:match(unsafe_func .. "%s*%(") then
+            local Warnings = require("src.warnings")
+            print(Warnings.format("WARNING", self.source_file, 0, "unsafe-c-function",
+                string.format("Generated code contains unsafe C function '%s'. " ..
+                    "Consider using safer alternatives (memcpy, strchr, strstr, strspn, strcspn).",
+                    unsafe_func), self.source_path))
+        end
+    end
+    
     return result
 end
 
