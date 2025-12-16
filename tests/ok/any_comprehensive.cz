@@ -24,12 +24,12 @@ fn swap_pointers(mut GenericContainer* container) void {
 }
 
 fn get_point_x(any ptr) i32 {
-    Point* p = cast<Point*> ptr
+    Point* p = ptr as Point*
     return p.x
 }
 
 fn get_box_width(any ptr) i32 {
-    Box* b = cast<Box*> ptr
+    Box* b = ptr as Box*
     return b.width
 }
 
@@ -40,8 +40,8 @@ fn main() i32 {
 
     // Store both in a container as 'any'
     mut GenericContainer container = GenericContainer {
-        ptr1: cast<any> p,
-        ptr2: cast<any> b
+        ptr1: p as any,
+        ptr2: b as any
     }
 
     // Access through any

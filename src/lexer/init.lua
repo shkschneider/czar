@@ -24,6 +24,7 @@ local keywords = {
     ["new"] = true,
     ["free"] = true,
     ["is"] = true,
+    ["as"] = true,
     ["type"] = true,
     ["sizeof"] = true,
     ["i8"] = true,
