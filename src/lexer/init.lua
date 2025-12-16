@@ -17,6 +17,7 @@ local keywords = {
     ["while"] = true,
     ["for"] = true,
     ["in"] = true,
+    ["repeat"] = true,
     ["true"] = true,
     ["false"] = true,
     ["null"] = true,

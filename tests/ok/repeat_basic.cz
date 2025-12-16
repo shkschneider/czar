@@ -1,0 +1,10 @@
+// Test basic repeat loop
+fn main() i32 {
+    mut i32 sum = 0
+    
+    repeat 5 {
+        sum = sum + 10
+    }
+    
+    return sum - 50  // 5 * 10 = 50
+}
