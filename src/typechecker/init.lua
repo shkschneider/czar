@@ -25,6 +25,7 @@ function Typechecker.new(ast, options)
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
         source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
         loop_depth = 0,    -- Track if we're inside a loop for break/continue validation
+        require_main = options.require_main or false,  -- Whether to enforce presence of main function
     }
     setmetatable(self, Typechecker)
     
@@ -112,6 +113,11 @@ function Typechecker:check()
     
     -- Pass 2: Type check all functions
     self:check_all_functions()
+    
+    -- Pass 3: Validate main function if required for binary output
+    if self.require_main then
+        self:validate_main_function()
+    end
     
     -- Report any errors
     if #self.errors > 0 then
@@ -940,6 +946,50 @@ function Typechecker:type_to_string(type_node)
     end
     
     return "unknown"
+end
+
+-- Validate that a main function exists with the correct signature
+function Typechecker:validate_main_function()
+    -- Check if main function exists in global functions
+    local global_functions = self.functions["__global__"]
+    if not global_functions or not global_functions["main"] then
+        local msg = "Missing 'main' function. When building a binary, a 'main' function with signature 'fn main() i32' is required"
+        local formatted_error = Errors.format("ERROR", self.source_file, 0,
+            Errors.ErrorType.MISSING_MAIN_FUNCTION, msg, self.source_path)
+        self:add_error(formatted_error)
+        return
+    end
+    
+    -- Validate main function signature
+    local main_func = global_functions["main"]
+    
+    -- Check return type (must be i32)
+    local return_type = main_func.return_type
+    if not return_type or 
+       return_type.kind ~= "named_type" or 
+       return_type.name ~= "i32" then
+        local line = main_func.line or 0
+        local actual_return = return_type and self:type_to_string(return_type) or "unknown"
+        local msg = string.format(
+            "Invalid 'main' function signature: return type must be i32, got %s. Expected signature: 'fn main() i32'",
+            actual_return
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.INVALID_MAIN_SIGNATURE, msg, self.source_path)
+        self:add_error(formatted_error)
+    end
+    
+    -- Check parameters (must have no parameters)
+    if main_func.params and #main_func.params > 0 then
+        local line = main_func.line or 0
+        local msg = string.format(
+            "Invalid 'main' function signature: must have no parameters, got %d parameter(s). Expected signature: 'fn main() i32'",
+            #main_func.params
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.INVALID_MAIN_SIGNATURE, msg, self.source_path)
+        self:add_error(formatted_error)
+    end
 end
 
 -- Module entry point

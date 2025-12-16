@@ -19,6 +19,9 @@ function Build.build(source_path, output_path, options)
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
     end
 
+    -- When building a binary, require a main function
+    options.require_main = true
+
     -- Step 1: Compile to .c (calls compile.lua)
     local ok, c_path = compile_module.compile(source_path, options)
     if not ok then
