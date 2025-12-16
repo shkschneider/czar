@@ -1,0 +1,35 @@
+// Comprehensive test showing dynamic arrays (new [...]) vs slices
+// This test demonstrates the difference:
+// - Stack arrays: Type[N] or Type[*]
+// - Dynamic arrays: Type[] = new [...]  (heap-allocated)
+// - Slices: Type[] = array[start:end]  (view into array)
+
+fn modify_slice(mut i32[] slice, i32 len) void {
+    mut i32 i = 0
+    while i < len {
+        slice[i] = slice[i] * 2
+        i = i + 1
+    }
+}
+
+fn main() i32 {
+    // 1. Stack array (fixed size, stack-allocated)
+    i32[5] stack_array = [1, 2, 3, 4, 5]
+    
+    // 2. Dynamic array (heap-allocated with new)
+    i32[] dynamic_array = new [10, 20, 30, 40]
+    
+    // 3. Slice of stack array (view)
+    i32[] slice_of_stack = stack_array[1:4]  // elements 1, 2, 3
+    
+    // 4. Dynamic array can be passed as slice
+    modify_slice(dynamic_array, 4)
+    
+    // 5. Verify results
+    i32 stack_sum = stack_array[0] + stack_array[1] + stack_array[2]  // 1 + 2 + 3 = 6
+    i32 dynamic_sum = dynamic_array[0] + dynamic_array[1]  // 20 + 40 = 60 (doubled)
+    i32 slice_sum = slice_of_stack[0] + slice_of_stack[1]  // 2 + 3 = 5
+    
+    // Expected: 6 + 60 + 5 = 71
+    return (stack_sum + dynamic_sum + slice_sum) - 71
+}
