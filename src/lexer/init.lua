@@ -68,6 +68,7 @@ local simple_tokens = {
     ["%"] = "PERCENT",
     ["&"] = "AMPERSAND",
     ["!"] = "BANG",
+    ["?"] = "QUESTION",
     ["<"] = "LT",
     [">"] = "GT",
     ["="] = "EQUAL",
