@@ -4,7 +4,13 @@ struct Vec2 {
     i32 z,
 }
 
-fn test(i32 x, i32 y, i32 z) {}
+enum Color {
+    RED,
+    GREEN,
+    BLUE,
+}
+
+fn test(i32 x, i32 y, i32 z,) void {}
 
 fn main() i32 {
     test(

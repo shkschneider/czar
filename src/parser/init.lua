@@ -146,7 +146,14 @@ function Parser:parse_enum()
         repeat
             local value_tok = self:expect("IDENT")
             table.insert(values, { name = value_tok.value, line = value_tok.line, col = value_tok.col })
-        until not self:match("COMMA")
+            -- Check for comma - if present and followed by RBRACE, it's a trailing comma
+            if not self:match("COMMA") then
+                break  -- No comma, this is the last value
+            end
+            if self:check("RBRACE") then
+                break  -- Trailing comma before closing brace
+            end
+        until false
     end
     self:expect("RBRACE")
     return { kind = "enum", name = name, values = values, line = start_tok.line }
@@ -228,7 +235,14 @@ function Parser:parse_function()
         until false
     end
     self:expect("RPAREN")
-    local return_type = self:parse_type()
+    -- Return type is optional; if not specified, default to void
+    local return_type
+    if self:check("LBRACE") then
+        -- No return type specified, default to void
+        return_type = { kind = "named_type", name = "void" }
+    else
+        return_type = self:parse_type()
+    end
     local body = self:parse_block()
     return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body }
 end
@@ -933,7 +947,14 @@ function Parser:parse_primary()
             if not self:check("RBRACKET") then
                 repeat
                     table.insert(elements, self:parse_expression())
-                until not self:match("COMMA")
+                    -- Check for comma - if present and followed by RBRACKET, it's a trailing comma
+                    if not self:match("COMMA") then
+                        break  -- No comma, this is the last element
+                    end
+                    if self:check("RBRACKET") then
+                        break  -- Trailing comma before closing bracket
+                    end
+                until false
             end
             self:expect("RBRACKET")
             return { kind = "new_array", elements = elements }
@@ -947,7 +968,14 @@ function Parser:parse_primary()
             if not self:check("RBRACKET") then
                 repeat
                     table.insert(elements, self:parse_expression())
-                until not self:match("COMMA")
+                    -- Check for comma - if present and followed by RBRACKET, it's a trailing comma
+                    if not self:match("COMMA") then
+                        break  -- No comma, this is the last element
+                    end
+                    if self:check("RBRACKET") then
+                        break  -- Trailing comma before closing bracket
+                    end
+                until false
             end
             self:expect("RBRACKET")
             return { kind = "new_array", elements = elements }
@@ -963,7 +991,14 @@ function Parser:parse_primary()
                     self:expect("COLON")
                     local value = self:parse_expression()
                     table.insert(entries, { key = key, value = value })
-                until not self:match("COMMA")
+                    -- Check for comma - if present and followed by RBRACE, it's a trailing comma
+                    if not self:match("COMMA") then
+                        break  -- No comma, this is the last entry
+                    end
+                    if self:check("RBRACE") then
+                        break  -- Trailing comma before closing brace
+                    end
+                until false
             end
             self:expect("RBRACE")
             return { kind = "new_map", entries = entries }
@@ -991,7 +1026,14 @@ function Parser:parse_primary()
                 self:expect("COLON")
                 local value = self:parse_expression()
                 table.insert(fields, { name = name, value = value })
-            until not self:match("COMMA")
+                -- Check for comma - if present and followed by RBRACE, it's a trailing comma
+                if not self:match("COMMA") then
+                    break  -- No comma, this is the last field
+                end
+                if self:check("RBRACE") then
+                    break  -- Trailing comma before closing brace
+                end
+            until false
         end
         self:expect("RBRACE")
         return { kind = "new_heap", type_name = type_name, fields = fields }
@@ -1003,7 +1045,14 @@ function Parser:parse_primary()
         if not self:check("RBRACKET") then
             repeat
                 table.insert(elements, self:parse_expression())
-            until not self:match("COMMA")
+                -- Check for comma - if present and followed by RBRACKET, it's a trailing comma
+                if not self:match("COMMA") then
+                    break  -- No comma, this is the last element
+                end
+                if self:check("RBRACKET") then
+                    break  -- Trailing comma before closing bracket
+                end
+            until false
         end
         self:expect("RBRACKET")
         return { kind = "array_literal", elements = elements }
@@ -1018,7 +1067,14 @@ function Parser:parse_primary()
                 self:expect("COLON")
                 local value = self:parse_expression()
                 table.insert(entries, { key = key, value = value })
-            until not self:match("COMMA")
+                -- Check for comma - if present and followed by RBRACE, it's a trailing comma
+                if not self:match("COMMA") then
+                    break  -- No comma, this is the last entry
+                end
+                if self:check("RBRACE") then
+                    break  -- Trailing comma before closing brace
+                end
+            until false
         end
         self:expect("RBRACE")
         return { kind = "map_literal", entries = entries }
