@@ -95,6 +95,22 @@ function Expressions.gen_expr(expr)
         -- Perform the cast (same as regular cast for now)
         -- TODO: Add runtime type checking to return sentinel/zero on failure
         return string.format("((%s)%s)", target_type_str, expr_str)
+    elseif expr.kind == "safe_cast" then
+        -- #cast<Type>(value, fallback) -> safe cast with fallback
+        -- For now, just performs regular cast (no runtime checking)
+        -- Future: add runtime validation and return fallback on failure
+        local target_type_str = ctx():c_type(expr.target_type)
+        local value_str = Expressions.gen_expr(expr.value)
+        local fallback_str = Expressions.gen_expr(expr.fallback)
+        
+        -- Handle pointer casting
+        if expr.target_type.kind == "pointer" then
+            target_type_str = ctx():c_type(expr.target_type.to) .. "*"
+        end
+
+        -- For now, just cast (ignoring fallback)
+        -- TODO: Add runtime check: if cast valid, return cast value, else return fallback
+        return string.format("((%s)%s)", target_type_str, value_str)
     elseif expr.kind == "clone" then
         -- clone(expr) or clone<Type>(expr)
         -- Allocate on heap and copy the value

@@ -1,0 +1,20 @@
+// Test #cast<Type>(value, fallback) directive
+fn main() i32 {
+    // Test safe cast with fallback
+    i32 i = 1000
+    
+    // Use #cast directive with fallback value
+    // For now, performs regular cast (no runtime checking)
+    // Fallback must match target type exactly
+    i64 big = #cast<i64>(i, 0 as i64)
+    u8 small = #cast<u8>(i, 255 as u8)
+    
+    // Fallback must be same type as target
+    i32 result = #cast<i32>(big, 42)
+    
+    if big == 1000 {
+        return 0  // success
+    }
+    
+    return 1
+}
