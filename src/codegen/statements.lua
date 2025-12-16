@@ -165,6 +165,8 @@ function Statements.gen_statement(stmt)
         return Statements.gen_if(stmt)
     elseif stmt.kind == "while" then
         return Statements.gen_while(stmt)
+    elseif stmt.kind == "for" then
+        return Statements.gen_for(stmt)
     else
         error("unknown statement kind: " .. tostring(stmt.kind))
     end
@@ -245,6 +247,91 @@ function Statements.gen_while(stmt)
         table.insert(parts, "    " .. Statements.gen_statement(s))
     end
     -- Insert cleanup for while body
+    local cleanup = ctx():get_scope_cleanup()
+    for _, cleanup_code in ipairs(cleanup) do
+        table.insert(parts, "    " .. cleanup_code)
+    end
+    ctx():pop_scope()
+
+    table.insert(parts, "}")
+    return join(parts, "\n    ")
+end
+
+function Statements.gen_for(stmt)
+    local parts = {}
+    
+    -- Generate collection expression
+    local collection_expr = Codegen.Expressions.gen_expr(stmt.collection)
+    
+    -- Get collection type from the collection identifier
+    local collection_type = nil
+    if stmt.collection.kind == "identifier" then
+        collection_type = Codegen.Types.get_var_type(stmt.collection.name)
+    end
+    
+    -- Determine the size expression
+    local size_expr
+    
+    if collection_type and collection_type.kind == "array" then
+        -- For arrays, use the compile-time size
+        size_expr = tostring(collection_type.size)
+    elseif collection_type and (collection_type.kind == "slice" or collection_type.kind == "varargs") then
+        -- For slices and varargs, use the count variable
+        if stmt.collection.kind == "identifier" then
+            size_expr = stmt.collection.name .. "_count"
+        else
+            error("For loops over slices require explicit size tracking")
+        end
+    else
+        -- Unknown type, use a fallback (should not happen after typechecking)
+        size_expr = "0"
+    end
+    
+    -- Generate index variable name
+    local index_var = stmt.index_is_underscore and "_for_idx" or stmt.index_name
+    
+    -- Generate item variable name  
+    local item_var = stmt.item_is_underscore and "_for_item" or stmt.item_name
+    
+    -- Generate for loop header
+    table.insert(parts, string.format("for (int32_t %s = 0; %s < %s; %s++) {",
+        index_var, index_var, size_expr, index_var))
+    
+    -- Push scope for for body
+    ctx():push_scope()
+    
+    -- Add index variable to scope if not underscore
+    if not stmt.index_is_underscore then
+        ctx():add_var(stmt.index_name, { kind = "named_type", name = "i32" }, false)
+    end
+    
+    -- Generate item variable declaration
+    if not stmt.item_is_underscore and collection_type then
+        local element_type = collection_type.element_type
+        local c_type = Codegen.Types.c_type(element_type)
+        
+        -- Determine if item should be a pointer or value
+        if stmt.item_mutable then
+            -- Mutable item: get pointer to array element
+            table.insert(parts, string.format("    %s* %s = &%s[%s];",
+                c_type, item_var, collection_expr, index_var))
+            -- Add to scope as pointer type
+            ctx():add_var(stmt.item_name, { kind = "pointer", to = element_type }, true)
+        else
+            -- Immutable item: copy value
+            table.insert(parts, string.format("    const %s %s = %s[%s];",
+                c_type, item_var, collection_expr, index_var))
+            -- Add to scope as value type
+            ctx():add_var(stmt.item_name, element_type, false)
+        end
+    end
+    
+    -- Generate body statements
+    for _, s in ipairs(stmt.body.statements) do
+        table.insert(parts, "    " .. Statements.gen_statement(s))
+    end
+    
+    -- Insert cleanup for for body
     local cleanup = ctx():get_scope_cleanup()
     for _, cleanup_code in ipairs(cleanup) do
         table.insert(parts, "    " .. cleanup_code)
