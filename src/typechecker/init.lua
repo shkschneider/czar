@@ -25,7 +25,81 @@ function Typechecker.new(ast, options)
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
         source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
     }
-    return setmetatable(self, Typechecker)
+    setmetatable(self, Typechecker)
+    
+    -- Register builtin functions
+    self:register_builtins()
+    
+    return self
+end
+
+-- Register builtin functions that have special codegen treatment
+function Typechecker:register_builtins()
+    -- Create __global__ function table if it doesn't exist
+    if not self.functions["__global__"] then
+        self.functions["__global__"] = {}
+    end
+    
+    -- Register println: takes a string, returns void
+    self.functions["__global__"]["println"] = {
+        name = "println",
+        params = {
+            {
+                name = "str",
+                type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                mutable = false
+            }
+        },
+        return_type = { kind = "named_type", name = "void" },
+        is_builtin = true
+    }
+    
+    -- Register print: takes a string, returns void
+    self.functions["__global__"]["print"] = {
+        name = "print",
+        params = {
+            {
+                name = "str",
+                type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                mutable = false
+            }
+        },
+        return_type = { kind = "named_type", name = "void" },
+        is_builtin = true
+    }
+    
+    -- Register printf: takes a format string and variadic arguments, returns void
+    self.functions["__global__"]["printf"] = {
+        name = "printf",
+        params = {
+            {
+                name = "format",
+                type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                mutable = false
+            },
+            {
+                name = "args",
+                type = { kind = "varargs", element_type = { kind = "named_type", name = "any" } },
+                mutable = false
+            }
+        },
+        return_type = { kind = "named_type", name = "void" },
+        is_builtin = true
+    }
+    
+    -- Register print_i32 for compatibility
+    self.functions["__global__"]["print_i32"] = {
+        name = "print_i32",
+        params = {
+            {
+                name = "value",
+                type = { kind = "named_type", name = "i32" },
+                mutable = false
+            }
+        },
+        return_type = { kind = "named_type", name = "void" },
+        is_builtin = true
+    }
 end
 
 -- Main entry point: type check the entire AST
