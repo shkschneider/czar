@@ -251,6 +251,15 @@ end
 
 function Parser:parse_type()
     local tok = self:current()
+    -- Check for map type: map[KeyType]ValueType
+    if self:check("KEYWORD", "map") then
+        self:advance()
+        self:expect("LBRACKET")
+        local key_type = self:parse_type()
+        self:expect("RBRACKET")
+        local value_type = self:parse_type()
+        return { kind = "map", key_type = key_type, value_type = value_type }
+    end
     if is_type_token(tok) then
         self:advance()
         local base_type = { kind = "named_type", name = tok.value }
@@ -366,6 +375,10 @@ end
 function Parser:is_type_start()
     local tok = self:current()
     if not tok then return false end
+    -- Check for map keyword
+    if tok.type == "KEYWORD" and tok.value == "map" then
+        return true
+    end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
     if tok.type == "KEYWORD" and TYPE_KEYWORDS[tok.value] then
         return true
@@ -787,8 +800,29 @@ function Parser:parse_primary()
         local expr = self:parse_unary()  -- Parse next expression at unary level
         return { kind = "clone", target_type = target_type, expr = expr }
     elseif tok.type == "KEYWORD" and tok.value == "new" then
-        -- new Type { fields... } or new [ elements... ]
+        -- new Type { fields... } or new [ elements... ] or new map[K]V { key: value, ... }
         self:advance()
+        
+        -- Check if this is a map: new map[K]V { ... }
+        if self:check("KEYWORD", "map") then
+            self:advance()
+            self:expect("LBRACKET")
+            local key_type = self:parse_type()
+            self:expect("RBRACKET")
+            local value_type = self:parse_type()
+            self:expect("LBRACE")
+            local entries = {}
+            if not self:check("RBRACE") then
+                repeat
+                    local key = self:parse_expression()
+                    self:expect("COLON")
+                    local value = self:parse_expression()
+                    table.insert(entries, { key = key, value = value })
+                until not self:match("COMMA")
+            end
+            self:expect("RBRACE")
+            return { kind = "new_map", key_type = key_type, value_type = value_type, entries = entries }
+        end
         
         -- Check if this is a dynamic array: new [...]
         if self:check("LBRACKET") then
