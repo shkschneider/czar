@@ -51,9 +51,33 @@ function Statements.gen_statement(stmt)
             return "return " .. Codegen.Expressions.gen_expr(stmt.value) .. ";"
         end
     elseif stmt.kind == "break" then
-        return "break;"
+        local level = stmt.level or 1
+        if level == 1 then
+            return "break;"
+        else
+            -- Multi-level break: use goto to break label
+            local target_loop = ctx().loop_stack[#ctx().loop_stack - level + 1]
+            if target_loop then
+                return "goto " .. target_loop.break_label .. ";"
+            else
+                -- Should have been caught by typechecker
+                return "break;"
+            end
+        end
     elseif stmt.kind == "continue" then
-        return "continue;"
+        local level = stmt.level or 1
+        if level == 1 then
+            return "continue;"
+        else
+            -- Multi-level continue: use goto to continue label
+            local target_loop = ctx().loop_stack[#ctx().loop_stack - level + 1]
+            if target_loop then
+                return "goto " .. target_loop.continue_label .. ";"
+            else
+                -- Should have been caught by typechecker
+                return "continue;"
+            end
+        end
     elseif stmt.kind == "free" then
         -- Explicit free statement
         local expr = stmt.value
@@ -250,6 +274,19 @@ end
 
 function Statements.gen_while(stmt)
     local parts = {}
+    
+    -- Generate unique labels for multi-level break/continue
+    ctx().loop_label_counter = ctx().loop_label_counter + 1
+    local loop_id = ctx().loop_label_counter
+    local break_label = "_loop_break_" .. loop_id
+    local continue_label = "_loop_continue_" .. loop_id
+    
+    -- Push loop info onto stack
+    table.insert(ctx().loop_stack, {
+        break_label = break_label,
+        continue_label = continue_label
+    })
+    
     table.insert(parts, "while (" .. Codegen.Expressions.gen_expr(stmt.condition) .. ") {")
 
     -- Push scope for while body
@@ -264,12 +301,30 @@ function Statements.gen_while(stmt)
     end
     ctx():pop_scope()
 
+    table.insert(parts, continue_label .. ": ;")
     table.insert(parts, "}")
+    table.insert(parts, break_label .. ": ;")
+    
+    -- Pop loop info from stack
+    table.remove(ctx().loop_stack)
+    
     return join(parts, "\n    ")
 end
 
 function Statements.gen_for(stmt)
     local parts = {}
+    
+    -- Generate unique labels for multi-level break/continue
+    ctx().loop_label_counter = ctx().loop_label_counter + 1
+    local loop_id = ctx().loop_label_counter
+    local break_label = "_loop_break_" .. loop_id
+    local continue_label = "_loop_continue_" .. loop_id
+    
+    -- Push loop info onto stack
+    table.insert(ctx().loop_stack, {
+        break_label = break_label,
+        continue_label = continue_label
+    })
     
     -- Generate collection expression
     local collection_expr = Codegen.Expressions.gen_expr(stmt.collection)
@@ -349,12 +404,30 @@ function Statements.gen_for(stmt)
     end
     ctx():pop_scope()
 
+    table.insert(parts, continue_label .. ": ;")
     table.insert(parts, "}")
+    table.insert(parts, break_label .. ": ;")
+    
+    -- Pop loop info from stack
+    table.remove(ctx().loop_stack)
+    
     return join(parts, "\n    ")
 end
 
 function Statements.gen_repeat(stmt)
     local parts = {}
+    
+    -- Generate unique labels for multi-level break/continue
+    ctx().loop_label_counter = ctx().loop_label_counter + 1
+    local loop_id = ctx().loop_label_counter
+    local break_label = "_loop_break_" .. loop_id
+    local continue_label = "_loop_continue_" .. loop_id
+    
+    -- Push loop info onto stack
+    table.insert(ctx().loop_stack, {
+        break_label = break_label,
+        continue_label = continue_label
+    })
     
     -- Generate count expression
     local count_expr = Codegen.Expressions.gen_expr(stmt.count)
@@ -382,7 +455,13 @@ function Statements.gen_repeat(stmt)
     end
     ctx():pop_scope()
 
+    table.insert(parts, continue_label .. ": ;")
     table.insert(parts, "}")
+    table.insert(parts, break_label .. ": ;")
+    
+    -- Pop loop info from stack
+    table.remove(ctx().loop_stack)
+
     return join(parts, "\n    ")
 end
 

@@ -374,12 +374,24 @@ function Parser:parse_statement()
         return { kind = "return", value = expr }
     elseif self:check("KEYWORD", "break") then
         self:advance()
+        -- Check for optional level (break N)
+        local level = nil
+        if self:check("INT") then
+            level = tonumber(self:current().value)
+            self:advance()
+        end
         self:match("SEMICOLON")  -- semicolons are optional
-        return { kind = "break" }
+        return { kind = "break", level = level }
     elseif self:check("KEYWORD", "continue") then
         self:advance()
+        -- Check for optional level (continue N)
+        local level = nil
+        if self:check("INT") then
+            level = tonumber(self:current().value)
+            self:advance()
+        end
         self:match("SEMICOLON")  -- semicolons are optional
-        return { kind = "continue" }
+        return { kind = "continue", level = level }
     elseif self:check("KEYWORD", "free") then
         self:advance()
         local expr = self:parse_expression()
