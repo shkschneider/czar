@@ -17,8 +17,8 @@ local build = require("build")
 local run = require("run")
 
 -- Simple file reader utility
--- Note: This is duplicated in generator.lua to avoid circular dependencies
--- (generator needs it for its API, and main needs it for lexer/parser commands)
+-- Note: This is duplicated in generate.lua to avoid circular dependencies
+-- (generate needs it for its API, and main needs it for lexer/parser commands)
 local function read_file(path)
     local handle, err = io.open(path, "r")
     if not handle then
