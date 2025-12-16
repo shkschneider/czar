@@ -1,0 +1,7 @@
+// Test error: break level exceeds loop depth
+fn main() i32 {
+    repeat 2 {
+        break 3  // ERROR: only 1 level deep
+    }
+    return 0
+}

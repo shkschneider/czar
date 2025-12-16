@@ -1,0 +1,57 @@
+// Test multi-level break
+fn test_break_2_levels() i32 {
+    mut i32 count = 0
+    
+    repeat 5 {
+        repeat 5 {
+            count = count + 1
+            if count == 8 {
+                break 2  // Break out of both loops
+            }
+        }
+    }
+    
+    return count  // Should be 8
+}
+
+fn test_break_3_levels() i32 {
+    mut i32 sum = 0
+    
+    repeat 3 {
+        repeat 3 {
+            repeat 3 {
+                sum = sum + 1
+                if sum == 10 {
+                    break 3  // Break out of all 3 loops
+                }
+            }
+        }
+    }
+    
+    return sum  // Should be 10
+}
+
+fn test_break_mixed_loops() i32 {
+    mut i32 count = 0
+    mut i32 i = 0
+    
+    while i < 10 {
+        i = i + 1
+        repeat 5 {
+            count = count + 1
+            if count == 12 {
+                break 2  // Break out of repeat and while
+            }
+        }
+    }
+    
+    return count  // Should be 12
+}
+
+fn main() i32 {
+    i32 a = test_break_2_levels()     // 8
+    i32 b = test_break_3_levels()     // 10
+    i32 c = test_break_mixed_loops()  // 12
+    
+    return (a + b + c) - 30  // 8 + 10 + 12 = 30
+}

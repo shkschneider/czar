@@ -1,0 +1,9 @@
+// Test error: continue level exceeds loop depth
+fn main() i32 {
+    while true {
+        repeat 2 {
+            continue 3  // ERROR: only 2 levels deep
+        }
+    }
+    return 0
+}
