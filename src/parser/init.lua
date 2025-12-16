@@ -1,6 +1,8 @@
 -- Recursive descent / Pratt parser for the minimal Czar grammar.
 -- Consumes the token stream from lexer.lua and produces an AST.
 
+local Directives = require("src.directives")
+
 local Parser = {}
 Parser.__index = Parser
 
@@ -94,62 +96,10 @@ end
 
 function Parser:parse_top_level_directive()
     local directive_tok = self:expect("DIRECTIVE")
-    local directive_name = directive_tok.value:upper()
-    
-    -- #malloc and #free directives take a function name argument
-    if directive_name == "MALLOC" or directive_name == "FREE" then
-        -- Accept both IDENT and KEYWORD tokens (e.g., "malloc" and "free" are keywords)
-        local func_name_tok = self:current()
-        if not func_name_tok or (func_name_tok.type ~= "IDENT" and func_name_tok.type ~= "KEYWORD") then
-            error(string.format("expected function name after #%s but found %s", directive_name:lower(), token_label(func_name_tok)))
-        end
-        self:advance()
-        
-        return { 
-            kind = "allocator_directive", 
-            directive_type = directive_name:lower(),
-            function_name = func_name_tok.value,
-            line = directive_tok.line,
-            col = directive_tok.col
-        }
-    elseif directive_name == "ALIAS" then
-        -- #alias mytype existing_type
-        -- mytype is one word, existing_type can be multiple tokens (rest of the line)
-        local alias_name_tok = self:expect("IDENT")
-        local alias_name = alias_name_tok.value
-        
-        -- Collect all remaining tokens until end of line/statement as the target type string
-        -- We'll collect tokens and concatenate them with appropriate spacing
-        local target_type_tokens = {}
-        
-        -- Keep reading tokens until we hit EOF, a directive, struct, or fn keyword
-        while self:current() and 
-              not self:check("EOF") and 
-              not self:check("DIRECTIVE") and
-              not (self:check("KEYWORD", "struct") or self:check("KEYWORD", "fn")) do
-            local tok = self:current()
-            table.insert(target_type_tokens, tok.value)
-            self:advance()
-        end
-        
-        if #target_type_tokens == 0 then
-            error(string.format("expected target type after #alias %s at %d:%d", 
-                alias_name, directive_tok.line, directive_tok.col))
-        end
-        
-        -- Join tokens to form the target type string
-        local target_type_str = table.concat(target_type_tokens, " ")
-        
-        return {
-            kind = "alias_directive",
-            alias_name = alias_name,
-            target_type_str = target_type_str,
-            line = directive_tok.line,
-            col = directive_tok.col
-        }
-    else
-        error(string.format("unknown top-level directive: #%s at %d:%d", directive_tok.value, directive_tok.line, directive_tok.col))
-    end
+    -- Delegate to centralized Directives module
+    -- Store token_label as a module function for error messages
+    Parser.token_label = token_label
+    return Directives.parse_top_level(self, directive_tok)
 end
 
 function Parser:parse_struct()
@@ -955,30 +905,8 @@ function Parser:parse_primary()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
     elseif tok.type == "DIRECTIVE" then
         local directive_tok = self:advance()
-        local directive_name = directive_tok.value:upper()
-        
-        -- Handle #cast<Type>(value, fallback) directive
-        if directive_name == "CAST" then
-            self:expect("LT")
-            local target_type = self:parse_type()
-            self:expect("GT")
-            self:expect("LPAREN")
-            local value_expr = self:parse_expression()
-            self:expect("COMMA")
-            local fallback_expr = self:parse_expression()
-            self:expect("RPAREN")
-            return { 
-                kind = "safe_cast", 
-                target_type = target_type, 
-                value = value_expr, 
-                fallback = fallback_expr,
-                line = directive_tok.line, 
-                col = directive_tok.col 
-            }
-        else
-            -- Simple directives like #FILE, #FUNCTION, #DEBUG
-            return { kind = "directive", name = directive_tok.value, line = directive_tok.line, col = directive_tok.col }
-        end
+        -- Delegate to centralized Directives module
+        return Directives.parse_expression(self, directive_tok)
     elseif tok.type == "LPAREN" then
         self:advance()
         local expr = self:parse_expression()
