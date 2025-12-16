@@ -61,6 +61,10 @@ SOURCES=(
     codegen/functions.lua
     codegen/statements.lua
     codegen/expressions.lua
+    codegen/expressions/literals.lua
+    codegen/expressions/operators.lua
+    codegen/expressions/calls.lua
+    codegen/expressions/collections.lua
     errors.lua
     warnings.lua
     macros.lua
