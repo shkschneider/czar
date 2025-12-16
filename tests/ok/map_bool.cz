@@ -1,6 +1,6 @@
 // Test map with bool values
 fn main() i32 {
-    i32{bool} flags = new map<i32:bool> {
+    i32{bool} flags = new {
         1: true,
         2: false
     }

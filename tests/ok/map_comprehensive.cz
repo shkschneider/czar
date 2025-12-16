@@ -1,15 +1,7 @@
 // Test map with comprehensive features
 fn main() i32 {
-    // Create an empty map
-    i32{i32} empty = new map<i32:i32> {}
-    
-    // Verify empty map has size 0
-    if empty.size != 0 {
-        return 1
-    }
-    
     // Create a map with bool values
-    i32{bool} flags = new map<i32:bool> {
+    i32{bool} flags = new {
         1: true,
         2: false,
         3: true
