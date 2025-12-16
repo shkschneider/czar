@@ -1,0 +1,5 @@
+// Test that break outside loop fails
+fn main() i32 {
+    break
+    return 0
+}
