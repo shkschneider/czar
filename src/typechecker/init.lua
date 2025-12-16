@@ -132,7 +132,7 @@ function Typechecker:collect_declarations()
                 end
                 self.functions[type_name][item.name] = item
             end
-        elseif item.kind == "alias_directive" then
+        elseif item.kind == "alias_macro" then
             -- Store type aliases
             if self.type_aliases[item.alias_name] then
                 local line = item.line or 0
@@ -143,8 +143,8 @@ function Typechecker:collect_declarations()
             else
                 self.type_aliases[item.alias_name] = item.target_type_str
             end
-        elseif item.kind == "directive" then
-            -- Store other directives but don't type check them
+        elseif item.kind == "allocator_macro" then
+            -- Store other macros but don't type check them
         end
     end
 end

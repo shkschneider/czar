@@ -1,7 +1,7 @@
 -- Recursive descent / Pratt parser for the minimal Czar grammar.
 -- Consumes the token stream from lexer.lua and produces an AST.
 
-local Directives = require("src.directives")
+local Macros = require("src.macros")
 
 local Parser = {}
 Parser.__index = Parser
@@ -96,10 +96,10 @@ end
 
 function Parser:parse_top_level_directive()
     local directive_tok = self:expect("DIRECTIVE")
-    -- Delegate to centralized Directives module
+    -- Delegate to centralized Macros module
     -- Store token_label as a module function for error messages
     Parser.token_label = token_label
-    return Directives.parse_top_level(self, directive_tok)
+    return Macros.parse_top_level(self, directive_tok)
 end
 
 function Parser:parse_struct()
@@ -935,8 +935,8 @@ function Parser:parse_primary()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }
     elseif tok.type == "DIRECTIVE" then
         local directive_tok = self:advance()
-        -- Delegate to centralized Directives module
-        return Directives.parse_expression(self, directive_tok)
+        -- Delegate to centralized Macros module
+        return Macros.parse_expression(self, directive_tok)
     elseif tok.type == "LPAREN" then
         self:advance()
         local expr = self:parse_expression()
