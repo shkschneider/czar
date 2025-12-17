@@ -106,7 +106,7 @@ function infer_type(typechecker, expr)
         local source_type = infer_type(typechecker, expr.expr)
         
         -- Print warning for unsafe cast
-        print("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type))
+        io.stderr:write("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type) .. "\n")
         
         expr.inferred_type = target_type
         return target_type

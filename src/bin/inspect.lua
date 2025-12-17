@@ -237,8 +237,9 @@ function Inspect.inspect(identifier_name, paths, options)
         return false, "Error: identifier name is required"
     end
     
+    -- Default to current working directory if no paths provided
     if not paths or #paths == 0 then
-        return false, "Error: at least one file or directory path is required"
+        paths = {"."}
     end
     
     -- Expand paths to files
