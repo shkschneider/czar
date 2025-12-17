@@ -18,6 +18,8 @@ local run = require("run")
 local test = require("test")
 local format = require("format")
 local clean = require("clean")
+local todo = require("todo")
+local fixme = require("fixme")
 
 -- Simple file reader utility
 -- Note: This is for legacy commands (lexer, parser, typechecker)
@@ -102,6 +104,8 @@ local function usage()
     io.stdout:write("  test <files...>         Compile, run, and expect exit code 0 for each file\n")
     io.stdout:write("  format <files...>       Format .cz files (TODO: not implemented)\n")
     io.stdout:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
+    io.stdout:write("  todo [path]             List all #TODO markers in .cz files (defaults to CWD)\n")
+    io.stdout:write("  fixme [path]            List all #FIXME markers in .cz files (defaults to CWD)\n")
     io.stdout:write("\nOptions:\n")
     io.stdout:write("  --debug                 Enable memory tracking and print statistics on exit\n")
     os.exit(0)
@@ -468,6 +472,30 @@ local function cmd_clean(args)
     return 0
 end
 
+local function cmd_todo(args)
+    local path = args[1] or "."
+
+    local ok, err = todo.todo(path)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    return 0
+end
+
+local function cmd_fixme(args)
+    local path = args[1] or "."
+
+    local ok, err = fixme.fixme(path)
+    if not ok then
+        io.stderr:write(err .. "\n")
+        os.exit(1)
+    end
+
+    return 0
+end
+
 local function main()
     if not arg or #arg < 1 then
         usage()
@@ -493,6 +521,10 @@ local function main()
         cmd_format(cmd_args)
     elseif command == "clean" then
         cmd_clean(cmd_args)
+    elseif command == "todo" then
+        cmd_todo(cmd_args)
+    elseif command == "fixme" then
+        cmd_fixme(cmd_args)
     else
         io.stderr:write(string.format("Unknown command: %s\n", command))
         usage()
