@@ -7,6 +7,8 @@
 This is a **toy language**, used as a playground of mine to learn more about languages and compilation.
 It currently is written in Lua and transpiles to C.
 
+> Someone had good intentions at each step along the way, but nobody stopped to ask why
+
 ## Phylosophy
 
 - Explicit - Safe(r) - Modular
@@ -27,10 +29,13 @@ It currently is written in Lua and transpiles to C.
 - Protections: out-of-bounds, dangling pointers, use-after-free...
 - Internal types: `pair<T:T>`, `array<T>`, `map<T:T>`
 - Macros: `#FILE`, `#LINE`, `#DEBUG`, `#log(...)`, `#assert(...)`...
+- Named and default parameters
 - Some overloading...
 - ...
 
-> Someone had good intentions at each step along the way, but nobody stopped to ask why
+[All Features](FEATURES.md)
+|
+[Semantics](SEMANTICS.md)
 
 ## Binary
 
