@@ -259,6 +259,7 @@ function Macros.generate_statement(stmt, ctx)
     elseif stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
         -- #TODO(message) or #FIXME(message)
         -- Print to stderr during compilation
+        local Expressions = require("codegen.expressions")
         local macro_type = stmt.kind == "todo_stmt" and "TODO" or "FIXME"
         local filename = ctx.source_file:gsub("%%", "%%%%")
         local line = stmt.line
@@ -267,7 +268,6 @@ function Macros.generate_statement(stmt, ctx)
         -- Determine message to display
         local display_message = macro_type  -- default message
         if stmt.message then
-            local Expressions = require("codegen.expressions")
             -- If message is a string literal, extract it for compile-time display
             if stmt.message.kind == "string" and stmt.message.value then
                 display_message = stmt.message.value
@@ -283,7 +283,6 @@ function Macros.generate_statement(stmt, ctx)
         -- Generate runtime code that prints if #DEBUG is enabled
         local runtime_message
         if stmt.message then
-            local Expressions = require("codegen.expressions")
             runtime_message = Expressions.gen_expr(stmt.message)
         else
             runtime_message = string.format("\"%s\"", macro_type)

@@ -2,8 +2,8 @@
 // Verifies that #TODO prints at runtime when DEBUG is enabled
 
 fn test_todo_with_debug() i32 {
-    // Enable debug mode
-    bool debug = #DEBUG(true)
+    // Enable debug mode (and discard the result)
+    _ = #DEBUG(true)
     
     #TODO("Check this code path")
     i32 x = 42
