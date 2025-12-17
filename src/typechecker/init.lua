@@ -989,10 +989,16 @@ end
 function Typechecker:check_unused_imports()
     local Warnings = require("warnings")
     
+    -- Helper to extract the last component of a module path (e.g., "cz.io" -> "io")
+    local function get_default_alias(module_path)
+        return module_path:match("[^.]+$")
+    end
+    
     for _, import in ipairs(self.imports) do
         if not import.used then
             local msg = string.format("Unused import '%s'", import.path)
-            if import.alias and import.alias ~= import.path:match("[^.]+$") then
+            -- Only mention alias if it differs from the default
+            if import.alias and import.alias ~= get_default_alias(import.path) then
                 msg = string.format("Unused import '%s' (aliased as '%s')", import.path, import.alias)
             end
             
