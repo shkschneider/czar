@@ -107,8 +107,8 @@ local function usage()
     io.stdout:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
     io.stdout:write("  todo [path]             List all #TODO markers in .cz files (defaults to CWD)\n")
     io.stdout:write("  fixme [path]            List all #FIXME markers in .cz files (defaults to CWD)\n")
-    io.stdout:write("  inspect <ident> <files> Search for identifier and show type/location/declaration\n")
-    io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
+    io.stdout:write("  inspect <ident> [files] Search for identifier in files/dirs (defaults to CWD)\n")
+    io.stdout:write("                          Examples: 'cz inspect main' or 'cz inspect main tests/'\n")
     io.stdout:write("\nOptions:\n")
     io.stdout:write("  --debug                 Enable memory tracking and print statistics on exit\n")
     os.exit(0)
@@ -500,9 +500,9 @@ local function cmd_fixme(args)
 end
 
 local function cmd_inspect(args)
-    if #args < 2 then
-        io.stderr:write("Error: 'inspect' requires an identifier name and at least one source file or directory\n")
-        io.stderr:write("Usage: cz inspect <identifier> <files...>\n")
+    if #args < 1 then
+        io.stderr:write("Error: 'inspect' requires an identifier name\n")
+        io.stderr:write("Usage: cz inspect <identifier> [files...]\n")
         usage()
     end
 
@@ -510,6 +510,11 @@ local function cmd_inspect(args)
     local paths = {}
     for i = 2, #args do
         table.insert(paths, args[i])
+    end
+
+    -- If no paths provided, default to current directory
+    if #paths == 0 then
+        paths = {"."}
     end
 
     local ok, err = inspect.inspect(identifier_name, paths, {})
