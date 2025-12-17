@@ -29,10 +29,11 @@ if command -v luastatic >/dev/null 2>&1 ; then
     # When statically linking LuaJIT, the linker will produce a dlopen warning
     # because LuaJIT's FFI uses dlopen for dynamic library loading. This is
     # expected LuaJIT behavior and does not indicate a build failure.
-    LDFLAGS="-static -L. -L./build -Wl,\
+    LUAJIT_LIBDIR="$(pkg-config --variable=libdir luajit 2>/dev/null)"
+    LDFLAGS="-static -L. -L./build -L${LUAJIT_LIBDIR} -Wl,\
 --whole-archive -lczar -Wl,\
 --no-whole-archive -Wl,\
--E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
+-E $(pkg-config --libs --static luajit 2>/dev/null) -lm -ldl -s"
 else
     echo -e $YELLOW"[LUASTATIC] null -> dynamic"$WHITE
     LDFLAGS="-L./build -Wl,\

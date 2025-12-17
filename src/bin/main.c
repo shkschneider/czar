@@ -11,7 +11,18 @@
 extern const char luaJIT_BC_main[];
 extern const char luaJIT_BC_lexer_init[];
 extern const char luaJIT_BC_parser_init[];
+extern const char luaJIT_BC_parser_utils[];
+extern const char luaJIT_BC_parser_types[];
+extern const char luaJIT_BC_parser_declarations[];
+extern const char luaJIT_BC_parser_statements[];
+extern const char luaJIT_BC_parser_expressions[];
 extern const char luaJIT_BC_typechecker_init[];
+extern const char luaJIT_BC_typechecker_scopes[];
+extern const char luaJIT_BC_typechecker_utils[];
+extern const char luaJIT_BC_typechecker_declarations[];
+extern const char luaJIT_BC_typechecker_functions[];
+extern const char luaJIT_BC_typechecker_statements[];
+extern const char luaJIT_BC_typechecker_validation[];
 extern const char luaJIT_BC_typechecker_resolver[];
 extern const char luaJIT_BC_typechecker_inference_init[];
 extern const char luaJIT_BC_typechecker_inference_types[];
@@ -52,7 +63,18 @@ extern const char luaJIT_BC_inspect[];
 extern const size_t luaJIT_BC_main_size;
 extern const size_t luaJIT_BC_lexer_init_size;
 extern const size_t luaJIT_BC_parser_init_size;
+extern const size_t luaJIT_BC_parser_utils_size;
+extern const size_t luaJIT_BC_parser_types_size;
+extern const size_t luaJIT_BC_parser_declarations_size;
+extern const size_t luaJIT_BC_parser_statements_size;
+extern const size_t luaJIT_BC_parser_expressions_size;
 extern const size_t luaJIT_BC_typechecker_init_size;
+extern const size_t luaJIT_BC_typechecker_scopes_size;
+extern const size_t luaJIT_BC_typechecker_utils_size;
+extern const size_t luaJIT_BC_typechecker_declarations_size;
+extern const size_t luaJIT_BC_typechecker_functions_size;
+extern const size_t luaJIT_BC_typechecker_statements_size;
+extern const size_t luaJIT_BC_typechecker_validation_size;
 extern const size_t luaJIT_BC_typechecker_resolver_size;
 extern const size_t luaJIT_BC_typechecker_inference_init_size;
 extern const size_t luaJIT_BC_typechecker_inference_types_size;
@@ -134,7 +156,18 @@ int main(int argc, char **argv) {
     // Load modules into package.preload
     if (load_module(L, "lexer", luaJIT_BC_lexer_init, luaJIT_BC_lexer_init_size) != 0 ||
         load_module(L, "parser", luaJIT_BC_parser_init, luaJIT_BC_parser_init_size) != 0 ||
+        load_module(L, "parser.utils", luaJIT_BC_parser_utils, luaJIT_BC_parser_utils_size) != 0 ||
+        load_module(L, "parser.types", luaJIT_BC_parser_types, luaJIT_BC_parser_types_size) != 0 ||
+        load_module(L, "parser.declarations", luaJIT_BC_parser_declarations, luaJIT_BC_parser_declarations_size) != 0 ||
+        load_module(L, "parser.statements", luaJIT_BC_parser_statements, luaJIT_BC_parser_statements_size) != 0 ||
+        load_module(L, "parser.expressions", luaJIT_BC_parser_expressions, luaJIT_BC_parser_expressions_size) != 0 ||
         load_module(L, "typechecker", luaJIT_BC_typechecker_init, luaJIT_BC_typechecker_init_size) != 0 ||
+        load_module(L, "typechecker.scopes", luaJIT_BC_typechecker_scopes, luaJIT_BC_typechecker_scopes_size) != 0 ||
+        load_module(L, "typechecker.utils", luaJIT_BC_typechecker_utils, luaJIT_BC_typechecker_utils_size) != 0 ||
+        load_module(L, "typechecker.declarations", luaJIT_BC_typechecker_declarations, luaJIT_BC_typechecker_declarations_size) != 0 ||
+        load_module(L, "typechecker.functions", luaJIT_BC_typechecker_functions, luaJIT_BC_typechecker_functions_size) != 0 ||
+        load_module(L, "typechecker.statements", luaJIT_BC_typechecker_statements, luaJIT_BC_typechecker_statements_size) != 0 ||
+        load_module(L, "typechecker.validation", luaJIT_BC_typechecker_validation, luaJIT_BC_typechecker_validation_size) != 0 ||
         load_module(L, "typechecker.resolver", luaJIT_BC_typechecker_resolver, luaJIT_BC_typechecker_resolver_size) != 0 ||
         load_module(L, "typechecker.inference", luaJIT_BC_typechecker_inference_init, luaJIT_BC_typechecker_inference_init_size) != 0 ||
         load_module(L, "typechecker.inference.types", luaJIT_BC_typechecker_inference_types, luaJIT_BC_typechecker_inference_types_size) != 0 ||
