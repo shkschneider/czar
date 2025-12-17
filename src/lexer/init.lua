@@ -51,8 +51,10 @@ local keywords = {
     ["map"] = true,
     ["pair"] = true,
     ["string"] = true,
+    ["module"] = true,
+    ["import"] = true,
+    ["pub"] = true,
     -- is/type
-    -- import
 }
 
 local simple_tokens = {
