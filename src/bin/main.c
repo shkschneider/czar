@@ -43,6 +43,9 @@ extern const char luaJIT_BC_run[];
 extern const char luaJIT_BC_test[];
 extern const char luaJIT_BC_format[];
 extern const char luaJIT_BC_clean[];
+extern const char luaJIT_BC_todo[];
+extern const char luaJIT_BC_fixme[];
+extern const char luaJIT_BC_inspect[];
 
 // Declare external size symbols (defined in bytecode_sizes.c)
 extern const size_t luaJIT_BC_main_size;
@@ -80,6 +83,9 @@ extern const size_t luaJIT_BC_run_size;
 extern const size_t luaJIT_BC_test_size;
 extern const size_t luaJIT_BC_format_size;
 extern const size_t luaJIT_BC_clean_size;
+extern const size_t luaJIT_BC_todo_size;
+extern const size_t luaJIT_BC_fixme_size;
+extern const size_t luaJIT_BC_inspect_size;
 
 // Helper to load bytecode into package.preload
 static int load_module(lua_State *L, const char *name, const char *bytecode, size_t size) {
@@ -157,7 +163,10 @@ int main(int argc, char **argv) {
         load_module(L, "run", luaJIT_BC_run, luaJIT_BC_run_size) != 0 ||
         load_module(L, "test", luaJIT_BC_test, luaJIT_BC_test_size) != 0 ||
         load_module(L, "format", luaJIT_BC_format, luaJIT_BC_format_size) != 0 ||
-        load_module(L, "clean", luaJIT_BC_clean, luaJIT_BC_clean_size) != 0) {
+        load_module(L, "clean", luaJIT_BC_clean, luaJIT_BC_clean_size) != 0 ||
+        load_module(L, "todo", luaJIT_BC_todo, luaJIT_BC_todo_size) != 0 ||
+        load_module(L, "fixme", luaJIT_BC_fixme, luaJIT_BC_fixme_size) != 0 ||
+        load_module(L, "inspect", luaJIT_BC_inspect, luaJIT_BC_inspect_size) != 0) {
         lua_close(L);
         return 1;
     }

@@ -222,7 +222,7 @@ function Parser:parse_import()
 end
 
 function Parser:parse_struct()
-    self:expect("KEYWORD", "struct")
+    local struct_tok = self:expect("KEYWORD", "struct")
     local name = self:expect("IDENT").value
     self:expect("LBRACE")
     local fields = {}
@@ -244,7 +244,7 @@ function Parser:parse_struct()
         self:match("COMMA")
     end
     self:expect("RBRACE")
-    return { kind = "struct", name = name, fields = fields }
+    return { kind = "struct", name = name, fields = fields, line = struct_tok.line, col = struct_tok.col }
 end
 
 function Parser:parse_enum()
@@ -270,7 +270,7 @@ function Parser:parse_enum()
 end
 
 function Parser:parse_function()
-    self:expect("KEYWORD", "fn")
+    local fn_tok = self:expect("KEYWORD", "fn")
     
     -- Check for #inline or #noinline directive
     local inline_directive = nil
@@ -366,7 +366,7 @@ function Parser:parse_function()
         return_type = self:parse_type()
     end
     local body = self:parse_block()
-    return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body, inline_directive = inline_directive }
+    return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body, inline_directive = inline_directive, line = fn_tok.line, col = fn_tok.col }
 end
 
 function Parser:parse_type()

@@ -20,6 +20,7 @@ local format = require("format")
 local clean = require("clean")
 local todo = require("todo")
 local fixme = require("fixme")
+local inspect = require("inspect")
 
 -- Simple file reader utility
 -- Note: This is for legacy commands (lexer, parser, typechecker)
@@ -106,6 +107,8 @@ local function usage()
     io.stdout:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
     io.stdout:write("  todo [path]             List all #TODO markers in .cz files (defaults to CWD)\n")
     io.stdout:write("  fixme [path]            List all #FIXME markers in .cz files (defaults to CWD)\n")
+    io.stdout:write("  inspect <ident> <files> Search for identifier and show type/location/declaration\n")
+    io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
     io.stdout:write("\nOptions:\n")
     io.stdout:write("  --debug                 Enable memory tracking and print statistics on exit\n")
     os.exit(0)
@@ -496,6 +499,30 @@ local function cmd_fixme(args)
     return 0
 end
 
+local function cmd_inspect(args)
+    if #args < 2 then
+        io.stderr:write("Error: 'inspect' requires an identifier name and at least one source file or directory\n")
+        io.stderr:write("Usage: cz inspect <identifier> <files...>\n")
+        usage()
+    end
+
+    local identifier_name = args[1]
+    local paths = {}
+    for i = 2, #args do
+        table.insert(paths, args[i])
+    end
+
+    local ok, err = inspect.inspect(identifier_name, paths, {})
+    if not ok then
+        if err then
+            io.stderr:write(err .. "\n")
+        end
+        os.exit(1)
+    end
+
+    return 0
+end
+
 local function main()
     if not arg or #arg < 1 then
         usage()
@@ -525,6 +552,8 @@ local function main()
         cmd_todo(cmd_args)
     elseif command == "fixme" then
         cmd_fixme(cmd_args)
+    elseif command == "inspect" then
+        cmd_inspect(cmd_args)
     else
         io.stderr:write(string.format("Unknown command: %s\n", command))
         usage()
