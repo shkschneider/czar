@@ -2,6 +2,7 @@
 
 set +e
 ./build.sh || exit 1
+[[ -x ./dist/cz ]] || exit 2
 
 OK=0
 KO=0
@@ -17,7 +18,7 @@ check_ok() {
     local f=$3
     echo -ne "\r[TEST] ($i/$j) $f..."
     local o=${f/.cz/.out}
-    ./cz build $f -o $o >/dev/null 2>/tmp/cz
+    ./dist/cz build $f -o $o >/dev/null 2>/tmp/cz
     if [[ ! -x $o ]] ; then
         echo -e $RED" ERROR:"$WHITE" "
         cat /tmp/cz >&2
@@ -31,7 +32,7 @@ check_ok() {
             echo -e $RED" FAILURE: $e"$WHITE" "
             (( KO += 1 ))
         }
-        rm -f ./$o
+        rm -f ./dist/$o
     fi
     rm -f /tmp/cz
 }
@@ -43,7 +44,7 @@ check_ko() {
     local f=$3
     echo -ne "\r[TEST] ($i/$j) $f..."
     local o=${f/.cz/.out}
-    ./cz build $f -o $o >/dev/null 2>/tmp/cz
+    ./dist/cz build $f -o $o >/dev/null 2>/tmp/cz
     local e=$?
     if [[ $e -ne 0 ]] ; then
         echo -n " SUCCESS "
@@ -86,7 +87,7 @@ if (( KO == 0 )) ; then
     echo -e $GREEN"$OK/$# SUCCESS"$WHITE
 else
     echo -e $RED"$KO/$# FAILURES"$WHITE
-    rm -f ./cz
+    rm -f ./dist/cz
 fi
 
 exit $KO
