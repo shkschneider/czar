@@ -250,13 +250,15 @@ local function collect_identifiers(ast, tc, source_file, module_name)
             -- Collect parameters with function context
             for param_idx, param in ipairs(item.params) do
                 local param_decl = format_var_decl(param.name, { type = param.type, mutable = param.mutable })
+                local is_vararg = param.type.kind == "varargs"
                 local param_context = {
                     function_name = item.name,
                     function_line = item.line or 0,
                     param_index = param_idx,
                     param_of = format_function_signature(item),
                     type_desc = describe_type(param.type),
-                    is_mutable = param.mutable or false
+                    is_mutable = param.mutable or false,
+                    is_vararg = is_vararg
                 }
                 add_identifier(param.name, "function_parameter", item.line or 0, param_decl, param_context)
             end
@@ -387,46 +389,69 @@ function Inspect.inspect(identifier_name, paths, options)
     
     -- Print matches
     for _, match in ipairs(all_matches) do
-        io.stdout:write(string.format("INSPECT at %s:%d %s\n", match.file, match.line, match.kind))
+        -- Convert kind to lowercase-with-dashes
+        local kind_formatted = match.kind:gsub("_", "-")
+        io.stdout:write(string.format("INSPECT at %s:%d %s\n", match.file, match.line, kind_formatted))
         
         -- Print verbose context information
         if match.context then
             local ctx = match.context
-            local module_info = match.module and (" in module '" .. match.module .. "'") or ""
             
             if match.kind == "function_parameter" and ctx.function_name then
-                io.stdout:write(string.format("    Parameter of function '%s'%s\n", ctx.function_name, module_info))
-                if ctx.type_desc then
-                    io.stdout:write(string.format("    Type: %s%s\n", ctx.type_desc, ctx.is_mutable and " (mutable)" or ""))
+                -- Nth parameter of function X
+                local ordinal = ctx.param_index
+                local suffix = "th"
+                if ordinal == 1 then suffix = "st"
+                elseif ordinal == 2 then suffix = "nd"
+                elseif ordinal == 3 then suffix = "rd"
                 end
-            elseif match.kind == "struct_field" and ctx.struct_name then
-                io.stdout:write(string.format("    Field of struct '%s'%s\n", ctx.struct_name, module_info))
-            elseif match.kind == "enum_value" and ctx.enum_name then
-                io.stdout:write(string.format("    Value of enum '%s'%s\n", ctx.enum_name, module_info))
-            elseif match.kind == "function" then
-                if ctx.is_method then
-                    io.stdout:write(string.format("    Method of type '%s'%s\n", ctx.receiver_type, module_info))
-                    io.stdout:write(string.format("    Returns: %s\n", ctx.return_type_desc or ctx.return_type))
+                io.stdout:write(string.format("\t%d%s parameter of function %s\n", ordinal, suffix, ctx.function_name))
+                
+                -- Check if vararg
+                if ctx.is_vararg then
+                    io.stdout:write("\tvararg\n")
+                end
+                
+                -- Mutability
+                if ctx.is_mutable then
+                    io.stdout:write("\tmutable\n")
                 else
-                    io.stdout:write(string.format("    Function%s returning %s\n", module_info, ctx.return_type_desc or ctx.return_type))
-                    if ctx.param_count > 0 then
-                        io.stdout:write(string.format("    Takes %d parameter(s)\n", ctx.param_count))
+                    io.stdout:write("\timmutable\n")
+                end
+                
+                -- Type description
+                if ctx.type_desc then
+                    if ctx.type_desc:match("^pointer to") then
+                        io.stdout:write(string.format("\t%s\n", ctx.type_desc))
+                    elseif ctx.type_desc:match("^array%[") or ctx.type_desc:match("^slice of") then
+                        io.stdout:write(string.format("\t%s\n", ctx.type_desc))
                     end
                 end
+                
+            elseif match.kind == "struct_field" and ctx.struct_name then
+                io.stdout:write(string.format("\tfield of struct %s\n", ctx.struct_name))
+                
+            elseif match.kind == "enum_value" and ctx.enum_name then
+                io.stdout:write(string.format("\tvalue of enum %s\n", ctx.enum_name))
+                
+            elseif match.kind == "function" then
+                -- Function returning X
+                io.stdout:write(string.format("\tfunction returning %s\n", ctx.return_type_desc or ctx.return_type))
+                
             elseif match.kind == "struct" then
-                io.stdout:write(string.format("    Structure%s\n", module_info))
-                if ctx.field_count and ctx.field_count > 0 then
-                    io.stdout:write(string.format("    Contains %d field(s): %s\n", ctx.field_count, table.concat(ctx.fields, ", ")))
-                end
+                io.stdout:write("\tstructure\n")
+                
             elseif match.kind == "enum" then
-                io.stdout:write(string.format("    Enum%s\n", module_info))
-                if ctx.value_count and ctx.value_count > 0 then
-                    io.stdout:write(string.format("    Contains %d value(s): %s\n", ctx.value_count, table.concat(ctx.values, ", ")))
-                end
+                io.stdout:write("\tenum\n")
             end
         end
         
-        io.stdout:write(string.format("    %s\n", match.declaration))
+        -- Print declaration with "> " prefix on each line
+        if match.declaration then
+            for line in match.declaration:gmatch("[^\n]+") do
+                io.stdout:write(string.format("\t> %s\n", line))
+            end
+        end
     end
     
     return true, nil
