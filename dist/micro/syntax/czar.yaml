@@ -1,0 +1,79 @@
+filetype: czar
+
+detect:
+    filename: "\\.cz$"
+
+rules:
+    # Function definitions
+    - identifier: "fn [a-zA-Z0-9_:]+\\("
+    
+    # Reserved keywords - control flow
+    - statement: "\\b(if|else|elseif|elsif|while|for|repeat|break|continue|return|in)\\b"
+    
+    # Reserved keywords - declarations and modifiers
+    - statement: "\\b(fn|fun|func|function|struct|module|import|pub|public|mut|mutable|new|alloc|stack|heap|free|type)\\b"
+    
+    # Reserved keywords - operators and special
+    - statement: "\\b(and|or|not|is|self|clone|copy)\\b"
+    
+    # Built-in types - integers
+    - type: "\\b(i8|i16|i32|i64|u8|u16|u32|u64)\\b"
+    
+    # Built-in types - floats
+    - type: "\\b(f32|f64)\\b"
+    
+    # Built-in types - other
+    - type: "\\b(bool|boolean|void|string|cstr|any)\\b"
+    
+    # Generic/collection types
+    - type: "\\b(pair|array|map)\\b"
+    
+    # Generic type syntax with angle brackets
+    - type: "\\b(pair|array|map)<[a-zA-Z0-9_:*]+>"
+    
+    # Type with brackets (array declarations)
+    - type: "[a-zA-Z_][a-zA-Z0-9_]*\\[[^\\]]*\\]"
+    
+    # Custom types (capitalized identifiers)
+    - type: "\\b[A-Z][a-zA-Z0-9_]*\\b"
+    
+    # Directives and macros
+    - preproc: "#(FILE|FUNCTION|DEBUG|assert|log)\\b"
+    
+    # Cast syntax as<Type>
+    - special: "\\bas<[a-zA-Z0-9_*]+>"
+    
+    # Boolean and null constants
+    - constant.bool: "\\b(true|false|null|nil)\\b"
+    
+    # Numeric constants
+    - constant.number: "\\b[0-9][0-9_]*\\b"
+    - constant.number: "\\b0x[0-9A-Fa-f_]+\\b"
+    - constant.number: "\\b0b[01_]+\\b"
+    - constant.number: "\\b[0-9][0-9_]*\\.[0-9_]+([eE][+-]?[0-9]+)?\\b"
+    
+    # Operators
+    - symbol.operator: "([-+*/%=<>!&|^~?:]|!!)|\\b(sizeof|as)\\b"
+    - symbol.brackets: "[(){}]|\\[|\\]"
+    
+    # String literals with escape sequences
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\"'nrt\\\\]|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})"
+    
+    # Single line comments
+    - comment:
+        start: "//"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME|NOTE|HACK):?"
+    
+    # Multi-line comments
+    - comment:
+        start: "/\\*"
+        end: "\\*/"
+        rules:
+            - todo: "(TODO|XXX|FIXME|NOTE|HACK):?"
