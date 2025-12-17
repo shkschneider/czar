@@ -282,7 +282,15 @@ function Functions.gen_function_declaration(fn)
         return_type_str = Codegen.Types.c_type(fn.return_type.to) .. "*"
     end
 
-    local sig = string.format("%s %s(%s);", return_type_str, c_name, Functions.gen_params(fn.params))
+    -- Add inline attributes if specified
+    local attributes = ""
+    if fn.inline_directive == "inline" then
+        attributes = "__attribute__((always_inline)) inline "
+    elseif fn.inline_directive == "noinline" then
+        attributes = "__attribute__((noinline)) "
+    end
+
+    local sig = string.format("%s%s %s(%s);", attributes, return_type_str, c_name, Functions.gen_params(fn.params))
     ctx():emit(sig)
 end
 
@@ -308,10 +316,19 @@ function Functions.gen_function(fn)
         return_type_str = Codegen.Types.c_type(fn.return_type.to) .. "*"
     end
 
-    local sig = string.format("%s %s(%s)", return_type_str, c_name, Functions.gen_params(fn.params))
+    -- Add inline attributes if specified
+    local attributes = ""
+    if fn.inline_directive == "inline" then
+        attributes = "__attribute__((always_inline)) inline "
+    elseif fn.inline_directive == "noinline" then
+        attributes = "__attribute__((noinline)) "
+    end
+
+    local sig = string.format("%s%s %s(%s)", attributes, return_type_str, c_name, Functions.gen_params(fn.params))
     ctx():emit(sig)
     ctx():push_scope()
     ctx():emit("{")
+
 
     -- Add unused parameter suppressions for underscore parameters
     for i, param in ipairs(fn.params) do
