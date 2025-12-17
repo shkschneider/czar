@@ -1008,18 +1008,22 @@ function Typechecker:validate_module_name()
         table.insert(module_parts, part)
     end
     
-    -- Only enforce directory matching if:
-    -- 1. File is in a subdirectory
-    -- 2. Module name has multiple parts (e.g., app.geometry, not just geometry)
-    if #path_parts > 0 and #module_parts > 1 then
+    -- Exception: "main" module can be declared in any directory as an entry point
+    local is_main_module = (#module_parts == 1 and module_parts[1] == "main")
+    
+    -- For multi-part module names, or single-part non-main modules in subdirectories:
+    -- Module name must end with the directory name
+    if #path_parts > 0 and not is_main_module then
         local dir_name = path_parts[#path_parts]
         
         -- Module name must end with the directory name
         -- e.g., module "app.geometry" in directory "geometry" is valid
+        -- e.g., module "app" in directory "app" is valid
+        -- e.g., module "examples" in directory "ok" is invalid
         -- e.g., module "app.math" in directory "geometry" is invalid
-        if module_parts[#module_parts] ~= dir_name then
+        if #module_parts > 0 and module_parts[#module_parts] ~= dir_name then
             local msg = string.format(
-                "Module name '%s' must end with directory name '%s' (expected: '...%s')",
+                "Module name '%s' must end with directory name '%s' (expected: '...%s'). Only 'main' module can be declared as entry point in any folder.",
                 self.module_name, dir_name, dir_name
             )
             local formatted_error = Errors.format("ERROR", self.source_file, 0,

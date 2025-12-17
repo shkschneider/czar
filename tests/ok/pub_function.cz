@@ -1,5 +1,5 @@
 // Test pub visibility modifier on functions
-module mylib
+module main
 
 pub fn public_add(i32 a, i32 b) i32 {
     return private_multiply(a, 2) + b

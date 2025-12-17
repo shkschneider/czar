@@ -1,5 +1,6 @@
 // Comprehensive example demonstrating the module system
-module examples
+// Uses 'main' module which is allowed as entry point in any directory
+module main
 
 // This import is unused and will trigger a warning
 import cz.math

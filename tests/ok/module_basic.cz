@@ -1,5 +1,5 @@
 // Test basic module and import syntax
-module mylib
+module main
 
 pub fn add(i32 a, i32 b) i32 {
     return a + b
