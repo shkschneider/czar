@@ -54,7 +54,8 @@ SOURCES=(
     parser/init.lua
     typechecker/init.lua
     typechecker/resolver.lua
-    typechecker/inference.lua
+    typechecker/inference/init.lua
+    typechecker/inference/types.lua
     typechecker/mutability.lua
     lowering/init.lua
     analysis/init.lua
@@ -63,7 +64,7 @@ SOURCES=(
     codegen/memory.lua
     codegen/functions.lua
     codegen/statements.lua
-    codegen/expressions.lua
+    codegen/expressions/init.lua
     codegen/expressions/literals.lua
     codegen/expressions/operators.lua
     codegen/expressions/calls.lua
