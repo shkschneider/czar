@@ -1,0 +1,10 @@
+// Test that 'main' module can be declared in any directory
+module main
+
+fn test() i32 {
+    return 42
+}
+
+fn main() i32 {
+    return test() - 42
+}
