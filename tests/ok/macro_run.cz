@@ -3,7 +3,6 @@
 
 #run {
     echo "Hello from #run block during compilation!"
-    echo "This is line 2"
 }
 
 fn test_run() i32 {

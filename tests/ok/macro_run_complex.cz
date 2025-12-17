@@ -2,6 +2,7 @@
 // Verifies that multiple commands work at top-level
 
 #run {
+    #!/usr/bin/env bash
     echo "Testing #run with multiple commands"
     echo "Current directory:" && pwd
 }
