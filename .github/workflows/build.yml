@@ -19,7 +19,7 @@ jobs:
       run: ./build.sh
     - name: Verify
       run: |
-        ls -lh cz
+        ls -lh ./dist/cz
         file ./dist/cz
         ./dist/cz --help || ./dist/cz 2>&1 | head -5
     #- name: Upload cz binary as artifact
