@@ -18,6 +18,9 @@ Warnings.WarningType = {
     
     -- Enum warnings
     ENUM_VALUE_NOT_UPPERCASE = "ENUM_VALUE_NOT_UPPERCASE",
+    
+    -- Stack warnings
+    STACK_WARNING = "STACK_WARNING",
 }
 
 -- Cache for source file contents

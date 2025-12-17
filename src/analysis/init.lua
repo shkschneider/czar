@@ -3,9 +3,138 @@
 -- It analyzes which allocations escape and determines allocation strategy (stack vs heap)
 
 local Errors = require("errors")
+local Warnings = require("warnings")
 
 local Analysis = {}
 Analysis.__index = Analysis
+
+-- Stack size thresholds (in bytes)
+local STACK_WARNING_THRESHOLD = 1048576  -- 1 MB
+local STACK_ERROR_THRESHOLD = 2097152    -- 2 MB
+
+-- Calculate the size of a type in bytes
+local function calculate_type_size(type_node, seen_types)
+    if not type_node then
+        return 0
+    end
+    
+    -- Prevent infinite recursion with self-referential types
+    seen_types = seen_types or {}
+    
+    if type_node.kind == "pointer" then
+        return 8  -- 64-bit architecture
+    elseif type_node.kind == "array" then
+        -- Arrays: size * element_size
+        local size = type_node.size or 0
+        local element_size = calculate_type_size(type_node.element_type, seen_types)
+        return size * element_size
+    elseif type_node.kind == "slice" then
+        -- Slices are represented as pointers
+        return 8
+    elseif type_node.kind == "varargs" then
+        -- Varargs are represented as pointers
+        return 8
+    elseif type_node.kind == "map" then
+        -- Maps are pointers to heap-allocated structures
+        return 8
+    elseif type_node.kind == "pair" then
+        -- Pairs contain two fields
+        local left_size = calculate_type_size(type_node.left_type, seen_types)
+        local right_size = calculate_type_size(type_node.right_type, seen_types)
+        return left_size + right_size
+    elseif type_node.kind == "string" then
+        -- Strings are represented as a struct with capacity, length, and data pointer
+        -- struct czar_string { size_t capacity; size_t length; char* data; }
+        return 8 + 8 + 8  -- 24 bytes on 64-bit
+    elseif type_node.kind == "named_type" then
+        local name = type_node.name
+        
+        if name == "i8" or name == "u8" then
+            return 1
+        elseif name == "i16" or name == "u16" then
+            return 2
+        elseif name == "i32" or name == "u32" then
+            return 4
+        elseif name == "i64" or name == "u64" then
+            return 8
+        elseif name == "f32" then
+            return 4
+        elseif name == "f64" then
+            return 8
+        elseif name == "bool" then
+            return 1
+        elseif name == "void" then
+            return 0
+        elseif name == "any" then
+            return 8  -- void* pointer
+        else
+            -- For custom struct types, we need to look them up
+            -- To avoid infinite recursion, we'll assume a minimum size
+            -- In a complete implementation, we'd track struct definitions
+            if seen_types[name] then
+                return 0  -- Already counting this type (recursive reference)
+            end
+            seen_types[name] = true
+            -- Conservative estimate for unknown struct types
+            return 8
+        end
+    else
+        -- Unknown type, conservative estimate
+        return 8
+    end
+end
+
+-- Calculate total stack size for a function
+local function calculate_function_stack_size(func)
+    local total_size = 0
+    
+    -- Add sizes of all parameters
+    for _, param in ipairs(func.params) do
+        local param_size = calculate_type_size(param.type)
+        total_size = total_size + param_size
+    end
+    
+    -- Add sizes of all local variables
+    -- We need to traverse the function body to find all var_decl statements
+    local function traverse_statements(statements)
+        for _, stmt in ipairs(statements) do
+            if stmt.kind == "var_decl" then
+                local var_size = calculate_type_size(stmt.type)
+                total_size = total_size + var_size
+            elseif stmt.kind == "if" then
+                if stmt.then_block then
+                    traverse_statements(stmt.then_block.statements or stmt.then_block)
+                end
+                if stmt.elseif_branches then
+                    for _, branch in ipairs(stmt.elseif_branches) do
+                        traverse_statements(branch.block.statements or branch.block)
+                    end
+                end
+                if stmt.else_block then
+                    traverse_statements(stmt.else_block.statements or stmt.else_block)
+                end
+            elseif stmt.kind == "while" then
+                if stmt.body then
+                    traverse_statements(stmt.body.statements or stmt.body)
+                end
+            elseif stmt.kind == "for" then
+                if stmt.body then
+                    traverse_statements(stmt.body.statements or stmt.body)
+                end
+            elseif stmt.kind == "repeat" then
+                if stmt.body then
+                    traverse_statements(stmt.body.statements or stmt.body)
+                end
+            end
+        end
+    end
+    
+    if func.body then
+        traverse_statements(func.body.statements or func.body)
+    end
+    
+    return total_size
+end
 
 function Analysis.new(lowered_ast, options)
     options = options or {}
@@ -45,8 +174,30 @@ function Analysis:analyze()
     return self.ast
 end
 
--- Analyze a function for use-after-free
+-- Analyze a function for use-after-free and stack size
 function Analysis:analyze_function(func)
+    -- Check stack size
+    local stack_size = calculate_function_stack_size(func)
+    
+    if stack_size >= STACK_ERROR_THRESHOLD then
+        local line = func.line or 0
+        local msg = string.format(
+            "Function '%s' exceeds stack size limit: %d bytes (limit: %d bytes / 2MB)",
+            func.name, stack_size, STACK_ERROR_THRESHOLD
+        )
+        local formatted_error = Errors.format("ERROR", self.source_file, line,
+            Errors.ErrorType.STACK_OVERFLOW, msg, self.source_path)
+        self:add_error(formatted_error)
+    elseif stack_size >= STACK_WARNING_THRESHOLD then
+        local line = func.line or 0
+        local msg = string.format(
+            "Function '%s' uses large stack: %d bytes (warning threshold: %d bytes / 1MB)",
+            func.name, stack_size, STACK_WARNING_THRESHOLD
+        )
+        Warnings.emit(self.source_file, line, Warnings.WarningType.STACK_WARNING, msg, self.source_path, func.name)
+    end
+    
+    -- Perform use-after-free analysis
     self:push_scope()
     self:analyze_block(func.body)
     self:pop_scope()
