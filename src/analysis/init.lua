@@ -94,6 +94,11 @@ local function calculate_function_stack_size(func)
         total_size = total_size + param_size
     end
     
+    -- Helper function to get statements from a block
+    local function get_statements(block)
+        return block.statements or block
+    end
+    
     -- Add sizes of all local variables
     -- We need to traverse the function body to find all var_decl statements
     local function traverse_statements(statements)
@@ -103,34 +108,34 @@ local function calculate_function_stack_size(func)
                 total_size = total_size + var_size
             elseif stmt.kind == "if" then
                 if stmt.then_block then
-                    traverse_statements(stmt.then_block.statements or stmt.then_block)
+                    traverse_statements(get_statements(stmt.then_block))
                 end
                 if stmt.elseif_branches then
                     for _, branch in ipairs(stmt.elseif_branches) do
-                        traverse_statements(branch.block.statements or branch.block)
+                        traverse_statements(get_statements(branch.block))
                     end
                 end
                 if stmt.else_block then
-                    traverse_statements(stmt.else_block.statements or stmt.else_block)
+                    traverse_statements(get_statements(stmt.else_block))
                 end
             elseif stmt.kind == "while" then
                 if stmt.body then
-                    traverse_statements(stmt.body.statements or stmt.body)
+                    traverse_statements(get_statements(stmt.body))
                 end
             elseif stmt.kind == "for" then
                 if stmt.body then
-                    traverse_statements(stmt.body.statements or stmt.body)
+                    traverse_statements(get_statements(stmt.body))
                 end
             elseif stmt.kind == "repeat" then
                 if stmt.body then
-                    traverse_statements(stmt.body.statements or stmt.body)
+                    traverse_statements(get_statements(stmt.body))
                 end
             end
         end
     end
     
     if func.body then
-        traverse_statements(func.body.statements or func.body)
+        traverse_statements(get_statements(func.body))
     end
     
     return total_size

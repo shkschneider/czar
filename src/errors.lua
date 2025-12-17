@@ -62,7 +62,6 @@ Errors.ErrorType = {
     IDENTIFIER_TOO_LONG = "IDENTIFIER_TOO_LONG",
 
     -- Stack analysis errors
-    STACK_WARNING = "STACK_WARNING",
     STACK_OVERFLOW = "STACK_OVERFLOW",
 }
 
