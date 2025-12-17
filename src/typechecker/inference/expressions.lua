@@ -109,7 +109,7 @@ function Expressions.infer_binary_type(typechecker, expr)
         if (left_is_pointer and right_is_numeric) or (left_is_numeric and right_is_pointer) then
             local line = expr.line or (expr.left and expr.left.line) or 0
             local msg = string.format(
-                "Cannot %s pointer and numeric type. " ..
+                "Cannot %s pointer and numeric type.",
                 expr.op == "+" and "add" or "subtract"
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
