@@ -230,6 +230,18 @@ end
 
 function Parser:parse_function()
     self:expect("KEYWORD", "fn")
+    
+    -- Check for #inline or #noinline directive
+    local inline_directive = nil
+    if self:check("DIRECTIVE") then
+        local directive_tok = self:current()
+        local directive_name = directive_tok.value:upper()
+        if directive_name == "INLINE" or directive_name == "NOINLINE" then
+            inline_directive = directive_name:lower()
+            self:advance()
+        end
+    end
+    
     local receiver_type = nil
     local is_static_method = false
     local name = self:expect("IDENT").value
@@ -313,7 +325,7 @@ function Parser:parse_function()
         return_type = self:parse_type()
     end
     local body = self:parse_block()
-    return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body }
+    return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body, inline_directive = inline_directive }
 end
 
 function Parser:parse_type()
