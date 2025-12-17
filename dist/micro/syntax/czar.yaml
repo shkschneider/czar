@@ -5,7 +5,7 @@ detect:
 
 rules:
     # Function definitions
-    - identifier: "fn [a-z0-9_:]+\\("
+    - identifier: "fn [a-zA-Z0-9_:]+\\("
     
     # Reserved keywords - control flow
     - statement: "\\b(if|else|elseif|elsif|while|for|repeat|break|continue|return|in)\\b"
@@ -32,7 +32,7 @@ rules:
     - type: "\\b(pair|array|map)<[a-zA-Z0-9_:*]+>"
     
     # Type with brackets (array declarations)
-    - type: "[a-zA-Z_][a-zA-Z0-9_]*\\[.*\\]"
+    - type: "[a-zA-Z_][a-zA-Z0-9_]*\\[[^\\]]*\\]"
     
     # Custom types (capitalized identifiers)
     - type: "\\b[A-Z][a-zA-Z0-9_]*\\b"
