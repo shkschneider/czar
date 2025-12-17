@@ -1,4 +1,6 @@
--- todo module: lists all #TODO markers in .cz files
+-- todo module: lists all #TODO markers in .cz files using the lexer
+
+local lexer = require("lexer")
 
 local Todo = {}
 Todo.__index = Todo
@@ -24,44 +26,52 @@ local function get_cz_files_in_dir(dir)
     return files
 end
 
--- Search for #TODO markers in a file
+-- Read file contents
+local function read_file(path)
+    local handle, err = io.open(path, "r")
+    if not handle then
+        return nil, err
+    end
+    local content = handle:read("*a")
+    handle:close()
+    return content
+end
+
+-- Search for #TODO markers in a file using the lexer
 local function find_todos_in_file(filepath)
     local todos = {}
-    local file = io.open(filepath, "r")
-    if not file then
+    
+    -- Read the source file
+    local source, err = read_file(filepath)
+    if not source then
         return todos
     end
     
-    local line_num = 0
-    for line in file:lines() do
-        line_num = line_num + 1
-        -- Match #TODO with optional message in parentheses
-        -- Pattern matches: #TODO or #TODO("message") or #TODO ( "message" )
-        -- But not inside comments (lines starting with //)
-        local trimmed = line:match("^%s*(.-)%s*$")
-        if not trimmed:match("^//") then
-            local todo_match = line:match("#TODO")
-            if todo_match then
-                local message = line:match('#TODO%s*%(%s*"([^"]*)"')
-                if message then
-                    table.insert(todos, {
-                        line = line_num,
-                        message = message,
-                        full_line = trimmed
-                    })
-                else
-                    -- No message provided
-                    table.insert(todos, {
-                        line = line_num,
-                        message = nil,
-                        full_line = trimmed
-                    })
+    -- Lex the source
+    local ok, tokens = pcall(lexer, source)
+    if not ok then
+        -- If lexing fails, silently skip this file
+        return todos
+    end
+    
+    -- Search for TODO directive tokens
+    for i, token in ipairs(tokens) do
+        if token.type == "DIRECTIVE" and token.value == "TODO" then
+            local message = nil
+            -- Check if the next token is LPAREN, indicating a message
+            if i + 1 <= #tokens and tokens[i + 1].type == "LPAREN" then
+                -- Look for the string literal message
+                if i + 2 <= #tokens and tokens[i + 2].type == "STRING" then
+                    message = tokens[i + 2].value
                 end
             end
+            table.insert(todos, {
+                line = token.line,
+                message = message
+            })
         end
     end
     
-    file:close()
     return todos
 end
 

@@ -1,4 +1,6 @@
--- fixme module: lists all #FIXME markers in .cz files
+-- fixme module: lists all #FIXME markers in .cz files using the lexer
+
+local lexer = require("lexer")
 
 local Fixme = {}
 Fixme.__index = Fixme
@@ -24,44 +26,52 @@ local function get_cz_files_in_dir(dir)
     return files
 end
 
--- Search for #FIXME markers in a file
+-- Read file contents
+local function read_file(path)
+    local handle, err = io.open(path, "r")
+    if not handle then
+        return nil, err
+    end
+    local content = handle:read("*a")
+    handle:close()
+    return content
+end
+
+-- Search for #FIXME markers in a file using the lexer
 local function find_fixmes_in_file(filepath)
     local fixmes = {}
-    local file = io.open(filepath, "r")
-    if not file then
+    
+    -- Read the source file
+    local source, err = read_file(filepath)
+    if not source then
         return fixmes
     end
     
-    local line_num = 0
-    for line in file:lines() do
-        line_num = line_num + 1
-        -- Match #FIXME with optional message in parentheses
-        -- Pattern matches: #FIXME or #FIXME("message") or #FIXME ( "message" )
-        -- But not inside comments (lines starting with //)
-        local trimmed = line:match("^%s*(.-)%s*$")
-        if not trimmed:match("^//") then
-            local fixme_match = line:match("#FIXME")
-            if fixme_match then
-                local message = line:match('#FIXME%s*%(%s*"([^"]*)"')
-                if message then
-                    table.insert(fixmes, {
-                        line = line_num,
-                        message = message,
-                        full_line = trimmed
-                    })
-                else
-                    -- No message provided
-                    table.insert(fixmes, {
-                        line = line_num,
-                        message = nil,
-                        full_line = trimmed
-                    })
+    -- Lex the source
+    local ok, tokens = pcall(lexer, source)
+    if not ok then
+        -- If lexing fails, silently skip this file
+        return fixmes
+    end
+    
+    -- Search for FIXME directive tokens
+    for i, token in ipairs(tokens) do
+        if token.type == "DIRECTIVE" and token.value == "FIXME" then
+            local message = nil
+            -- Check if the next token is LPAREN, indicating a message
+            if i + 1 <= #tokens and tokens[i + 1].type == "LPAREN" then
+                -- Look for the string literal message
+                if i + 2 <= #tokens and tokens[i + 2].type == "STRING" then
+                    message = tokens[i + 2].value
                 end
             end
+            table.insert(fixmes, {
+                line = token.line,
+                message = message
+            })
         end
     end
     
-    file:close()
     return fixmes
 end
 
