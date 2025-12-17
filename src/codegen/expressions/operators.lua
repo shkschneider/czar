@@ -20,7 +20,8 @@ function Operators.gen_unsafe_cast(expr, gen_expr_fn)
         Warnings.WarningType.UNSAFE_CAST,
         string.format("Unsafe cast from '%s' to '%s' - type safety not guaranteed", 
             source_type_str, target_type_str),
-        ctx().source_path
+        ctx().source_path,
+        ctx().current_function
     )
     
     local expr_str = gen_expr_fn(expr.expr)
@@ -188,7 +189,8 @@ function Operators.gen_assign(expr, gen_expr_fn)
                     expr.line,
                     Warnings.WarningType.POINTER_REASSIGNMENT,
                     string.format("Reassigning pointer '%s' to another address (potential dangling pointer risk)", expr.target.name),
-                    ctx().source_path
+                    ctx().source_path,
+                    ctx().current_function
                 )
             end
         end

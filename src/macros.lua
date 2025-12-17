@@ -249,13 +249,21 @@ function Macros.generate_statement(stmt, ctx)
         local condition_code = Expressions.gen_expr(stmt.condition)
         return string.format("if (!(%s)) { abort(); }", condition_code)
     elseif stmt.kind == "log_stmt" then
-        -- #log("message") -> fprintf(stderr, "filename:linenumber message\n")
+        -- #log("message") -> fprintf(stderr, "LOG in function() at filename:linenumber message\n")
         local Expressions = require("codegen.expressions")
         local message_code = Expressions.gen_expr(stmt.message)
         -- Escape % characters in filename to avoid format string issues
         local filename = ctx.source_file:gsub("%%", "%%%%")
         local line = stmt.line
-        return string.format("fprintf(stderr, \"%s:%d \" %s \"\\n\")", filename, line, message_code)
+        
+        -- Build standard format: "LOG in function_name() at filename:linenumber "
+        local prefix = "LOG "
+        if ctx.current_function then
+            prefix = string.format("LOG in %s() ", ctx.current_function)
+        end
+        prefix = prefix .. string.format("at %s:%d ", filename, line)
+        
+        return string.format("fprintf(stderr, \"%s\" %s \"\\n\")", prefix, message_code)
     elseif stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
         -- #TODO(message) or #FIXME(message)
         -- Print to stderr during compilation
@@ -277,8 +285,15 @@ function Macros.generate_statement(stmt, ctx)
             end
         end
         
+        -- Build standard format for compile-time: "TYPE in function_name() at filename:linenumber message"
+        local compile_prefix = macro_type .. " "
+        if ctx.current_function then
+            compile_prefix = string.format("%s in %s() ", macro_type, ctx.current_function)
+        end
+        compile_prefix = compile_prefix .. string.format("at %s:%d ", filename, line)
+        
         -- Print to stderr during compilation
-        io.stderr:write(string.format("%s %s:%d:%d %s\n", macro_type, filename, line, col, display_message))
+        io.stderr:write(compile_prefix .. display_message .. "\n")
         
         -- Generate runtime code that prints if #DEBUG is enabled
         local runtime_message
@@ -288,9 +303,16 @@ function Macros.generate_statement(stmt, ctx)
             runtime_message = string.format("\"%s\"", macro_type)
         end
         
+        -- Build standard format for runtime: "TYPE in function_name() at filename:linenumber "
+        local runtime_prefix = macro_type .. " "
+        if ctx.current_function then
+            runtime_prefix = string.format("%s in %s() ", macro_type, ctx.current_function)
+        end
+        runtime_prefix = runtime_prefix .. string.format("at %s:%d ", filename, line)
+        
         -- Generate code that prints at runtime only if czar_debug_flag is true
-        return string.format("if (czar_debug_flag) { fprintf(stderr, \"%s %s:%d:%d \" %s \"\\n\"); }", 
-                           macro_type, filename, line, col, runtime_message)
+        return string.format("if (czar_debug_flag) { fprintf(stderr, \"%s\" %s \"\\n\"); }", 
+                           runtime_prefix, runtime_message)
     else
         error(string.format("Unknown statement macro: %s at %d:%d", stmt.kind, stmt.line, stmt.col))
     end
