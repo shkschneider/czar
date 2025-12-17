@@ -1,5 +1,5 @@
 // Geometry module with shapes and calculations
-module app.geometry
+module app
 
 // Public struct for Point
 pub struct Point {

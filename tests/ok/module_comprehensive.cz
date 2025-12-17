@@ -1,5 +1,5 @@
 // Comprehensive example demonstrating the module system
-module examples.geometry
+module examples
 
 // This import is unused and will trigger a warning
 import cz.math

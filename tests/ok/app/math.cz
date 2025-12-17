@@ -1,5 +1,5 @@
 // Math module with basic arithmetic operations
-module app.math
+module app
 
 // Public function to add two numbers
 pub fn add(i32 a, i32 b) i32 {

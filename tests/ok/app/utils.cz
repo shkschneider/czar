@@ -1,5 +1,5 @@
 // Utility module with helper functions
-module app.utils
+module app
 
 // Public function to calculate absolute value
 pub fn abs(i32 x) i32 {
