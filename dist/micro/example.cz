@@ -42,6 +42,10 @@ fn main() i32 {
     // Array declaration
     i32[5] arr = [1, 2, 3, 4, 5]
     
+    // Generic types
+    pair<i32:i32> coords = new pair { first: 10, second: 20 }
+    map<i32:bool> flags = new map {}
+    
     // Heap allocation
     Point* p = new Point { x: 10, y: 20 }
     
@@ -72,6 +76,10 @@ fn main() i32 {
         if num is i32 or big is u64 {
             // Cast operation
             i64 converted = num as<i64>
+            
+            // Null safety operators
+            Point* nullable = null
+            Point* forced = nullable!!  // Force unwrap
         }
     }
     
