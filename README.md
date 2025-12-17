@@ -1,71 +1,51 @@
 # Czar
 
-> Caesar: "Veni. Vidi. Vici."
+> "Veni. Vidi. Vici." ~Caesar
 
 *Just kidding.*
 
-This is a toy language I'm trying to make to learn more about languages and compilation.
+This is a **toy language**, used as a playground of mine to learn more about languages and compilation.
+It currently is written in Lua and transpiles to C.
 
-- Static typing with explicit type annotations
-- Value semantics by default
-- Explicit mutability via  mut  keyword
-- Pointers with  &  (address-of) and  *  (dereference) operators
-- Structs with fields and methods
-- Method syntax with  :  operator (e.g.,  obj:method() )
-- Extension methods that can be defined outside the struct
-- Memory management with explicit  new  and  free
+## Phylosophy
+
+- Explicit - Safe(r) - Modular
+- Structs with methods but without inheritence
+- Mutability - Nullability - Visibility
+
+## Features
+
+- Static typing with explicit types
+- Modularization with `module` and `import`
+- Structs with members and methods (`self`)
+- Mutability `mut` (immutable by default)
+- Nullability `?`, casting with `as<Type>(optional fallback)`
+- Visibility with `pub` (private by default)
+- Pointers with `&` (address-of) and `*` (dereference) operators
+- Memory management with `new` and `free`
 - Error-as-value pattern (no exceptions)
-- Null safety features with  ?  and  !!  operators
-- Type casting with  cast<Type>  syntax
-- Arrays with compile-time bounds checking
-- Dynamic arrays (lists) with  new [...]  syntax for heap allocation
-- Internal types: pair<T:U>, array<T>, map<K:V> as struct-like types
-- Stack and heap allocation for internal types (heap with  new  keyword)
-- Module system with  module ,  import , and  pub  keywords (see MODULES.md)
-- Directives for compile-time configuration and debugging:
-  - `#FILE`, `#FUNCTION`, `#DEBUG` - compile-time information
-  - `#assert(condition)` - runtime assertion that aborts on failure
-  - `#log("message")` - prints to stderr with filename:line prefix
+- Protections: out-of-bounds, dangling pointers, use-after-free...
+- Internal types: `pair<T:T>`, `array<T>`, `map<T:T>`
+- Macros: `#FILE`, `#LINE`, `#DEBUG`, `#log(...)`, `#assert(...)`...
+- Some overloading...
+- ...
 
 > Someone had good intentions at each step along the way, but nobody stopped to ask why
 
-## Primary Goals
+## Binary
 
-- Learn how compilers work: parsing, semantic analysis, type-checking, lowering, optimization.
-- Produce a small, predictable systems language with:
-    - value semantics,
-    - pointers,
-    - static typing,
-    - clear errors,
-    - minimal implicit behavior.
+The compiler is built via `./build.sh`.
+It produces a `./dist/cz` binary.
 
-## Secondary Goals
-
-- Enable ergonomic method calls and extension methods.
-- Allow overloading (strict, no implicit conversions).
-- Introduce generics and interfaces later, once the core is solid.
-- Build optimization passes (constant folding, basic dead-store elimination, inlining).
-
-## Non-Goals
-
-- No exceptions.
-- No inheritance.
-- No implicit conversions between unrelated types.
-- No hidden memory behaviors.
-- No GC or reference counting runtime in the language core.
-- No trying to replace C++ or Rust.
-
-## Language Philosophy
-
-Czar is "C with sane defaults" with some of my own "twists":
-
-- Memory is explicit.
-- Mutability is explicit.
-- Control flow is simple.
-- Nothing implicit unless explicitly listed.
-- Zero magic conversions.
-
-Compiler produces straightforward portable C.
+```
+./dist/cz compile ...
+./dist/cz build ...
+./dist/cz run ...
+./dist/cz test ...
+./dist/cz inspect ...
+./dist/cz format ...
+./dist/cz todo|fixme ...
+```
 
 ## Steps
 
@@ -75,4 +55,4 @@ Compiler produces straightforward portable C.
 - lowering
 - analysis
 - codegen -> c
-+ macros builtins warning serrors
++ macros builtins warnings errors
