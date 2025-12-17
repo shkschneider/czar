@@ -155,6 +155,11 @@ function Parser:parse_top_level_directive()
     return Macros.parse_top_level(self, directive_tok)
 end
 
+-- Delegate method for expression parsing (used by macros)
+function Parser:parse_expression()
+    return Expressions.parse_expression(self)
+end
+
 return function(tokens, source)
     local parser = Parser.new(tokens, source)
     return parser:parse_program()
