@@ -280,9 +280,6 @@ function Inspect.inspect_file(source_path, identifier_name, options)
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
     end
 
-    -- Extract just the filename (not the full path) for display
-    local filename = source_path:match("([^/]+)$") or source_path
-    options.source_file = filename
     options.source_path = source_path
 
     -- Read source file
@@ -319,7 +316,7 @@ function Inspect.inspect_file(source_path, identifier_name, options)
     end
 
     -- Collect identifiers
-    local identifiers = collect_identifiers(typed_ast, nil, filename, module_name)
+    local identifiers = collect_identifiers(typed_ast, nil, source_path, module_name)
 
     -- Find matches
     local matches = identifiers[identifier_name] or {}
