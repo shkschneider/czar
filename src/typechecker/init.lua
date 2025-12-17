@@ -26,6 +26,8 @@ function Typechecker.new(ast, options)
         source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
         loop_depth = 0,    -- Track if we're inside a loop for break/continue validation
         require_main = options.require_main or false,  -- Whether to enforce presence of main function
+        module_name = nil, -- Current module name
+        imports = {},      -- Imported modules: { module_path, alias, used }
     }
     setmetatable(self, Typechecker)
 
@@ -108,6 +110,24 @@ end
 
 -- Main entry point: type check the entire AST
 function Typechecker:check()
+    -- Process module declaration
+    if self.ast.module then
+        self.module_name = table.concat(self.ast.module.path, ".")
+    end
+    
+    -- Process imports
+    for _, import in ipairs(self.ast.imports or {}) do
+        local module_path = table.concat(import.path, ".")
+        local alias = import.alias or import.path[#import.path]
+        table.insert(self.imports, {
+            path = module_path,
+            alias = alias,
+            used = false,
+            line = import.line,
+            col = import.col
+        })
+    end
+    
     -- Pass 1: Collect all top-level declarations (structs, functions)
     self:collect_declarations()
 
@@ -118,6 +138,9 @@ function Typechecker:check()
     if self.require_main then
         self:validate_main_function()
     end
+    
+    -- Pass 4: Check for unused imports
+    self:check_unused_imports()
 
     -- Report any errors
     if #self.errors > 0 then
@@ -959,6 +982,23 @@ function Typechecker:validate_main_function()
         local formatted_error = Errors.format("ERROR", self.source_file, line,
             Errors.ErrorType.INVALID_MAIN_SIGNATURE, msg, self.source_path)
         self:add_error(formatted_error)
+    end
+end
+
+-- Check for unused imports and generate warnings
+function Typechecker:check_unused_imports()
+    local Warnings = require("warnings")
+    
+    for _, import in ipairs(self.imports) do
+        if not import.used then
+            local msg = string.format("Unused import '%s'", import.path)
+            if import.alias and import.alias ~= import.path:match("[^.]+$") then
+                msg = string.format("Unused import '%s' (aliased as '%s')", import.path, import.alias)
+            end
+            
+            Warnings.emit(self.source_file, import.line or 0,
+                Warnings.WarningType.UNUSED_IMPORT, msg, self.source_path)
+        end
     end
 end
 

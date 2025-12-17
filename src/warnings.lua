@@ -8,6 +8,7 @@ Warnings.WarningType = {
     -- Unused variable warnings
     UNUSED_VARIABLE = "UNUSED_VARIABLE",
     UNUSED_PARAMETER = "UNUSED_PARAMETER",
+    UNUSED_IMPORT = "UNUSED_IMPORT",
     
     -- Type safety warnings
     UNSAFE_CAST = "UNSAFE_CAST",

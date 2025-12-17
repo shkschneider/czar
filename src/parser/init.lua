@@ -75,21 +75,57 @@ function Parser:expect(type_, value)
 end
 
 function Parser:parse_program()
+    local module_decl = nil
+    local imports = {}
     local items = {}
+    
+    -- Parse optional module declaration (must be first)
+    if self:check("KEYWORD", "module") then
+        module_decl = self:parse_module_declaration()
+    end
+    
+    -- Parse import statements (must come before other declarations)
+    while self:check("KEYWORD", "import") do
+        table.insert(imports, self:parse_import())
+    end
+    
+    -- Parse remaining top-level items
     while not self:check("EOF") do
         table.insert(items, self:parse_top_level())
     end
-    return { kind = "program", items = items }
+    
+    return { 
+        kind = "program", 
+        module = module_decl,
+        imports = imports,
+        items = items 
+    }
 end
 
 function Parser:parse_top_level()
+    -- Check for pub modifier
+    local is_public = false
+    if self:check("KEYWORD", "pub") then
+        self:advance()
+        is_public = true
+    end
+    
     if self:check("KEYWORD", "struct") then
-        return self:parse_struct()
+        local struct_node = self:parse_struct()
+        struct_node.is_public = is_public
+        return struct_node
     elseif self:check("KEYWORD", "enum") then
-        return self:parse_enum()
+        local enum_node = self:parse_enum()
+        enum_node.is_public = is_public
+        return enum_node
     elseif self:check("KEYWORD", "fn") then
-        return self:parse_function()
+        local func_node = self:parse_function()
+        func_node.is_public = is_public
+        return func_node
     elseif self:check("DIRECTIVE") then
+        if is_public then
+            error("pub modifier cannot be used with directives")
+        end
         return self:parse_top_level_directive()
     else
         error(string.format("unexpected token in top-level: %s", token_label(self:current())))
@@ -102,6 +138,46 @@ function Parser:parse_top_level_directive()
     -- Store token_label as a module function for error messages
     Parser.token_label = token_label
     return Macros.parse_top_level(self, directive_tok)
+end
+
+-- Parse module declaration: module foo.bar
+function Parser:parse_module_declaration()
+    self:expect("KEYWORD", "module")
+    local parts = {}
+    table.insert(parts, self:expect("IDENT").value)
+    
+    while self:match("DOT") do
+        table.insert(parts, self:expect("IDENT").value)
+    end
+    
+    return {
+        kind = "module",
+        path = parts
+    }
+end
+
+-- Parse import statement: import foo.bar [as baz]
+function Parser:parse_import()
+    local start_tok = self:expect("KEYWORD", "import")
+    local parts = {}
+    table.insert(parts, self:expect("IDENT").value)
+    
+    while self:match("DOT") do
+        table.insert(parts, self:expect("IDENT").value)
+    end
+    
+    local alias = nil
+    if self:match("KEYWORD", "as") then
+        alias = self:expect("IDENT").value
+    end
+    
+    return {
+        kind = "import",
+        path = parts,
+        alias = alias,
+        line = start_tok.line,
+        col = start_tok.col
+    }
 end
 
 function Parser:parse_struct()
