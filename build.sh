@@ -52,6 +52,7 @@ SOURCES=(
     bin/clean.lua
     bin/todo.lua
     bin/fixme.lua
+    bin/inspect.lua
     lexer/init.lua
     parser/init.lua
     typechecker/init.lua
