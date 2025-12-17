@@ -37,8 +37,8 @@ local function is_type_token(tok)
     return false
 end
 
-function Parser.new(tokens)
-    return setmetatable({ tokens = tokens, pos = 1 }, Parser)
+function Parser.new(tokens, source)
+    return setmetatable({ tokens = tokens, pos = 1, source = source }, Parser)
 end
 
 function Parser:current()
@@ -72,6 +72,47 @@ function Parser:expect(type_, value)
         error(string.format("expected %s but found %s", value or type_, token_label(tok)))
     end
     return tok
+end
+
+-- Extract raw source text from (start_line, start_col) to (end_line, end_col)
+function Parser:extract_source_range(start_line, start_col, end_line, end_col)
+    if not self.source then
+        error("Source text not available")
+    end
+    
+    local lines = {}
+    local current_line = 1
+    local current_col = 1
+    local pos = 1
+    local in_range = false
+    local result = {}
+    
+    for line in (self.source .. "\n"):gmatch("([^\n]*)\n") do
+        if current_line == start_line then
+            -- Starting line - skip to start_col
+            in_range = true
+            if current_line == end_line then
+                -- All on one line
+                local text = line:sub(start_col, end_col - 1)
+                return text
+            else
+                local text = line:sub(start_col)
+                table.insert(result, text)
+            end
+        elseif current_line == end_line then
+            -- Ending line - take up to end_col
+            local text = line:sub(1, end_col - 1)
+            table.insert(result, text)
+            break
+        elseif in_range then
+            -- Middle line - take all
+            table.insert(result, line)
+        end
+        
+        current_line = current_line + 1
+    end
+    
+    return table.concat(result, "\n")
 end
 
 function Parser:parse_program()
@@ -512,6 +553,57 @@ function Parser:parse_statement()
     elseif self:check("DIRECTIVE") then
         -- Statement-level directives like #assert and #log
         local directive_tok = self:advance()
+        
+        -- Check if this is an #unsafe block
+        if directive_tok.value:upper() == "UNSAFE" then
+            -- Parse #unsafe { raw C code }
+            -- We need to extract the raw source text between the braces
+            if not self.source then
+                error("#unsafe requires source text to be available")
+            end
+            
+            local lbrace_tok = self:expect("LBRACE")
+            local start_line = lbrace_tok.line
+            local start_col = lbrace_tok.col + 1  -- After the {
+            
+            -- Find the matching closing brace by counting depth
+            local brace_count = 1
+            local end_tok = nil
+            
+            while brace_count > 0 and not self:check("EOF") do
+                local tok = self:current()
+                
+                if tok.type == "LBRACE" then
+                    brace_count = brace_count + 1
+                elseif tok.type == "RBRACE" then
+                    brace_count = brace_count - 1
+                    if brace_count == 0 then
+                        end_tok = tok
+                        break
+                    end
+                end
+                
+                self:advance()
+            end
+            
+            if not end_tok then
+                error("Unclosed #unsafe block")
+            end
+            
+            -- Extract raw source text from start_line:start_col to end_tok.line:end_tok.col
+            local raw_code = self:extract_source_range(start_line, start_col, end_tok.line, end_tok.col)
+            
+            -- Advance past the closing brace
+            self:advance()
+            
+            return {
+                kind = "unsafe_block",
+                c_code = raw_code,
+                line = directive_tok.line,
+                col = directive_tok.col
+            }
+        end
+        
         local stmt = Macros.parse_statement(self, directive_tok)
         self:match("SEMICOLON")  -- semicolons are optional
         return stmt
@@ -860,6 +952,11 @@ function Parser:parse_unary()
         self:advance()
         local operand = self:parse_unary()
         return { kind = "unary", op = "not", operand = operand }
+    elseif tok and (tok.type == "INCREMENT" or tok.type == "DECREMENT") then
+        -- Prefix ++ or --
+        self:advance()
+        local operand = self:parse_unary()
+        return { kind = "prefix_op", op = tok.type == "INCREMENT" and "++" or "--", operand = operand }
     end
     return self:parse_postfix()
 end
@@ -1277,7 +1374,7 @@ function Parser:parse_struct_literal(type_ident)
     return { kind = "struct_literal", type_name = type_ident.name, fields = fields }
 end
 
-return function(tokens)
-    local parser = Parser.new(tokens)
+return function(tokens, source)
+    local parser = Parser.new(tokens, source)
     return parser:parse_program()
 end

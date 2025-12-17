@@ -97,6 +97,8 @@ local compound_tokens = {
     ["%="] = "PERCENTEQUAL",
     ["<<"] = "SHL",
     [">>"] = "SHR",
+    ["++"] = "INCREMENT",
+    ["--"] = "DECREMENT",
 }
 
 local function is_alpha(c)
