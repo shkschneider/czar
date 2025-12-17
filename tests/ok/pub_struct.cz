@@ -1,5 +1,5 @@
 // Test pub visibility modifier on structs
-module geometry
+module main
 
 pub struct Point {
     i32 x
