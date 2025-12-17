@@ -110,9 +110,10 @@ end
 
 -- Main entry point: type check the entire AST
 function Typechecker:check()
-    -- Process module declaration
+    -- Process module declaration and validate module naming rules
     if self.ast.module then
         self.module_name = table.concat(self.ast.module.path, ".")
+        self:validate_module_name()
     end
     
     -- Process imports
@@ -982,6 +983,49 @@ function Typechecker:validate_main_function()
         local formatted_error = Errors.format("ERROR", self.source_file, line,
             Errors.ErrorType.INVALID_MAIN_SIGNATURE, msg, self.source_path)
         self:add_error(formatted_error)
+    end
+end
+
+-- Validate module name follows directory structure rules
+function Typechecker:validate_module_name()
+    if not self.module_name or not self.source_path then
+        return
+    end
+    
+    -- Extract directory structure from source path
+    -- e.g., "tests/ok/app/geometry/point.cz" -> ["tests", "ok", "app", "geometry"]
+    local path_parts = {}
+    for part in self.source_path:gmatch("[^/]+") do
+        table.insert(path_parts, part)
+    end
+    
+    -- Remove the filename (last part)
+    table.remove(path_parts)
+    
+    -- Get module name parts
+    local module_parts = {}
+    for part in self.module_name:gmatch("[^.]+") do
+        table.insert(module_parts, part)
+    end
+    
+    -- Only enforce directory matching if:
+    -- 1. File is in a subdirectory
+    -- 2. Module name has multiple parts (e.g., app.geometry, not just geometry)
+    if #path_parts > 0 and #module_parts > 1 then
+        local dir_name = path_parts[#path_parts]
+        
+        -- Module name must end with the directory name
+        -- e.g., module "app.geometry" in directory "geometry" is valid
+        -- e.g., module "app.math" in directory "geometry" is invalid
+        if module_parts[#module_parts] ~= dir_name then
+            local msg = string.format(
+                "Module name '%s' must end with directory name '%s' (expected: '...%s')",
+                self.module_name, dir_name, dir_name
+            )
+            local formatted_error = Errors.format("ERROR", self.source_file, 0,
+                Errors.ErrorType.INVALID_MODULE_NAME, msg, self.source_path)
+            self:add_error(formatted_error)
+        end
     end
 end
 

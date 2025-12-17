@@ -2,7 +2,7 @@
 // This is a single-file test showing module syntax that will work with
 // future multi-file compilation support.
 
-module app.main
+module app
 
 // These imports demonstrate the syntax but won't resolve in single-file mode
 // import app.math

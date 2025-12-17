@@ -1,0 +1,6 @@
+// Test module validation - this should fail
+module app.wrong
+
+fn test() i32 {
+    return 0
+}

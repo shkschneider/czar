@@ -1,0 +1,27 @@
+// Point module - part of app.geometry
+module app.geometry
+
+// Public struct for 2D point
+pub struct Point {
+    i32 x
+    i32 y
+}
+
+// Public function to create a Point
+pub fn create_point(i32 x, i32 y) Point {
+    Point p = Point { x: x, y: y }
+    return p
+}
+
+// Public function to calculate distance from origin
+pub fn distance_from_origin(Point p) i32 {
+    return internal_abs(p.x) + internal_abs(p.y)
+}
+
+// Private helper function
+fn internal_abs(i32 x) i32 {
+    if x < 0 {
+        return -x
+    }
+    return x
+}
