@@ -36,6 +36,7 @@ extern const char luaJIT_BC_codegen_expressions_collections[];
 extern const char luaJIT_BC_errors[];
 extern const char luaJIT_BC_warnings[];
 extern const char luaJIT_BC_macros[];
+extern const char luaJIT_BC_builtins[];
 extern const char luaJIT_BC_compile[];
 extern const char luaJIT_BC_asm[];
 extern const char luaJIT_BC_build[];
@@ -76,6 +77,7 @@ extern const size_t luaJIT_BC_codegen_expressions_collections_size;
 extern const size_t luaJIT_BC_errors_size;
 extern const size_t luaJIT_BC_warnings_size;
 extern const size_t luaJIT_BC_macros_size;
+extern const size_t luaJIT_BC_builtins_size;
 extern const size_t luaJIT_BC_compile_size;
 extern const size_t luaJIT_BC_asm_size;
 extern const size_t luaJIT_BC_build_size;
@@ -156,7 +158,8 @@ int main(int argc, char **argv) {
         load_module(L, "codegen.expressions.collections", luaJIT_BC_codegen_expressions_collections, luaJIT_BC_codegen_expressions_collections_size) != 0 ||
         load_module(L, "errors", luaJIT_BC_errors, luaJIT_BC_errors_size) != 0 ||
         load_module(L, "warnings", luaJIT_BC_warnings, luaJIT_BC_warnings_size) != 0 ||
-        load_module(L, "macros", luaJIT_BC_macros, luaJIT_BC_macros_size) != 0 ||
+        load_module(L, "src.macros", luaJIT_BC_macros, luaJIT_BC_macros_size) != 0 ||
+        load_module(L, "src.builtins", luaJIT_BC_builtins, luaJIT_BC_builtins_size) != 0 ||
         load_module(L, "compile", luaJIT_BC_compile, luaJIT_BC_compile_size) != 0 ||
         load_module(L, "asm", luaJIT_BC_asm, luaJIT_BC_asm_size) != 0 ||
         load_module(L, "build", luaJIT_BC_build, luaJIT_BC_build_size) != 0 ||
