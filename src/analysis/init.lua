@@ -85,6 +85,9 @@ local function calculate_type_size(type_node, seen_types)
 end
 
 -- Calculate total stack size for a function
+-- Note: This is a conservative (worst-case) estimate that counts all variables
+-- in nested scopes, even if they don't exist simultaneously (e.g., if/else branches).
+-- This ensures we catch potential stack overflows even in complex control flow.
 local function calculate_function_stack_size(func)
     local total_size = 0
     
