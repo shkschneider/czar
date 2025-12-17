@@ -329,7 +329,6 @@ function Functions.gen_function(fn)
     ctx():push_scope()
     ctx():emit("{")
 
-
     -- Add unused parameter suppressions for underscore parameters
     for i, param in ipairs(fn.params) do
         if param.name == "_" then
