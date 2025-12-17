@@ -56,6 +56,11 @@ SOURCES=(
     typechecker/resolver.lua
     typechecker/inference/init.lua
     typechecker/inference/types.lua
+    typechecker/inference/literals.lua
+    typechecker/inference/expressions.lua
+    typechecker/inference/calls.lua
+    typechecker/inference/fields.lua
+    typechecker/inference/collections.lua
     typechecker/mutability.lua
     lowering/init.lua
     analysis/init.lua
