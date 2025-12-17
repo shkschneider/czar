@@ -105,6 +105,11 @@ function Statements.gen_statement(stmt)
         -- Handle #unsafe { raw C code } blocks
         -- Emit the raw C code as-is without any processing
         return stmt.c_code
+    elseif stmt.kind == "run_block" then
+        -- Handle #run { shell commands } blocks
+        -- Commands were already executed during parsing, so this is a no-op
+        -- Emit a comment indicating the #run block was here
+        return "// #run block executed during compilation"
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. Codegen.Expressions.gen_expr(stmt.value) .. ");"

@@ -1,0 +1,15 @@
+// Test #run macro
+// Verifies that shell commands are executed during compilation
+
+fn test_run() i32 {
+    #run {
+        echo "Hello from #run block during compilation!"
+        echo "This is line 2"
+    }
+    
+    return 0
+}
+
+fn main() i32 {
+    return test_run()
+}

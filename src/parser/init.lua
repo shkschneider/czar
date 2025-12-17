@@ -602,6 +602,73 @@ function Parser:parse_statement()
                 line = directive_tok.line,
                 col = directive_tok.col
             }
+        elseif directive_tok.value:upper() == "RUN" then
+            -- Parse #run { shell commands }
+            -- Extract and execute shell commands during compilation
+            if not self.source then
+                error("#run requires source text to be available")
+            end
+            
+            local lbrace_tok = self:expect("LBRACE")
+            local start_line = lbrace_tok.line
+            local start_col = lbrace_tok.col + 1  -- After the {
+            
+            -- Find the matching closing brace by counting depth
+            local brace_count = 1
+            local end_tok = nil
+            
+            while brace_count > 0 and not self:check("EOF") do
+                local tok = self:current()
+                
+                if tok.type == "LBRACE" then
+                    brace_count = brace_count + 1
+                elseif tok.type == "RBRACE" then
+                    brace_count = brace_count - 1
+                    if brace_count == 0 then
+                        end_tok = tok
+                        break
+                    end
+                end
+                
+                self:advance()
+            end
+            
+            if not end_tok then
+                error("Unclosed #run block")
+            end
+            
+            -- Extract raw shell commands from start_line:start_col to end_tok.line:end_tok.col
+            local shell_code = self:extract_source_range(start_line, start_col, end_tok.line, end_tok.col)
+            
+            -- Advance past the closing brace
+            self:advance()
+            
+            -- Execute the shell commands during parsing
+            -- Split by lines and execute each command
+            for line in (shell_code .. "\n"):gmatch("([^\n]*)\n") do
+                -- Trim whitespace
+                line = line:match("^%s*(.-)%s*$")
+                
+                -- Skip empty lines and shebang lines
+                if line ~= "" and not line:match("^#!") then
+                    -- Execute the command
+                    local success, result_type, result_code = os.execute(line)
+                    
+                    -- Check if command failed
+                    if not success then
+                        io.stderr:write(string.format("WARNING: #run command failed: %s (exit code: %s)\n", 
+                            line, tostring(result_code)))
+                    end
+                end
+            end
+            
+            -- Return a no-op statement (the commands were already executed)
+            return {
+                kind = "run_block",
+                commands = shell_code,
+                line = directive_tok.line,
+                col = directive_tok.col
+            }
         end
         
         local stmt = Macros.parse_statement(self, directive_tok)
