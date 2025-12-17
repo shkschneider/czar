@@ -124,6 +124,33 @@ local function format_var_decl(var_name, var_info)
     return table.concat(parts, " ")
 end
 
+-- Get detailed type description
+local function describe_type(type_node)
+    if not type_node then
+        return "unknown"
+    end
+    
+    if type_node.kind == "pointer" then
+        return "pointer to " .. describe_type(type_node.to)
+    elseif type_node.kind == "array" then
+        if type_node.size then
+            return "array[" .. tostring(type_node.size) .. "] of " .. describe_type(type_node.element_type)
+        else
+            return "slice of " .. describe_type(type_node.element_type)
+        end
+    elseif type_node.kind == "named_type" then
+        return type_node.name
+    elseif type_node.kind == "generic" then
+        local args = {}
+        for _, arg in ipairs(type_node.type_args) do
+            table.insert(args, describe_type(arg))
+        end
+        return type_node.name .. "<" .. table.concat(args, ", ") .. ">"
+    end
+    
+    return type_to_string(type_node)
+end
+
 -- Format struct with all fields
 local function format_struct_full(struct_item)
     local lines = {}
@@ -147,7 +174,7 @@ local function format_enum_full(enum_item)
 end
 
 -- Collect all identifiers from AST after typechecking
-local function collect_identifiers(ast, tc, source_file)
+local function collect_identifiers(ast, tc, source_file, module_name)
     local identifiers = {}
     
     -- Helper to add identifier with extended information
@@ -160,7 +187,8 @@ local function collect_identifiers(ast, tc, source_file)
             line = line,
             file = source_file,
             declaration = declaration,
-            context = context or {}
+            context = context or {},
+            module = module_name
         })
     end
     
@@ -213,6 +241,7 @@ local function collect_identifiers(ast, tc, source_file)
             local context = {
                 param_count = #item.params,
                 return_type = type_to_string(item.return_type),
+                return_type_desc = describe_type(item.return_type),
                 is_method = item.receiver_type ~= nil,
                 receiver_type = item.receiver_type
             }
@@ -225,7 +254,9 @@ local function collect_identifiers(ast, tc, source_file)
                     function_name = item.name,
                     function_line = item.line or 0,
                     param_index = param_idx,
-                    param_of = format_function_signature(item)
+                    param_of = format_function_signature(item),
+                    type_desc = describe_type(param.type),
+                    is_mutable = param.mutable or false
                 }
                 add_identifier(param.name, "function_parameter", item.line or 0, param_decl, param_context)
             end
@@ -279,8 +310,14 @@ function Inspect.inspect_file(source_path, identifier_name, options)
         return false, clean_error
     end
     
+    -- Extract module name if available
+    local module_name = nil
+    if typed_ast.module and typed_ast.module.path then
+        module_name = table.concat(typed_ast.module.path, ".")
+    end
+    
     -- Collect identifiers
-    local identifiers = collect_identifiers(typed_ast, nil, filename)
+    local identifiers = collect_identifiers(typed_ast, nil, filename, module_name)
     
     -- Find matches
     local matches = identifiers[identifier_name] or {}
@@ -344,7 +381,7 @@ function Inspect.inspect(identifier_name, paths, options)
             return false, string.format("No matches found for '%s' (some files had errors)", identifier_name)
         else
             io.stdout:write(string.format("No matches found for '%s'\n", identifier_name))
-            return true, nil
+            return false, "No matches found"  -- Return false to trigger exit code 1
         end
     end
     
@@ -352,25 +389,40 @@ function Inspect.inspect(identifier_name, paths, options)
     for _, match in ipairs(all_matches) do
         io.stdout:write(string.format("INSPECT at %s:%d %s\n", match.file, match.line, match.kind))
         
-        -- Print context information if available
+        -- Print verbose context information
         if match.context then
             local ctx = match.context
+            local module_info = match.module and (" in module '" .. match.module .. "'") or ""
+            
             if match.kind == "function_parameter" and ctx.function_name then
-                io.stdout:write(string.format("    Parameter of function '%s' at line %d\n", ctx.function_name, ctx.function_line))
+                io.stdout:write(string.format("    Parameter of function '%s'%s\n", ctx.function_name, module_info))
+                if ctx.type_desc then
+                    io.stdout:write(string.format("    Type: %s%s\n", ctx.type_desc, ctx.is_mutable and " (mutable)" or ""))
+                end
             elseif match.kind == "struct_field" and ctx.struct_name then
-                io.stdout:write(string.format("    Field of struct '%s' at line %d\n", ctx.struct_name, ctx.struct_line))
+                io.stdout:write(string.format("    Field of struct '%s'%s\n", ctx.struct_name, module_info))
             elseif match.kind == "enum_value" and ctx.enum_name then
-                io.stdout:write(string.format("    Value of enum '%s' at line %d\n", ctx.enum_name, ctx.enum_line))
+                io.stdout:write(string.format("    Value of enum '%s'%s\n", ctx.enum_name, module_info))
             elseif match.kind == "function" then
                 if ctx.is_method then
-                    io.stdout:write(string.format("    Method of type '%s', returns %s\n", ctx.receiver_type, ctx.return_type))
+                    io.stdout:write(string.format("    Method of type '%s'%s\n", ctx.receiver_type, module_info))
+                    io.stdout:write(string.format("    Returns: %s\n", ctx.return_type_desc or ctx.return_type))
                 else
-                    io.stdout:write(string.format("    Returns %s, %d parameter(s)\n", ctx.return_type, ctx.param_count))
+                    io.stdout:write(string.format("    Function%s returning %s\n", module_info, ctx.return_type_desc or ctx.return_type))
+                    if ctx.param_count > 0 then
+                        io.stdout:write(string.format("    Takes %d parameter(s)\n", ctx.param_count))
+                    end
                 end
-            elseif match.kind == "struct" and ctx.field_count then
-                io.stdout:write(string.format("    Contains %d field(s): %s\n", ctx.field_count, table.concat(ctx.fields, ", ")))
-            elseif match.kind == "enum" and ctx.value_count then
-                io.stdout:write(string.format("    Contains %d value(s): %s\n", ctx.value_count, table.concat(ctx.values, ", ")))
+            elseif match.kind == "struct" then
+                io.stdout:write(string.format("    Structure%s\n", module_info))
+                if ctx.field_count and ctx.field_count > 0 then
+                    io.stdout:write(string.format("    Contains %d field(s): %s\n", ctx.field_count, table.concat(ctx.fields, ", ")))
+                end
+            elseif match.kind == "enum" then
+                io.stdout:write(string.format("    Enum%s\n", module_info))
+                if ctx.value_count and ctx.value_count > 0 then
+                    io.stdout:write(string.format("    Contains %d value(s): %s\n", ctx.value_count, table.concat(ctx.values, ", ")))
+                end
             end
         end
         
