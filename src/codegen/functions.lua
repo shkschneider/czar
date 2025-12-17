@@ -389,7 +389,8 @@ function Functions.gen_enum(item)
                 value.line,
                 Warnings.WarningType.ENUM_VALUE_NOT_UPPERCASE,
                 msg,
-                ctx().source_path
+                ctx().source_path,
+                ctx().current_function
             )
         end
     end

@@ -139,7 +139,8 @@ function Memory.check_unused_vars()
                     nil,  -- We don't have line info stored yet
                     Warnings.WarningType.UNUSED_VARIABLE,
                     string.format("Variable '%s' is declared but never used", var_name),
-                    ctx().source_path
+                    ctx().source_path,
+                    ctx().current_function
                 )
             end
         end

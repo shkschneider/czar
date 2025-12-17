@@ -59,7 +59,8 @@ end
 -- warning_id: warning identifier from WarningType
 -- message: human-readable warning message
 -- source_path: optional full path to source file for reading line content
-function Warnings.format(filename, line, warning_id, message, source_path)
+-- function_name: optional function name for context
+function Warnings.format(filename, line, warning_id, message, source_path, function_name)
     filename = filename or "<unknown>"
     warning_id = warning_id or "UNKNOWN_WARNING"
 
@@ -69,19 +70,27 @@ function Warnings.format(filename, line, warning_id, message, source_path)
         display_line = nil
     end
 
-    local location
-    if display_line then
-        location = string.format("%s:%d", filename, display_line)
-    else
-        location = filename
-    end
-
     -- Convert warning ID to lowercase-hyphenated format
     local formatted_warning_id = format_warning_id(warning_id)
 
+    -- Build warning message in standard format: "WARNING in function() at filename:line warning-type"
+    local prefix = "WARNING "
+    if function_name then
+        prefix = prefix .. string.format("in %s() ", function_name)
+    end
+    prefix = prefix .. "at "
+    
+    if display_line then
+        prefix = prefix .. string.format("%s:%d", filename, display_line)
+    else
+        prefix = prefix .. filename
+    end
+    
+    prefix = prefix .. " " .. formatted_warning_id
+
     -- Build warning message parts
     local parts = {}
-    table.insert(parts, string.format("WARNING %s %s", location, formatted_warning_id))
+    table.insert(parts, prefix)
     table.insert(parts, "\t" .. message)
 
     -- Try to add the source line if we have a valid line number
@@ -109,8 +118,8 @@ end
 
 -- Emit a warning to stderr
 -- This is the primary way to report warnings during compilation
-function Warnings.emit(filename, line, warning_id, message, source_path)
-    local formatted = Warnings.format(filename, line, warning_id, message, source_path)
+function Warnings.emit(filename, line, warning_id, message, source_path, function_name)
+    local formatted = Warnings.format(filename, line, warning_id, message, source_path, function_name)
     io.stderr:write(formatted .. "\n")
 end
 
