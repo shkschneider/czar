@@ -95,8 +95,10 @@ local function usage()
     io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
     io.stdout:write("  asm <files...>          Generate assembly from .cz files (produces .s files)\n")
     io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
-    io.stdout:write("  build <file.cz>         Build binary from .cz file (depends on compile, produces a.out)\n")
-    io.stdout:write("  run <file.cz>           Build and run binary (depends on build, then clean)\n")
+    io.stdout:write("  build <files...>        Build binary from .cz files (finds file with main function)\n")
+    io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
+    io.stdout:write("  run <files...>          Build and run binary (finds file with main function)\n")
+    io.stdout:write("                          Accepts: file.cz, file1.cz file2.cz, or path/to/dir/\n")
     io.stdout:write("  test <files...>         Compile, run, and expect exit code 0 for each file\n")
     io.stdout:write("  format <files...>       Format .cz files (TODO: not implemented)\n")
     io.stdout:write("  clean [path]            Remove binaries and generated files (.c and .s)\n")
@@ -184,21 +186,53 @@ end
 
 local function cmd_build(args)
     if #args < 1 then
-        io.stderr:write("Error: 'build' requires a source file\n")
+        io.stderr:write("Error: 'build' requires at least one source file or directory\n")
         usage()
     end
 
-    local opts = parse_options(args)
-    local source_path = opts.source_path
-    local output_path = opts.output_path or "a.out"
-
-    if not source_path then
-        io.stderr:write("Error: 'build' requires a source file\n")
-        usage()
+    local files, options = expand_file_args(args)
+    if not files then
+        io.stderr:write(options .. "\n")  -- options contains error message
+        os.exit(1)
     end
+
+    if #files == 0 then
+        io.stderr:write("Error: no .cz files found\n")
+        os.exit(1)
+    end
+
+    -- For build, if multiple files are provided, find the one with main function
+    -- or error if none or multiple have main
+    local main_file = nil
+    if #files > 1 then
+        for _, file in ipairs(files) do
+            -- Quick check if file likely has main function
+            local f = io.open(file, "r")
+            if f then
+                local content = f:read("*a")
+                f:close()
+                if content:match("fn%s+main%s*%(") then
+                    if main_file then
+                        io.stderr:write(string.format("Error: multiple files with main function found: %s and %s\n", main_file, file))
+                        os.exit(1)
+                    end
+                    main_file = file
+                end
+            end
+        end
+        
+        if not main_file then
+            io.stderr:write("Error: no file with main function found in provided files\n")
+            os.exit(1)
+        end
+    else
+        main_file = files[1]
+    end
+
+    local output_path = options.output or "a.out"
 
     -- Call build.lua (which calls compile.lua internally)
-    local ok, result = build.build(source_path, output_path, { debug = opts.debug })
+    local ok, result = build.build(main_file, output_path, { debug = options.debug })
     if not ok then
         io.stderr:write(result .. "\n")
         os.exit(1)
@@ -209,20 +243,51 @@ end
 
 local function cmd_run(args)
     if #args < 1 then
-        io.stderr:write("Error: 'run' requires a source file\n")
+        io.stderr:write("Error: 'run' requires at least one source file or directory\n")
         usage()
     end
 
-    local opts = parse_options(args)
-    local source_path = opts.source_path
+    local files, options = expand_file_args(args)
+    if not files then
+        io.stderr:write(options .. "\n")  -- options contains error message
+        os.exit(1)
+    end
 
-    if not source_path then
-        io.stderr:write("Error: 'run' requires a source file\n")
-        usage()
+    if #files == 0 then
+        io.stderr:write("Error: no .cz files found\n")
+        os.exit(1)
+    end
+
+    -- For run, if multiple files are provided, find the one with main function
+    -- or error if none or multiple have main
+    local main_file = nil
+    if #files > 1 then
+        for _, file in ipairs(files) do
+            -- Quick check if file likely has main function
+            local f = io.open(file, "r")
+            if f then
+                local content = f:read("*a")
+                f:close()
+                if content:match("fn%s+main%s*%(") then
+                    if main_file then
+                        io.stderr:write(string.format("Error: multiple files with main function found: %s and %s\n", main_file, file))
+                        os.exit(1)
+                    end
+                    main_file = file
+                end
+            end
+        end
+        
+        if not main_file then
+            io.stderr:write("Error: no file with main function found in provided files\n")
+            os.exit(1)
+        end
+    else
+        main_file = files[1]
     end
 
     -- Call run.lua (which calls build.lua which calls compile.lua internally)
-    local ok, exit_code = run.run(source_path, { debug = opts.debug })
+    local ok, exit_code = run.run(main_file, { debug = options.debug })
     if not ok then
         io.stderr:write(exit_code .. "\n")
         os.exit(1)
