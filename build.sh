@@ -21,89 +21,50 @@ done
 
 OUT="dist/cz"
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
+LDFLAGS="-L./build -lczar -Wl"
+STATIC=true
 
-# Check if luastatic is available for static linking
-if command -v luastatic >/dev/null 2>&1 ; then
-    # Note: luastatic is a tool for creating static Lua binaries.
-    echo "[LUASTATIC] $(command -v luastatic) -> static"
+dynamic() {
+    echo -e $YELLOW"[LUA] dynamic"$WHITE
+    LIBS="$(pkg-config --libs luajit 2>/dev/null)"
+    LDFLAGS="-L./build -Wl,\
+--whole-archive -lczar -Wl,--no-whole-archive -Wl,\
+-E $LIBS -s"
+    return 0
+}
+
+static() {
+    echo -e $YELLOW"[LUA] static"$WHITE
+    LIBS="$(pkg-config --static luajit 2>/dev/null || echo -- '-lluajit')"
     if [[ ! -f ./build/libluajit.a ]] ; then
-        git clone https://luajit.org/git/luajit.git /tmp/luajit
-        make -C /tmp/luajit/src
-        file /tmp/luajit/src/libluajit.a
-        mv /tmp/luajit/src/libluajit.a ./build/
+        [[ -d /tmp/luajit ]] && rm -rf /tmp/luajit
+        echo "luajit.org/git/luajit.git..."
+        git clone -q https://luajit.org/git/luajit.git /tmp/luajit || return 1
+        echo "make..."
+        make -C /tmp/luajit/src >/dev/null || return 1
+        [[ -e /tmp/luajit/src/libluajit.a ]] || return 1
+        echo "/tmp/luajit/src/libluajit.a"
+        mkdir -p ./build
+        mv /tmp/luajit/src/libluajit.a ./build/ || return 1
         rm -rf /tmp/luajit
     fi
     # When statically linking LuaJIT, the linker will produce a dlopen warning
-    # because LuaJIT's FFI uses dlopen for dynamic library loading. This is
-    # expected LuaJIT behavior and does not indicate a build failure.
-    LUAJIT_LIBDIR="$(pkg-config --variable=libdir luajit 2>/dev/null)"
+    # because LuaJIT's FFI uses dlopen for dynamic library loading.
     LDFLAGS="-L./build -lluajit -Wl,\
---whole-archive -lczar -Wl,\
---no-whole-archive -Wl,\
+--whole-archive -lczar -Wl,--no-whole-archive -Wl,\
 -E -lm -ldl -static"
+    return 0
+}
+
+if [[ $STATIC == true ]] ; then
+    static || dynamic
 else
-    echo -e $YELLOW"[LUASTATIC] null -> dynamic"$WHITE
-    LDFLAGS="-L./build -Wl,\
---whole-archive -lczar -Wl,\
---no-whole-archive -Wl,\
--E $(pkg-config --libs luajit 2>/dev/null) -lm -ldl -s"
+    dynamic
 fi
 
-SOURCES=(
-    bin/main.lua
-    bin/compile.lua
-    bin/asm.lua
-    bin/build.lua
-    bin/run.lua
-    bin/test.lua
-    bin/format.lua
-    bin/clean.lua
-    bin/todo.lua
-    bin/fixme.lua
-    bin/inspect.lua
-    lexer/init.lua
-    parser/init.lua
-    parser/utils.lua
-    parser/types.lua
-    parser/declarations.lua
-    parser/statements.lua
-    parser/expressions.lua
-    typechecker/init.lua
-    typechecker/resolver.lua
-    typechecker/scopes.lua
-    typechecker/utils.lua
-    typechecker/declarations.lua
-    typechecker/functions.lua
-    typechecker/statements.lua
-    typechecker/validation.lua
-    typechecker/inference/init.lua
-    typechecker/inference/types.lua
-    typechecker/inference/literals.lua
-    typechecker/inference/expressions.lua
-    typechecker/inference/calls.lua
-    typechecker/inference/fields.lua
-    typechecker/inference/collections.lua
-    typechecker/mutability.lua
-    lowering/init.lua
-    analysis/init.lua
-    codegen/init.lua
-    codegen/types.lua
-    codegen/memory.lua
-    codegen/functions.lua
-    codegen/statements.lua
-    codegen/expressions/init.lua
-    codegen/expressions/literals.lua
-    codegen/expressions/operators.lua
-    codegen/expressions/calls.lua
-    codegen/expressions/collections.lua
-    errors.lua
-    warnings.lua
-    macros.lua
-    builtins.lua
-)
-LIBRARY=libczar.a
-
 set -e
+SOURCES=$(cd ./src && find * -type f -name "*.lua")
+LIBRARY=libczar.a
 
 mkdir -p ./build ./dist
 for src in ${SOURCES[@]} ; do
@@ -123,9 +84,9 @@ for src in ${SOURCES[@]} ; do
 done
 
 echo -n "[NM] main.h"
-shopt -s extglob
 echo "// Auto-generated" > ./build/main.h
 echo "#include <stddef.h>" >> ./build/main.h
+shopt -s extglob
 for src in ${SOURCES[@]} ; do
     name="$(basename ${src//\//_} .lua)"
     # Special case: if the module is in bin/, we want just the base name
