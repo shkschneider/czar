@@ -109,8 +109,8 @@ function Macros.parse_top_level(parser, macro_tok)
             -- Trim whitespace
             line = line:match("^%s*(.-)%s*$")
             
-            -- Skip empty lines and shebang lines
-            if line ~= "" and not line:match("^#!") then
+            -- Skip empty lines only
+            if line ~= "" then
                 -- Execute the command
                 local success, result_type, result_code = os.execute(line)
                 
