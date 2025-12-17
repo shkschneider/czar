@@ -1,12 +1,12 @@
 // Test #run with complex commands
-// Verifies that multiple commands work
+// Verifies that multiple commands work at top-level
+
+#run {
+    echo "Testing #run with multiple commands"
+    echo "Current directory:" && pwd
+}
 
 fn test_run_complex() i32 {
-    #run {
-        echo "Testing #run with multiple commands"
-        echo "Current directory:" && pwd
-    }
-    
     return 0
 }
 

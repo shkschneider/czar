@@ -54,6 +54,7 @@ local keywords = {
     ["module"] = true,
     ["import"] = true,
     ["pub"] = true,
+    ["run"] = true,  -- Reserved name (used as #run macro)
     -- is/type
 }
 

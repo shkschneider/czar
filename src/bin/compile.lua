@@ -58,8 +58,8 @@ function Compile.compile(source_path, options)
         return false, string.format("Lexer error: %s", clean_error)
     end
 
-    -- Parse (pass source for #unsafe blocks)
-    local ok, ast = pcall(parser, tokens, source)
+    -- Parse (pass source and filename for error messages and #unsafe blocks)
+    local ok, ast = pcall(parser, tokens, source, filename)
     if not ok then
         local clean_error = ast:gsub("^%[string [^%]]+%]:%d+: ", "")
         return false, string.format("Parser error: %s", clean_error)

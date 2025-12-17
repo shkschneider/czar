@@ -7,7 +7,7 @@ local Macros = {}
 -- PARSER MACROS
 -- ============================================================================
 
--- Parse top-level macros (#malloc, #free, #alias)
+-- Parse top-level macros (#malloc, #free, #alias, #run)
 -- These appear at module scope and configure the compiler
 function Macros.parse_top_level(parser, macro_tok)
     local macro_name = macro_tok.value:upper()
@@ -62,9 +62,76 @@ function Macros.parse_top_level(parser, macro_tok)
             line = macro_tok.line,
             col = macro_tok.col
         }
+    elseif macro_name == "RUN" then
+        -- #run { shell commands }
+        -- Extract and execute shell commands during compilation (top-level only)
+        if not parser.source then
+            error("#run requires source text to be available")
+        end
+        
+        local lbrace_tok = parser:expect("LBRACE")
+        local start_line = lbrace_tok.line
+        local start_col = lbrace_tok.col + 1  -- After the {
+        
+        -- Find the matching closing brace by counting depth
+        local brace_count = 1
+        local end_tok = nil
+        
+        while brace_count > 0 and not parser:check("EOF") do
+            local tok = parser:current()
+            
+            if tok.type == "LBRACE" then
+                brace_count = brace_count + 1
+            elseif tok.type == "RBRACE" then
+                brace_count = brace_count - 1
+                if brace_count == 0 then
+                    end_tok = tok
+                    break
+                end
+            end
+            
+            parser:advance()
+        end
+        
+        if not end_tok then
+            error("Unclosed #run block")
+        end
+        
+        -- Extract raw shell commands from start_line:start_col to end_tok.line:end_tok.col
+        local shell_code = parser:extract_source_range(start_line, start_col, end_tok.line, end_tok.col)
+        
+        -- Advance past the closing brace
+        parser:advance()
+        
+        -- Execute the shell commands during parsing
+        -- Split by lines and execute each command
+        for line in (shell_code .. "\n"):gmatch("([^\n]*)\n") do
+            -- Trim whitespace
+            line = line:match("^%s*(.-)%s*$")
+            
+            -- Skip empty lines and shebang lines
+            if line ~= "" and not line:match("^#!") then
+                -- Execute the command
+                local success, result_type, result_code = os.execute(line)
+                
+                -- Check if command failed
+                if not success then
+                    io.stderr:write(string.format("WARNING: #run command failed: %s (exit code: %s)\n", 
+                        line, tostring(result_code)))
+                end
+            end
+        end
+        
+        return {
+            kind = "run_macro",
+            commands = shell_code,
+            line = macro_tok.line,
+            col = macro_tok.col
+        }
     else
-        error(string.format("unknown top-level macro: #%s at %d:%d", 
-            macro_tok.value, macro_tok.line, macro_tok.col))
+        local filename = parser.source_file or "unknown"
+        error(string.format("ERROR at %s:%d unknown top-level macro: #%s", 
+            filename, macro_tok.line, macro_tok.value))
     end
 end
 
@@ -162,7 +229,7 @@ end
 -- CODEGEN MACROS
 -- ============================================================================
 
--- Process allocator macros (#malloc, #free) and alias macros
+-- Process allocator macros (#malloc, #free), alias macros, and run macros
 -- Called during codegen initialization
 function Macros.process_top_level(codegen, ast)
     local malloc_macro_count = 0
@@ -196,6 +263,15 @@ function Macros.process_top_level(codegen, ast)
                     item.alias_name, item.line, item.col))
             end
             codegen.type_aliases[item.alias_name] = item.target_type_str
+        elseif item.kind == "run_macro" then
+            -- #run is only allowed in the main module
+            -- Check if this is the main module (module without a name or module "main")
+            local is_main_module = not ast.module or ast.module.name == "main" or ast.module.name == nil
+            if not is_main_module then
+                error(string.format("#run is only allowed in the main module at %d:%d", 
+                    item.line, item.col))
+            end
+            -- Commands were already executed during parsing, nothing to do here
         end
     end
 end
