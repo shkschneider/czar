@@ -44,7 +44,7 @@ local function type_to_string(type_node)
     if not type_node then
         return "unknown"
     end
-    
+
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "pointer" then
@@ -64,7 +64,7 @@ local function type_to_string(type_node)
     elseif type_node.kind == "varargs" then
         return type_to_string(type_node.element_type) .. "..."
     end
-    
+
     return "unknown"
 end
 
@@ -72,14 +72,14 @@ end
 local function format_function_signature(func)
     local parts = {}
     table.insert(parts, "fn")
-    
+
     -- Add receiver type for methods
     if func.receiver_type then
         table.insert(parts, func.receiver_type .. ":" .. func.name .. "(")
     else
         table.insert(parts, func.name .. "(")
     end
-    
+
     -- Add parameters
     local params = {}
     for _, param in ipairs(func.params) do
@@ -90,13 +90,13 @@ local function format_function_signature(func)
         param_str = param_str .. type_to_string(param.type) .. " " .. param.name
         table.insert(params, param_str)
     end
-    
+
     table.insert(parts, table.concat(params, ", ") .. ")")
-    
+
     -- Add return type
     table.insert(parts, type_to_string(func.return_type))
-    
-    return table.concat(parts, " ")
+
+    return table.concat(parts, " "):gsub("fn%s+([%w_]+)%s*%(%s*", "fn %1(")
 end
 
 -- Format struct field
@@ -129,7 +129,7 @@ local function describe_type(type_node)
     if not type_node then
         return "unknown"
     end
-    
+
     if type_node.kind == "pointer" then
         return "pointer to " .. describe_type(type_node.to)
     elseif type_node.kind == "array" then
@@ -147,7 +147,7 @@ local function describe_type(type_node)
         end
         return type_node.name .. "<" .. table.concat(args, ", ") .. ">"
     end
-    
+
     return type_to_string(type_node)
 end
 
@@ -176,7 +176,7 @@ end
 -- Collect all identifiers from AST after typechecking
 local function collect_identifiers(ast, tc, source_file, module_name)
     local identifiers = {}
-    
+
     -- Helper to add identifier with extended information
     local function add_identifier(name, kind, line, declaration, context)
         if not identifiers[name] then
@@ -191,7 +191,7 @@ local function collect_identifiers(ast, tc, source_file, module_name)
             module = module_name
         })
     end
-    
+
     -- Collect from top-level items
     for _, item in ipairs(ast.items) do
         if item.kind == "struct" then
@@ -205,7 +205,7 @@ local function collect_identifiers(ast, tc, source_file, module_name)
                 table.insert(context.fields, field.name)
             end
             add_identifier(item.name, "struct", item.line or 0, decl, context)
-            
+
             -- Also collect struct fields with struct context
             for _, field in ipairs(item.fields) do
                 local field_decl = format_struct_field(field)
@@ -226,7 +226,7 @@ local function collect_identifiers(ast, tc, source_file, module_name)
                 table.insert(context.values, value.name)
             end
             add_identifier(item.name, "enum", item.line or 0, decl, context)
-            
+
             -- Also collect enum values with enum context
             for _, value in ipairs(item.values) do
                 local value_decl = item.name .. "::" .. value.name
@@ -246,7 +246,7 @@ local function collect_identifiers(ast, tc, source_file, module_name)
                 receiver_type = item.receiver_type
             }
             add_identifier(item.name, "function", item.line or 0, decl, context)
-            
+
             -- Collect parameters with function context
             for param_idx, param in ipairs(item.params) do
                 local param_decl = format_var_decl(param.name, { type = param.type, mutable = param.mutable })
@@ -264,82 +264,82 @@ local function collect_identifiers(ast, tc, source_file, module_name)
             end
         end
     end
-    
+
     -- We could also walk the AST to find local variables, but that would require
     -- more complex scope tracking. For now, we focus on top-level declarations.
-    
+
     return identifiers
 end
 
 -- Inspect a single file for a specific identifier
 function Inspect.inspect_file(source_path, identifier_name, options)
     options = options or {}
-    
+
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
     end
-    
+
     -- Extract just the filename (not the full path) for display
     local filename = source_path:match("([^/]+)$") or source_path
     options.source_file = filename
     options.source_path = source_path
-    
+
     -- Read source file
     local source, err = read_file(source_path)
     if not source then
         return false, string.format("Failed to read '%s': %s", source_path, err or "unknown error")
     end
-    
+
     -- Lex
     local ok, tokens = pcall(lexer, source)
     if not ok then
         local clean_error = tokens:gsub("^%[string [^%]]+%]:%d+: ", "")
         return false, string.format("Lexer error in %s: %s", source_path, clean_error)
     end
-    
+
     -- Parse
     local ok, ast = pcall(parser, tokens, source)
     if not ok then
         local clean_error = ast:gsub("^%[string [^%]]+%]:%d+: ", "")
         return false, string.format("Parser error in %s: %s", source_path, clean_error)
     end
-    
+
     -- Type check
     local ok, typed_ast = pcall(typechecker, ast, options)
     if not ok then
         local clean_error = typed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
         return false, clean_error
     end
-    
+
     -- Extract module name if available
     local module_name = nil
     if typed_ast.module and typed_ast.module.path then
         module_name = table.concat(typed_ast.module.path, ".")
     end
-    
+
     -- Collect identifiers
     local identifiers = collect_identifiers(typed_ast, nil, filename, module_name)
-    
+
     -- Find matches
     local matches = identifiers[identifier_name] or {}
-    
+
     return true, matches
 end
 
 -- Main inspect function
 function Inspect.inspect(identifier_name, paths, options)
     options = options or {}
-    
+
     if not identifier_name or identifier_name == "" then
         return false, "Error: identifier name is required"
     end
-    
+
     -- Default to current working directory if no paths provided
     if not paths or #paths == 0 then
         paths = {"."}
     end
-    
+
     -- Expand paths to files
     local files = {}
     for _, path in ipairs(paths) do
@@ -352,15 +352,15 @@ function Inspect.inspect(identifier_name, paths, options)
             table.insert(files, path)
         end
     end
-    
+
     if #files == 0 then
         return false, "Error: no .cz files found"
     end
-    
+
     -- Inspect each file
     local all_matches = {}
     local errors = {}
-    
+
     for _, file in ipairs(files) do
         local ok, matches = Inspect.inspect_file(file, identifier_name, options)
         if ok then
@@ -372,7 +372,7 @@ function Inspect.inspect(identifier_name, paths, options)
             table.insert(errors, matches)
         end
     end
-    
+
     -- Print results
     if #all_matches == 0 then
         if #errors > 0 then
@@ -386,17 +386,17 @@ function Inspect.inspect(identifier_name, paths, options)
             return false, "No matches found"  -- Return false to trigger exit code 1
         end
     end
-    
+
     -- Print matches
     for _, match in ipairs(all_matches) do
         -- Convert kind to lowercase-with-dashes
         local kind_formatted = match.kind:gsub("_", "-")
         io.stdout:write(string.format("INSPECT at %s:%d %s\n", match.file, match.line, kind_formatted))
-        
+
         -- Print verbose context information
         if match.context then
             local ctx = match.context
-            
+
             if match.kind == "function_parameter" and ctx.function_name then
                 -- Nth parameter of function X
                 local ordinal = ctx.param_index
@@ -406,19 +406,19 @@ function Inspect.inspect(identifier_name, paths, options)
                 elseif ordinal == 3 then suffix = "rd"
                 end
                 io.stdout:write(string.format("\t%d%s parameter of function %s\n", ordinal, suffix, ctx.function_name))
-                
+
                 -- Check if vararg
                 if ctx.is_vararg then
                     io.stdout:write("\tvararg\n")
                 end
-                
+
                 -- Mutability
                 if ctx.is_mutable then
                     io.stdout:write("\tmutable\n")
                 else
                     io.stdout:write("\timmutable\n")
                 end
-                
+
                 -- Type description
                 if ctx.type_desc then
                     if ctx.type_desc:match("^pointer to") then
@@ -427,25 +427,18 @@ function Inspect.inspect(identifier_name, paths, options)
                         io.stdout:write(string.format("\t%s\n", ctx.type_desc))
                     end
                 end
-                
+
             elseif match.kind == "struct_field" and ctx.struct_name then
                 io.stdout:write(string.format("\tfield of struct %s\n", ctx.struct_name))
-                
+
             elseif match.kind == "enum_value" and ctx.enum_name then
                 io.stdout:write(string.format("\tvalue of enum %s\n", ctx.enum_name))
-                
+
             elseif match.kind == "function" then
-                -- Function returning X
                 io.stdout:write(string.format("\tfunction returning %s\n", ctx.return_type_desc or ctx.return_type))
-                
-            elseif match.kind == "struct" then
-                io.stdout:write("\tstructure\n")
-                
-            elseif match.kind == "enum" then
-                io.stdout:write("\tenum\n")
             end
         end
-        
+
         -- Print declaration with "> " prefix on each line
         if match.declaration then
             for line in match.declaration:gmatch("[^\n]+") do
@@ -453,7 +446,7 @@ function Inspect.inspect(identifier_name, paths, options)
             end
         end
     end
-    
+
     return true, nil
 end
 

@@ -92,29 +92,29 @@ fn main() i32 {
     i32 sum = add(10, 20)                         // 30
     i32 product = multiply(5, 6)                  // 30
     i32 squares = sum_of_squares(3, 4)           // 25
-    
+
     // Test geometry
     Point p1 = create_point(0, 0)
     Point p2 = create_point(10, 5)
-    
+
     Rectangle rect = Rectangle {
         top_left: p1,
         width: 10,
         height: 5
     }
-    
+
     i32 area = calculate_area(rect)              // 50
     i32 perimeter = calculate_perimeter(rect)    // 30
-    
+
     // Test utils
     i32 abs_val = abs(-15)                       // 15
     i32 max_val = max(area, perimeter)           // 50
     i32 min_val = min(area, perimeter)           // 30
     i32 clamped = clamp(150)                     // 100
-    
+
     // Calculate: 30 + 30 + 25 - 50 - 30 + 15 - 50 + 30 - 100 + 100 = 0
     i32 result = sum + product + squares - area - perimeter + abs_val - max_val + min_val - clamped + 100
-    
+
     return result
 }
 
