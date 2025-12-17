@@ -98,8 +98,8 @@ function Statements.gen_statement(stmt)
 
         ctx():mark_freed(expr.name)
         return destructor_code .. ctx():free_call(expr.name, true) .. ";"  -- Explicit free statement
-    elseif stmt.kind == "assert_stmt" or stmt.kind == "log_stmt" then
-        -- Handle statement-level macros (#assert, #log)
+    elseif stmt.kind == "assert_stmt" or stmt.kind == "log_stmt" or stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
+        -- Handle statement-level macros (#assert, #log, #TODO, #FIXME)
         return Macros.generate_statement(stmt, ctx()) .. ";"
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;

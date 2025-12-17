@@ -68,7 +68,7 @@ function Macros.parse_top_level(parser, macro_tok)
     end
 end
 
--- Parse statement-level macros (#assert, #log)
+-- Parse statement-level macros (#assert, #log, #TODO, #FIXME)
 -- These appear as statements and execute actions
 function Macros.parse_statement(parser, macro_tok)
     local macro_name = macro_tok.value:upper()
@@ -93,6 +93,24 @@ function Macros.parse_statement(parser, macro_tok)
         
         return {
             kind = "log_stmt",
+            message = message,
+            line = macro_tok.line,
+            col = macro_tok.col
+        }
+    elseif macro_name == "TODO" or macro_name == "FIXME" then
+        -- #TODO(message) or #FIXME(message)
+        -- Message is optional, default is "TODO" or "FIXME"
+        local message = nil
+        if parser:check("LPAREN") then
+            parser:advance()  -- consume (
+            if not parser:check("RPAREN") then
+                message = parser:parse_expression()
+            end
+            parser:expect("RPAREN")
+        end
+        
+        return {
+            kind = macro_name:lower() .. "_stmt",
             message = message,
             line = macro_tok.line,
             col = macro_tok.col
@@ -223,7 +241,7 @@ function Macros.generate_call(expr, ctx)
     end
 end
 
--- Generate code for statement macros (#assert, #log)
+-- Generate code for statement macros (#assert, #log, #TODO, #FIXME)
 function Macros.generate_statement(stmt, ctx)
     if stmt.kind == "assert_stmt" then
         -- #assert(condition) -> if (!(condition)) { abort(); }
@@ -238,6 +256,42 @@ function Macros.generate_statement(stmt, ctx)
         local filename = ctx.source_file:gsub("%%", "%%%%")
         local line = stmt.line
         return string.format("fprintf(stderr, \"%s:%d \" %s \"\\n\")", filename, line, message_code)
+    elseif stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
+        -- #TODO(message) or #FIXME(message)
+        -- Print to stderr during compilation
+        local macro_type = stmt.kind == "todo_stmt" and "TODO" or "FIXME"
+        local filename = ctx.source_file:gsub("%%", "%%%%")
+        local line = stmt.line
+        local col = stmt.col
+        
+        -- Determine message to display
+        local display_message = macro_type  -- default message
+        if stmt.message then
+            local Expressions = require("codegen.expressions")
+            -- If message is a string literal, extract it for compile-time display
+            if stmt.message.kind == "string" and stmt.message.value then
+                display_message = stmt.message.value
+            else
+                -- For non-literal expressions, use the default
+                display_message = macro_type
+            end
+        end
+        
+        -- Print to stderr during compilation
+        io.stderr:write(string.format("%s %s:%d:%d %s\n", macro_type, filename, line, col, display_message))
+        
+        -- Generate runtime code that prints if #DEBUG is enabled
+        local runtime_message
+        if stmt.message then
+            local Expressions = require("codegen.expressions")
+            runtime_message = Expressions.gen_expr(stmt.message)
+        else
+            runtime_message = string.format("\"%s\"", macro_type)
+        end
+        
+        -- Generate code that prints at runtime only if czar_debug_flag is true
+        return string.format("if (czar_debug_flag) { fprintf(stderr, \"%s %s:%d:%d \" %s \"\\n\"); }", 
+                           macro_type, filename, line, col, runtime_message)
     else
         error(string.format("Unknown statement macro: %s at %d:%d", stmt.kind, stmt.line, stmt.col))
     end

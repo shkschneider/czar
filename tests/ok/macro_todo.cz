@@ -1,0 +1,13 @@
+// Test #TODO macro
+// Verifies that #TODO prints to stderr during compilation and at runtime if DEBUG
+
+fn test_todo() i32 {
+    #TODO("Implement error handling")
+    i32 x = 42
+    #TODO
+    return 0
+}
+
+fn main() i32 {
+    return test_todo()
+}
