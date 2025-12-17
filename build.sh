@@ -55,8 +55,19 @@ SOURCES=(
     bin/inspect.lua
     lexer/init.lua
     parser/init.lua
+    parser/utils.lua
+    parser/types.lua
+    parser/declarations.lua
+    parser/statements.lua
+    parser/expressions.lua
     typechecker/init.lua
     typechecker/resolver.lua
+    typechecker/scopes.lua
+    typechecker/utils.lua
+    typechecker/declarations.lua
+    typechecker/functions.lua
+    typechecker/statements.lua
+    typechecker/validation.lua
     typechecker/inference/init.lua
     typechecker/inference/types.lua
     typechecker/inference/literals.lua
