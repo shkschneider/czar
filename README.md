@@ -21,6 +21,7 @@ This is a toy language I'm trying to make to learn more about languages and comp
 - Dynamic arrays (lists) with  new [...]  syntax for heap allocation
 - Internal types: pair<T:U>, array<T>, map<K:V> as struct-like types
 - Stack and heap allocation for internal types (heap with  new  keyword)
+- Module system with  module ,  import , and  pub  keywords (see MODULES.md)
 - Directives for compile-time configuration and debugging:
   - `#FILE`, `#FUNCTION`, `#DEBUG` - compile-time information
   - `#assert(condition)` - runtime assertion that aborts on failure

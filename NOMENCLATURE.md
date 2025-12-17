@@ -19,12 +19,15 @@ _all case insensitive_
 - FUNCTION
 - i8 / i16 / i32 / i64
 - if
+- import
 - is
 - main_main
+- module
 - mut / mutable
 - new / alloc / stack / heap
 - null / nil
 - or
+- pub / public
 - return
 - self
 - string / cstr
