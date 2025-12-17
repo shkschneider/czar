@@ -1,0 +1,16 @@
+// Test #TODO and #FIXME together
+// Verifies that both macros work in combination
+
+fn test_combined() i32 {
+    #TODO("Add input validation")
+    mut i32 result = 0
+    #FIXME("Performance bottleneck")
+    result = 42
+    #TODO
+    #FIXME
+    return 0
+}
+
+fn main() i32 {
+    return test_combined()
+}
