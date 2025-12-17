@@ -299,6 +299,15 @@ function Codegen:generate()
         end
     end
     
+    -- Generate forward declarations for all functions to avoid C ordering issues
+    self:emit("// Forward declarations")
+    for _, item in ipairs(self.ast.items) do
+        if item.kind == "function" then
+            Codegen.Functions.gen_function_declaration(item)
+        end
+    end
+    self:emit("")
+    
     -- Now emit the function code
     for _, line in ipairs(function_code) do
         self:emit(line)

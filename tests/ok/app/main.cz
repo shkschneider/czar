@@ -1,3 +1,139 @@
+// Comprehensive modularization test demonstrating all module features
+// This is a single-file test showing module syntax that will work with
+// future multi-file compilation support.
+
+module app.main
+
+// These imports demonstrate the syntax but won't resolve in single-file mode
+// import app.math
+// import app.geometry as geo
+// import app.utils
+
+// Demonstrate unused import warning
+import app.unused
+
+// Define types and functions inline for single-file testing
+// In the future, these would come from separate module files
+
+// Math module functionality - with forward declarations working,
+// we can call functions defined later without manual ordering
+
+fn add(i32 a, i32 b) i32 {
+    return a + b
+}
+
+fn multiply(i32 a, i32 b) i32 {
+    return a * b
+}
+
+// This calls internal_square which is defined later
+pub fn sum_of_squares(i32 a, i32 b) i32 {
+    return internal_square(a) + internal_square(b)
+}
+
+// Geometry module functionality
+
+pub struct Point {
+    i32 x
+    i32 y
+}
+
+pub struct Rectangle {
+    Point top_left
+    i32 width
+    i32 height
+}
+
+pub fn create_point(i32 x, i32 y) Point {
+    Point p = Point { x: x, y: y }
+    return p
+}
+
+// This calls get_width which is defined later
+pub fn calculate_area(Rectangle rect) i32 {
+    return get_width(rect) * rect.height
+}
+
+pub fn calculate_perimeter(Rectangle rect) i32 {
+    return 2 * (rect.width + rect.height)
+}
+
+// Utils module functionality
+
+pub fn abs(i32 x) i32 {
+    if x < 0 {
+        return -x
+    }
+    return x
+}
+
+pub fn max(i32 a, i32 b) i32 {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+pub fn min(i32 a, i32 b) i32 {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+// This calls clamp_value which is defined later
+pub fn clamp(i32 x) i32 {
+    return clamp_value(x, 0, 100)
+}
+
+// Main function demonstrating usage - calls functions that are defined later
 fn main() i32 {
-    return 0
+    // Test math operations
+    i32 sum = add(10, 20)                         // 30
+    i32 product = multiply(5, 6)                  // 30
+    i32 squares = sum_of_squares(3, 4)           // 25
+    
+    // Test geometry
+    Point p1 = create_point(0, 0)
+    Point p2 = create_point(10, 5)
+    
+    Rectangle rect = Rectangle {
+        top_left: p1,
+        width: 10,
+        height: 5
+    }
+    
+    i32 area = calculate_area(rect)              // 50
+    i32 perimeter = calculate_perimeter(rect)    // 30
+    
+    // Test utils
+    i32 abs_val = abs(-15)                       // 15
+    i32 max_val = max(area, perimeter)           // 50
+    i32 min_val = min(area, perimeter)           // 30
+    i32 clamped = clamp(150)                     // 100
+    
+    // Calculate: 30 + 30 + 25 - 50 - 30 + 15 - 50 + 30 - 100 + 100 = 0
+    i32 result = sum + product + squares - area - perimeter + abs_val - max_val + min_val - clamped + 100
+    
+    return result
+}
+
+// Private helper functions defined after use - this works now with forward declarations!
+
+fn internal_square(i32 x) i32 {
+    return x * x
+}
+
+fn get_width(Rectangle rect) i32 {
+    return rect.width
+}
+
+fn clamp_value(i32 x, i32 min_val, i32 max_val) i32 {
+    if x < min_val {
+        return min_val
+    }
+    if x > max_val {
+        return max_val
+    }
+    return x
 }
