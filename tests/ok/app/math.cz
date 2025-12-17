@@ -1,0 +1,22 @@
+// Math module with basic arithmetic operations
+module app.math
+
+// Public function to add two numbers
+pub fn add(i32 a, i32 b) i32 {
+    return a + b
+}
+
+// Public function to multiply two numbers
+pub fn multiply(i32 a, i32 b) i32 {
+    return a * b
+}
+
+// Public function using private helper (defined later)
+pub fn sum_of_squares(i32 a, i32 b) i32 {
+    return internal_square(a) + internal_square(b)
+}
+
+// Private helper function (not exported) - defined after use
+fn internal_square(i32 x) i32 {
+    return x * x
+}

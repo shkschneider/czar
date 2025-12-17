@@ -26,34 +26,9 @@ struct InternalBuffer {
     i32 capacity
 }
 
-// Public function to create a Point
-pub fn create_point(i32 x, i32 y) Point {
-    Point p = Point { x: x, y: y }
-    return p
-}
-
-// Public function using both public and private helpers
-pub fn calculate_area(Rectangle rect) i32 {
-    // Call private helper function
-    i32 width = get_width(rect)
-    i32 height = rect.height
-    return width * height
-}
-
-// Private helper function
-fn get_width(Rectangle rect) i32 {
-    return rect.width
-}
-
-// Private function with internal logic
-fn internal_computation() i32 {
-    InternalBuffer buf = InternalBuffer { size: 10, capacity: 20 }
-    return buf.capacity - buf.size
-}
-
-// Main function (required for executable)
+// Main function first - demonstrates forward declarations work
 fn main() i32 {
-    // Create a point using public function
+    // Create a point using public function (defined later)
     Point p1 = create_point(0, 0)
     Point p2 = create_point(100, 50)
     
@@ -64,12 +39,38 @@ fn main() i32 {
         height: 50
     }
     
-    // Calculate area using public function
+    // Calculate area using public function (defined later)
     i32 area = calculate_area(rect)
     
-    // Use private function
+    // Use private function (defined later)
     i32 result = internal_computation()
     
     // Verify calculations: area=5000, result=10, so 5000 - 5000 + result - 10 = 0
     return area - 5000 + result - 10
 }
+
+// Public function using private helper (defined later)
+pub fn calculate_area(Rectangle rect) i32 {
+    // Call private helper function defined below
+    i32 width = get_width(rect)
+    i32 height = rect.height
+    return width * height
+}
+
+// Public function to create a Point
+pub fn create_point(i32 x, i32 y) Point {
+    Point p = Point { x: x, y: y }
+    return p
+}
+
+// Private function with internal logic
+fn internal_computation() i32 {
+    InternalBuffer buf = InternalBuffer { size: 10, capacity: 20 }
+    return buf.capacity - buf.size
+}
+
+// Private helper function - defined last but used earlier
+fn get_width(Rectangle rect) i32 {
+    return rect.width
+}
+
