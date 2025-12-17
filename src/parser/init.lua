@@ -124,7 +124,7 @@ function Parser:parse_top_level()
         return func_node
     elseif self:check("DIRECTIVE") then
         if is_public then
-            error("pub modifier cannot be used with directives")
+            error("pub modifier cannot be used with preprocessor directives like #assert or #log")
         end
         return self:parse_top_level_directive()
     else
