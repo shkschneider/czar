@@ -124,12 +124,34 @@ local function format_var_decl(var_name, var_info)
     return table.concat(parts, " ")
 end
 
+-- Format struct with all fields
+local function format_struct_full(struct_item)
+    local lines = {}
+    table.insert(lines, "struct " .. struct_item.name .. " {")
+    for _, field in ipairs(struct_item.fields) do
+        table.insert(lines, "    " .. format_struct_field(field))
+    end
+    table.insert(lines, "}")
+    return table.concat(lines, "\n")
+end
+
+-- Format enum with all values
+local function format_enum_full(enum_item)
+    local lines = {}
+    table.insert(lines, "enum " .. enum_item.name .. " {")
+    for _, value in ipairs(enum_item.values) do
+        table.insert(lines, "    " .. value.name)
+    end
+    table.insert(lines, "}")
+    return table.concat(lines, "\n")
+end
+
 -- Collect all identifiers from AST after typechecking
 local function collect_identifiers(ast, tc, source_file)
     local identifiers = {}
     
-    -- Helper to add identifier
-    local function add_identifier(name, kind, line, declaration)
+    -- Helper to add identifier with extended information
+    local function add_identifier(name, kind, line, declaration, context)
         if not identifiers[name] then
             identifiers[name] = {}
         end
@@ -137,38 +159,75 @@ local function collect_identifiers(ast, tc, source_file)
             kind = kind,
             line = line,
             file = source_file,
-            declaration = declaration
+            declaration = declaration,
+            context = context or {}
         })
     end
     
     -- Collect from top-level items
     for _, item in ipairs(ast.items) do
         if item.kind == "struct" then
-            local decl = "struct " .. item.name
-            add_identifier(item.name, "struct", item.line or 0, decl)
+            -- Full struct definition
+            local decl = format_struct_full(item)
+            local context = {
+                field_count = #item.fields,
+                fields = {}
+            }
+            for _, field in ipairs(item.fields) do
+                table.insert(context.fields, field.name)
+            end
+            add_identifier(item.name, "struct", item.line or 0, decl, context)
             
-            -- Also collect struct fields
+            -- Also collect struct fields with struct context
             for _, field in ipairs(item.fields) do
                 local field_decl = format_struct_field(field)
-                add_identifier(field.name, "field", field.line or item.line or 0, field_decl)
+                local field_context = {
+                    struct_name = item.name,
+                    struct_line = item.line or 0
+                }
+                add_identifier(field.name, "struct_field", field.line or item.line or 0, field_decl, field_context)
             end
         elseif item.kind == "enum" then
-            local decl = "enum " .. item.name
-            add_identifier(item.name, "enum", item.line or 0, decl)
+            -- Full enum definition
+            local decl = format_enum_full(item)
+            local context = {
+                value_count = #item.values,
+                values = {}
+            }
+            for _, value in ipairs(item.values) do
+                table.insert(context.values, value.name)
+            end
+            add_identifier(item.name, "enum", item.line or 0, decl, context)
             
-            -- Also collect enum values
+            -- Also collect enum values with enum context
             for _, value in ipairs(item.values) do
                 local value_decl = item.name .. "::" .. value.name
-                add_identifier(value.name, "enum_value", value.line or item.line or 0, value_decl)
+                local value_context = {
+                    enum_name = item.name,
+                    enum_line = item.line or 0
+                }
+                add_identifier(value.name, "enum_value", value.line or item.line or 0, value_decl, value_context)
             end
         elseif item.kind == "function" then
             local decl = format_function_signature(item)
-            add_identifier(item.name, "function", item.line or 0, decl)
+            local context = {
+                param_count = #item.params,
+                return_type = type_to_string(item.return_type),
+                is_method = item.receiver_type ~= nil,
+                receiver_type = item.receiver_type
+            }
+            add_identifier(item.name, "function", item.line or 0, decl, context)
             
-            -- Collect parameters
-            for _, param in ipairs(item.params) do
+            -- Collect parameters with function context
+            for param_idx, param in ipairs(item.params) do
                 local param_decl = format_var_decl(param.name, { type = param.type, mutable = param.mutable })
-                add_identifier(param.name, "parameter", item.line or 0, param_decl)
+                local param_context = {
+                    function_name = item.name,
+                    function_line = item.line or 0,
+                    param_index = param_idx,
+                    param_of = format_function_signature(item)
+                }
+                add_identifier(param.name, "function_parameter", item.line or 0, param_decl, param_context)
             end
         end
     end
@@ -292,6 +351,29 @@ function Inspect.inspect(identifier_name, paths, options)
     -- Print matches
     for _, match in ipairs(all_matches) do
         io.stdout:write(string.format("INSPECT at %s:%d %s\n", match.file, match.line, match.kind))
+        
+        -- Print context information if available
+        if match.context then
+            local ctx = match.context
+            if match.kind == "function_parameter" and ctx.function_name then
+                io.stdout:write(string.format("    Parameter of function '%s' at line %d\n", ctx.function_name, ctx.function_line))
+            elseif match.kind == "struct_field" and ctx.struct_name then
+                io.stdout:write(string.format("    Field of struct '%s' at line %d\n", ctx.struct_name, ctx.struct_line))
+            elseif match.kind == "enum_value" and ctx.enum_name then
+                io.stdout:write(string.format("    Value of enum '%s' at line %d\n", ctx.enum_name, ctx.enum_line))
+            elseif match.kind == "function" then
+                if ctx.is_method then
+                    io.stdout:write(string.format("    Method of type '%s', returns %s\n", ctx.receiver_type, ctx.return_type))
+                else
+                    io.stdout:write(string.format("    Returns %s, %d parameter(s)\n", ctx.return_type, ctx.param_count))
+                end
+            elseif match.kind == "struct" and ctx.field_count then
+                io.stdout:write(string.format("    Contains %d field(s): %s\n", ctx.field_count, table.concat(ctx.fields, ", ")))
+            elseif match.kind == "enum" and ctx.value_count then
+                io.stdout:write(string.format("    Contains %d value(s): %s\n", ctx.value_count, table.concat(ctx.values, ", ")))
+            end
+        end
+        
         io.stdout:write(string.format("    %s\n", match.declaration))
     end
     
