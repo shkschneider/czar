@@ -37,22 +37,26 @@ local function find_todos_in_file(filepath)
         line_num = line_num + 1
         -- Match #TODO with optional message in parentheses
         -- Pattern matches: #TODO or #TODO("message") or #TODO ( "message" )
-        local todo_match = line:match("#TODO")
-        if todo_match then
-            local message = line:match('#TODO%s*%(%s*"([^"]*)"')
-            if message then
-                table.insert(todos, {
-                    line = line_num,
-                    message = message,
-                    full_line = line:match("^%s*(.-)%s*$")  -- trim whitespace
-                })
-            else
-                -- No message provided
-                table.insert(todos, {
-                    line = line_num,
-                    message = nil,
-                    full_line = line:match("^%s*(.-)%s*$")  -- trim whitespace
-                })
+        -- But not inside comments (lines starting with //)
+        local trimmed = line:match("^%s*(.-)%s*$")
+        if not trimmed:match("^//") then
+            local todo_match = line:match("#TODO")
+            if todo_match then
+                local message = line:match('#TODO%s*%(%s*"([^"]*)"')
+                if message then
+                    table.insert(todos, {
+                        line = line_num,
+                        message = message,
+                        full_line = trimmed
+                    })
+                else
+                    -- No message provided
+                    table.insert(todos, {
+                        line = line_num,
+                        message = nil,
+                        full_line = trimmed
+                    })
+                end
             end
         end
     end

@@ -37,22 +37,26 @@ local function find_fixmes_in_file(filepath)
         line_num = line_num + 1
         -- Match #FIXME with optional message in parentheses
         -- Pattern matches: #FIXME or #FIXME("message") or #FIXME ( "message" )
-        local fixme_match = line:match("#FIXME")
-        if fixme_match then
-            local message = line:match('#FIXME%s*%(%s*"([^"]*)"')
-            if message then
-                table.insert(fixmes, {
-                    line = line_num,
-                    message = message,
-                    full_line = line:match("^%s*(.-)%s*$")  -- trim whitespace
-                })
-            else
-                -- No message provided
-                table.insert(fixmes, {
-                    line = line_num,
-                    message = nil,
-                    full_line = line:match("^%s*(.-)%s*$")  -- trim whitespace
-                })
+        -- But not inside comments (lines starting with //)
+        local trimmed = line:match("^%s*(.-)%s*$")
+        if not trimmed:match("^//") then
+            local fixme_match = line:match("#FIXME")
+            if fixme_match then
+                local message = line:match('#FIXME%s*%(%s*"([^"]*)"')
+                if message then
+                    table.insert(fixmes, {
+                        line = line_num,
+                        message = message,
+                        full_line = trimmed
+                    })
+                else
+                    -- No message provided
+                    table.insert(fixmes, {
+                        line = line_num,
+                        message = nil,
+                        full_line = trimmed
+                    })
+                end
             end
         end
     end
