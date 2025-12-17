@@ -1,55 +1,54 @@
 # Reserved / Forbidden identifiers
 
-_all case insensitive_
+_case insensitive_
 
-- and: logical and
-- any: void*
-- as?: safe cast operator with fallback (as?<Type>(fallback))
-- assert: abort() if condition is false
-- #assert: compile-time assertion
-- as: unsafe cast operator (as<Type>)
+- _
+- and
+- any
+- as?
+- assert
+- assert
+- as
 - bool / boolean
-- break: exit loop (supports multi-level break N)
-- clone / copy: clones (on heap) a value
-- continue: skip to next iteration (supports multi-level continue N)
-- _czar_* _reserved_
-- cz_* _reserved_
-- #debug: debug mode marker
-- DEBUG: macro to get or set global debug flag
+- break
+- clone / copy
+- continue
+- cz
+- DEBUG
 - else
-- elseif / elsif: if ... elseif ... else
-- enum: enumeration type
-- f32 / f64: floats
+- elseif / elsif
+- enum
+- f32 / f64
 - false
-- FILE: macro with the current file name
-- #FIXME: code marker for items needing fixes
+- FILE
+- FIXME
 - fn / fun / func / function
-- free: deallocate memory form the heap
-- FUNCTION: macro with the current function name
-- i8 / i16 / i32 / i64: integers
+- free
+- FUNCTION
+- i8 / i16 / i32 / i64
 - if
 - import
-- #inline: function inlining hint
-- is: type check operator (is<Type>)
-- #LOG: compile-time logging
-- log: runtime logging macro (#log)
-- main_main _reserved_
+- inline
+- is
+- LOG
+- log
+- main
 - module
-- mut / mutable: marks a variable as actually mutable
-- new / alloc / stack / heap: new allocates on heap
-- #noinline: prevent function inlining
-- null / nil: (void*)0
-- or: logical or
+- mut / mutable
+- new / alloc / stack / heap
+- noinline
+- null / nil
+- or
 - pub / public
-- repeat: repeat N times loop
+- repeat
 - return
-- self: pointer to current instance (struct)
-- string / cstr: string is a builtin type while cstr is C's char*
-- struct: like a C struct but with methods
-- #TODO: code marker for todos
+- self
+- string / cstr
+- struct
+- TODO
 - true
 - typeof / sizeof
-- u8 / u16 / u32 / u64: unsigned integers
-- #unsafe: unsafe code block for raw C
-- void: nothing
-- while / for : loops
+- u8 / u16 / u32 / u64
+- unsafe
+- void
+- while / for
