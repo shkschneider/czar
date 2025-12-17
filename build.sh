@@ -91,6 +91,7 @@ SOURCES=(
     errors.lua
     warnings.lua
     macros.lua
+    builtins.lua
 )
 LIBRARY=libczar.a
 
