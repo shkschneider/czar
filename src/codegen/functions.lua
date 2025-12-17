@@ -262,6 +262,30 @@ function Functions.gen_params(params)
     return join(parts, ", ")
 end
 
+-- Generate forward declaration for a function
+function Functions.gen_function_declaration(fn)
+    local name = fn.name
+    local c_name = name == "main" and "main_main" or name
+
+    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    if fn.receiver_type then
+        if name == "new" then
+            c_name = fn.receiver_type .. "_constructor"
+        elseif name == "free" then
+            c_name = fn.receiver_type .. "_destructor"
+        end
+    end
+
+    -- In explicit pointer model, return types are as declared
+    local return_type_str = Codegen.Types.c_type(fn.return_type)
+    if fn.return_type and fn.return_type.kind == "pointer" then
+        return_type_str = Codegen.Types.c_type(fn.return_type.to) .. "*"
+    end
+
+    local sig = string.format("%s %s(%s);", return_type_str, c_name, Functions.gen_params(fn.params))
+    ctx():emit(sig)
+end
+
 function Functions.gen_function(fn)
     local name = fn.name
     local c_name = name == "main" and "main_main" or name

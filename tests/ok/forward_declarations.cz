@@ -1,0 +1,26 @@
+// Test that functions can call other functions defined later in the file
+// without requiring manual reordering
+
+fn main() i32 {
+    i32 result = compute_value(10)
+    return result - 65
+}
+
+// This function is defined after main but called by it
+fn compute_value(i32 x) i32 {
+    return helper_a(x) + helper_b(x)
+}
+
+// These helpers are defined after compute_value
+fn helper_a(i32 x) i32 {
+    return x * 2 + sub_helper(x)
+}
+
+fn helper_b(i32 x) i32 {
+    return x * 3
+}
+
+// This is defined last but called by helper_a
+fn sub_helper(i32 x) i32 {
+    return x + 5
+}
