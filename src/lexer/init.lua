@@ -203,10 +203,18 @@ end
 
 function Lexer:lex_identifier()
     local start_col = self.col
+    local start_line = self.line
     local value = ""
     while self:peek() and is_alnum(self:peek()) do
         value = value .. self:advance()
     end
+    
+    -- Check identifier length (max 255 characters)
+    if #value > 255 then
+        error(string.format("Identifier '%s...' is too long (%d characters, max 255) at %d:%d",
+            value:sub(1, 20), #value, start_line, start_col))
+    end
+    
     local kind = keywords[value] and "KEYWORD" or "IDENT"
     self:add_token(kind, value, self.line, start_col)
 end
