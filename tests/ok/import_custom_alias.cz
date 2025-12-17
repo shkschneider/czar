@@ -1,0 +1,6 @@
+// Test import with custom alias shows in warning
+import cz.io as myio
+
+fn main() i32 {
+    return 0
+}
