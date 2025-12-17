@@ -19,7 +19,7 @@ for dep in git pkg-config luajit nm ar cc stat file ; do
 done
 (( r == 0 )) || exit 1
 
-OUT="cz"
+OUT="dist/cz"
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 
 # Check if luastatic is available for static linking
@@ -76,7 +76,7 @@ LIBRARY=libczar.a
 
 set -e
 
-mkdir -p ./build
+mkdir -p ./build ./dist
 for src in ${SOURCES[@]} ; do
     # For module naming, use just the base filename (without directory)
     # unless it's in a subdirectory like lexer/init.lua, parser/init.lua, etc.

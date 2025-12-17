@@ -1,0 +1,104 @@
+// Example Czar file for testing syntax highlighting
+// This demonstrates various language features
+
+module test
+
+import cz.math
+
+// Struct definition
+struct Point {
+    i32 x
+    i32 y
+}
+
+// Method on struct
+fn Point:distance_squared() i64 {
+    return (self.x * self.x + self.y * self.y) as<i64>
+}
+
+// Function with multiple types
+fn calculate(i32 a, i32 b, f64 scale) f64 {
+    mut i32 result = a + b
+    
+    // Control flow
+    if result > 100 {
+        result = 100
+    } else if result < 0 {
+        result = 0
+    }
+    
+    return result as<f64> * scale
+}
+
+// Main function
+fn main() i32 {
+    // Type declarations
+    i32 num = 42
+    u64 big = 1000
+    f32 pi = 3.14
+    bool flag = true
+    string text = "Hello, Czar!"
+    
+    // Array declaration
+    i32[5] arr = [1, 2, 3, 4, 5]
+    
+    // Heap allocation
+    Point* p = new Point { x: 10, y: 20 }
+    
+    // For loop
+    for idx, val in arr {
+        if val == 3 {
+            continue
+        }
+        #log("Processing value")
+    }
+    
+    // While loop
+    mut i32 count = 0
+    while count < 10 {
+        count = count + 1
+        if count == 5 {
+            break
+        }
+    }
+    
+    // Repeat loop
+    repeat 3 {
+        #assert(flag)
+    }
+    
+    // Logical operators
+    if flag and not false {
+        if num is i32 or big is u64 {
+            // Cast operation
+            i64 converted = num as<i64>
+        }
+    }
+    
+    // Directives
+    bool debug = #DEBUG
+    string file = #FILE
+    string func = #FUNCTION
+    
+    // Constants
+    i32 zero = 0
+    i32 hex = 0xFF
+    i32 binary = 0b1010
+    f64 float_num = 3.14159
+    f64 scientific = 1.23e-4
+    any ptr = null
+    
+    // Free memory
+    free p
+    
+    // TODO: Add more features
+    // FIXME: Handle edge cases
+    // NOTE: This is a test file
+    
+    return 0
+}
+
+/* Multi-line comment
+   for testing purposes
+   TODO: More work needed
+*/
