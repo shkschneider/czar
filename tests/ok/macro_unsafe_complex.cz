@@ -1,0 +1,22 @@
+// Test #unsafe with complex C code
+// Verifies that complex C code including nested braces works
+
+fn test_complex_unsafe() i32 {
+    mut i32 result = 0
+    
+    #unsafe {
+        // Complex C code with nested braces
+        for (int i = 0; i < 10; i++) {
+            result += i;
+            if (i % 2 == 0) {
+                result *= 2;
+            }
+        }
+    }
+    
+    return 0
+}
+
+fn main() i32 {
+    return test_complex_unsafe()
+}

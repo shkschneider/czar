@@ -101,6 +101,10 @@ function Statements.gen_statement(stmt)
     elseif stmt.kind == "assert_stmt" or stmt.kind == "log_stmt" or stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
         -- Handle statement-level macros (#assert, #log, #TODO, #FIXME)
         return Macros.generate_statement(stmt, ctx()) .. ";"
+    elseif stmt.kind == "unsafe_block" then
+        -- Handle #unsafe { raw C code } blocks
+        -- Emit the raw C code as-is without any processing
+        return stmt.c_code
     elseif stmt.kind == "discard" then
         -- Discard statement: _ = expr becomes (void)expr;
         return "(void)(" .. Codegen.Expressions.gen_expr(stmt.value) .. ");"
