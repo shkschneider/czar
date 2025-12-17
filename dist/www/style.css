@@ -1,0 +1,17 @@
+:root {
+    --background-color: #282a36;
+    --header-color: #353746;
+    --text-color: #bcc2d7;
+    --text-color-highlight: #f7f5ff;
+    --text-color-fade: #7c88b1;
+    --inverted-text-color: #fafafa;
+    --link-color: #49a4e4;
+    --red-shade: #c64;
+    --orange-shade: #c88e05;
+    --visited-link-color: #a68bfc;
+    --neutral-shade: #191a20;
+    --gamma-opacity: .75;
+    --gamma-opacity6: .8;
+    --gamma-opacity8: .82;
+    --link-code-background-color: #4452ff54;
+}
