@@ -103,6 +103,9 @@ function Statements.check_var_decl(typechecker, stmt)
     elseif stmt.init then
         -- Type check the initializer if present (for non-implicit arrays)
         local init_type = Inference.infer_type(typechecker, stmt.init)
+        
+        -- Store the inferred type on the stmt for codegen to use
+        stmt.init_type = init_type
 
         -- Check type compatibility
         if not Inference.types_compatible(var_type, init_type, typechecker) then
