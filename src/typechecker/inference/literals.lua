@@ -13,6 +13,13 @@ function Literals.infer_int_type(expr)
     return inferred
 end
 
+-- Infer float literal type
+function Literals.infer_float_type(expr)
+    local inferred = { kind = "named_type", name = "f64" }
+    expr.inferred_type = inferred
+    return inferred
+end
+
 -- Infer boolean literal type
 function Literals.infer_bool_type(expr)
     local inferred = { kind = "named_type", name = "bool" }

@@ -12,6 +12,16 @@ function Literals.gen_int(expr)
     return tostring(expr.value)
 end
 
+-- Generate float literal
+function Literals.gen_float(expr)
+    -- Ensure we have at least one decimal place for C float literals
+    local str = tostring(expr.value)
+    if not str:match("%.") and not str:match("[eE]") then
+        str = str .. ".0"
+    end
+    return str
+end
+
 -- Generate string literal (C-style quoted string)
 function Literals.gen_string(expr)
     return string.format("\"%s\"", expr.value)

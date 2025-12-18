@@ -194,6 +194,9 @@ end
 function Lexer:lex_number()
     local start_col = self.col
     local value = ""
+    local is_float = false
+    
+    -- Read integer part
     while self:peek() and (is_digit(self:peek()) or self:peek() == "_") do
         local ch = self:advance()
         -- Skip underscores - they're just for readability
@@ -201,7 +204,46 @@ function Lexer:lex_number()
             value = value .. ch
         end
     end
-    self:add_token("INT", value, self.line, start_col)
+    
+    -- Check for decimal point followed by a digit
+    if self:peek() == "." and self:peek(1) and is_digit(self:peek(1)) then
+        is_float = true
+        value = value .. self:advance()  -- Add the '.'
+        
+        -- Read fractional part
+        while self:peek() and (is_digit(self:peek()) or self:peek() == "_") do
+            local ch = self:advance()
+            -- Skip underscores - they're just for readability
+            if ch ~= "_" then
+                value = value .. ch
+            end
+        end
+    end
+    
+    -- Check for scientific notation (e or E)
+    if self:peek() and (self:peek() == "e" or self:peek() == "E") then
+        is_float = true
+        value = value .. self:advance()  -- Add 'e' or 'E'
+        
+        -- Check for optional sign
+        if self:peek() and (self:peek() == "+" or self:peek() == "-") then
+            value = value .. self:advance()
+        end
+        
+        -- Read exponent
+        while self:peek() and (is_digit(self:peek()) or self:peek() == "_") do
+            local ch = self:advance()
+            if ch ~= "_" then
+                value = value .. ch
+            end
+        end
+    end
+    
+    if is_float then
+        self:add_token("FLOAT", value, self.line, start_col)
+    else
+        self:add_token("INT", value, self.line, start_col)
+    end
 end
 
 function Lexer:lex_identifier()

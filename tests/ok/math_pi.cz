@@ -1,0 +1,30 @@
+// Test floating point literal parsing and basic math with pi
+fn main() i32 {
+    // Test basic float literal
+    f64 pi = 3.14159
+    
+    // Test float with less precision
+    f64 pi_short = 3.14
+    
+    // Test scientific notation
+    f64 pi_sci = 3.14159e0
+    f64 small = 1.5e-10
+    f64 large = 2.5e10
+    
+    // Test float arithmetic
+    f64 tau = pi * 2.0
+    f64 half_pi = pi / 2.0
+    
+    // Test with underscores for readability
+    f64 precise = 3.141_592_653_589_793
+    
+    // Basic validation - if pi is approximately correct, return 0
+    // We'll just check if it's in a reasonable range
+    if pi > 3.1 {
+        if pi < 3.2 {
+            return 0
+        }
+    }
+    
+    return 1
+}
