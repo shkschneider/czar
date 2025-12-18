@@ -5,6 +5,99 @@ local Errors = require("errors")
 
 local Declarations = {}
 
+-- Helper: Convert type to string for signature
+local function type_to_signature_string(type_node)
+    if not type_node then
+        return "unknown"
+    end
+    
+    if type_node.kind == "named_type" then
+        return type_node.name
+    elseif type_node.kind == "pointer" then
+        return type_to_signature_string(type_node.to) .. "*"
+    elseif type_node.kind == "array" then
+        return type_to_signature_string(type_node.element_type) .. "[" .. (type_node.size or "*") .. "]"
+    elseif type_node.kind == "slice" then
+        return type_to_signature_string(type_node.element_type) .. "[:]"
+    elseif type_node.kind == "varargs" then
+        return type_to_signature_string(type_node.element_type) .. "..."
+    elseif type_node.kind == "string" then
+        return "string"
+    end
+    
+    return "unknown"
+end
+
+-- Helper: Create a signature string from function parameters
+local function create_signature(params)
+    local parts = {}
+    for _, param in ipairs(params) do
+        table.insert(parts, type_to_signature_string(param.type))
+    end
+    return table.concat(parts, ",")
+end
+
+-- Helper: Validate that overloads differ on exactly one type position
+-- With "single type variance" requirement: all parameters that differ must change to/from the same base type
+-- E.g., (u8,u8)->(f32,f32) is OK (both change u8<->f32)
+-- But (u8,f32)->(u32,f64) is NOT OK (first changes u8<->u32, second changes f32<->f64)
+-- Returns true if valid, false + error message if invalid
+local function validate_overload_single_type_variance(existing_overloads, new_func, func_name)
+    if #existing_overloads == 0 then
+        return true, nil
+    end
+    
+    -- Check against first existing overload
+    local first_existing = existing_overloads[1]
+    
+    -- Must have same number of parameters
+    if #first_existing.params ~= #new_func.params then
+        return false, string.format(
+            "Function overload '%s' must have same parameter count as previous definition (line %d)",
+            func_name, first_existing.line or 0
+        )
+    end
+    
+    -- Find which parameter positions differ and what type changes occur
+    local type_changes = {}  -- Maps old_type -> new_type for each change
+    local all_same = true
+    
+    for i = 1, #first_existing.params do
+        local old_type_str = type_to_signature_string(first_existing.params[i].type)
+        local new_type_str = type_to_signature_string(new_func.params[i].type)
+        if old_type_str ~= new_type_str then
+            all_same = false
+            -- Record this type change
+            local change_sig = old_type_str .. "->" .. new_type_str
+            table.insert(type_changes, change_sig)
+        end
+    end
+    
+    -- Check if signature is identical (duplicate)
+    if all_same then
+        return false, string.format(
+            "Duplicate function definition '%s' with same signature (previously defined at line %d)",
+            func_name, first_existing.line or 0
+        )
+    end
+    
+    -- Validate single type variance: all type changes must be the same
+    -- This means if we have (u8,u8)->(f32,f32), both params change u8->f32
+    if #type_changes > 1 then
+        local first_change = type_changes[1]
+        for i = 2, #type_changes do
+            if type_changes[i] ~= first_change then
+                return false, string.format(
+                    "Function overload '%s' must vary on a single type only. Found multiple type changes: %s and %s",
+                    func_name, first_change, type_changes[i]
+                )
+            end
+        end
+    end
+    
+    return true, nil
+end
+
 -- Collect all top-level declarations
 function Declarations.collect_declarations(typechecker)
     for _, item in ipairs(typechecker.ast.items) do
@@ -84,44 +177,42 @@ function Declarations.collect_declarations(typechecker)
                 typechecker.functions[type_name] = {}
             end
 
-            -- Check for duplicate function/method definition
-            if typechecker.functions[type_name][item.name] then
-                local line = item.line or 0
-                local prev_line = typechecker.functions[type_name][item.name].line or 0
-                local msg
-                if type_name == "__global__" then
-                    msg = string.format(
-                        "Duplicate function definition '%s' (previously defined at line %d)",
-                        item.name, prev_line
+            -- Check for duplicate parameter names within the function
+            -- Allow multiple '_' parameters (convention for unused/ignored parameters)
+            local param_names = {}
+            for _, param in ipairs(item.params) do
+                if param.name ~= "_" and param_names[param.name] then
+                    local line = item.line or 0
+                    local msg = string.format(
+                        "Duplicate parameter '%s' in function '%s'",
+                        param.name, item.name
                     )
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.DUPLICATE_PARAMETER, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
                 else
-                    msg = string.format(
-                        "Duplicate method definition '%s::%s' (previously defined at line %d)",
-                        type_name, item.name, prev_line
-                    )
+                    param_names[param.name] = true
                 end
+            end
+
+            -- Support function overloading: store as array of overloads
+            if not typechecker.functions[type_name][item.name] then
+                typechecker.functions[type_name][item.name] = {}
+            end
+            
+            local existing_overloads = typechecker.functions[type_name][item.name]
+            
+            -- Validate overload (single type variance check)
+            local valid, err_msg = validate_overload_single_type_variance(existing_overloads, item, item.name)
+            if not valid then
+                local line = item.line or 0
                 local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                    Errors.ErrorType.DUPLICATE_FUNCTION, msg, typechecker.source_path)
+                    Errors.ErrorType.DUPLICATE_FUNCTION, err_msg, typechecker.source_path)
                 typechecker:add_error(formatted_error)
             else
-                -- Check for duplicate parameter names within the function
-                -- Allow multiple '_' parameters (convention for unused/ignored parameters)
-                local param_names = {}
-                for _, param in ipairs(item.params) do
-                    if param.name ~= "_" and param_names[param.name] then
-                        local line = item.line or 0
-                        local msg = string.format(
-                            "Duplicate parameter '%s' in function '%s'",
-                            param.name, item.name
-                        )
-                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                            Errors.ErrorType.DUPLICATE_PARAMETER, msg, typechecker.source_path)
-                        typechecker:add_error(formatted_error)
-                    else
-                        param_names[param.name] = true
-                    end
-                end
-                typechecker.functions[type_name][item.name] = item
+                -- Store the overload with its signature
+                item.signature = create_signature(item.params)
+                table.insert(typechecker.functions[type_name][item.name], item)
             end
         elseif item.kind == "alias_macro" then
             -- Store type aliases
