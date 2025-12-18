@@ -28,7 +28,9 @@ function Literals.gen_interpolated_string(expr, gen_expr_fn)
     -- Build the format string with appropriate type placeholders
     local format_str = ""
     for i, part in ipairs(parts) do
-        format_str = format_str .. part
+        -- Escape any existing % characters in the literal parts to prevent format string injection
+        local escaped_part = part:gsub("%%", "%%%%")
+        format_str = format_str .. escaped_part
         if i <= #expressions then
             -- Determine the format specifier based on the inferred type
             local sub_expr = expressions[i]
@@ -73,11 +75,14 @@ function Literals.gen_interpolated_string(expr, gen_expr_fn)
         return string.format("\"%s\"", format_str)
     else
         -- Use snprintf to build the string safely
+        -- Buffer size of 512 bytes should handle most interpolations
+        -- For very long strings, consider using dynamic allocation
         local arg_list = table.concat(args, ", ")
+        -- Use unique variable name to avoid conflicts
+        local buf_name = string.format("_czar_interp_%d", expr.line or 0)
         local code = string.format(
-            "({ char _interp_buf[256]; snprintf(_interp_buf, 256, \"%s\", %s); _interp_buf; })",
-            format_str,
-            arg_list
+            "({ char %s[512]; snprintf(%s, 512, \"%s\", %s); %s; })",
+            buf_name, buf_name, format_str, arg_list, buf_name
         )
         return code
     end

@@ -1,0 +1,34 @@
+// Comprehensive test of string interpolation features
+fn main() i32 {
+    i32 age = 30
+    i32 year = 2025
+    bool flag = true
+    
+    // Basic interpolation
+    println("Age is {age}")
+    
+    // Multiple interpolations
+    println("I am {age} years old in {year}")
+    
+    // Expressions in interpolation
+    println("Next year I'll be {age + 1}")
+    println("Double my age: {age * 2}")
+    
+    // Different types
+    println("Flag value: {flag}")
+    
+    // Escaped braces
+    println("Literal braces: \{not_a_variable\}")
+    
+    // With print (no newline)
+    print("Hello ")
+    print("{age}")
+    println("!")
+    
+    // Nested expressions
+    i32 a = 10
+    i32 b = 20
+    println("Sum: {a + b}, Product: {a * b}")
+    
+    return 0
+}

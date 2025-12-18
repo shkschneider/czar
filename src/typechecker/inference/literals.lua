@@ -76,13 +76,27 @@ function Literals.infer_interpolated_string_type(typechecker, expr, infer_expr_f
     end
     
     local parsed_exprs = {}
-    for _, expr_str in ipairs(expr.interp_strings) do
-        -- Lex the expression string
-        local tokens = lex(expr_str)
-        -- Create a minimal parser and parse the expression
-        local parser = make_parser(tokens, expr_str)
-        local expr_ast = Expressions.parse_expression(parser)
-        table.insert(parsed_exprs, expr_ast)
+    for i, expr_str in ipairs(expr.interp_strings) do
+        local success, result = pcall(function()
+            -- Lex the expression string
+            local tokens = lex(expr_str)
+            -- Create a minimal parser and parse the expression
+            local parser = make_parser(tokens, expr_str)
+            return Expressions.parse_expression(parser)
+        end)
+        
+        if not success then
+            -- Report error with context about which interpolation failed
+            local Errors = require("errors")
+            local line = expr.line or 0
+            local msg = string.format("Failed to parse interpolation #{%d} '{%s}': %s", i, expr_str, result)
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.PARSE_ERROR, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        table.insert(parsed_exprs, result)
     end
     
     -- Store parsed expressions for codegen to use
