@@ -46,6 +46,8 @@ function infer_type(typechecker, expr)
     -- Basic literals
     if expr.kind == "int" then
         return Literals.infer_int_type(expr)
+    elseif expr.kind == "float" then
+        return Literals.infer_float_type(expr)
     elseif expr.kind == "bool" then
         return Literals.infer_bool_type(expr)
     elseif expr.kind == "string" then
