@@ -11,10 +11,8 @@ _case insensitive_
 - break
 - clone / copy
 - continue
-- cz
+- cz / czar
 - DEBUG
-- else
-- elseif / elsif
 - enum
 - f32 / f64
 - false
@@ -24,9 +22,9 @@ _case insensitive_
 - free
 - FUNCTION
 - i8 / i16 / i32 / i64
-- if
+- if / elseif / elsif / else
 - import
-- inline
+- inline / noinline
 - is
 - LOG
 - log
@@ -34,20 +32,19 @@ _case insensitive_
 - module
 - mut / mutable
 - new / alloc / stack / heap
-- noinline
 - null / nil
 - or
 - pub / public
 - repeat
 - return
-- self
+- self / this / it
 - string / cstr
-- struct
-- T
+- struct / class
+- T / Type
 - TODO
 - true
 - typeof / sizeof
 - u8 / u16 / u32 / u64
 - unsafe
 - void
-- while / for
+- while / for / foreach
