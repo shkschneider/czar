@@ -1,10 +1,10 @@
-// Test error: cannot have mut item with immutable array
+// Test that mut item requires mut array
 fn main() i32 {
-    i32[3] arr = [ 10, 20, 30 ]
+    i32[3] arr = [ 10, 20, 30 ]  // immutable array
     
-    // Error: arr is immutable, so item cannot be mut
-    for idx, mut item in arr {
-        *item = 42
+    // ERROR: cannot have mut item with immutable array
+    for _, mut item in arr {
+        item = 42
     }
     
     return 0

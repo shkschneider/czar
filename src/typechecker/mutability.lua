@@ -67,6 +67,37 @@ function Mutability.check_mutable_target(typechecker, target)
         
         -- Recursively check nested field accesses
         return Mutability.check_mutable_target(typechecker, target.object)
+    elseif target.kind == "index" then
+        -- Array/slice indexing: check if the array itself is mutable
+        -- For index expressions, we need to check the base array
+        if target.array.kind == "identifier" then
+            local var_info = Resolver.resolve_name(typechecker, target.array.name)
+            if not var_info then
+                -- Don't report error here - let the expression type checker handle it
+                return false
+            end
+            
+            -- Check if the array/slice variable is mutable
+            if not var_info.mutable then
+                local Errors = require("errors")
+                local line = target.line or target.array.line or 0
+                local formatted_error = Errors.format(
+                    "ERROR",
+                    typechecker.source_file,
+                    line,
+                    Errors.ErrorType.IMMUTABLE_VARIABLE,
+                    string.format("Cannot modify element of immutable array/slice '%s'. Use 'mut' to allow modification.", target.array.name),
+                    typechecker.source_path
+                )
+                typechecker:add_error(formatted_error)
+                return false
+            end
+            
+            return true
+        end
+        
+        -- Recursively check nested index accesses
+        return Mutability.check_mutable_target(typechecker, target.array)
     end
     
     -- Other targets (e.g., dereferences) - for now, allow them

@@ -77,22 +77,21 @@ function Warnings.format(filename, line, warning_id, message, source_path, funct
     -- Convert warning ID to lowercase-hyphenated format
     local formatted_warning_id = format_warning_id(warning_id)
 
-    -- Build warning message in standard format: "WARNING in function() at filename:line warning-type"
-    local prefix = "WARNING "
-    if function_name then
-        prefix = prefix .. string.format("in %s() ", function_name)
-    end
-    prefix = prefix .. "at "
-    
+    -- Build location string
+    local location
     if display_line then
-        prefix = prefix .. string.format("%s:%d", filename, display_line)
+        location = string.format("%s:%d", filename, display_line)
     else
-        prefix = prefix .. filename
+        location = filename
     end
-    
-    prefix = prefix .. " " .. formatted_warning_id
 
-    -- Build warning message parts
+    -- Build warning message parts in unified format: "WARNING in function() at filename:line warning-code"
+    local prefix = "WARNING"
+    if function_name then
+        prefix = prefix .. string.format(" in %s()", function_name)
+    end
+    prefix = prefix .. " at " .. location .. " " .. formatted_warning_id
+
     local parts = {}
     table.insert(parts, prefix)
     table.insert(parts, "\t" .. message)
