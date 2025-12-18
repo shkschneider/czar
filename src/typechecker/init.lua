@@ -52,65 +52,73 @@ function Typechecker:register_builtins()
 
     -- Register println: takes a string, returns void
     self.functions["__global__"]["println"] = {
-        name = "println",
-        params = {
-            {
-                name = "str",
-                type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
-                mutable = false
-            }
-        },
-        return_type = { kind = "named_type", name = "void" },
-        is_builtin = true
+        {
+            name = "println",
+            params = {
+                {
+                    name = "str",
+                    type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                    mutable = false
+                }
+            },
+            return_type = { kind = "named_type", name = "void" },
+            is_builtin = true
+        }
     }
 
     -- Register print: takes a string, returns void
     self.functions["__global__"]["print"] = {
-        name = "print",
-        params = {
-            {
-                name = "str",
-                type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
-                mutable = false
-            }
-        },
-        return_type = { kind = "named_type", name = "void" },
-        is_builtin = true
+        {
+            name = "print",
+            params = {
+                {
+                    name = "str",
+                    type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                    mutable = false
+                }
+            },
+            return_type = { kind = "named_type", name = "void" },
+            is_builtin = true
+        }
     }
 
     -- Register printf: takes a format string and variadic arguments, returns void
     -- Note: Uses 'any' type for varargs since C printf accepts multiple types (i32, f32, char*, etc.)
     -- Type safety is enforced by the format string at runtime in C
     self.functions["__global__"]["printf"] = {
-        name = "printf",
-        params = {
-            {
-                name = "format",
-                type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
-                mutable = false
+        {
+            name = "printf",
+            params = {
+                {
+                    name = "format",
+                    type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                    mutable = false
+                },
+                {
+                    name = "args",
+                    type = { kind = "varargs", element_type = { kind = "named_type", name = "any" } },
+                    mutable = false
+                }
             },
-            {
-                name = "args",
-                type = { kind = "varargs", element_type = { kind = "named_type", name = "any" } },
-                mutable = false
-            }
-        },
-        return_type = { kind = "named_type", name = "void" },
-        is_builtin = true
+            return_type = { kind = "named_type", name = "void" },
+            is_builtin = true
+        }
     }
 
     -- Register print_i32 for compatibility
     self.functions["__global__"]["print_i32"] = {
-        name = "print_i32",
-        params = {
-            {
-                name = "value",
-                type = { kind = "named_type", name = "i32" },
-                mutable = false
-            }
-        },
-        return_type = { kind = "named_type", name = "void" },
-        is_builtin = true
+        {
+            name = "print_i32",
+            params = {
+                {
+                    name = "value",
+                    type = { kind = "named_type", name = "i32" },
+                    mutable = false
+                }
+            },
+            return_type = { kind = "named_type", name = "void" },
+            is_builtin = true
+        }
     }
 end
 

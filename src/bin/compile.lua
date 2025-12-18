@@ -62,7 +62,13 @@ function Compile.compile(source_path, options)
     local ok, ast = pcall(parser, tokens, source)
     if not ok then
         local clean_error = ast:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, string.format("Parser error: %s", clean_error)
+        -- Extract line number if present in error
+        local line_match = clean_error:match("at (%d+)")
+        if line_match then
+            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error)
+        else
+            return false, string.format("ERROR at %s Parser error: %s", source_path, clean_error)
+        end
     end
 
     -- Type check
@@ -90,7 +96,13 @@ function Compile.compile(source_path, options)
     local ok, c_source = pcall(codegen, analyzed_ast, options)
     if not ok then
         local clean_error = c_source:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, string.format("Codegen error: %s", clean_error)
+        -- Extract line number if present in error
+        local line_match = clean_error:match("line (%d+)")
+        if line_match then
+            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error)
+        else
+            return false, string.format("ERROR at %s Codegen error: %s", source_path, clean_error)
+        end
     end
 
     -- Determine output path (.cz -> .c)
