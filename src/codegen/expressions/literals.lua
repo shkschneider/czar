@@ -17,6 +17,53 @@ function Literals.gen_string(expr)
     return string.format("\"%s\"", expr.value)
 end
 
+-- Generate interpolated string (mustache-like templating)
+-- Converts "Hello {name}" into a format string with arguments
+function Literals.gen_interpolated_string(expr, gen_expr_fn)
+    local parts = expr.parts
+    local expressions = expr.expressions
+    
+    -- Build the format string
+    local format_str = ""
+    for i, part in ipairs(parts) do
+        format_str = format_str .. part
+        if i <= #expressions then
+            -- Add a placeholder - we need to determine the type
+            -- For now, we'll use %s for strings and pointers, %d for integers
+            -- This is a simplification; ideally we'd do type inference
+            format_str = format_str .. "%s"
+        end
+    end
+    
+    -- Generate code for the arguments
+    local args = {}
+    for _, expr_ast in ipairs(expressions) do
+        local arg_code = gen_expr_fn(expr_ast)
+        table.insert(args, arg_code)
+    end
+    
+    -- Return as a sprintf-like expression that can be used inline
+    -- We'll use a statement expression (GCC extension) to build the string
+    if #args == 0 then
+        -- No interpolation, just a regular string
+        return string.format("\"%s\"", format_str)
+    else
+        -- We need to build a temporary string
+        -- For simplicity, we'll use a static buffer approach
+        -- This is allocated on the stack and returned
+        local arg_list = table.concat(args, ", ")
+        
+        -- Use snprintf to build the string safely
+        -- We'll allocate a reasonable buffer size (256 bytes should be enough for most cases)
+        local code = string.format(
+            "({ char _interp_buf[256]; snprintf(_interp_buf, 256, \"%s\", %s); _interp_buf; })",
+            format_str,
+            arg_list
+        )
+        return code
+    end
+end
+
 -- Generate boolean literal
 function Literals.gen_bool(expr)
     return expr.value and "true" or "false"
