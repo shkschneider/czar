@@ -36,8 +36,9 @@ function Types.c_type(type_node)
         local right_type_str = Types.c_type(type_node.right_type):gsub("%*", "ptr")
         return "czar_pair_" .. left_type_str .. "_" .. right_type_str
     elseif type_node.kind == "string" then
-        -- Strings are represented as a struct with capacity, length, and data fields
-        return "czar_string"
+        -- Strings are represented as a pointer to a struct with capacity, length, and data fields
+        -- All czar types are implicitly pointers in the new system
+        return "czar_string*"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         
