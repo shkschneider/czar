@@ -1,12 +1,12 @@
 // Example demonstrating dynamic arrays (lists) in Czar
 //
 // Dynamic arrays are heap-allocated and created with the `new [...]` syntax.
-// They return as<Type>[] (slices), making them compatible with slice parameters.
+// They <Type> return !![] (slices), making them compatible with slice parameters.
 //
 // Syntax: Type[] name = new [elem1, elem2, elem3]
 
 fn print_array(i32[] arr, i32 len) void {
-    // Process array as<slice> parameter
+    // Process <slice> array !! parameter
     mut i32 i = 0
     while i < len {
         // In a real program, you'd use print_i32(arr[i])

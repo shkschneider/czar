@@ -21,7 +21,7 @@ fn main() i32 {
     // Access fields through pointer (compiler handles -> vs .)
     i32 initial_total = person.age + person.score  // 75
 
-    // Pass as<copy> (dereference pointer) - original not modified
+    // <copy> Pass !! (dereference pointer) - original not modified
     i32 total1 = get_total(person)  // 75
 
     // Modify directly through pointer

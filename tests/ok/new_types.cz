@@ -1,31 +1,31 @@
 // Test new numeric types: i64, u32, u64, f32, f64
 fn test_i64() i64 {
-    i64 x = 1000000000 as<i64>
-    i64 y = 2000000000 as<i64>
+    i64 x = <i64> 1000000000 !!
+    i64 y = <i64> 2000000000 !!
     return x + y  // 3000000000
 }
 
 fn test_u32() u32 {
-    u32 x = 100 as<u32>
-    u32 y = 200 as<u32>
+    u32 x = <u32> 100 !!
+    u32 y = <u32> 200 !!
     return x + y  // 300
 }
 
 fn test_u64() u64 {
-    u64 x = 1000 as<u64>
-    u64 y = 2000 as<u64>
+    u64 x = <u64> 1000 !!
+    u64 y = <u64> 2000 !!
     return x + y  // 3000
 }
 
 fn test_f32() f32 {
-    f32 x = 1 as<f32>
-    f32 y = 2 as<f32>
+    f32 x = <f32> 1 !!
+    f32 y = <f32> 2 !!
     return x + y  // 3.0
 }
 
 fn test_f64() f64 {
-    f64 x = 10 as<f64>
-    f64 y = 20 as<f64>
+    f64 x = <f64> 10 !!
+    f64 y = <f64> 20 !!
     return x + y  // 30.0
 }
 
