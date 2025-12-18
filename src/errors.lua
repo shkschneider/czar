@@ -55,6 +55,7 @@ Errors.ErrorType = {
     -- Mutability errors
     MUTABILITY_VIOLATION = "MUTABILITY_VIOLATION",
     CONST_QUALIFIER_DISCARDED = "CONST_QUALIFIER_DISCARDED",
+    IMMUTABLE_VARIABLE = "IMMUTABLE_VARIABLE",
 
     -- Lowering errors
     LOWERING_FAILED = "LOWERING_FAILED",
@@ -103,7 +104,8 @@ end
 -- error_id: error identifier from ErrorType
 -- message: human-readable error message
 -- source_path: optional full path to source file for reading line content
-function Errors.format(severity, filename, line, error_id, message, source_path)
+-- function_name: optional function name for context
+function Errors.format(severity, filename, line, error_id, message, source_path, function_name)
     severity = severity or "ERROR"
     filename = filename or "<unknown>"
     error_id = error_id or "UNKNOWN_ERROR"
@@ -125,9 +127,15 @@ function Errors.format(severity, filename, line, error_id, message, source_path)
     -- Convert error ID to lowercase-hyphenated format
     local formatted_error_id = format_error_id(error_id)
 
-    -- Build error message parts
+    -- Build error message parts in unified format: "TYPE in function() at filename:line error-code"
+    local prefix = severity
+    if function_name then
+        prefix = prefix .. string.format(" in %s()", function_name)
+    end
+    prefix = prefix .. " at " .. location .. " " .. formatted_error_id
+
     local parts = {}
-    table.insert(parts, string.format("%s %s %s", severity, location, formatted_error_id))
+    table.insert(parts, prefix)
     table.insert(parts, "\t" .. message)
 
     -- Try to add the source line if we have a valid line number

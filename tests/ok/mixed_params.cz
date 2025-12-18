@@ -1,27 +1,29 @@
-// Test mixed pointer and value parameters
-struct Value {
-    i32 data
+// Test mixing value and pointer parameters
+struct Vec2 {
+    i32 x
+    i32 y
 }
 
-fn by_value(Value v) i32 {
-    return v.data
+fn by_value(Vec2 v) i32 {
+    return v.x + v.y
 }
 
-fn by_pointer(Value? v) i32 {
-    return v.data
+fn by_pointer(Vec2? p) i32 {
+    return p.x + p.y
 }
 
-fn mixed(Value v, Value? p) i32 {
-    return v.data + p.data
+fn mixed(Vec2 v, Vec2? p) i32 {
+    return v.x + p.y
 }
 
 fn main() i32 {
-    Value v1 = Value { data: 10 }
-    Value v2 = Value { data: 20 }
+    Vec2 v1 = Vec2 { x: 10, y: 20 }
+    Vec2 v2 = Vec2 { x: 5, y: 15 }
     
     i32 r1 = by_value(v1)
-    i32 r2 = by_pointer(&v2)
-    i32 r3 = mixed(v1, &v2)
+    i32 r2 = by_pointer(v2)
+    i32 r3 = mixed(v1, v2)
     
-    return r1 + r2 + r3 - 60  // 10 + 20 + 30 = 60
+    // r1 = 30, r2 = 20, r3 = 10 + 15 = 25
+    return (r1 + r2 + r3) - 75
 }
