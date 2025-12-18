@@ -1,7 +1,9 @@
+# Features
 
+_un-ordered_
 
-- `!!` abort() if _null_
-- `array<T>` and `[]`slices, `pair<T:T>`, `map<T:T>`
+- `!!` abort() if _null_ (or cast failed)
+- `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
 - `#assert` if condition is false
 - autofree when going out-of-scope
 - `! & | ^ << >>` bitwise operators
@@ -11,11 +13,8 @@
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
 - customizable memory allocators (`#malloc` `#free`...)
 - `#DEBUG` to get or set global debug flag
-# Features
 - `#FILE` injects current file
-- floats `f32/64`
 - `fn function_name(parameters...) return_type`
-- `for idx, item in iterable {}`
 - `#FUNCTION` injects current function name
 - identifiers length must be less than 256 long
 - `if {} elseif {} else {}`
@@ -28,32 +27,33 @@
 - integers `i8/16/32/64`
 - `#LINE` injects current line number of current file
 - `#log` to log to stderr
+- loop: `for idx, item in iterable {}`
+- loop: `while condition {}`
 - `module module_name` defaults to "main"
 - more compiler warnings
-- `mut` i32 allows to change its value
-- `mut` of a struct allows to change its members
+- `mut` T allows to change its value or members
 - named and default parameters
 - `new` allocates on heap (pointer)
 - `null` _(void*)0_, `void` (nothing), `any` (_void*_)
+- number: floats `f32/64`
 - operator compounds: `+= -= *= /= %=`
 - package "main" is mandatory for multiple files
-- pointers: `type* name`
+- pointers: implicit (no `*` nor `&`)
 - private by default
-- `pub` to set visibility to "public" (outside of module)
+- `pub` accessible outside of module
 - single-line `//` and multi-line `/**/` comments
 - `sizeof` `x is T` and `type(x)` (string)
+- stack allocation warns at 1MB and errors at 2MB
 - stack usage should be less than 1MB and must be less than 2MB
 - `string` type
 - struct constructor method `new()` and destructor `free()`
 - `struct Name { members... }`
 - struct with methods: `fn Name:method() {}` with implicit `self`
-- `type?` marks it as nullable
+- `Type` safe (non-null) pointer
+- `Type?` unsafe (nullable) pointer
+- `<Type> x` to cast (with optional fallback)
 - unified logging as "TYPE file:line ..."
-> unordered
 - `#unsafe {}` to embed raw C code
 - unsigned integers `u8/16/32/64`
 - unused `_` anything
 - variables: `type name`
-- `var or fallback` sets to _fallback_ is var is false or null
-- `while condition {}`
-- `x as<Type>` to cast (with optional fallback)
