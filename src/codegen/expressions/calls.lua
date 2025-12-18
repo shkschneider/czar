@@ -340,9 +340,14 @@ function Calls.gen_call(expr, gen_expr_fn)
             
             -- Resolve arguments (handle named args and defaults)
             local resolved_args = ctx():resolve_arguments(expr.callee.name, expr.args, func_def.params)
+            
+            -- Check if this is a builtin that handles its own varargs (like printf)
+            local Builtins = require("src.builtins")
+            local is_builtin_varargs = Builtins.calls[func_name] ~= nil and func_def.is_builtin
+            
             for _, a in ipairs(resolved_args) do
-                if a.kind == "varargs_list" then
-                    -- Generate varargs array
+                if a.kind == "varargs_list" and not is_builtin_varargs then
+                    -- Generate varargs array (not for builtins like printf)
                     if #a.args == 0 then
                         -- No varargs provided, pass NULL and 0
                         table.insert(args, "NULL")
@@ -358,6 +363,11 @@ function Calls.gen_call(expr, gen_expr_fn)
                         local array_literal = string.format("(%s[]){%s}", element_type, join(varargs_exprs, ", "))
                         table.insert(args, array_literal)
                         table.insert(args, tostring(#a.args))
+                    end
+                elseif a.kind == "varargs_list" and is_builtin_varargs then
+                    -- For builtin varargs functions like printf, pass args directly
+                    for _, varg in ipairs(a.args) do
+                        table.insert(args, gen_expr_fn(varg))
                     end
                 else
                     table.insert(args, gen_expr_fn(a))

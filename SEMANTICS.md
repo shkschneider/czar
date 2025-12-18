@@ -45,6 +45,7 @@ _case insensitive_
 - self
 - string / cstr
 - struct
+- T (reserved for generic type parameter)
 - TODO
 - true
 - typeof / sizeof
