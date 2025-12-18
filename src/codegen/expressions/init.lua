@@ -48,8 +48,8 @@ function Expressions.gen_expr(expr)
         return Operators.gen_sizeof(expr)
     elseif expr.kind == "unary" then
         return Operators.gen_unary(expr, Expressions.gen_expr)
-    elseif expr.kind == "prefix_op" then
-        return Operators.gen_prefix_op(expr, Expressions.gen_expr)
+    elseif expr.kind == "prefix" then
+        return Operators.gen_prefix(expr, Expressions.gen_expr)
     elseif expr.kind == "postfix" then
         return Operators.gen_postfix(expr, Expressions.gen_expr)
     elseif expr.kind == "null_check" then

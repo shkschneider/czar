@@ -140,7 +140,7 @@ function Expressions.parse_unary(parser)
         -- Prefix ++ or --
         parser:advance()
         local operand = Expressions.parse_unary(parser)
-        return { kind = "prefix_op", op = tok.type == "INCREMENT" and "++" or "--", operand = operand }
+        return { kind = "prefix", op = tok.type == "INCREMENT" and "++" or "--", operand = operand }
     end
     return Expressions.parse_postfix(parser)
 end
