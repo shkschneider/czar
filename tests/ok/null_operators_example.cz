@@ -49,7 +49,7 @@ fn main() i32 {
         name: 400,
         config: Config { timeout: 15, retries: 4 }
     }
-    Service? checked = service4!!  // Succeeds, service4 is not null
+    Service? checked = service4  // Succeeds, service4 is not null
 
     // Example 4: Using fallback values
     Service? service5 = null
