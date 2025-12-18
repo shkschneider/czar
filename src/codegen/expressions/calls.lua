@@ -144,9 +144,19 @@ function Calls.gen_call(expr, gen_expr_fn)
         end
 
         -- Look up the method
-        local method = nil
+        local method_overloads = nil
         if receiver_type_name and ctx().functions[receiver_type_name] then
-            method = ctx().functions[receiver_type_name][method_name]
+            method_overloads = ctx().functions[receiver_type_name][method_name]
+        end
+        
+        local method = nil
+        if method_overloads then
+            -- Get the first overload (methods typically aren't overloaded, but support it)
+            if type(method_overloads) == "table" and #method_overloads > 0 then
+                method = method_overloads[1]
+            else
+                method = method_overloads
+            end
         end
 
         if method then
@@ -211,9 +221,19 @@ function Calls.gen_call(expr, gen_expr_fn)
         end
 
         -- Look up the method
-        local method = nil
+        local method_overloads = nil
         if receiver_type_name and ctx().functions[receiver_type_name] then
-            method = ctx().functions[receiver_type_name][method_name]
+            method_overloads = ctx().functions[receiver_type_name][method_name]
+        end
+        
+        local method = nil
+        if method_overloads then
+            -- Get the first overload (methods typically aren't overloaded, but support it)
+            if type(method_overloads) == "table" and #method_overloads > 0 then
+                method = method_overloads[1]
+            else
+                method = method_overloads
+            end
         end
 
         if method then
