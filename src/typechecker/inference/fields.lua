@@ -323,6 +323,11 @@ function Fields.infer_struct_literal_type(typechecker, expr)
 
             if field_type then
                 local value_type = Fields.infer_type(typechecker, field_init.value)
+                
+                -- Store field type for codegen
+                field_init.expected_type = field_type
+                field_init.value_type = value_type
+                
                 local result_type, cast_node = try_implicit_cast(
                     field_type,
                     value_type,
