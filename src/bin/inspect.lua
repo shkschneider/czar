@@ -131,7 +131,7 @@ local function describe_type(type_node)
     end
 
     if type_node.kind == "nullable" then
-        return "pointer to " .. describe_type(type_node.to)
+        return "unsafe pointer to " .. describe_type(type_node.to)
     elseif type_node.kind == "array" then
         if type_node.size then
             return "array[" .. tostring(type_node.size) .. "] of " .. describe_type(type_node.element_type)
@@ -418,10 +418,15 @@ function Inspect.inspect(identifier_name, paths, options)
 
                 -- Type description
                 if ctx.type_desc then
-                    if ctx.type_desc:match("^pointer to") then
+                    if ctx.type_desc:match("^unsafe pointer to") then
+                        io.stdout:write(string.format("\t%s\n", ctx.type_desc))
+                    elseif ctx.type_desc:match("^safe pointer") then
                         io.stdout:write(string.format("\t%s\n", ctx.type_desc))
                     elseif ctx.type_desc:match("^array%[") or ctx.type_desc:match("^slice of") then
                         io.stdout:write(string.format("\t%s\n", ctx.type_desc))
+                    else
+                        -- Regular named types are safe pointers by default
+                        io.stdout:write(string.format("\tsafe pointer to %s\n", ctx.type_desc))
                     end
                 end
 

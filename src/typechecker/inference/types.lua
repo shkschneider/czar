@@ -41,25 +41,24 @@ function Types.types_compatible(type1, type2, typechecker)
         type2 = Types.resolve_type_alias(typechecker, type2)
     end
 
-    -- Allow void? (null) to be compatible with any nullable type
+    -- Allow void? (null) to be compatible with any unsafe pointer type
     if type1.kind == "nullable" and type1.to and type1.to.name == "void" then
         if type2.kind == "nullable" then
-            return true  -- null can be assigned to any nullable
+            return true  -- null can be assigned to any unsafe pointer
         end
     end
     if type2.kind == "nullable" and type2.to and type2.to.name == "void" then
         if type1.kind == "nullable" then
-            return true  -- any nullable can accept null
+            return true  -- any unsafe pointer can accept null
         end
     end
 
-    -- Allow any type (void?) to accept any pointer/struct/nullable
-    -- any can hold any pointer, so any Type or Type? can be assigned to any
+    -- Allow any type (void?) to accept any pointer/struct
+    -- any can hold any pointer, so any Type (safe) or Type? (unsafe) can be assigned to any
     if type1.kind == "named_type" and type1.name == "any" then
         -- any can accept:
-        -- - Any named type (struct, etc.) - will take its address
-        -- - Any nullable type
-        -- - Any pointer type
+        -- - Any named type (struct, etc.) - safe pointer - will take its address
+        -- - Any unsafe pointer type (Type?)
         if type2.kind == "named_type" or type2.kind == "nullable" then
             return true
         end
@@ -68,9 +67,9 @@ function Types.types_compatible(type1, type2, typechecker)
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
     elseif type1.kind == "nullable" and type2.kind == "named_type" then
-        -- Allow non-nullable to be assigned to nullable (safe conversion)
-        -- e.g., Data can be assigned to Data?
-        -- Check if the non-nullable type (type2) matches the inner type of nullable (type1.to)
+        -- Allow safe pointer to be assigned to unsafe pointer (safe conversion)
+        -- e.g., Data (safe) can be assigned to Data? (unsafe)
+        -- Check if the safe pointer type (type2) matches the inner type of unsafe pointer (type1.to)
         return Types.types_compatible(type1.to, type2, typechecker)
     elseif type1.kind == "nullable" and type2.kind == "nullable" then
         return Types.types_compatible(type1.to, type2.to, typechecker)

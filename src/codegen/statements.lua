@@ -158,15 +158,15 @@ function Statements.gen_statement(stmt)
             if stmt.init then
                 local init_expr = Codegen.Expressions.gen_expr(stmt.init)
                 
-                -- Check if we need to take the address (non-nullable to nullable/any conversion)
+                -- Check if we need to take the address (safe to unsafe pointer conversion)
                 if stmt.init_type and stmt.init.kind == "identifier" then
-                    -- Non-nullable to nullable: Type -> Type?
+                    -- Safe pointer to unsafe pointer: Type -> Type?
                     if stmt.init_type.kind == "named_type" and stmt.type.kind == "nullable" then
                         init_expr = "&" .. init_expr
-                    -- Non-nullable to any: Type -> any (void*)
+                    -- Safe pointer to any: Type -> any (void*)
                     elseif stmt.init_type.kind == "named_type" and stmt.type.kind == "named_type" and stmt.type.name == "any" then
                         init_expr = "&" .. init_expr
-                    -- Nullable to any: Type? -> any (already a pointer, no & needed)
+                    -- Unsafe pointer to any: Type? -> any (already a pointer, no & needed)
                     -- This is handled automatically since both are pointers
                     end
                 end
