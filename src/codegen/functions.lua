@@ -12,6 +12,47 @@ local function join(list, sep)
     return table.concat(list, sep or "")
 end
 
+-- Helper: Convert type to string for C name generation
+local function type_to_c_name(type_node)
+    if not type_node then
+        return "unknown"
+    end
+    
+    if type_node.kind == "named_type" then
+        return type_node.name
+    elseif type_node.kind == "pointer" then
+        return type_to_c_name(type_node.to) .. "_ptr"
+    elseif type_node.kind == "array" then
+        return type_to_c_name(type_node.element_type) .. "_arr"
+    elseif type_node.kind == "slice" then
+        return type_to_c_name(type_node.element_type) .. "_slice"
+    elseif type_node.kind == "string" then
+        return "string"
+    end
+    
+    return "unknown"
+end
+
+-- Helper: Generate unique C name for overloaded function
+-- For overloaded functions, append type signature to name
+local function generate_c_function_name(func_name, params, is_overloaded)
+    if not is_overloaded then
+        return func_name == "main" and "main_main" or func_name
+    end
+    
+    -- For overloaded functions, append the first non-matching type to the name
+    -- Since we enforce single-type variance, we just need to identify which type differs
+    local type_suffix = ""
+    for _, param in ipairs(params) do
+        local type_name = type_to_c_name(param.type)
+        if type_suffix == "" then
+            type_suffix = type_name
+        end
+    end
+    
+    return func_name .. "_" .. type_suffix
+end
+
 -- Resolve function arguments, handling named arguments and default parameters
 -- func_name: name of the function being called (for error messages)
 -- args: list of arguments from the call site (may include named_arg nodes)
@@ -120,7 +161,11 @@ function Functions.collect_structs_and_functions()
                 if not ctx().functions[item.receiver_type] then
                     ctx().functions[item.receiver_type] = {}
                 end
-                ctx().functions[item.receiver_type][item.name] = item
+                -- Methods are stored as arrays to support overloading
+                if not ctx().functions[item.receiver_type][item.name] then
+                    ctx().functions[item.receiver_type][item.name] = {}
+                end
+                table.insert(ctx().functions[item.receiver_type][item.name], item)
             else
                 -- Regular function, also check if it's an extension method
                 if #item.params > 0 and item.params[1].name == SELF_PARAM_NAME then
@@ -136,14 +181,20 @@ function Functions.collect_structs_and_functions()
                         if not ctx().functions[receiver_type_name] then
                             ctx().functions[receiver_type_name] = {}
                         end
-                        ctx().functions[receiver_type_name][func_name] = item
+                        if not ctx().functions[receiver_type_name][func_name] then
+                            ctx().functions[receiver_type_name][func_name] = {}
+                        end
+                        table.insert(ctx().functions[receiver_type_name][func_name], item)
                     end
                 end
                 -- Store all regular functions by name for warning checks
                 if not ctx().functions["__global__"] then
                     ctx().functions["__global__"] = {}
                 end
-                ctx().functions["__global__"][func_name] = item
+                if not ctx().functions["__global__"][func_name] then
+                    ctx().functions["__global__"][func_name] = {}
+                end
+                table.insert(ctx().functions["__global__"][func_name], item)
             end
         end
     end
@@ -151,12 +202,20 @@ end
 
 -- Check if a struct has a constructor method (Type:new)
 function Functions.has_constructor(struct_name)
-    return ctx().functions[struct_name] and ctx().functions[struct_name]["new"]
+    if ctx().functions[struct_name] and ctx().functions[struct_name]["new"] then
+        local overloads = ctx().functions[struct_name]["new"]
+        return #overloads > 0
+    end
+    return false
 end
 
 -- Check if a struct has a destructor method (Type:free)
 function Functions.has_destructor(struct_name)
-    return ctx().functions[struct_name] and ctx().functions[struct_name]["free"]
+    if ctx().functions[struct_name] and ctx().functions[struct_name]["free"] then
+        local overloads = ctx().functions[struct_name]["free"]
+        return #overloads > 0
+    end
+    return false
 end
 
 -- Generate constructor call for a struct variable
@@ -267,6 +326,12 @@ function Functions.gen_function_declaration(fn)
     local name = fn.name
     local c_name = name == "main" and "main_main" or name
 
+    -- Check if this function is overloaded
+    local is_overloaded = false
+    if fn.is_overloaded ~= nil then
+        is_overloaded = fn.is_overloaded
+    end
+
     -- Special handling for constructor/destructor methods to avoid C name conflicts
     if fn.receiver_type then
         if name == "new" then
@@ -274,7 +339,13 @@ function Functions.gen_function_declaration(fn)
         elseif name == "free" then
             c_name = fn.receiver_type .. "_destructor"
         end
+    elseif is_overloaded then
+        -- Generate unique C name for overloaded functions
+        c_name = generate_c_function_name(name, fn.params, true)
     end
+    
+    -- Store the C name in the function for later use
+    fn.c_name = c_name
 
     -- In explicit pointer model, return types are as declared
     local return_type_str = Codegen.Types.c_type(fn.return_type)
@@ -298,6 +369,12 @@ function Functions.gen_function(fn)
     local name = fn.name
     local c_name = name == "main" and "main_main" or name
 
+    -- Check if this function is overloaded
+    local is_overloaded = false
+    if fn.is_overloaded ~= nil then
+        is_overloaded = fn.is_overloaded
+    end
+
     -- Special handling for constructor/destructor methods to avoid C name conflicts
     if fn.receiver_type then
         if name == "new" then
@@ -305,6 +382,9 @@ function Functions.gen_function(fn)
         elseif name == "free" then
             c_name = fn.receiver_type .. "_destructor"
         end
+    elseif is_overloaded then
+        -- Generate unique C name for overloaded functions
+        c_name = generate_c_function_name(name, fn.params, true)
     end
 
     -- Track current function for #FUNCTION directive

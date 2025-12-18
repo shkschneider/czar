@@ -17,8 +17,16 @@ function Validation.validate_main_function(typechecker)
         return
     end
 
+    -- Get the main function (handle overload array)
+    local main_overloads = global_functions["main"]
+    local main_func = nil
+    if type(main_overloads) == "table" and #main_overloads > 0 then
+        main_func = main_overloads[1]
+    else
+        main_func = main_overloads
+    end
+    
     -- Validate main function signature
-    local main_func = global_functions["main"]
     local Utils = require("typechecker.utils")
 
     -- Check return type (must be i32)

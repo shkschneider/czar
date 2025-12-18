@@ -14,9 +14,20 @@ Calls.get_base_type_name = nil
 function Calls.infer_call_type(typechecker, expr)
     if expr.callee.kind == "identifier" then
         local func_name = expr.callee.name
-        local func_def = Resolver.resolve_function(typechecker, "__global__", func_name)
+        
+        -- Infer argument types for overload resolution
+        local arg_types = {}
+        for _, arg in ipairs(expr.args) do
+            local arg_type = Calls.infer_type(typechecker, arg)
+            table.insert(arg_types, arg_type)
+        end
+        
+        local func_def = Resolver.resolve_function(typechecker, "__global__", func_name, arg_types)
 
         if func_def then
+            -- Store the resolved overload in the expression for codegen
+            expr.resolved_function = func_def
+            
             -- Check caller-controlled mutability
             for i, arg in ipairs(expr.args) do
                 if i <= #func_def.params then

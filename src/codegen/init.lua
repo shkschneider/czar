@@ -242,6 +242,26 @@ function Codegen:generate()
     end
 
     local has_main = false
+    
+    -- Mark functions in AST as overloaded based on self.functions
+    for _, item in ipairs(self.ast.items) do
+        if item.kind == "function" then
+            local type_name = "__global__"
+            if item.receiver_type then
+                type_name = item.receiver_type
+            end
+            
+            if self.functions[type_name] and self.functions[type_name][item.name] then
+                local overloads = self.functions[type_name][item.name]
+                if type(overloads) == "table" and #overloads > 1 then
+                    item.is_overloaded = true
+                else
+                    item.is_overloaded = false
+                end
+            end
+        end
+    end
+    
     -- First pass: collect all map types by generating functions into a temporary buffer
     local saved_out = self.out
     self.out = {}

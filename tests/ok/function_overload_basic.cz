@@ -1,0 +1,33 @@
+// Test basic function overloading with different types
+module main
+
+fn add(u8 a, u8 b) u8 {
+    return a + b
+}
+
+fn add(i32 a, i32 b) i32 {
+    return a + b
+}
+
+fn add(f32 a, f32 b) f32 {
+    return a + b
+}
+
+fn main() i32 {
+    u8 x = add(1 as<u8>, 2 as<u8>)
+    i32 y = add(10, 20)
+    f32 z = add(1 as<f32>, 2 as<f32>)
+    
+    // Verify correct values
+    if x != 3 as<u8> {
+        return 1
+    }
+    if y != 30 {
+        return 2
+    }
+    if z < 2 as<f32> or z > 4 as<f32> {
+        return 3
+    }
+    
+    return 0
+}
