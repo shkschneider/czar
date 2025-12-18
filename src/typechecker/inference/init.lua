@@ -50,6 +50,8 @@ function infer_type(typechecker, expr)
         return Literals.infer_bool_type(expr)
     elseif expr.kind == "string" then
         return Literals.infer_string_type(expr)
+    elseif expr.kind == "interpolated_string" then
+        return Literals.infer_interpolated_string_type(typechecker, expr, infer_type)
     elseif expr.kind == "null" then
         return Literals.infer_null_type(expr)
     elseif expr.kind == "identifier" then

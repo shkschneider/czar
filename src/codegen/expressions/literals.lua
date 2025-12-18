@@ -21,17 +21,42 @@ end
 -- Converts "Hello {name}" into a format string with arguments
 function Literals.gen_interpolated_string(expr, gen_expr_fn)
     local parts = expr.parts
-    local expressions = expr.expressions
     
-    -- Build the format string
+    -- Use pre-parsed expressions from typechecker
+    local expressions = expr.expressions or {}
+    
+    -- Build the format string with appropriate type placeholders
     local format_str = ""
     for i, part in ipairs(parts) do
         format_str = format_str .. part
         if i <= #expressions then
-            -- Add a placeholder - we need to determine the type
-            -- For now, we'll use %s for strings and pointers, %d for integers
-            -- This is a simplification; ideally we'd do type inference
-            format_str = format_str .. "%s"
+            -- Determine the format specifier based on the inferred type
+            local sub_expr = expressions[i]
+            local format_spec = "%s"  -- default to string
+            
+            if sub_expr.inferred_type then
+                local type_kind = sub_expr.inferred_type.kind
+                local type_name = sub_expr.inferred_type.name
+                
+                -- Check if it's a named type
+                if type_kind == "named_type" then
+                    if type_name == "i8" or type_name == "i16" or type_name == "i32" then
+                        format_spec = "%d"
+                    elseif type_name == "i64" then
+                        format_spec = "%lld"
+                    elseif type_name == "u8" or type_name == "u16" or type_name == "u32" then
+                        format_spec = "%u"
+                    elseif type_name == "u64" then
+                        format_spec = "%llu"
+                    elseif type_name == "f32" or type_name == "f64" then
+                        format_spec = "%f"
+                    elseif type_name == "bool" then
+                        format_spec = "%d"
+                    end
+                end
+            end
+            
+            format_str = format_str .. format_spec
         end
     end
     
@@ -42,19 +67,13 @@ function Literals.gen_interpolated_string(expr, gen_expr_fn)
         table.insert(args, arg_code)
     end
     
-    -- Return as a sprintf-like expression that can be used inline
-    -- We'll use a statement expression (GCC extension) to build the string
+    -- Return as a sprintf-like expression
     if #args == 0 then
         -- No interpolation, just a regular string
         return string.format("\"%s\"", format_str)
     else
-        -- We need to build a temporary string
-        -- For simplicity, we'll use a static buffer approach
-        -- This is allocated on the stack and returned
-        local arg_list = table.concat(args, ", ")
-        
         -- Use snprintf to build the string safely
-        -- We'll allocate a reasonable buffer size (256 bytes should be enough for most cases)
+        local arg_list = table.concat(args, ", ")
         local code = string.format(
             "({ char _interp_buf[256]; snprintf(_interp_buf, 256, \"%s\", %s); _interp_buf; })",
             format_str,
