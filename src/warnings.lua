@@ -16,6 +16,10 @@ Warnings.WarningType = {
     -- Pointer warnings
     POINTER_REASSIGNMENT = "POINTER_REASSIGNMENT",
     
+    -- Nullable safety warnings
+    USELESS_NULLABLE_OPERATOR = "USELESS_NULLABLE_OPERATOR",
+    UNSAFE_NULLABLE_COERCION = "UNSAFE_NULLABLE_COERCION",
+    
     -- Enum warnings
     ENUM_VALUE_NOT_UPPERCASE = "ENUM_VALUE_NOT_UPPERCASE",
 }

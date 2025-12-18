@@ -1,7 +1,7 @@
 // Test that valid pointer operations are still allowed
 fn main() i32 {
     mut i32 x = 10
-    i32* p = &x
+    i32? p = &x
     
     // Dereferencing is allowed
     i32 y = *p

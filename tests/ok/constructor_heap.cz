@@ -9,6 +9,6 @@ fn Counter:new() void {
 
 fn main() i32 {
     // Heap allocation returns pointer - should call constructor
-    Counter* c = new Counter {}
+    Counter? c = new Counter {}
     return c.value - 10
 }

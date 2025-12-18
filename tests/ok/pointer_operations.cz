@@ -6,7 +6,7 @@ struct Data {
     i32 count
 }
 
-fn modify_data(mut Data* d) void {
+fn modify_data(mut Data? d) void {
     if (d != null) {
         d.value = d.value + 10
         d.count = d.count + 1
@@ -18,26 +18,26 @@ fn main() i32 {
     mut Data d1 = Data{value: 5, count: 0}
 
     // Get pointer to stack data
-    mut Data* ptr1 = &d1
+    mut Data? ptr1 = &d1
 
     // Modify through pointer
     modify_data(mut ptr1)
     println("After modify: value=", d1.value, " count=", d1.count)
 
     // Heap allocation
-    mut Data* ptr2 = new Data{value: 100, count: 5}
+    mut Data? ptr2 = new Data{value: 100, count: 5}
 
     // Modify heap data
     modify_data(mut ptr2)
     println("Heap data: value=", ptr2.value, " count=", ptr2.count)
 
     // Pointer assignment (copy pointer, not data)
-    mut Data* ptr3 = ptr2
+    mut Data? ptr3 = ptr2
     ptr3.value = 999
     println("ptr2 also changed: ", ptr2.value)
 
     // Null pointer is safe to pass (function checks)
-    Data* null_ptr = null
+    Data? null_ptr = null
     modify_data(mut null_ptr)
 
     // Clean up heap memory

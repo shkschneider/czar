@@ -1,10 +1,10 @@
 // Test that pointer arithmetic is forbidden
 fn main() i32 {
     mut i32 x = 10
-    i32* p = &x
+    i32? p = &x
 
     // This should fail: pointer + integer is forbidden
-    i32* q = p + 1
+    i32? q = p + 1
 
     return 0
 }

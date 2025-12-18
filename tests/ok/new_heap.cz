@@ -7,7 +7,7 @@ struct Person {
 
 fn main() i32 {
     // Heap allocate a Person struct using new keyword - returns pointer
-    Person* person = new Person { age: 25, score: 50 }
+    Person? person = new Person { age: 25, score: 50 }
 
     // Access fields through pointer (compiler handles -> vs .)
     i32 total = person.age + person.score
