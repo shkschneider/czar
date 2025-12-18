@@ -30,6 +30,8 @@ function Expressions.gen_expr(expr)
     elseif expr.kind == "mut_arg" then
         return Literals.gen_mut_arg(expr, Expressions.gen_expr)
     -- Operators and casts
+    elseif expr.kind == "implicit_cast" then
+        return Operators.gen_implicit_cast(expr, Expressions.gen_expr)
     elseif expr.kind == "unsafe_cast" then
         return Operators.gen_unsafe_cast(expr, Expressions.gen_expr)
     elseif expr.kind == "safe_cast" then
