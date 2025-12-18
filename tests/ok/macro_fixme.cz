@@ -1,4 +1,5 @@
 // Test #FIXME macro
+import cz
 // Verifies that #FIXME prints to stderr during compilation and at runtime if DEBUG
 
 fn test_fixme() i32 {

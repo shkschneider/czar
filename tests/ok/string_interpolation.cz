@@ -1,24 +1,25 @@
 // Test string interpolation with mustache-like syntax
+import cz
 fn main() i32 {
     i32 age = 25
     i32 year = 2024
     
     // Test basic interpolation
-    println("Hello {age}")
+    cz.println("Hello {age}")
     
     // Test multiple interpolations
-    println("Age: {age}, Year: {year}")
+    cz.println("Age: {age}, Year: {year}")
     
     // Test escaped braces
-    print("Not interpolated: \{age\}")
-    println("")
+    cz.print("Not interpolated: \{age\}")
+    cz.println("")
     
     // Test with expressions
-    println("Next year: {year + 1}")
+    cz.println("Next year: {year + 1}")
     
     // Test with print (no newline)
-    print("Value: {age}")
-    println("")
+    cz.print("Value: {age}")
+    cz.println("")
     
     return 0
 }

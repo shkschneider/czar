@@ -1,4 +1,5 @@
 // Test basic string functionality
+import cz
 fn main() i32 {
     // Test heap-allocated string (returns pointer)
     string? s1 = new string "Hello, World!"
@@ -13,8 +14,8 @@ fn main() i32 {
     i32 cap2 = s2.capacity
     
     // Get C-style string
-    print(s1.cstr())
-    print(s2.cstr())
+    cz.print(s1.cstr())
+    cz.print(s2.cstr())
     
     // Verify lengths
     if len1 != 13 {

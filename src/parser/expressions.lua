@@ -207,8 +207,8 @@ function Expressions.parse_postfix_no_bang(parser)
         elseif parser:match("DOT") then
             local field = parser:expect("IDENT").value
             -- Check if this is a static method call pattern: identifier.field(args)
-            -- Support both uppercase types (Type.method) and lowercase modules (cz.method)
-            if parser:check("LPAREN") and expr.kind == "identifier" then
+            -- Only treat as static method if identifier starts with uppercase (Type) or is "cz" (module)
+            if parser:check("LPAREN") and expr.kind == "identifier" and (expr.name:match("^[A-Z]") or expr.name == "cz") then
                 parser:advance()
                 local args = {}
                 if not parser:check("RPAREN") then
@@ -325,10 +325,10 @@ function Expressions.parse_postfix(parser)
         elseif parser:match("DOT") then
             -- Could be field access or static method call Type.method(obj) or module.method(obj)
             local field = parser:expect("IDENT").value
-            -- Check if this is followed by LPAREN for static method call
-            -- Support both uppercase types (Type.method) and lowercase modules (cz.method)
-            if parser:check("LPAREN") and expr.kind == "identifier" then
-                -- This looks like Type.method(args) or module.method(args) - static method call
+            -- Check if this is followed by LPAREN for potential static method call
+            -- Only treat as static method if identifier starts with uppercase (Type) or is "cz" (module)
+            if parser:check("LPAREN") and expr.kind == "identifier" and (expr.name:match("^[A-Z]") or expr.name == "cz") then
+                -- This looks like Type.method(args) or cz.method(args) - static method call
                 parser:advance()  -- consume LPAREN
                 local args = {}
                 if not parser:check("RPAREN") then

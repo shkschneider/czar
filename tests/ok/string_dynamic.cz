@@ -1,4 +1,5 @@
 // Test string dynamic resizing and memory safety
+import cz
 fn main() i32 {
     // Test heap-allocated string
     string? s = new string "Hello"
@@ -17,7 +18,7 @@ fn main() i32 {
     }
     
     // Test C-string conversion
-    print(s.cstr())
+    cz.print(s.cstr())
     
     free s
     return 0
