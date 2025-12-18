@@ -1,4 +1,8 @@
+fn hello(string name) {
+    print("Hello %s", name)
+}
+
 fn main() i32 {
-    print("Hello, World!")
+    hello("world")
     return 0
 }
