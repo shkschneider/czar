@@ -54,7 +54,6 @@ local keywords = {
     ["module"] = true,
     ["import"] = true,
     ["pub"] = true,
-    -- is/type
 }
 
 local simple_tokens = {
@@ -99,6 +98,9 @@ local compound_tokens = {
     [">>"] = "SHR",
     ["++"] = "INCREMENT",
     ["--"] = "DECREMENT",
+    ["&&"] = "AND",
+    ["||"] = "OR",
+    ["!!"] = "BANGBANG",
     ["??"] = "FALLBACK",
 }
 
