@@ -8,7 +8,7 @@ fn bad_add(u8 a, u8 b) u8 {
 
 // ERROR: This varies on different types - first param u8->u32, second param u8->f64
 fn bad_add(u32 a, f64 b) f64 {
-    return a as<f64> + b
+    return <f64> a !! + b
 }
 
 fn main() i32 {

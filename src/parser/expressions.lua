@@ -476,16 +476,21 @@ function Expressions.parse_primary(parser)
             error("Expected '>' after type in cast at line " .. (parser:current() and parser:current().line or "?"))
         end
         
-        -- Parse the expression to cast
-        local expr = Expressions.parse_unary(parser)
+        -- Parse only the primary expression (to avoid consuming !! as postfix op)
+        local expr = Expressions.parse_primary(parser)
         
         -- Check for !! or ?? suffix
-        if parser:match("BANGBANG") then
+        -- !! is two consecutive BANG tokens (not a compound token, to avoid conflict with null check)
+        local current_pos = parser.pos
+        local next_tok = parser.tokens[current_pos + 1]
+        if parser:check("BANG") and next_tok and next_tok.type == "BANG" then
+            parser:advance()  -- consume first !
+            parser:advance()  -- consume second !
             -- Unsafe cast with explicit permission
             return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = true }
         elseif parser:match("FALLBACK") then
             -- Safe cast with fallback
-            local fallback_expr = Expressions.parse_unary(parser)
+            local fallback_expr = Expressions.parse_primary(parser)
             return { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr }
         else
             -- No suffix - will be validated in typechecker

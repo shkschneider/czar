@@ -7,7 +7,7 @@ fn main() i32 {
     bool[] flags = new [true, false, true, true]
     
     // Calculate result
-    i32 byte_sum = bytes[0] as<i32> + bytes[1] as<i32> + bytes[2] as<i32>
+    i32 byte_sum = <i32> bytes[0] !! + <i32> bytes[1] !! + <i32> bytes[2] !!
     
     mut i32 flag_count = 0
     if flags[0] {
