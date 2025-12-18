@@ -23,7 +23,7 @@ It currently is written in Lua and transpiles to C.
 - Mutability `mut` (immutable by default)
 - Nullability `?` on pointers
 - Visibility with `pub` (private by default)
-- Casting with `as<Type>(optional fallback)`
+- Casting with `<Type> x !!` or fallback with `??`
 - Pointers with `&` (address-of) and `*` (dereference) operators
 - Memory management with `new` and `free`
 - Error-as-value pattern (no exceptions)
@@ -31,6 +31,7 @@ It currently is written in Lua and transpiles to C.
 - Internal types: `pair<T:T>`, `array<T>`, `map<T:T>`
 - Macros: `#FILE`, `#LINE`, `#DEBUG`, `#log(...)`, `#assert(...)`...
 - Named and default parameters
+- Primitive generics `fn <u8:u16:u32:u64> f(T a, T b)`
 - Some overloading...
 - ...
 
