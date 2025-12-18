@@ -180,7 +180,7 @@ function Calls.gen_call(expr, gen_expr_fn)
 
             if first_param_type.kind == "nullable" then
                 -- Method expects a pointer
-                if obj_type and obj_type.kind ~= "pointer" then
+                if obj_type and obj_type.kind ~= "nullable" then
                     -- Object is a value, add &
                     obj_expr = "&" .. obj_expr
                 end
@@ -257,7 +257,7 @@ function Calls.gen_call(expr, gen_expr_fn)
 
             if first_param_type.kind == "nullable" then
                 -- Method expects a pointer
-                if obj_type and obj_type.kind ~= "pointer" then
+                if obj_type and obj_type.kind ~= "nullable" then
                     -- Object is a value, add &
                     obj_expr = "&" .. obj_expr
                 end
