@@ -156,10 +156,8 @@ function infer_type(typechecker, expr)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
                 Errors.ErrorType.UNSAFE_CAST, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
-        elseif not is_safe_cast and expr.explicit_unsafe then
-            -- WARNING: explicit unsafe cast with !!
-            io.stderr:write("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type) .. " (explicit !!)\n")
         end
+        -- Note: Warning for explicit unsafe cast (with !!) is emitted during codegen phase
         
         expr.inferred_type = target_type
         return target_type
