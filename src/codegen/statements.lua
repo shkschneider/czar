@@ -157,6 +157,14 @@ function Statements.gen_statement(stmt)
             end
             if stmt.init then
                 local init_expr = Codegen.Expressions.gen_expr(stmt.init)
+                
+                -- Check if we need to take the address (non-nullable to nullable conversion)
+                if stmt.init_type and stmt.init_type.kind == "named_type" and 
+                   stmt.type.kind == "nullable" and stmt.init.kind == "identifier" then
+                    -- Wrap with address-of operator
+                    init_expr = "&" .. init_expr
+                end
+                
                 decl = decl .. " = " .. init_expr
             end
 

@@ -345,7 +345,7 @@ function Calls.gen_call(expr, gen_expr_fn)
             local Builtins = require("src.builtins")
             local is_builtin_varargs = Builtins.calls[func_name] ~= nil and func_def.is_builtin
             
-            for _, a in ipairs(resolved_args) do
+            for i, a in ipairs(resolved_args) do
                 if a.kind == "varargs_list" and not is_builtin_varargs then
                     -- Generate varargs array (not for builtins like printf)
                     if #a.args == 0 then
@@ -370,7 +370,24 @@ function Calls.gen_call(expr, gen_expr_fn)
                         table.insert(args, gen_expr_fn(varg))
                     end
                 else
-                    table.insert(args, gen_expr_fn(a))
+                    local arg_expr = gen_expr_fn(a)
+                    
+                    -- Check if we need to add & for non-nullable to nullable conversion
+                    if i <= #func_def.params then
+                        local param_type = func_def.params[i].type
+                        
+                        -- If parameter is nullable and argument is a simple identifier
+                        if param_type.kind == "nullable" and a.kind == "identifier" then
+                            -- Get the argument's type
+                            local arg_type = ctx():get_var_type(a.name)
+                            if arg_type and arg_type.kind == "named_type" then
+                                -- Non-nullable to nullable: add &
+                                arg_expr = "&" .. arg_expr
+                            end
+                        end
+                    end
+                    
+                    table.insert(args, arg_expr)
                 end
             end
         else
