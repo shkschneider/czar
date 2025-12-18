@@ -101,12 +101,51 @@ function infer_type(typechecker, expr)
         return operand_type
     elseif expr.kind == "unsafe_cast" then
         -- Unsafe cast: expr as<Type>
-        -- Emit warning during type checking
+        -- Emit warning during type checking for truly unsafe casts
         local target_type = expr.to_type or expr.target_type
         local source_type = infer_type(typechecker, expr.expr)
         
-        -- Print warning for unsafe cast
-        io.stderr:write("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type) .. "\n")
+        -- Helper: Check if cast is a safe widening cast
+        local function is_safe_widening_cast(from_type, to_type)
+            if not from_type or not to_type then
+                return false
+            end
+            
+            -- Both must be named types (primitive types)
+            if from_type.kind ~= "named_type" or to_type.kind ~= "named_type" then
+                return false
+            end
+            
+            local from_name = from_type.name
+            local to_name = to_type.name
+            
+            -- Define type sizes and signedness
+            local type_info = {
+                i8 = {size = 8, signed = true},
+                i16 = {size = 16, signed = true},
+                i32 = {size = 32, signed = true},
+                i64 = {size = 64, signed = true},
+                u8 = {size = 8, signed = false},
+                u16 = {size = 16, signed = false},
+                u32 = {size = 32, signed = false},
+                u64 = {size = 64, signed = false},
+            }
+            
+            local from_info = type_info[from_name]
+            local to_info = type_info[to_name]
+            
+            if not from_info or not to_info then
+                return false
+            end
+            
+            -- Safe if same signedness and target is larger or equal
+            return from_info.signed == to_info.signed and to_info.size >= from_info.size
+        end
+        
+        -- Only print warning for truly unsafe casts
+        if not is_safe_widening_cast(source_type, target_type) then
+            io.stderr:write("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type) .. "\n")
+        end
         
         expr.inferred_type = target_type
         return target_type
