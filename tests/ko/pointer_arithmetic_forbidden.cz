@@ -2,6 +2,6 @@
 fn main() i32 {
     i32 x = 10
     i32? p = x
-    // ERROR: pointer arithmetic not allowed (if we tried to add to p)
+    p += 1 // ERROR
     return 0
 }
