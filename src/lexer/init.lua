@@ -99,7 +99,6 @@ local compound_tokens = {
     [">>"] = "SHR",
     ["++"] = "INCREMENT",
     ["--"] = "DECREMENT",
-    ["!!"] = "BANGBANG",
     ["??"] = "FALLBACK",
 }
 
