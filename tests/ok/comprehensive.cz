@@ -17,8 +17,8 @@ fn Point:distance_squared() i32 {
 
 // Extension method on Rect
 fn Rect:area() u64 {
-    u64 w = self.<u64> width !!
-    u64 h = self.<u64> height !!
+    u64 w = <u64> self.width !!
+    u64 h = <u64> self.height !!
     return w * h
 }
 
