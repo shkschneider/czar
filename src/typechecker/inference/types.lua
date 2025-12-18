@@ -43,13 +43,13 @@ function Types.types_compatible(type1, type2, typechecker)
 
     -- Allow void* (null) to be compatible with any pointer type
     if type1.kind == "pointer" and type1.to and type1.to.name == "void" then
-        if type2.kind == "pointer" or type2.kind == "named_type" then
-            return true  -- null can be assigned to any pointer or struct type
+        if type2.kind == "pointer" then
+            return true  -- null can be assigned to any pointer
         end
     end
     if type2.kind == "pointer" and type2.to and type2.to.name == "void" then
-        if type1.kind == "pointer" or type1.kind == "named_type" then
-            return true  -- any pointer or struct type can accept null
+        if type1.kind == "pointer" then
+            return true  -- any pointer can accept null
         end
     end
 
