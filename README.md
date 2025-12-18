@@ -18,13 +18,14 @@ It currently is written in Lua and transpiles to C.
 ## Features
 
 - Static typing with explicit types
-- Modularization with `module` and `import`
+- Modularization with `module` and `import` (default: main)
 - Structs with members and methods (`self`)
 - Mutability `mut` (immutable by default)
 - Nullability `?` on pointers
 - Visibility with `pub` (private by default)
 - Casting with `<Type> x !!` or fallback with `??`
-- Pointers with `&` (address-of) and `*` (dereference) operators
+- Implicit pointers: no `*` nor `&`
+- Safe `Type` (non-null) and unsafe `Type?` (nullable) pointers
 - Memory management with `new` and `free`
 - Error-as-value pattern (no exceptions)
 - Protections: out-of-bounds, dangling pointers, use-after-free...
