@@ -48,7 +48,7 @@ function Utils.type_to_string(type_node)
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "nullable" then
-        return Utils.type_to_string(type_node.to) .. "*"
+        return Utils.type_to_string(type_node.to) .. "?"
     elseif type_node.kind == "array" then
         return Utils.type_to_string(type_node.element_type) .. "[" .. (type_node.size or "*") .. "]"
     elseif type_node.kind == "slice" then
