@@ -1,18 +1,18 @@
 // Test pair type with new syntax
 fn main() i32 {
     // Test heap-allocated pair (returns pointer)
-    pair<i32:bool>* p1 = new pair [ 42: true ]
-    
+    pair<i32:bool> p1 = new pair [ 42: true ]
+
     // Test stack-allocated pair (value)
     pair<i32:bool> p2 = pair [ 10: false ]
-    
+
     // Access pair fields
     i32 left1 = p1.left
     bool right1 = p1.right
-    
+
     i32 left2 = p2.left
     bool right2 = p2.right
-    
+
     // Verify values
     if left1 != 42 {
         return 1
@@ -26,7 +26,7 @@ fn main() i32 {
     if right2 != false {
         return 4
     }
-    
+
     free p1
     return 0
 }
