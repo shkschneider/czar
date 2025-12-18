@@ -442,7 +442,12 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
     end
     -- In explicit pointer model, struct literals are just values
     -- Use compound literal syntax: (Type){ fields... }
-    return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+    -- If no fields provided, generate { 0 } to zero-initialize all fields
+    if #parts == 0 then
+        return string.format("(%s){ 0 }", expr.type_name)
+    else
+        return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+    end
 end
 
 return Calls
