@@ -55,6 +55,10 @@ function Types.types_compatible(type1, type2, typechecker)
 
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
+    elseif type1.kind == "named_type" and type2.kind == "nullable" then
+        -- Allow non-nullable to be assigned to nullable (safe conversion)
+        -- e.g., Data to Data?
+        return Types.types_compatible(type1, type2.to, typechecker)
     elseif type1.kind == "nullable" and type2.kind == "nullable" then
         return Types.types_compatible(type1.to, type2.to, typechecker)
     elseif type1.kind == "nullable" and type1.is_clone and type2.kind == "named_type" then

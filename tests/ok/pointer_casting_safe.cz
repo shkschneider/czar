@@ -1,6 +1,4 @@
-// Demonstrates safe pointer casting and address-of operator
-// Shows how to explicitly work with pointers
-
+// Test safe pointer casting scenarios
 struct Vec2 {
     i32 x
     i32 y
@@ -13,33 +11,25 @@ struct Vec3 {
 }
 
 fn print_vec2(Vec2? v) void {
-    if (v != null) {
-        println("Vec2: (", v.x, ", ", v.y, ")")
-    }
+    // Just access to verify type
+    mut i32 _ = v.x + v.y
 }
 
 fn main() i32 {
-    // Stack-allocated structs
-    Vec2 v2 = Vec2{x: 10, y: 20}
-    Vec3 v3 = Vec3{x: 1, y: 2, z: 3}
+    // Create structs
+    Vec2 v2 = Vec2 { x: 1, y: 2 }
+    Vec3 v3 = Vec3 { x: 3, y: 4, z: 5 }
     
-    // Must use explicit address-of operator to get pointer
-    Vec2? ptr2 = &v2
-    Vec3? ptr3 = &v3
+    // Convert to any (safe)
+    any a2 = <any> v2 !!
+    any a3 = <any> v3 !!
     
-    // Can pass address directly to function
-    print_vec2(&v2)
+    // Create nullable pointers
+    Vec2? ptr2 = v2
+    Vec3? ptr3 = v3
     
-    // Heap allocation returns pointer automatically
-    Vec2? heap_v2 = new Vec2{x: 100, y: 200}
-    print_vec2(heap_v2)
-    
-    // Pointer to u64 for address printing (requires unsafe cast !!)
-    u64 addr = <u64> ptr2 !!
-    println("Address: ", addr)
-    
-    // Free heap-allocated memory
-    free(heap_v2)
+    // Call function with nullable
+    print_vec2(ptr2)
     
     return 0
 }

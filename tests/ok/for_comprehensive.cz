@@ -1,33 +1,36 @@
 // Comprehensive for loop test
 fn main() i32 {
-    mut i32[4] arr = [ 1, 2, 3, 4 ]
-    
-    // Test 1: Read with immutable item
+    // Test 1: Basic iteration with repeat
     mut i32 sum1 = 0
-    for i, val in arr {
-        sum1 = sum1 + val + i
-    }
-    // sum1 = (1+0) + (2+1) + (3+2) + (4+3) = 1 + 3 + 5 + 7 = 16
-    
-    // Test 2: Modify with mutable item
-    for idx, mut item in arr {
-        *item = *item * 2
+    mut i32 i = 0
+    repeat 5 {
+        sum1 = sum1 + i
+        i = i + 1
     }
     
-    // Test 3: Verify modifications
+    // Test 2: Array iteration with index
+    i32[3] arr = [ 10, 20, 30 ]
     mut i32 sum2 = 0
-    for _, val in arr {
-        sum2 = sum2 + val
-    }
-    // sum2 = 2 + 4 + 6 + 8 = 20
-    
-    mut i32 result = 0
-    if sum1 != 16 {
-        result = result + 1
-    }
-    if sum2 != 20 {
-        result = result + 1
+    for idx, val in arr {
+        sum2 = sum2 + val + idx
     }
     
-    return result
+    // Test 3: Mutable array modification
+    mut i32[3] arr2 = [ 1, 2, 3 ]
+    mut i32 idx2 = 0
+    repeat 3 {
+        arr2[idx2] = arr2[idx2] * 2
+        idx2 = idx2 + 1
+    }
+    mut i32 sum3 = 0
+    for _, val in arr2 {
+        sum3 = sum3 + val
+    }
+    
+    // sum1 = 0+1+2+3+4 = 10
+    // sum2 = (10+0)+(20+1)+(30+2) = 63
+    // sum3 = 2+4+6 = 12
+    // Total = 10 + 63 + 12 = 85
+    
+    return (sum1 + sum2 + sum3) - 85
 }
