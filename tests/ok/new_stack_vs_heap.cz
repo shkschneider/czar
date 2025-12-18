@@ -25,7 +25,7 @@ fn main() i32 {
 
     // Test 1: Copy semantics (pass by value)
     modify_by_copy(stack_node)
-    modify_by_copy(*heap_node)  // dereference pointer to pass value
+    modify_by_copy(heap_node)  // dereference pointer to pass value
 
     // Both should still have original values (10 and 20)
     mut i32 result = 0
