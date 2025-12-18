@@ -256,50 +256,9 @@ function Expressions.parse_postfix(parser)
             else
                 break
             end
-        elseif parser:check("KEYWORD", "as") then
-            -- Cast operator: expr as<Type> (unsafe) or expr as?<Type>(fallback) (safe)
-            parser:advance()  -- consume 'as'
-            
-            -- Check for safe cast: as?<Type>(fallback)
-            local is_safe = false
-            if parser:match("QUESTION") then
-                is_safe = true
-            end
-            
-            -- Expect '<' for type parameter
-            if not parser:match("LT") then
-                error("Expected '<' after 'as' at line " .. (parser:current() and parser:current().line or "?"))
-            end
-            
-            local target_type = Types.parse_type(parser)
-            
-            -- Expect '>'
-            if not parser:match("GT") then
-                error("Expected '>' after type in cast at line " .. (parser:current() and parser:current().line or "?"))
-            end
-            
-            -- If safe cast, expect (fallback)
-            local fallback_expr = nil
-            if is_safe then
-                -- Expect '(' for fallback
-                if not parser:match("LPAREN") then
-                    error("Expected '(' after 'as?<Type>' at line " .. (parser:current() and parser:current().line or "?"))
-                end
-                
-                -- Parse fallback expression
-                fallback_expr = Expressions.parse_expression(parser)
-                
-                -- Expect ')'
-                if not parser:match("RPAREN") then
-                    error("Expected ')' after fallback in safe cast at line " .. (parser:current() and parser:current().line or "?"))
-                end
-            end
-            
-            if is_safe then
-                expr = { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr }
-            else
-                expr = { kind = "unsafe_cast", target_type = target_type, expr = expr }
-            end
+        -- Old cast syntax (as<Type>) is now deprecated, replaced with <Type> expr
+        -- elseif parser:check("KEYWORD", "as") then
+        --     ...removed...
         else
             break
         end
@@ -503,6 +462,35 @@ function Expressions.parse_primary(parser)
         parser:advance()
         local str_tok = parser:expect("STRING")
         return { kind = "string_literal", value = str_tok.value }
+    elseif tok.type == "LT" then
+        -- Cast operator: <Type> expr with optional !! or ?? fallback
+        -- <Type> expr !! - unsafe cast (with warning, runtime abort on failure)
+        -- <Type> expr ?? fallback - safe cast with fallback
+        -- <Type> expr - compiler ERROR for unsafe casts
+        parser:advance()  -- consume '<'
+        
+        local Types = require("parser.types")
+        local target_type = Types.parse_type(parser)
+        
+        if not parser:match("GT") then
+            error("Expected '>' after type in cast at line " .. (parser:current() and parser:current().line or "?"))
+        end
+        
+        -- Parse the expression to cast
+        local expr = Expressions.parse_unary(parser)
+        
+        -- Check for !! or ?? suffix
+        if parser:match("BANGBANG") then
+            -- Unsafe cast with explicit permission
+            return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = true }
+        elseif parser:match("FALLBACK") then
+            -- Safe cast with fallback
+            local fallback_expr = Expressions.parse_unary(parser)
+            return { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr }
+        else
+            -- No suffix - will be validated in typechecker
+            return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = false }
+        end
     elseif tok.type == "IDENT" then
         local ident = parser:advance()
         return { kind = "identifier", name = ident.value, line = ident.line, col = ident.col }

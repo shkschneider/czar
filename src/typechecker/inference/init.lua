@@ -100,8 +100,8 @@ function infer_type(typechecker, expr)
         expr.inferred_type = operand_type
         return operand_type
     elseif expr.kind == "unsafe_cast" then
-        -- Unsafe cast: expr as<Type>
-        -- Emit warning during type checking for truly unsafe casts
+        -- Unsafe cast: <Type> expr with optional !!
+        -- ERROR if not explicitly marked unsafe with !!
         local target_type = expr.to_type or expr.target_type
         local source_type = infer_type(typechecker, expr.expr)
         
@@ -142,9 +142,23 @@ function infer_type(typechecker, expr)
             return from_info.signed == to_info.signed and to_info.size >= from_info.size
         end
         
-        -- Only print warning for truly unsafe casts
-        if not is_safe_widening_cast(source_type, target_type) then
-            io.stderr:write("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type) .. "\n")
+        local is_safe_cast = is_safe_widening_cast(source_type, target_type)
+        
+        -- Check if this cast requires explicit unsafe marker
+        if not is_safe_cast and not expr.explicit_unsafe then
+            -- ERROR: unsafe cast without !!
+            local Errors = require("errors")
+            local msg = string.format(
+                "Unsafe cast from '%s' to '%s' requires explicit '!!' marker. Use: <type> expr !!",
+                Inference.type_to_string(source_type),
+                Inference.type_to_string(target_type)
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                Errors.ErrorType.UNSAFE_CAST, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+        elseif not is_safe_cast and expr.explicit_unsafe then
+            -- WARNING: explicit unsafe cast with !!
+            io.stderr:write("Warning: Unsafe cast from " .. Inference.type_to_string(source_type) .. " to " .. Inference.type_to_string(target_type) .. " (explicit !!)\n")
         end
         
         expr.inferred_type = target_type

@@ -99,6 +99,8 @@ local compound_tokens = {
     [">>"] = "SHR",
     ["++"] = "INCREMENT",
     ["--"] = "DECREMENT",
+    ["!!"] = "BANGBANG",
+    ["??"] = "FALLBACK",
 }
 
 local function is_alpha(c)

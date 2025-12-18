@@ -7,8 +7,8 @@ local function ctx() return _G.Codegen end
 
 -- Generate unsafe cast expression
 function Operators.gen_unsafe_cast(expr, gen_expr_fn)
-    -- Unsafe cast: expr as<Type> -> (Type)expr
-    -- Emit warning for truly unsafe casts (not safe widening casts)
+    -- Unsafe cast: <Type> expr !!
+    -- Only emit warning for explicit unsafe casts (with !!)
     local Warnings = require("warnings")
     local target_type_str = ctx():c_type(expr.target_type)
     local source_type = ctx():infer_type(expr.expr)
@@ -51,13 +51,13 @@ function Operators.gen_unsafe_cast(expr, gen_expr_fn)
         return from_info.signed == to_info.signed and to_info.size >= from_info.size
     end
     
-    -- Only emit warning for truly unsafe casts
-    if not is_safe_widening_cast(source_type, expr.target_type) then
+    -- Only emit warning for explicit unsafe casts (with !!)
+    if not is_safe_widening_cast(source_type, expr.target_type) and expr.explicit_unsafe then
         Warnings.emit(
             ctx().source_file,
             expr.line,
             Warnings.WarningType.UNSAFE_CAST,
-            string.format("Unsafe cast from '%s' to '%s' - type safety not guaranteed", 
+            string.format("Explicit unsafe cast from '%s' to '%s' (!!)", 
                 source_type_str, target_type_str),
             ctx().source_path,
             ctx().current_function

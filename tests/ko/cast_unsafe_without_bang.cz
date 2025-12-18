@@ -1,0 +1,8 @@
+// Test unsafe cast without !! should ERROR
+module main
+
+fn main() i32 {
+    u16 a = <u16> 300 !!
+    u8 b = <u8> a  // ERROR: unsafe cast without !!
+    return 0
+}

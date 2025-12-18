@@ -16,13 +16,13 @@ fn <i8:i16:i32:i64> max(T a, T b) T {
 
 fn main() i32 {
     // Test u8 variant
-    u8 a = 5 as<u8>
-    u8 b = 10 as<u8>
+    u8 a = <u8> 5 !!
+    u8 b = <u8> 10 !!
     u8 sum1 = add(a, b)
     
     // Test u32 variant
-    u32 c = 100 as<u32>
-    u32 d = 200 as<u32>
+    u32 c = <u32> 100 !!
+    u32 d = <u32> 200 !!
     u32 sum2 = add(c, d)
     
     // Test i32 variant
@@ -30,10 +30,10 @@ fn main() i32 {
     i32 f = 30
     i32 max_val = max(e, f)
     
-    if sum1 != 15 as<u8> {
+    if sum1 != <u8> 15 !! {
         return 1
     }
-    if sum2 != 300 as<u32> {
+    if sum2 != <u32> 300 !! {
         return 2
     }
     if max_val != 50 {
