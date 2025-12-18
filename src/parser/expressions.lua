@@ -607,12 +607,8 @@ function Expressions.parse_primary(parser)
         local expr = Expressions.parse_postfix_no_bang(parser)
         
         -- Check for !! or ?? suffix
-        -- !! is two consecutive BANG tokens (not a compound token, to avoid conflict with null check)
-        local current_pos = parser.pos
-        local next_tok = parser.tokens[current_pos + 1]
-        if parser:check("BANG") and next_tok and next_tok.type == "BANG" then
-            parser:advance()  -- consume first !
-            parser:advance()  -- consume second !
+        -- !! is BANGBANG compound token
+        if parser:match("BANGBANG") then
             -- Unsafe cast with explicit permission
             return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = true, line = line }
         elseif parser:match("FALLBACK") then

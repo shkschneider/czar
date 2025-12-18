@@ -53,6 +53,18 @@ function Types.types_compatible(type1, type2, typechecker)
         end
     end
 
+    -- Allow any type (void?) to accept any pointer/struct/nullable
+    -- any can hold any pointer, so any Type or Type? can be assigned to any
+    if type1.kind == "named_type" and type1.name == "any" then
+        -- any can accept:
+        -- - Any named type (struct, etc.) - will take its address
+        -- - Any nullable type
+        -- - Any pointer type
+        if type2.kind == "named_type" or type2.kind == "nullable" then
+            return true
+        end
+    end
+
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
     elseif type1.kind == "nullable" and type2.kind == "named_type" then

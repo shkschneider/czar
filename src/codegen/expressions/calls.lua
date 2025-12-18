@@ -372,17 +372,22 @@ function Calls.gen_call(expr, gen_expr_fn)
                 else
                     local arg_expr = gen_expr_fn(a)
                     
-                    -- Check if we need to add & for non-nullable to nullable conversion
+                    -- Check if we need to add & for non-nullable to nullable/any conversion
                     if i <= #func_def.params then
                         local param_type = func_def.params[i].type
                         
-                        -- If parameter is nullable and argument is a simple identifier
-                        if param_type.kind == "nullable" and a.kind == "identifier" then
-                            -- Get the argument's type
+                        -- If parameter is nullable or any, and argument is a simple identifier
+                        if a.kind == "identifier" then
                             local arg_type = ctx():get_var_type(a.name)
-                            if arg_type and arg_type.kind == "named_type" then
-                                -- Non-nullable to nullable: add &
-                                arg_expr = "&" .. arg_expr
+                            if arg_type then
+                                -- Non-nullable to nullable: Type -> Type?
+                                if arg_type.kind == "named_type" and param_type.kind == "nullable" and arg_type.name ~= "any" then
+                                    arg_expr = "&" .. arg_expr
+                                -- Non-nullable to any: Type -> any (void*), but not any/Type? -> any
+                                elseif arg_type.kind == "named_type" and param_type.kind == "named_type" and param_type.name == "any" and arg_type.name ~= "any" then
+                                    arg_expr = "&" .. arg_expr
+                                -- nullable to any: Type? -> any, no & needed (both are pointers)
+                                end
                             end
                         end
                     end
@@ -453,7 +458,20 @@ end
 function Calls.gen_struct_literal(expr, gen_expr_fn)
     local parts = {}
     for _, f in ipairs(expr.fields) do
-        table.insert(parts, string.format(".%s = %s", f.name, gen_expr_fn(f.value)))
+        local field_expr = gen_expr_fn(f.value)
+        
+        -- Check if we need to add & for non-nullable to nullable/any conversion
+        if f.value_type and f.value_type.kind == "named_type" and f.value.kind == "identifier" then
+            -- Non-nullable to nullable: Type -> Type?
+            if f.expected_type and f.expected_type.kind == "nullable" then
+                field_expr = "&" .. field_expr
+            -- Non-nullable to any: Type -> any (void*)
+            elseif f.expected_type and f.expected_type.kind == "named_type" and f.expected_type.name == "any" then
+                field_expr = "&" .. field_expr
+            end
+        end
+        
+        table.insert(parts, string.format(".%s = %s", f.name, field_expr))
     end
     -- In explicit pointer model, struct literals are just values
     -- Use compound literal syntax: (Type){ fields... }
