@@ -1,4 +1,5 @@
 // Test string:substring() method
+import cz
 fn main() i32 {
     string s = string "Hello World"
     
@@ -10,7 +11,7 @@ fn main() i32 {
     }
     
     // Verify content
-    print(sub.cstr())
+    cz.print(sub.cstr())
     
     free sub
     return 0

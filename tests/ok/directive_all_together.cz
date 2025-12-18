@@ -1,4 +1,5 @@
 // Comprehensive test showing all directives in practical use
+import cz
 fn validate(i32 value) i32 {
     // Use #DEBUG for conditional validation
     bool should_validate = #DEBUG
