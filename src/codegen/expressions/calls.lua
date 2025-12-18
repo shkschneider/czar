@@ -372,21 +372,21 @@ function Calls.gen_call(expr, gen_expr_fn)
                 else
                     local arg_expr = gen_expr_fn(a)
                     
-                    -- Check if we need to add & for non-nullable to nullable/any conversion
+                    -- Check if we need to add & for safe to unsafe pointer conversion
                     if i <= #func_def.params then
                         local param_type = func_def.params[i].type
                         
-                        -- If parameter is nullable or any, and argument is a simple identifier
+                        -- If parameter is unsafe pointer or any, and argument is a simple identifier
                         if a.kind == "identifier" then
                             local arg_type = ctx():get_var_type(a.name)
                             if arg_type then
-                                -- Non-nullable to nullable: Type -> Type?
+                                -- Safe pointer to unsafe pointer: Type -> Type?
                                 if arg_type.kind == "named_type" and param_type.kind == "nullable" and arg_type.name ~= "any" then
                                     arg_expr = "&" .. arg_expr
-                                -- Non-nullable to any: Type -> any (void*), but not any/Type? -> any
+                                -- Safe pointer to any: Type -> any (void*), but not any/Type? -> any
                                 elseif arg_type.kind == "named_type" and param_type.kind == "named_type" and param_type.name == "any" and arg_type.name ~= "any" then
                                     arg_expr = "&" .. arg_expr
-                                -- nullable to any: Type? -> any, no & needed (both are pointers)
+                                -- Unsafe pointer to any: Type? -> any, no & needed (both are pointers)
                                 end
                             end
                         end
@@ -460,12 +460,12 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
     for _, f in ipairs(expr.fields) do
         local field_expr = gen_expr_fn(f.value)
         
-        -- Check if we need to add & for non-nullable to nullable/any conversion
+        -- Check if we need to add & for safe to unsafe pointer conversion
         if f.value_type and f.value_type.kind == "named_type" and f.value.kind == "identifier" then
-            -- Non-nullable to nullable: Type -> Type?
+            -- Safe pointer to unsafe pointer: Type -> Type?
             if f.expected_type and f.expected_type.kind == "nullable" then
                 field_expr = "&" .. field_expr
-            -- Non-nullable to any: Type -> any (void*)
+            -- Safe pointer to any: Type -> any (void*)
             elseif f.expected_type and f.expected_type.kind == "named_type" and f.expected_type.name == "any" then
                 field_expr = "&" .. field_expr
             end

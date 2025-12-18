@@ -5,9 +5,19 @@ local Types = {}
 
 local function ctx() return _G.Codegen end
 
-function Types.is_pointer_type(type_node)
-    -- In the new system, nullable types are what generate C pointers
+function Types.is_unsafe_pointer(type_node)
+    -- Unsafe pointers (Type?) may be null and generate C pointers
     return type_node and type_node.kind == "nullable"
+end
+
+-- Deprecated alias for backwards compatibility
+function Types.is_pointer_type(type_node)
+    return Types.is_unsafe_pointer(type_node)
+end
+
+function Types.is_safe_pointer(type_node)
+    -- Safe pointers (Type) are guaranteed non-null named types
+    return type_node and type_node.kind == "named_type"
 end
 
 function Types.c_type(type_node)
@@ -96,7 +106,7 @@ function Types.c_type_in_struct(type_node, struct_name)
     if type_node.kind == "nullable" then
         local base_type = type_node.to
         if base_type.kind == "named_type" and base_type.name == struct_name then
-            -- Self-referential nullable, use "struct Name*"
+            -- Self-referential unsafe pointer (Type?), use "struct Name*"
             return "struct " .. base_type.name .. "*"
         else
             return Types.c_type(base_type) .. "*"
