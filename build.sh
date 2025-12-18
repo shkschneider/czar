@@ -22,7 +22,7 @@ done
 OUT="dist/cz"
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 LDFLAGS="-L./build -lczar -Wl"
-STATIC=true
+STATIC=false
 
 dynamic() {
     echo -e $YELLOW"[LUA] dynamic"$WHITE
@@ -109,7 +109,7 @@ echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
 cp ./src/bin/main.c ./build/main.c
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
-echo -e "[CZ] "$(stat -c %s ./$OUT)"B "$GREEN$(file -b ./$OUT)$WHITE
+echo -e $GREEN"[CZ] "$(stat -c %s ./$OUT)"B $OUT"$WHITE" "$(file -b ./$OUT)
 
 #install -m 755 ./$(OUT) /usr/local/bin/cz
 rm -rf ./build
