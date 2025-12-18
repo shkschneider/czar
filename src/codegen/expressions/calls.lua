@@ -51,7 +51,7 @@ end
 -- Helper to generate string method calls
 local function gen_string_method(obj, obj_type, method_name, args, gen_expr_fn)
     local obj_expr = gen_expr_fn(obj)
-    local is_ptr = (obj_type.kind == "pointer")
+    local is_ptr = (obj_type.kind == "nullable")
     
     if method_name == "append" then
         if #args ~= 1 then error("append() requires exactly 1 argument") end
@@ -120,7 +120,7 @@ end
 
 -- Helper to check if type is a string type
 local function is_string_type(obj_type)
-    return obj_type and (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string"))
+    return obj_type and (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string"))
 end
 
 -- Generate function call expression
@@ -146,7 +146,7 @@ function Calls.gen_call(expr, gen_expr_fn)
         -- Get the receiver type name
         local receiver_type_name = nil
         if obj_type then
-            if obj_type.kind == "pointer" and obj_type.to.kind == "named_type" then
+            if obj_type.kind == "nullable" and obj_type.to.kind == "named_type" then
                 receiver_type_name = obj_type.to.name
             elseif obj_type.kind == "named_type" then
                 receiver_type_name = obj_type.name
@@ -178,7 +178,7 @@ function Calls.gen_call(expr, gen_expr_fn)
             local first_param_type = method.params[1].type
             local obj_expr = gen_expr_fn(obj)
 
-            if first_param_type.kind == "pointer" then
+            if first_param_type.kind == "nullable" then
                 -- Method expects a pointer
                 if obj_type and obj_type.kind ~= "pointer" then
                     -- Object is a value, add &
@@ -223,7 +223,7 @@ function Calls.gen_call(expr, gen_expr_fn)
         -- Get the receiver type name
         local receiver_type_name = nil
         if obj_type then
-            if obj_type.kind == "pointer" and obj_type.to.kind == "named_type" then
+            if obj_type.kind == "nullable" and obj_type.to.kind == "named_type" then
                 receiver_type_name = obj_type.to.name
             elseif obj_type.kind == "named_type" then
                 receiver_type_name = obj_type.name
@@ -255,7 +255,7 @@ function Calls.gen_call(expr, gen_expr_fn)
             local first_param_type = method.params[1].type
             local obj_expr = gen_expr_fn(obj)
 
-            if first_param_type.kind == "pointer" then
+            if first_param_type.kind == "nullable" then
                 -- Method expects a pointer
                 if obj_type and obj_type.kind ~= "pointer" then
                     -- Object is a value, add &
@@ -317,7 +317,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                     if not type_node then return "unknown" end
                     if type_node.kind == "named_type" then
                         return type_node.name
-                    elseif type_node.kind == "pointer" then
+                    elseif type_node.kind == "nullable" then
                         return type_to_c_name(type_node.to) .. "_ptr"
                     elseif type_node.kind == "string" then
                         return "string"
@@ -423,9 +423,7 @@ function Calls.gen_field(expr, gen_expr_fn)
                 use_arrow = true
             end
         end
-    elseif expr.object.kind == "unary" and expr.object.op == "*" then
-        -- Explicit dereference, use .
-        use_arrow = false
+    -- Removed: explicit dereference operator (*) no longer exists
     elseif expr.object.inferred_type and expr.object.inferred_type.kind == "map" then
         -- Map type always uses arrow
         use_arrow = true

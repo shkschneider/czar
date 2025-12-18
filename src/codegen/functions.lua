@@ -20,7 +20,7 @@ local function type_to_c_name(type_node)
     
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         return type_to_c_name(type_node.to) .. "_ptr"
     elseif type_node.kind == "array" then
         return type_to_c_name(type_node.element_type) .. "_arr"
@@ -150,7 +150,7 @@ function Functions.collect_structs_and_functions()
                 local returns_null = Functions.function_returns_null(item)
                 if returns_null and ctx().structs[item.return_type.name] then
                     -- Convert return type to pointer
-                    item.return_type = { kind = "pointer", to = item.return_type }
+                    item.return_type = { kind = "nullable", to = item.return_type }
                 end
             end
 
@@ -172,7 +172,7 @@ function Functions.collect_structs_and_functions()
                     -- Extension method: first param is self
                     local self_type = item.params[1].type
                     local receiver_type_name = nil
-                    if self_type.kind == "pointer" and self_type.to.kind == "named_type" then
+                    if self_type.kind == "nullable" and self_type.to.kind == "named_type" then
                         receiver_type_name = self_type.to.name
                     elseif self_type.kind == "named_type" then
                         receiver_type_name = self_type.name
@@ -297,7 +297,7 @@ function Functions.gen_params(params)
             -- - mut Type* → Type* (mutable data through pointer)
             -- - any without mut → const void* (immutable)
             -- - mut any → void* (mutable)
-            if p.type.kind == "pointer" then
+            if p.type.kind == "nullable" then
                 local base_type = Codegen.Types.c_type(p.type.to)
                 if p.mutable then
                     -- mut Type* → Type* (can modify through pointer)
@@ -349,7 +349,7 @@ function Functions.gen_function_declaration(fn)
 
     -- In explicit pointer model, return types are as declared
     local return_type_str = Codegen.Types.c_type(fn.return_type)
-    if fn.return_type and fn.return_type.kind == "pointer" then
+    if fn.return_type and fn.return_type.kind == "nullable" then
         return_type_str = Codegen.Types.c_type(fn.return_type.to) .. "*"
     end
 
@@ -392,7 +392,7 @@ function Functions.gen_function(fn)
 
     -- In explicit pointer model, return types are as declared
     local return_type_str = Codegen.Types.c_type(fn.return_type)
-    if fn.return_type and fn.return_type.kind == "pointer" then
+    if fn.return_type and fn.return_type.kind == "nullable" then
         return_type_str = Codegen.Types.c_type(fn.return_type.to) .. "*"
     end
 

@@ -58,7 +58,7 @@ function Declarations.parse_struct(parser)
         -- If the field type is the same as the struct name, make it a pointer
         -- This handles self-referential types like: struct Node { Node next }
         if field_type.kind == "named_type" and field_type.name == name then
-            field_type = { kind = "pointer", to = field_type }
+            field_type = { kind = "nullable", to = field_type }
         end
         
         table.insert(fields, { name = field_name, type = field_type })
@@ -181,7 +181,7 @@ function Declarations.parse_function(parser)
     if receiver_type and not is_static_method then
         local self_type = { kind = "named_type", name = receiver_type }
         -- In explicit pointer model, self is a pointer to the type
-        local self_param_type = { kind = "pointer", to = self_type }
+        local self_param_type = { kind = "nullable", to = self_type }
         table.insert(params, { name = "self", type = self_param_type, mutable = true })
     end
     

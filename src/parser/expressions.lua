@@ -127,7 +127,8 @@ end
 
 function Expressions.parse_unary(parser)
     local tok = parser:current()
-    if tok and (tok.type == "MINUS" or tok.type == "AMPERSAND" or tok.type == "STAR" or tok.type == "TILDE") then
+    -- Removed & (address-of) and * (dereference) operators per new pointer safety model
+    if tok and (tok.type == "MINUS" or tok.type == "TILDE") then
         parser:advance()
         local operand = Expressions.parse_unary(parser)
         return { kind = "unary", op = tok.value, operand = operand }
@@ -305,7 +306,14 @@ function Expressions.parse_postfix(parser)
             end
         elseif parser:match("BANG") then
             -- Null check operator: a! (postfix)
+            -- Converts nullable to non-nullable (with warning)
             expr = { kind = "null_check", operand = expr }
+        elseif parser:check("QUESTION") and parser.tokens[parser.pos + 1] and parser.tokens[parser.pos + 1].type == "DOT" then
+            -- Safe navigation operator: a?.field
+            parser:advance()  -- consume QUESTION
+            parser:advance()  -- consume DOT
+            local field = parser:expect("IDENT").value
+            expr = { kind = "safe_field", object = expr, field = field }
         elseif parser:check("COLON") and parser.tokens[parser.pos + 1] and parser.tokens[parser.pos + 1].type == "IDENT" and parser.tokens[parser.pos + 2] and parser.tokens[parser.pos + 2].type == "LPAREN" then
             -- Method call using colon: obj:method()
             -- Must be followed by LPAREN to distinguish from map entry syntax (key: value)

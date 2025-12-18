@@ -88,7 +88,7 @@ function Statements.gen_statement(stmt)
         -- Check if the variable is a struct with a destructor
         local var_type = ctx():get_var_type(expr.name)
         local destructor_code = ""
-        if var_type and var_type.kind == "pointer" and var_type.to and var_type.to.kind == "named_type" then
+        if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
             local struct_name = var_type.to.name
             local destructor_call = Codegen.Functions.gen_destructor_call(struct_name, expr.name)
             if destructor_call then
@@ -119,7 +119,7 @@ function Statements.gen_statement(stmt)
         end
 
         -- In explicit pointer model, check if the type itself is a pointer
-        local is_pointer_type = stmt.type.kind == "pointer"
+        local is_pointer_type = stmt.type.kind == "nullable"
         local is_array_type = stmt.type.kind == "array"
         local is_slice_type = stmt.type.kind == "slice"
 
@@ -386,7 +386,7 @@ function Statements.gen_for(stmt)
             table.insert(parts, string.format("    %s* %s = &%s[%s];",
                 c_type, item_var, collection_expr, index_var))
             -- Add to scope as pointer type
-            ctx():add_var(stmt.item_name, { kind = "pointer", to = element_type }, true)
+            ctx():add_var(stmt.item_name, { kind = "nullable", to = element_type }, true)
         else
             -- Immutable item: copy value
             table.insert(parts, string.format("    const %s %s = %s[%s];",

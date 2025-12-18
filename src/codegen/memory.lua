@@ -59,7 +59,7 @@ function Memory.get_scope_cleanup()    local cleanup = {}
             local var_info = Memory.get_var_info(var_name)
             if var_info and var_info.needs_free then
                 local var_type = var_info.type
-                if var_type and var_type.kind == "pointer" and var_type.to and var_type.to.kind == "named_type" then
+                if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
                     local struct_name = var_type.to.name
                     local destructor_call = Codegen.Functions.gen_destructor_call(struct_name, var_name)
                     if destructor_call then
@@ -81,7 +81,7 @@ function Memory.get_all_scope_cleanup()    local cleanup = {}
             local var_info = Memory.get_var_info(var_name)
             if var_info and var_info.needs_free then
                 local var_type = var_info.type
-                if var_type and var_type.kind == "pointer" and var_type.to and var_type.to.kind == "named_type" then
+                if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
                     local struct_name = var_type.to.name
                     local destructor_call = Codegen.Functions.gen_destructor_call(struct_name, var_name)
                     if destructor_call then

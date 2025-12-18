@@ -22,14 +22,14 @@ end
 
 -- Infer string literal type (C-style char*)
 function Literals.infer_string_type(expr)
-    local inferred = { kind = "pointer", to = { kind = "named_type", name = "char" } }
+    local inferred = { kind = "nullable", to = { kind = "named_type", name = "char" } }
     expr.inferred_type = inferred
     return inferred
 end
 
 -- Infer null literal type (void*)
 function Literals.infer_null_type(expr)
-    local inferred = { kind = "pointer", to = { kind = "named_type", name = "void" } }
+    local inferred = { kind = "nullable", to = { kind = "named_type", name = "void" } }
     expr.inferred_type = inferred
     return inferred
 end
@@ -53,7 +53,7 @@ end
 -- Infer the type of a macro
 function Literals.infer_macro_type(expr)
     if expr.name == "FILE" or expr.name == "FUNCTION" then
-        return { kind = "pointer", to = { kind = "named_type", name = "char" } }
+        return { kind = "nullable", to = { kind = "named_type", name = "char" } }
     elseif expr.name == "DEBUG" then
         -- #DEBUG, #DEBUG(), and #DEBUG(bool) all return bool
         return { kind = "named_type", name = "bool" }

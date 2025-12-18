@@ -11,7 +11,7 @@ local function type_to_signature_string(type_node)
     
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         return type_to_signature_string(type_node.to) .. "*"
     elseif type_node.kind == "array" then
         return type_to_signature_string(type_node.element_type) .. "[" .. (type_node.size or "*") .. "]"
