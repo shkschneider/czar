@@ -1,0 +1,11 @@
+struct Vec2 {
+    u16 x
+    u16 y
+}
+
+fn main() i32 {
+    Vec2 v = Vec2 {x: 10, y: 20}
+    Vec2* w = &v  // OK: explicit address-of operator
+    println("Vector: ", w.x, ",", w.y)
+    return 0
+}
