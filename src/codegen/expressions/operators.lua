@@ -8,21 +8,61 @@ local function ctx() return _G.Codegen end
 -- Generate unsafe cast expression
 function Operators.gen_unsafe_cast(expr, gen_expr_fn)
     -- Unsafe cast: expr as<Type> -> (Type)expr
-    -- Emit warning for unsafe cast
+    -- Emit warning for truly unsafe casts (not safe widening casts)
     local Warnings = require("warnings")
     local target_type_str = ctx():c_type(expr.target_type)
     local source_type = ctx():infer_type(expr.expr)
     local source_type_str = source_type and ctx():type_name_string(source_type) or "unknown"
     
-    Warnings.emit(
-        ctx().source_file,
-        expr.line,
-        Warnings.WarningType.UNSAFE_CAST,
-        string.format("Unsafe cast from '%s' to '%s' - type safety not guaranteed", 
-            source_type_str, target_type_str),
-        ctx().source_path,
-        ctx().current_function
-    )
+    -- Helper: Check if cast is a safe widening cast
+    local function is_safe_widening_cast(from_type, to_type)
+        if not from_type or not to_type then
+            return false
+        end
+        
+        -- Both must be named types (primitive types)
+        if from_type.kind ~= "named_type" or to_type.kind ~= "named_type" then
+            return false
+        end
+        
+        local from_name = from_type.name
+        local to_name = to_type.name
+        
+        -- Define type sizes and signedness
+        local type_info = {
+            i8 = {size = 8, signed = true},
+            i16 = {size = 16, signed = true},
+            i32 = {size = 32, signed = true},
+            i64 = {size = 64, signed = true},
+            u8 = {size = 8, signed = false},
+            u16 = {size = 16, signed = false},
+            u32 = {size = 32, signed = false},
+            u64 = {size = 64, signed = false},
+        }
+        
+        local from_info = type_info[from_name]
+        local to_info = type_info[to_name]
+        
+        if not from_info or not to_info then
+            return false
+        end
+        
+        -- Safe if same signedness and target is larger or equal
+        return from_info.signed == to_info.signed and to_info.size >= from_info.size
+    end
+    
+    -- Only emit warning for truly unsafe casts
+    if not is_safe_widening_cast(source_type, expr.target_type) then
+        Warnings.emit(
+            ctx().source_file,
+            expr.line,
+            Warnings.WarningType.UNSAFE_CAST,
+            string.format("Unsafe cast from '%s' to '%s' - type safety not guaranteed", 
+                source_type_str, target_type_str),
+            ctx().source_path,
+            ctx().current_function
+        )
+    end
     
     local expr_str = gen_expr_fn(expr.expr)
     
