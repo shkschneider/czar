@@ -158,11 +158,17 @@ function Statements.gen_statement(stmt)
             if stmt.init then
                 local init_expr = Codegen.Expressions.gen_expr(stmt.init)
                 
-                -- Check if we need to take the address (non-nullable to nullable conversion)
-                if stmt.init_type and stmt.init_type.kind == "named_type" and 
-                   stmt.type.kind == "nullable" and stmt.init.kind == "identifier" then
-                    -- Wrap with address-of operator
-                    init_expr = "&" .. init_expr
+                -- Check if we need to take the address (non-nullable to nullable/any conversion)
+                if stmt.init_type and stmt.init.kind == "identifier" then
+                    -- Non-nullable to nullable: Type -> Type?
+                    if stmt.init_type.kind == "named_type" and stmt.type.kind == "nullable" then
+                        init_expr = "&" .. init_expr
+                    -- Non-nullable to any: Type -> any (void*)
+                    elseif stmt.init_type.kind == "named_type" and stmt.type.kind == "named_type" and stmt.type.name == "any" then
+                        init_expr = "&" .. init_expr
+                    -- Nullable to any: Type? -> any (already a pointer, no & needed)
+                    -- This is handled automatically since both are pointers
+                    end
                 end
                 
                 decl = decl .. " = " .. init_expr
@@ -179,12 +185,21 @@ function Statements.gen_statement(stmt)
 
             return decl .. ";"
         else
-            -- This is a value type
+            -- This is a value type (or any type which is void*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
             local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s %s", prefix, Codegen.Types.c_type(stmt.type), stmt.name)
             if stmt.init then
-                decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
+                local init_expr = Codegen.Expressions.gen_expr(stmt.init)
+                
+                -- Check if we need to take the address for any type
+                if stmt.init_type and stmt.init_type.kind == "named_type" and 
+                   stmt.type.kind == "named_type" and stmt.type.name == "any" and 
+                   stmt.init.kind == "identifier" then
+                    init_expr = "&" .. init_expr
+                end
+                
+                decl = decl .. " = " .. init_expr
             end
 
             -- Call constructor if the type is a struct

@@ -1,6 +1,6 @@
 // Test varargs with different types
 fn sum_u8(u8... nums) u8 {
-    mut u8 total = <u8> 0 !!
+    mut u8 total = 0
     mut i32 i = 0
     while i < 3 {
         total = total + nums[i]

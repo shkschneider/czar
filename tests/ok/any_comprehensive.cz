@@ -40,8 +40,8 @@ fn main() i32 {
 
     // Store both in a container as 'any'
     mut GenericContainer container = GenericContainer {
-        ptr1: <any> p !!,
-        ptr2: <any> b !!
+        ptr1: p,
+        ptr2: b
     }
 
     // Access through any
