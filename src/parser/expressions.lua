@@ -144,6 +144,107 @@ function Expressions.parse_unary(parser)
     return Expressions.parse_postfix(parser)
 end
 
+-- Helper for parsing postfix without consuming BANG (used in cast expressions)
+function Expressions.parse_postfix_no_bang(parser)
+    local Types = require("parser.types")
+    local expr = Expressions.parse_primary(parser)
+    while true do
+        if parser:match("LPAREN") then
+            local args = {}
+            if not parser:check("RPAREN") then
+                repeat
+                    -- Check for mut keyword before argument
+                    local is_mut = parser:match("KEYWORD", "mut") ~= nil
+                    
+                    -- Check for named argument (name: value)
+                    local arg_name = nil
+                    if parser:check("IDENT") then
+                        local next_pos = parser.pos + 1
+                        if parser.tokens[next_pos] and parser.tokens[next_pos].type == "COLON" then
+                            arg_name = parser:advance().value
+                            parser:advance()
+                        end
+                    end
+                    
+                    local arg_expr = Expressions.parse_expression(parser)
+                    if is_mut then
+                        arg_expr = { kind = "mut_arg", expr = arg_expr, allows_mutation = true }
+                    end
+                    if arg_name then
+                        arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
+                    end
+                    table.insert(args, arg_expr)
+                    if not parser:match("COMMA") then
+                        break
+                    end
+                    if parser:check("RPAREN") then
+                        break
+                    end
+                until false
+            end
+            parser:expect("RPAREN")
+            expr = { kind = "call", callee = expr, args = args }
+        elseif parser:match("LBRACKET") then
+            local start_index = Expressions.parse_expression(parser)
+            if parser:match("COLON") then
+                local end_index = Expressions.parse_expression(parser)
+                parser:expect("RBRACKET")
+                expr = { kind = "slice", array = expr, start = start_index, end_expr = end_index }
+            else
+                parser:expect("RBRACKET")
+                expr = { kind = "index", array = expr, index = start_index }
+            end
+        elseif parser:match("INCREMENT") then
+            expr = { kind = "postfix", op = "++", operand = expr }
+        elseif parser:match("DECREMENT") then
+            expr = { kind = "postfix", op = "--", operand = expr }
+        -- Skip BANG handling in this version (for cast expressions)
+        elseif parser:check("COLON") and parser.tokens[parser.pos + 1] and parser.tokens[parser.pos + 1].type == "IDENT" and parser.tokens[parser.pos + 2] and parser.tokens[parser.pos + 2].type == "LPAREN" then
+            parser:advance()
+            local method_name = parser:expect("IDENT").value
+            expr = { kind = "method_ref", object = expr, method = method_name }
+        elseif parser:match("DOT") then
+            local field = parser:expect("IDENT").value
+            if parser:check("LPAREN") and expr.kind == "identifier" and expr.name:match("^[A-Z]") then
+                parser:advance()
+                local args = {}
+                if not parser:check("RPAREN") then
+                    repeat
+                        local arg_name = nil
+                        if parser:check("IDENT") then
+                            local next_pos = parser.pos + 1
+                            if parser.tokens[next_pos] and parser.tokens[next_pos].type == "COLON" then
+                                arg_name = parser:advance().value
+                                parser:advance()
+                            end
+                        end
+                        
+                        local arg_expr = Expressions.parse_expression(parser)
+                        if arg_name then
+                            arg_expr = { kind = "named_arg", name = arg_name, expr = arg_expr }
+                        end
+                        table.insert(args, arg_expr)
+                    until not parser:match("COMMA")
+                end
+                parser:expect("RPAREN")
+                expr = { kind = "static_method_call", type_name = expr.name, method = field, args = args }
+            else
+                expr = { kind = "field", object = expr, field = field }
+            end
+        elseif expr.kind == "identifier" and parser:check("LBRACE") then
+            local name = expr.name
+            if name:match("^[A-Z]") then
+                expr = Expressions.parse_struct_literal(parser, expr)
+            else
+                break
+            end
+        else
+            break
+        end
+    end
+    return expr
+end
+
 function Expressions.parse_postfix(parser)
     local Types = require("parser.types")
     local expr = Expressions.parse_primary(parser)
@@ -477,8 +578,10 @@ function Expressions.parse_primary(parser)
             error("Expected '>' after type in cast at line " .. (parser:current() and parser:current().line or "?"))
         end
         
-        -- Parse only the primary expression (to avoid consuming !! as postfix op)
-        local expr = Expressions.parse_primary(parser)
+        -- Parse postfix expression (includes array indexing, field access, etc.)
+        -- We need postfix to handle cases like: <i32> bytes[0] !!
+        -- Use special version that doesn't consume BANG for null-check
+        local expr = Expressions.parse_postfix_no_bang(parser)
         
         -- Check for !! or ?? suffix
         -- !! is two consecutive BANG tokens (not a compound token, to avoid conflict with null check)
@@ -491,7 +594,7 @@ function Expressions.parse_primary(parser)
             return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = true, line = line }
         elseif parser:match("FALLBACK") then
             -- Safe cast with fallback
-            local fallback_expr = Expressions.parse_primary(parser)
+            local fallback_expr = Expressions.parse_postfix(parser)
             return { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr, line = line }
         else
             -- No suffix - will be validated in typechecker

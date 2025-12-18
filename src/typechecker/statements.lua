@@ -106,16 +106,94 @@ function Statements.check_var_decl(typechecker, stmt)
 
         -- Check type compatibility
         if not Inference.types_compatible(var_type, init_type, typechecker) then
-            local line = stmt.line or 0
-            local msg = string.format(
-                "Type mismatch in variable '%s': expected %s, got %s",
-                stmt.name,
-                Inference.type_to_string(var_type),
-                Inference.type_to_string(init_type)
-            )
-            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
-            typechecker:add_error(formatted_error)
+            -- Types don't match exactly - check if implicit cast is safe
+            local can_implicit_cast = false
+            
+            -- Helper: Check if cast is a safe widening cast or literal-to-type
+            local function is_safe_implicit_cast(from_type, to_type, init_expr)
+                if not from_type or not to_type then
+                    return false
+                end
+                
+                -- Both must be named types (primitive types)
+                if from_type.kind ~= "named_type" or to_type.kind ~= "named_type" then
+                    return false
+                end
+                
+                local from_name = from_type.name
+                local to_name = to_type.name
+                
+                -- Define type sizes and signedness
+                local type_info = {
+                    i8 = {size = 8, signed = true},
+                    i16 = {size = 16, signed = true},
+                    i32 = {size = 32, signed = true},
+                    i64 = {size = 64, signed = true},
+                    u8 = {size = 8, signed = false},
+                    u16 = {size = 16, signed = false},
+                    u32 = {size = 32, signed = false},
+                    u64 = {size = 64, signed = false},
+                    f32 = {size = 32, signed = true, float = true},
+                    f64 = {size = 64, signed = true, float = true},
+                }
+                
+                local from_info = type_info[from_name]
+                local to_info = type_info[to_name]
+                
+                if not from_info or not to_info then
+                    return false
+                end
+                
+                -- If init is a literal integer and target is any integer type, allow it
+                -- This allows: u8 x = 10, i32 y = 42, etc.
+                if init_expr and init_expr.kind == "int" and not to_info.float then
+                    -- Check if the literal value fits in the target type
+                    local value = init_expr.value
+                    if to_info.signed then
+                        -- Signed types: check range
+                        local max = 2^(to_info.size - 1) - 1
+                        local min = -(2^(to_info.size - 1))
+                        if value >= min and value <= max then
+                            return true
+                        end
+                    else
+                        -- Unsigned types: check non-negative and fits
+                        local max = 2^to_info.size - 1
+                        if value >= 0 and value <= max then
+                            return true
+                        end
+                    end
+                end
+                
+                -- Otherwise, safe if same signedness and target is larger or equal
+                return from_info.signed == to_info.signed and to_info.size >= from_info.size
+            end
+            
+            can_implicit_cast = is_safe_implicit_cast(init_type, var_type, stmt.init)
+            
+            if can_implicit_cast then
+                -- Wrap initializer in implicit cast node
+                stmt.init = {
+                    kind = "implicit_cast",
+                    target_type = var_type,
+                    expr = stmt.init,
+                    line = stmt.line
+                }
+                -- Update the inferred type
+                init_type = var_type
+            else
+                -- Error: incompatible types
+                local line = stmt.line or 0
+                local msg = string.format(
+                    "Type mismatch in variable '%s': expected %s, got %s",
+                    stmt.name,
+                    Inference.type_to_string(var_type),
+                    Inference.type_to_string(init_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+            end
         end
 
         -- Annotate the initializer with its type
