@@ -1,13 +1,13 @@
-// Test safe cast as?<Type>(fallback) syntax
+// Test safe cast with ?? fallback syntax
 fn main() i32 {
     // Test safe cast with fallback
     i32 i = 1000
     
-    // as?<Type>(fallback) returns the target type with type-checked fallback
-    u8 u = i as?<u8>(255 as<u8>)  // Safe cast to u8 with fallback
-    i64 big = i as?<i64>(0 as<i64>)  // Safe cast to i64 with fallback
+    // <Type> expr ?? fallback returns the target type with implicitly converted fallback
+    u8 u = <u8> i ?? 255  // Safe cast to u8 with fallback
+    i64 big = <i64> i ?? 0  // Safe cast to i64 with fallback
     
-    // For now, as? performs same cast as 'as<Type>'
+    // For now, ?? performs same cast as '<Type> expr !!'
     // Future: will add runtime validation to use fallback on cast failure
     
     if big == 1000 {

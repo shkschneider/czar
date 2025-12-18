@@ -12,7 +12,7 @@ struct Point {
 
 fn main() i32 {
     // Test 1: Basic heap allocation with new keyword
-    // Note: Variables declared as<types>, not pointers - compiler handles internally
+    // Note: Variables <types> declared !!, not pointers - compiler handles internally
     mut Person* person = new Person { age: 25, score: 50 }
 
     // Test 2: Multiple heap allocations
