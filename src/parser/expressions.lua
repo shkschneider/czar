@@ -467,6 +467,7 @@ function Expressions.parse_primary(parser)
         -- <Type> expr !! - unsafe cast (with warning, runtime abort on failure)
         -- <Type> expr ?? fallback - safe cast with fallback
         -- <Type> expr - compiler ERROR for unsafe casts
+        local line = tok.line  -- Save line number for error reporting
         parser:advance()  -- consume '<'
         
         local Types = require("parser.types")
@@ -487,14 +488,14 @@ function Expressions.parse_primary(parser)
             parser:advance()  -- consume first !
             parser:advance()  -- consume second !
             -- Unsafe cast with explicit permission
-            return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = true }
+            return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = true, line = line }
         elseif parser:match("FALLBACK") then
             -- Safe cast with fallback
             local fallback_expr = Expressions.parse_primary(parser)
-            return { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr }
+            return { kind = "safe_cast", target_type = target_type, expr = expr, fallback = fallback_expr, line = line }
         else
             -- No suffix - will be validated in typechecker
-            return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = false }
+            return { kind = "unsafe_cast", target_type = target_type, expr = expr, explicit_unsafe = false, line = line }
         end
     elseif tok.type == "IDENT" then
         local ident = parser:advance()
