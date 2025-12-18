@@ -230,12 +230,18 @@ function Lexer:lex_number()
             value = value .. self:advance()
         end
         
-        -- Read exponent
+        -- Read exponent - at least one digit is required
+        local exponent_start = #value
         while self:peek() and (is_digit(self:peek()) or self:peek() == "_") do
             local ch = self:advance()
             if ch ~= "_" then
                 value = value .. ch
             end
+        end
+        
+        -- Validate that at least one digit was found after 'e' or sign
+        if #value == exponent_start then
+            error(string.format("invalid float literal: exponent requires at least one digit at %d:%d", self.line, start_col))
         end
     end
     
