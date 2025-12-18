@@ -18,7 +18,7 @@ fn main() i32 {
     // Test 1: Using !! on non-null should work
     Point? p1 = new Point { x: 5, y: 10 }
     Point? ptr1 = p1
-    Point? checked = ptr1!!
+    Point? checked = ptr1 !!
 
     // Test 2: Null pointer with fallback using 'or'
     Point? p2 = null
