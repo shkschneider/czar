@@ -79,17 +79,17 @@ function infer_type(typechecker, expr)
         -- Clone operator returns a pointer to the cloned value
         if expr.target_type then
             -- clone<Type> returns Type*
-            local ptr_type = { kind = "pointer", to = expr.target_type }
+            local ptr_type = { kind = "nullable", to = expr.target_type }
             expr.inferred_type = ptr_type
             return ptr_type
         else
             local source_type = infer_type(typechecker, expr.expr)
             -- If source is a pointer, keep it; otherwise wrap in pointer
             local result_type
-            if source_type and source_type.kind == "pointer" then
+            if source_type and source_type.kind == "nullable" then
                 result_type = source_type
             else
-                result_type = { kind = "pointer", to = source_type }
+                result_type = { kind = "nullable", to = source_type }
             end
             expr.inferred_type = result_type
             return result_type
@@ -183,7 +183,7 @@ function infer_type(typechecker, expr)
         if expr.kind == "sizeof" then
             result_type = { kind = "named_type", name = "i32" }
         else
-            result_type = { kind = "pointer", to = { kind = "named_type", name = "char" } }
+            result_type = { kind = "nullable", to = { kind = "named_type", name = "char" } }
         end
         expr.inferred_type = result_type
         return result_type

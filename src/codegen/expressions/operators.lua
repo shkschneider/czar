@@ -13,7 +13,7 @@ function Operators.gen_implicit_cast(expr, gen_expr_fn)
     local expr_str = gen_expr_fn(expr.expr)
     
     -- Handle pointer casting
-    if expr.target_type.kind == "pointer" then
+    if expr.target_type.kind == "nullable" then
         target_type_str = ctx():c_type(expr.target_type.to) .. "*"
     end
 
@@ -82,7 +82,7 @@ function Operators.gen_unsafe_cast(expr, gen_expr_fn)
     local expr_str = gen_expr_fn(expr.expr)
     
     -- Handle pointer casting
-    if expr.target_type.kind == "pointer" then
+    if expr.target_type.kind == "nullable" then
         target_type_str = ctx():c_type(expr.target_type.to) .. "*"
     end
 
@@ -98,7 +98,7 @@ function Operators.gen_safe_cast(expr, gen_expr_fn)
     local fallback_str = gen_expr_fn(expr.fallback)
     
     -- Handle pointer casting
-    if expr.target_type.kind == "pointer" then
+    if expr.target_type.kind == "nullable" then
         target_type_str = ctx():c_type(expr.target_type.to) .. "*"
     end
 
@@ -136,7 +136,7 @@ function Operators.gen_clone(expr, gen_expr_fn)
     local actual_type = target_type
     local needs_deref = false
 
-    if target_type.kind == "pointer" then
+    if target_type.kind == "nullable" then
         -- Source is a pointer, need to dereference it
         actual_type = target_type.to
         needs_deref = true
@@ -238,7 +238,7 @@ function Operators.gen_assign(expr, gen_expr_fn)
             end
             
             -- Warning: reassigning a pointer to another address
-            if var_type.kind == "pointer" then
+            if var_type.kind == "nullable" then
                 local Warnings = require("warnings")
                 Warnings.emit(
                     ctx().source_file,
@@ -257,7 +257,7 @@ function Operators.gen_assign(expr, gen_expr_fn)
             if var_info then
                 local var_type = ctx():get_var_type(expr.target.object.name)
                 -- For pointers: need the variable to be mutable to modify through it
-                if var_type and var_type.kind == "pointer" then
+                if var_type and var_type.kind == "nullable" then
                     if not var_info.mutable then
                         error(string.format("Cannot assign to field '%s' through immutable pointer '%s'", expr.target.field, expr.target.object.name))
                     end

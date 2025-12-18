@@ -47,7 +47,7 @@ local function type_to_string(type_node)
 
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         return type_to_string(type_node.to) .. "*"
     elseif type_node.kind == "array" then
         if type_node.size then
@@ -130,7 +130,7 @@ local function describe_type(type_node)
         return "unknown"
     end
 
-    if type_node.kind == "pointer" then
+    if type_node.kind == "nullable" then
         return "pointer to " .. describe_type(type_node.to)
     elseif type_node.kind == "array" then
         if type_node.size then

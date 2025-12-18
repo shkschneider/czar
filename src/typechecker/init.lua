@@ -57,7 +57,7 @@ function Typechecker:register_builtins()
             params = {
                 {
                     name = "str",
-                    type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                    type = { kind = "nullable", to = { kind = "named_type", name = "char" } },
                     mutable = false
                 }
             },
@@ -73,7 +73,7 @@ function Typechecker:register_builtins()
             params = {
                 {
                     name = "str",
-                    type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                    type = { kind = "nullable", to = { kind = "named_type", name = "char" } },
                     mutable = false
                 }
             },
@@ -91,7 +91,7 @@ function Typechecker:register_builtins()
             params = {
                 {
                     name = "format",
-                    type = { kind = "pointer", to = { kind = "named_type", name = "char" } },
+                    type = { kind = "nullable", to = { kind = "named_type", name = "char" } },
                     mutable = false
                 },
                 {
