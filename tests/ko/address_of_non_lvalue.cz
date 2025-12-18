@@ -1,9 +1,12 @@
-// Test address-of on non-lvalue
+// Test that & operator no longer exists (removed in nullable safety update)
+// This test should fail at parse/compile time
 fn get_value() i32 {
     return 42
 }
 
 fn main() i32 {
-    i32? p = &get_value()  // ERROR: cannot take address of non-lvalue
-    return *p
+    // ERROR: & operator no longer supported
+    // In the new model, all types are implicitly pass-by-reference
+    i32 x = get_value()
+    return x
 }

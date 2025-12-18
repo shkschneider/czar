@@ -48,7 +48,7 @@ local function type_to_string(type_node)
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "nullable" then
-        return type_to_string(type_node.to) .. "*"
+        return type_to_string(type_node.to) .. "?"
     elseif type_node.kind == "array" then
         if type_node.size then
             return type_to_string(type_node.element_type) .. "[" .. tostring(type_node.size) .. "]"
