@@ -365,7 +365,22 @@ function Expressions.parse_postfix(parser)
             else
                 break
             end
-        -- Old cast syntax (as<Type>) is now deprecated, replaced with <Type> expr
+        elseif parser:match("INCREMENT") then
+            -- Postfix increment: i++
+            -- Don't chain multiple postfix increments
+            expr = { kind = "postfix", op = "++", operand = expr }
+            -- Don't continue parsing if next token could start a new statement
+            if parser:check("INCREMENT") or parser:check("DECREMENT") then
+                break
+            end
+        elseif parser:match("DECREMENT") then
+            -- Postfix decrement: i--
+            -- Don't chain multiple postfix decrements
+            expr = { kind = "postfix", op = "--", operand = expr }
+            -- Don't continue parsing if next token could start a new statement
+            if parser:check("INCREMENT") or parser:check("DECREMENT") then
+                break
+            end        -- Old cast syntax (as<Type>) is now deprecated, replaced with <Type> expr
         -- elseif parser:check("KEYWORD", "as") then
         --     ...removed...
         else
