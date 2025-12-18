@@ -1,0 +1,5 @@
+fn main() i32 {
+    i8 a = <i8> -42 !!
+    u16 b = <u16> a !! // invalid signed to unsigned?!
+    return 0
+}

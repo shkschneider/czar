@@ -30,7 +30,7 @@ fn main() i32 {
 
     // Test with container
     Container c = create_vec_container(mut v)
-    Vec2* from_container = c.<Vec2*> data !!
+    Vec2* from_container = <Vec2*> c.data !!
 
     // Test passing any to function
     i32 x_value = get_x_from_any(generic_ptr)
