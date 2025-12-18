@@ -13,5 +13,6 @@ while read f ; do
     done < <(grep "function $n:" $f | cut -d' ' -f2- | cut -d'(' -f1 | tr ':' '.' | cut -d'.' -f2 | sort -u)
 done < <(find src -type f)
 echo "$r"
+#./stats.sh | rev | cut -d' ' -f1 | rev | sort -n | xargs
 
 # EOF

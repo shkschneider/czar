@@ -21,8 +21,9 @@ It currently is written in Lua and transpiles to C.
 - Modularization with `module` and `import`
 - Structs with members and methods (`self`)
 - Mutability `mut` (immutable by default)
-- Nullability `?`, casting with `as<Type>(optional fallback)`
+- Nullability `?` on pointers
 - Visibility with `pub` (private by default)
+- Casting with `as<Type>(optional fallback)`
 - Pointers with `&` (address-of) and `*` (dereference) operators
 - Memory management with `new` and `free`
 - Error-as-value pattern (no exceptions)
