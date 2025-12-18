@@ -11,26 +11,8 @@ Builtins.calls = {
         return string.format('printf("%%d\\n", %s)', args[1])
     end,
     
-    -- Print string with automatic newline
-    println = function(args)
-        return string.format('cz_println(%s)', args[1])
-    end,
-    
-    -- Print string without newline
-    print = function(args)
-        if #args == 1 then
-            return string.format('cz_print(%s)', args[1])
-        else
-            -- Multiple arguments: treat like printf
-            return string.format('cz_printf(%s)', table.concat(args, ", "))
-        end
-    end,
-    
-    -- Direct printf binding with format string and variadic arguments
-    printf = function(args)
-        -- Simply pass all arguments to cz_printf
-        return string.format('cz_printf(%s)', table.concat(args, ", "))
-    end,
+    -- Note: print, println, and printf have been moved to the cz module
+    -- Users must now: import cz, then use cz.print(), cz.println(), cz.printf()
 }
 
 -- Builtin features/keywords

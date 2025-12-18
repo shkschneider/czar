@@ -263,6 +263,42 @@ end
 
 -- Infer the type of a static method call
 function Calls.infer_static_method_call_type(typechecker, expr)
+    -- Special handling for cz module functions
+    if expr.type_name == "cz" then
+        -- Check if cz module is imported
+        local cz_imported = false
+        for _, import in ipairs(typechecker.imports) do
+            if import.module_path == "cz" or import.alias == "cz" then
+                cz_imported = true
+                import.used = true -- Mark as used
+                break
+            end
+        end
+        
+        if not cz_imported then
+            local Errors = require("errors")
+            local msg = string.format("Module 'cz' must be imported to use cz.%s()", expr.method)
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- Return type for cz module functions
+        if expr.method == "print" or expr.method == "println" or expr.method == "printf" then
+            local void_type = { kind = "named_type", name = "void" }
+            expr.inferred_type = void_type
+            return void_type
+        else
+            local Errors = require("errors")
+            local msg = string.format("Unknown function 'cz.%s()'", expr.method)
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
+
     local method_def = Resolver.resolve_function(typechecker, expr.type_name, expr.method)
 
     if method_def then
