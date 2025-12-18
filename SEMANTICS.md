@@ -5,10 +5,8 @@ _case insensitive_
 - _
 - and
 - any
-- as?
 - assert
 - assert
-- as
 - bool / boolean
 - break
 - clone / copy
@@ -45,7 +43,7 @@ _case insensitive_
 - self
 - string / cstr
 - struct
-- T (reserved for generic type parameter)
+- T
 - TODO
 - true
 - typeof / sizeof
