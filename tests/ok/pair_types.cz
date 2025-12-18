@@ -1,7 +1,7 @@
 // Test pair type with new syntax
 fn main() i32 {
     // Test heap-allocated pair (returns pointer)
-    pair<i32:bool> p1 = new pair [ 42: true ]
+    pair<i32:bool>? p1 = new pair [ 42: true ]
 
     // Test stack-allocated pair (value)
     pair<i32:bool> p2 = pair [ 10: false ]
