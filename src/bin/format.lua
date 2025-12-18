@@ -179,7 +179,7 @@ local function format_line_tokens(tokens)
                 -- No space before }
                 result = result .. token.value
                 -- Space after } if not at end
-                if next and next.type ~= "punct" or (next and next.value == "{") then
+                if next and (next.type ~= "punct" or next.value == "{") then
                     result = result .. " "
                 end
             elseif token.value == "[" then
