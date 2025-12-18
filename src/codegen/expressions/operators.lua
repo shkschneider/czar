@@ -5,6 +5,21 @@ local Operators = {}
 
 local function ctx() return _G.Codegen end
 
+-- Generate implicit cast expression (no warnings)
+function Operators.gen_implicit_cast(expr, gen_expr_fn)
+    -- Implicit cast: automatically inserted by typechecker for safe conversions
+    -- Examples: literal to type, safe widening
+    local target_type_str = ctx():c_type(expr.target_type)
+    local expr_str = gen_expr_fn(expr.expr)
+    
+    -- Handle pointer casting
+    if expr.target_type.kind == "pointer" then
+        target_type_str = ctx():c_type(expr.target_type.to) .. "*"
+    end
+
+    return string.format("((%s)%s)", target_type_str, expr_str)
+end
+
 -- Generate unsafe cast expression
 function Operators.gen_unsafe_cast(expr, gen_expr_fn)
     -- Unsafe cast: <Type> expr !!

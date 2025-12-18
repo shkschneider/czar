@@ -12,6 +12,86 @@ Fields.get_base_type_name = nil
 Fields.type_to_string = nil
 Fields.types_compatible = nil
 
+-- Helper: Check if implicit cast is safe and wrap if needed
+local function try_implicit_cast(expected_type, value_type, value_expr, context_msg, line, typechecker)
+    if Fields.types_compatible(expected_type, value_type, typechecker) then
+        return value_type  -- Types match, no cast needed
+    end
+    
+    -- Types don't match - check if implicit cast is safe
+    local function is_safe_implicit_cast(from_type, to_type, init_expr)
+        if not from_type or not to_type then
+            return false
+        end
+        
+        -- Both must be named types (primitive types)
+        if from_type.kind ~= "named_type" or to_type.kind ~= "named_type" then
+            return false
+        end
+        
+        local from_name = from_type.name
+        local to_name = to_type.name
+        
+        -- Define type sizes and signedness
+        local type_info = {
+            i8 = {size = 8, signed = true},
+            i16 = {size = 16, signed = true},
+            i32 = {size = 32, signed = true},
+            i64 = {size = 64, signed = true},
+            u8 = {size = 8, signed = false},
+            u16 = {size = 16, signed = false},
+            u32 = {size = 32, signed = false},
+            u64 = {size = 64, signed = false},
+            f32 = {size = 32, signed = true, float = true},
+            f64 = {size = 64, signed = true, float = true},
+        }
+        
+        local from_info = type_info[from_name]
+        local to_info = type_info[to_name]
+        
+        if not from_info or not to_info then
+            return false
+        end
+        
+        -- If init is a literal integer and target is any integer type, allow it
+        if init_expr and init_expr.kind == "int" and not to_info.float then
+            local value = init_expr.value
+            if to_info.signed then
+                local max = 2^(to_info.size - 1) - 1
+                local min = -(2^(to_info.size - 1))
+                if value >= min and value <= max then
+                    return true
+                end
+            else
+                local max = 2^to_info.size - 1
+                if value >= 0 and value <= max then
+                    return true
+                end
+            end
+        end
+        
+        -- Otherwise, safe if same signedness and target is larger or equal
+        return from_info.signed == to_info.signed and to_info.size >= from_info.size
+    end
+    
+    if is_safe_implicit_cast(value_type, expected_type, value_expr) then
+        -- Wrap in implicit cast
+        local cast_node = {
+            kind = "implicit_cast",
+            target_type = expected_type,
+            expr = value_expr,
+            line = line
+        }
+        -- Replace the value expression with the cast
+        -- Note: We need to modify the parent's reference, so we return the cast
+        return expected_type, cast_node
+    else
+        -- Error: incompatible types
+        typechecker:add_error(context_msg)
+        return nil
+    end
+end
+
 -- Infer the type of a field access
 function Fields.infer_field_type(typechecker, expr)
     -- Check if this is enum member access (e.g., Status.SUCCESS)
@@ -243,14 +323,23 @@ function Fields.infer_struct_literal_type(typechecker, expr)
 
             if field_type then
                 local value_type = Fields.infer_type(typechecker, field_init.value)
-                if not Fields.types_compatible(field_type, value_type, typechecker) then
-                    typechecker:add_error(string.format(
+                local result_type, cast_node = try_implicit_cast(
+                    field_type,
+                    value_type,
+                    field_init.value,
+                    string.format(
                         "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
                         field_init.name,
                         struct_name,
                         Fields.type_to_string(field_type),
                         Fields.type_to_string(value_type)
-                    ))
+                    ),
+                    expr.line or 0,
+                    typechecker
+                )
+                if cast_node then
+                    -- Replace the value with the implicit cast
+                    field_init.value = cast_node
                 end
             end
         end
@@ -285,14 +374,23 @@ function Fields.infer_new_type(typechecker, expr)
 
             if field_type then
                 local value_type = Fields.infer_type(typechecker, field_init.value)
-                if not Fields.types_compatible(field_type, value_type, typechecker) then
-                    typechecker:add_error(string.format(
+                local result_type, cast_node = try_implicit_cast(
+                    field_type,
+                    value_type,
+                    field_init.value,
+                    string.format(
                         "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
                         field_init.name,
                         expr.type_name,
                         Fields.type_to_string(field_type),
                         Fields.type_to_string(value_type)
-                    ))
+                    ),
+                    expr.line or 0,
+                    typechecker
+                )
+                if cast_node then
+                    -- Replace the value with the implicit cast
+                    field_init.value = cast_node
                 end
             end
         end
