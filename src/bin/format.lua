@@ -70,6 +70,7 @@ local function tokenize_line(line)
         if char == '/' and next_char == '/' then
             if current_token ~= "" then
                 table.insert(tokens, {type = token_type, value = current_token})
+                current_token = ""  -- Clear to prevent double-adding
             end
             table.insert(tokens, {type = "comment", value = line:sub(i)})
             break
