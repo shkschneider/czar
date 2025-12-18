@@ -1,21 +1,21 @@
 // Test string:trim() methods
 fn main() i32 {
     // Test ltrim
-    string* s1 = new string "   hello"
+    string? s1 = new string "   hello"
     s1:ltrim()
     if s1.length != 5 {
         return 1
     }
     
     // Test rtrim
-    string* s2 = new string "world   "
+    string? s2 = new string "world   "
     s2:rtrim()
     if s2.length != 5 {
         return 2
     }
     
     // Test trim (both sides)
-    string* s3 = new string "  test  "
+    string? s3 = new string "  test  "
     s3:trim()
     if s3.length != 4 {
         return 3

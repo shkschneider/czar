@@ -47,7 +47,7 @@ fn main() i32 {
     // Test cut
     string s2 = string "one,two,three"
     string comma = string ","
-    string* first = s2.cut(comma)
+    string? first = s2.cut(comma)
     
     if first.length != 3 {
         free first
@@ -63,7 +63,7 @@ fn main() i32 {
     }
     
     // Test upper
-    string* s3 = new string "hello"
+    string? s3 = new string "hello"
     s3:upper()
     
     string upper_hello = string "HELLO"
@@ -75,7 +75,7 @@ fn main() i32 {
     }
     
     // Test lower
-    string* s4 = new string "WORLD"
+    string? s4 = new string "WORLD"
     s4:lower()
     
     string lower_world = string "world"
@@ -86,9 +86,9 @@ fn main() i32 {
         return 11
     }
     
-    // Test chaining (upper returns string* for chaining)
-    string* s5 = new string "test"
-    string* result = s5:upper()
+    // Test chaining (upper returns string? for chaining)
+    string? s5 = new string "test"
+    string? result = s5:upper()
     
     if result.length != 4 {
         free s5

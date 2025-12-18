@@ -1,4 +1,4 @@
-// Test the 'any' type (void* in C)
+// Test the 'any' type (void? in C)
 // The 'any' type can represent any pointer and must be cast to use
 
 struct Vec2 {
@@ -10,7 +10,7 @@ struct Container {
     any data
 }
 
-fn create_vec_container(mut Vec2* vec) Container {
+fn create_vec_container(mut Vec2? vec) Container {
     // Create a container holding a struct pointer cast to any
     Container c = Container { data: <any> vec !! }
     return c
@@ -18,19 +18,19 @@ fn create_vec_container(mut Vec2* vec) Container {
 
 fn get_x_from_any(any ptr) i32 {
     // Cast any back to Vec2 pointer and get x field
-    Vec2* v = <Vec2*> ptr !!
+    Vec2? v = <Vec2?> ptr !!
     return v.x
 }
 
 fn main() i32 {
     // Test storing a struct pointer in 'any'
-    Vec2* v = new Vec2 { x: 10, y: 20 }
+    Vec2? v = new Vec2 { x: 10, y: 20 }
     any generic_ptr = <any> v !!
-    Vec2* retrieved = <Vec2*> generic_ptr !!
+    Vec2? retrieved = <Vec2?> generic_ptr !!
 
     // Test with container
     Container c = create_vec_container(mut v)
-    Vec2* from_container = <Vec2*> c.data !!
+    Vec2? from_container = <Vec2?> c.data !!
 
     // Test passing any to function
     i32 x_value = get_x_from_any(generic_ptr)

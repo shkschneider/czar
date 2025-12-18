@@ -4,7 +4,7 @@ struct Data {
 }
 
 fn main() i32 {
-    Data* p = new Data { value: 42 }
+    Data? p = new Data { value: 42 }
     free p
     
     // This should fail: using pointer after it has been freed

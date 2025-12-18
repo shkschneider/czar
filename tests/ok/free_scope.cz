@@ -6,16 +6,16 @@ struct Person {
 
 fn main() i32 {
     // Heap allocation - should be automatically freed at scope exit
-    Person* p1 = new Person { age: 25 }
+    Person? p1 = new Person { age: 25 }
 
     // Clone allocation - should be automatically freed at scope exit
-    Person* p2 = clone p1
+    Person? p2 = clone p1
 
     // Stack allocation - should NOT be freed (automatic by C)
     Person p3 = Person { age: 30 }
 
     // Alias - should NOT be freed (points to p1)
-    Person* p4 = p1
+    Person? p4 = p1
 
     // Return total - should be 0 for test to pass
     return p1.age + p2.age + p3.age + p4.age - (25 + 25 + 30 + 25)

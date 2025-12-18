@@ -5,6 +5,6 @@ struct Vec2 {
 
 fn main() i32 {
     Vec2 v = Vec2 {}
-    Vec2* w = v  // ERROR: cannot implicitly convert struct to pointer
+    Vec2? w = v  // ERROR: cannot implicitly convert struct to pointer
     return 0
 }

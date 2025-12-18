@@ -37,7 +37,7 @@ fn main() i32 {
     }
 
     // Test 2: Heap allocation with constructor and explicit free
-    mut Resource* r2 = new Resource {}
+    mut Resource? r2 = new Resource {}
     r2.id = 100
     r2:acquire()  // ref_count becomes 2
     mut i32 test2 = 0
@@ -49,7 +49,7 @@ fn main() i32 {
     free r2  // Calls destructor then frees memory
 
     // Test 3: Heap allocation with auto-free
-    Resource* r3 = new Resource {}
+    Resource? r3 = new Resource {}
     mut i32 test3 = 0
     if r3.is_initialized {
         test3 = 1

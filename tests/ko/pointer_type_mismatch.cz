@@ -11,6 +11,6 @@ struct Vec {
 
 fn main() i32 {
     Point p = Point { x: 1, y: 2 }
-    Vec* v = &p  // ERROR: cannot assign Point* to Vec*
+    Vec? v = &p  // ERROR: cannot assign Point? to Vec?
     return v.a
 }
