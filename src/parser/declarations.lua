@@ -108,6 +108,45 @@ function Declarations.parse_function(parser)
         end
     end
     
+    -- Parse generic types if present: <u8:u16:u32>
+    local generic_types = nil
+    if parser:match("LT") then
+        generic_types = {}
+        local first_type_kind = nil
+        
+        repeat
+            local type_tok = parser:expect("KEYWORD")
+            local type_name = type_tok.value
+            
+            -- Validate: only allow primitive types
+            local primitive_types = {
+                u8 = "unsigned", u16 = "unsigned", u32 = "unsigned", u64 = "unsigned",
+                i8 = "signed", i16 = "signed", i32 = "signed", i64 = "signed",
+                f32 = "float", f64 = "float"
+            }
+            
+            local type_kind = primitive_types[type_name]
+            if not type_kind then
+                error(string.format("Generic type parameter must be a primitive type (u8/u16/u32/u64/i8/i16/i32/i64/f32/f64), got '%s'", type_name))
+            end
+            
+            -- Validate: all types must be the same kind
+            if not first_type_kind then
+                first_type_kind = type_kind
+            elseif first_type_kind ~= type_kind then
+                error(string.format("All generic types must be of the same kind (all unsigned, all signed, or all float), got mix of '%s' and '%s'", first_type_kind, type_kind))
+            end
+            
+            table.insert(generic_types, type_name)
+        until not parser:match("COLON")
+        parser:expect("GT")
+        
+        -- Validate: at least 2 types required
+        if #generic_types < 2 then
+            error("Generic type list must contain at least 2 types")
+        end
+    end
+    
     local receiver_type = nil
     local is_static_method = false
     local name = parser:expect("IDENT").value
@@ -192,7 +231,18 @@ function Declarations.parse_function(parser)
         return_type = Types.parse_type(parser)
     end
     local body = Statements.parse_block(parser)
-    return { kind = "function", name = name, receiver_type = receiver_type, params = params, return_type = return_type, body = body, inline_directive = inline_directive, line = fn_tok.line, col = fn_tok.col }
+    return { 
+        kind = "function", 
+        name = name, 
+        receiver_type = receiver_type, 
+        params = params, 
+        return_type = return_type, 
+        body = body, 
+        inline_directive = inline_directive, 
+        generic_types = generic_types,
+        line = fn_tok.line, 
+        col = fn_tok.col 
+    }
 end
 
 return Declarations
