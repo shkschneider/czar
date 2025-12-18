@@ -13,23 +13,23 @@ Builtins.calls = {
     
     -- Print string with automatic newline
     println = function(args)
-        return string.format('printf("%%s\\n", %s)', args[1])
+        return string.format('cz_println(%s)', args[1])
     end,
     
-    -- Print string without newline (works like printf with format string)
+    -- Print string without newline
     print = function(args)
         if #args == 1 then
-            return string.format('printf("%%s", %s)', args[1])
+            return string.format('cz_print(%s)', args[1])
         else
             -- Multiple arguments: treat like printf
-            return string.format('printf(%s)', table.concat(args, ", "))
+            return string.format('cz_printf(%s)', table.concat(args, ", "))
         end
     end,
     
     -- Direct printf binding with format string and variadic arguments
     printf = function(args)
-        -- Simply pass all arguments to printf
-        return string.format('printf(%s)', table.concat(args, ", "))
+        -- Simply pass all arguments to cz_printf
+        return string.format('cz_printf(%s)', table.concat(args, ", "))
     end,
 }
 
