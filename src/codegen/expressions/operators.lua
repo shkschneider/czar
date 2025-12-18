@@ -282,4 +282,16 @@ function Operators.gen_compound_assign(expr, gen_expr_fn)
     return string.format("(%s = %s %s %s)", gen_expr_fn(expr.target), gen_expr_fn(expr.target), expr.operator, gen_expr_fn(expr.value))
 end
 
+-- Generate prefix increment/decrement: ++i, --i
+function Operators.gen_prefix_op(expr, gen_expr_fn)
+    local operand = gen_expr_fn(expr.operand)
+    return string.format("%s%s", expr.op, operand)
+end
+
+-- Generate postfix increment/decrement: i++, i--
+function Operators.gen_postfix(expr, gen_expr_fn)
+    local operand = gen_expr_fn(expr.operand)
+    return string.format("%s%s", operand, expr.op)
+end
+
 return Operators
