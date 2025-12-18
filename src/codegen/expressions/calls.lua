@@ -17,6 +17,29 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     local type_name = expr.type_name
     local method_name = expr.method
 
+    -- Special handling for cz module functions
+    if type_name == "cz" then
+        local args = {}
+        for i, a in ipairs(expr.args) do
+            table.insert(args, gen_expr_fn(a))
+        end
+        
+        if method_name == "print" then
+            if #args == 1 then
+                return string.format('cz_print(%s)', args[1])
+            else
+                -- Multiple arguments: treat like printf
+                return string.format('cz_printf(%s)', join(args, ", "))
+            end
+        elseif method_name == "println" then
+            return string.format('cz_println(%s)', join(args, ", "))
+        elseif method_name == "printf" then
+            return string.format('cz_printf(%s)', join(args, ", "))
+        else
+            error(string.format("Unknown method %s on cz module", method_name))
+        end
+    end
+
     -- Look up the method
     local method_overloads = nil
     if ctx().functions[type_name] then
