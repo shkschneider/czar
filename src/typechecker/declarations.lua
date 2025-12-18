@@ -13,7 +13,7 @@ local function type_to_signature_string(type_node)
     
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         return type_to_signature_string(type_node.to) .. "*"
     elseif type_node.kind == "array" then
         return type_to_signature_string(type_node.element_type) .. "[" .. (type_node.size or "*") .. "]"
@@ -111,8 +111,8 @@ local function replace_generic_type(type_node, concrete_type)
         else
             return type_node
         end
-    elseif type_node.kind == "pointer" then
-        return { kind = "pointer", to = replace_generic_type(type_node.to, concrete_type) }
+    elseif type_node.kind == "nullable" then
+        return { kind = "nullable", to = replace_generic_type(type_node.to, concrete_type) }
     elseif type_node.kind == "array" then
         return { 
             kind = "array", 

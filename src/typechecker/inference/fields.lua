@@ -135,7 +135,7 @@ function Fields.infer_field_type(typechecker, expr)
     
     -- Dereference pointer if accessing field through pointer
     local base_type = obj_type
-    if obj_type.kind == "pointer" then
+    if obj_type.kind == "nullable" then
         base_type = obj_type.to
     end
 
@@ -396,7 +396,7 @@ function Fields.infer_new_type(typechecker, expr)
         end
 
         -- In explicit pointer model, new returns a pointer to the type
-        local inferred = { kind = "pointer", to = { kind = "named_type", name = expr.type_name } }
+        local inferred = { kind = "nullable", to = { kind = "named_type", name = expr.type_name } }
         expr.inferred_type = inferred
         return inferred
     else

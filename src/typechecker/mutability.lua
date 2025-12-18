@@ -24,7 +24,7 @@ function Mutability.check_mutable_target(typechecker, target)
         
         return true
     elseif target.kind == "field" then
-        -- Field mutability depends on whether we're accessing through a pointer or value
+        -- Field mutability depends on whether we're accessing through a nullable reference or value
         if target.object.kind == "identifier" then
             local var_info = Resolver.resolve_name(typechecker, target.object.name)
             if not var_info then
@@ -32,16 +32,20 @@ function Mutability.check_mutable_target(typechecker, target)
                 return false
             end
             
-            -- If the variable is a pointer type, check if it's mutable
-            if var_info.type and var_info.type.kind == "pointer" then
-                -- For pointers: need the variable to be marked as mutable to modify through it
-                -- This enforces: Vec2* p = const (cannot modify), mut Vec2* p = mutable
+            -- If the variable is a nullable reference type, check if it's mutable
+            if var_info.type and var_info.type.kind == "nullable" then
+                -- For nullable references: need the variable to be marked as mutable to modify through it
+                -- This enforces: Vec2? p = const (cannot modify), mut Vec2? p = mutable
                 if not var_info.mutable then
+                    local type_name = "Type"
+                    if var_info.type.to and var_info.type.to.name then
+                        type_name = var_info.type.to.name
+                    end
                     typechecker:add_error(string.format(
-                        "Cannot assign to field '%s' through immutable pointer '%s'. Use 'mut %s*' to allow modification.",
+                        "Cannot assign to field '%s' through immutable reference '%s'. Use 'mut %s?' to allow modification.",
                         target.field,
                         target.object.name,
-                        var_info.type.to.name or "Type"
+                        type_name
                     ))
                     return false
                 end

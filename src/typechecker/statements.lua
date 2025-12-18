@@ -250,7 +250,7 @@ function Statements.check_assign(typechecker, stmt)
                 target_needs_mut = obj_var_info and obj_var_info.mutable
             end
 
-            if target_needs_mut and value_type and value_type.kind == "pointer" then
+            if target_needs_mut and value_type and value_type.kind == "nullable" then
                 local line = stmt.line or stmt.value.line or 0
                 local msg = string.format(
                     "Cannot assign immutable pointer '%s' to mutable location. The value has const qualifier. Use 'mut %s' if you need to reassign it.",
@@ -414,7 +414,7 @@ function Statements.check_for(typechecker, stmt)
         local element_type = collection_type.element_type
         if stmt.item_mutable then
             -- Mutable item: pointer to element
-            local pointer_type = { kind = "pointer", to = element_type }
+            local pointer_type = { kind = "nullable", to = element_type }
             Scopes.add_var(typechecker, stmt.item_name, pointer_type, true)
         else
             -- Immutable item: value copy
@@ -537,32 +537,9 @@ function Statements.check_return(typechecker, stmt)
 
         local return_type = Inference.infer_type(typechecker, stmt.value)
 
-        -- Check for returning address to stack variable
-        if stmt.value.kind == "unary" and stmt.value.op == "&" then
-            -- User is returning &variable
-            local operand = stmt.value.operand
-            if operand.kind == "identifier" then
-                local var_info = Resolver.resolve_name(typechecker, operand.name)
-                if var_info then
-                    local var_type = var_info.type
-                    -- Check if this is a stack-allocated variable (not a pointer)
-                    if var_type and var_type.kind ~= "pointer" then
-                        local line = stmt.line or stmt.value.line or 0
-                        local msg = string.format(
-                            "Cannot return address of stack variable '%s'. The variable will be destroyed when the function returns. Use 'return clone %s' to return a heap-allocated copy.",
-                            operand.name,
-                            operand.name
-                        )
-                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                            Errors.ErrorType.RETURN_STACK_REFERENCE, msg)
-                        typechecker:add_error(formatted_error)
-                    end
-                end
-            end
-        end
-
-        -- Note: 'return clone stack_var' is safe because clone allocates on heap
-        -- and returns a pointer to the heap-allocated copy
+        -- Note: In the new pointer model, all types are implicitly pass-by-reference
+        -- The check for returning stack variables is no longer needed here
+        -- as the type system now handles this through nullable vs non-nullable types
     end
 end
 

@@ -288,7 +288,7 @@ function Collections.infer_new_pair_type(typechecker, expr)
     
     -- Return a pointer to pair type (heap allocated)
     local pair_type = { kind = "pair", left_type = left_type, right_type = right_type }
-    local inferred = { kind = "pointer", to = pair_type }
+    local inferred = { kind = "nullable", to = pair_type }
     expr.inferred_type = inferred
     return inferred
 end
@@ -318,7 +318,7 @@ function Collections.infer_new_string_type(typechecker, expr)
     -- String literal value is stored in expr.value
     -- Return a pointer to string type (heap allocated)
     local string_type = { kind = "string" }
-    local inferred = { kind = "pointer", to = string_type }
+    local inferred = { kind = "nullable", to = string_type }
     expr.inferred_type = inferred
     return inferred
 end

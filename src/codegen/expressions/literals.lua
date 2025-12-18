@@ -54,7 +54,7 @@ function Literals.gen_mut_arg(expr, gen_expr_fn)
     local is_pointer = false
     if expr.expr.kind == "identifier" then
         local var_type = ctx():get_var_type(expr.expr.name)
-        if var_type and var_type.kind == "pointer" then
+        if var_type and var_type.kind == "nullable" then
             is_pointer = true
         end
     elseif expr.expr.kind == "new_heap" or expr.expr.kind == "clone" or expr.expr.kind == "new_array" then

@@ -6,12 +6,13 @@ local Types = {}
 local function ctx() return _G.Codegen end
 
 function Types.is_pointer_type(type_node)
-    return type_node and type_node.kind == "pointer"
+    -- In the new system, nullable types are what generate C pointers
+    return type_node and type_node.kind == "nullable"
 end
 
 function Types.c_type(type_node)
     if not type_node then return "void" end
-    if type_node.kind == "pointer" then
+    if type_node.kind == "nullable" then
         return Types.c_type(type_node.to) .. "*"
     elseif type_node.kind == "array" then
         -- Arrays in C are declared with the size after the name, not in the type
@@ -91,16 +92,16 @@ end
 
 function Types.c_type_in_struct(type_node, struct_name)
     if not type_node then return "void" end
-    if type_node.kind == "pointer" then
+    if type_node.kind == "nullable" then
         local base_type = type_node.to
         if base_type.kind == "named_type" and base_type.name == struct_name then
-            -- Self-referential pointer, use "struct Name*"
+            -- Self-referential nullable, use "struct Name*"
             return "struct " .. base_type.name .. "*"
         else
             return Types.c_type(base_type) .. "*"
         end
     elseif type_node.kind == "named_type" then
-        -- In explicit pointer model, all types are values unless explicitly declared as pointers
+        -- In new pointer model, non-nullable types are pointers in C but semantically values
         local c_type = Types.c_type(type_node)
         if type_node.name == struct_name then
             -- Self-referential value type (would be invalid in C, but keep for now)
@@ -123,7 +124,7 @@ function Types.get_expr_type(expr, depth)
     if expr.kind == "identifier" then
         local var_type = Types.get_var_type(expr.name)
         if var_type then
-            if type(var_type) == "table" and var_type.kind == "pointer" then
+            if type(var_type) == "table" and var_type.kind == "nullable" then
                 return Types.type_name(var_type.to)
             else
                 return Types.type_name(var_type)
@@ -147,7 +148,7 @@ function Types.type_name(type_node)
     if type(type_node) == "string" then
         return type_node
     elseif type(type_node) == "table" then
-        if type_node.kind == "pointer" then
+        if type_node.kind == "nullable" then
             return Types.type_name(type_node.to)
         elseif type_node.name then
             return type_node.name
@@ -163,7 +164,7 @@ end
 
 function Types.is_pointer_var(name)
     local var_info = Types.get_var_info(name)
-    return var_info and var_info.type and var_info.type.kind == "pointer"
+    return var_info and var_info.type and var_info.type.kind == "nullable"
 end
 
 function Types.get_var_type(name)
@@ -192,9 +193,9 @@ function Types.infer_type(expr)
     elseif expr.kind == "bool" then
         return { kind = "named_type", name = "bool" }
     elseif expr.kind == "string" then
-        return { kind = "pointer", to = { kind = "named_type", name = "char" } }
+        return { kind = "nullable", to = { kind = "named_type", name = "char" } }
     elseif expr.kind == "null" then
-        return { kind = "pointer", to = { kind = "named_type", name = "void" } }
+        return { kind = "nullable", to = { kind = "named_type", name = "void" } }
     elseif expr.kind == "identifier" then
         return Types.get_var_type(expr.name)
     elseif expr.kind == "field" then
@@ -218,17 +219,8 @@ function Types.infer_type(expr)
             return Types.infer_type(expr.left)
         end
     elseif expr.kind == "unary" then
-        if expr.op == "&" then
-            local inner_type = Types.infer_type(expr.operand)
-            return { kind = "pointer", to = inner_type }
-        elseif expr.op == "*" then
-            local inner_type = Types.infer_type(expr.operand)
-            if inner_type and inner_type.kind == "pointer" then
-                return inner_type.to
-            end
-        else
-            return Types.infer_type(expr.operand)
-        end
+        -- Removed & and * operators - they no longer exist in the new pointer model
+        return Types.infer_type(expr.operand)
     elseif expr.kind == "call" then
         if expr.callee.kind == "identifier" then
             local func_name = expr.callee.name
@@ -264,11 +256,11 @@ function Types.types_match(type1, type2)
 
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
-    elseif type1.kind == "pointer" and type2.kind == "pointer" then
+    elseif type1.kind == "nullable" and type2.kind == "nullable" then
         return Types.types_match(type1.to, type2.to)
-    elseif type1.kind == "pointer" and type1.is_clone and type2.kind == "named_type" then
+    elseif type1.kind == "nullable" and type1.is_clone and type2.kind == "named_type" then
         return Types.types_match(type1.to, type2)
-    elseif type2.kind == "pointer" and type2.is_clone and type1.kind == "named_type" then
+    elseif type2.kind == "nullable" and type2.is_clone and type1.kind == "named_type" then
         return Types.types_match(type2.to, type1)
     end
     return false
@@ -279,11 +271,11 @@ function Types.type_name_string(type_node)
 
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         if type_node.is_clone then
             return Types.type_name_string(type_node.to)
         else
-            return Types.type_name_string(type_node.to) .. "*"
+            return Types.type_name_string(type_node.to) .. "?"
         end
     end
     return "unknown"

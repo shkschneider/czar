@@ -20,7 +20,7 @@ function Types.resolve_type_alias(typechecker, type_node)
     if base_type_match then
         -- It's a pointer type like "char*"
         return {
-            kind = "pointer",
+            kind = "nullable",
             to = { kind = "named_type", name = base_type_match }
         }
     else
@@ -41,25 +41,25 @@ function Types.types_compatible(type1, type2, typechecker)
         type2 = Types.resolve_type_alias(typechecker, type2)
     end
 
-    -- Allow void* (null) to be compatible with any pointer type
-    if type1.kind == "pointer" and type1.to and type1.to.name == "void" then
-        if type2.kind == "pointer" then
-            return true  -- null can be assigned to any pointer
+    -- Allow void? (null) to be compatible with any nullable type
+    if type1.kind == "nullable" and type1.to and type1.to.name == "void" then
+        if type2.kind == "nullable" then
+            return true  -- null can be assigned to any nullable
         end
     end
-    if type2.kind == "pointer" and type2.to and type2.to.name == "void" then
-        if type1.kind == "pointer" then
-            return true  -- any pointer can accept null
+    if type2.kind == "nullable" and type2.to and type2.to.name == "void" then
+        if type1.kind == "nullable" then
+            return true  -- any nullable can accept null
         end
     end
 
     if type1.kind == "named_type" and type2.kind == "named_type" then
         return type1.name == type2.name
-    elseif type1.kind == "pointer" and type2.kind == "pointer" then
+    elseif type1.kind == "nullable" and type2.kind == "nullable" then
         return Types.types_compatible(type1.to, type2.to, typechecker)
-    elseif type1.kind == "pointer" and type1.is_clone and type2.kind == "named_type" then
+    elseif type1.kind == "nullable" and type1.is_clone and type2.kind == "named_type" then
         return Types.types_compatible(type1.to, type2, typechecker)
-    elseif type2.kind == "pointer" and type2.is_clone and type1.kind == "named_type" then
+    elseif type2.kind == "nullable" and type2.is_clone and type1.kind == "named_type" then
         return Types.types_compatible(type2.to, type1, typechecker)
     elseif type1.kind == "array" and type2.kind == "array" then
         -- Arrays are compatible if element types match and sizes match
@@ -101,7 +101,7 @@ function Types.get_base_type_name(type_node)
 
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         return Types.get_base_type_name(type_node.to)
     end
 
@@ -116,11 +116,11 @@ function Types.type_to_string(type_node)
 
     if type_node.kind == "named_type" then
         return type_node.name
-    elseif type_node.kind == "pointer" then
+    elseif type_node.kind == "nullable" then
         if type_node.is_clone then
             return Types.type_to_string(type_node.to)
         else
-            return Types.type_to_string(type_node.to) .. "*"
+            return Types.type_to_string(type_node.to) .. "?"
         end
     elseif type_node.kind == "array" then
         return Types.type_to_string(type_node.element_type) .. "[" .. tostring(type_node.size) .. "]"

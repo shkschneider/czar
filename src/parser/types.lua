@@ -60,9 +60,9 @@ function Types.parse_type(parser)
         parser:expect("GT")
         -- array<Type> is represented as a slice internally (dynamic size)
         local base_type = { kind = "slice", element_type = element_type }
-        -- Check if this is a pointer type (array<T>*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (array<T>?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         return base_type
     end
@@ -73,9 +73,9 @@ function Types.parse_type(parser)
         local element_type = Types.parse_type(parser)
         parser:expect("GT")
         local base_type = { kind = "slice", element_type = element_type }
-        -- Check if this is a pointer type (slice<T>*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (slice<T>?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         return base_type
     end
@@ -88,9 +88,9 @@ function Types.parse_type(parser)
         local value_type = Types.parse_type(parser)
         parser:expect("GT")
         local base_type = { kind = "map", key_type = key_type, value_type = value_type }
-        -- Check if this is a pointer type (map<K:V>*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (map<K:V>?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         return base_type
     end
@@ -103,9 +103,9 @@ function Types.parse_type(parser)
         local right_type = Types.parse_type(parser)
         parser:expect("GT")
         local base_type = { kind = "pair", left_type = left_type, right_type = right_type }
-        -- Check if this is a pointer type (pair<T:T>*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (pair<T:T>?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         return base_type
     end
@@ -113,9 +113,9 @@ function Types.parse_type(parser)
     if parser:check("KEYWORD", "string") then
         parser:advance()
         local base_type = { kind = "string" }
-        -- Check if this is a pointer type (string*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (string?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         return base_type
     end
@@ -123,9 +123,9 @@ function Types.parse_type(parser)
     if Types.is_type_token(tok) then
         parser:advance()
         local base_type = { kind = "named_type", name = tok.value }
-        -- Check if this is a pointer type (Type*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (Type?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         -- Check if this is an array type (Type[size]) or slice type (Type[])
         if parser:match("LBRACKET") then
@@ -164,9 +164,9 @@ function Types.parse_type_with_map_shorthand(parser)
     if Types.is_type_token(tok) then
         parser:advance()
         local base_type = { kind = "named_type", name = tok.value }
-        -- Check if this is a pointer type (Type*)
-        if parser:match("STAR") then
-            return { kind = "pointer", to = base_type }
+        -- Check if this is a nullable type (Type?)
+        if parser:match("QUESTION") then
+            return { kind = "nullable", to = base_type }
         end
         -- Check if this is an array type (Type[size]) or slice type (Type[])
         if parser:match("LBRACKET") then

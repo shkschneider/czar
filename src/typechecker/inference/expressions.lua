@@ -38,8 +38,8 @@ function Expressions.infer_binary_type(typechecker, expr)
                                     (right_type.name:match("^[iuf]%d+$") ~= nil)
             local left_is_bool = left_type.kind == "named_type" and left_type.name == "bool"
             local right_is_bool = right_type.kind == "named_type" and right_type.name == "bool"
-            local left_is_pointer = left_type.kind == "pointer"
-            local right_is_pointer = right_type.kind == "pointer"
+            local left_is_pointer = left_type.kind == "nullable"
+            local right_is_pointer = right_type.kind == "nullable"
             
             -- Check for incompatible type families
             -- Can't compare numeric with bool, or bool with pointer, etc.
@@ -96,8 +96,8 @@ function Expressions.infer_binary_type(typechecker, expr)
 
     -- Check for forbidden pointer arithmetic
     if expr.op == "+" or expr.op == "-" then
-        local left_is_pointer = left_type and left_type.kind == "pointer"
-        local right_is_pointer = right_type and right_type.kind == "pointer"
+        local left_is_pointer = left_type and left_type.kind == "nullable"
+        local right_is_pointer = right_type and right_type.kind == "nullable"
         -- Check for any numeric type including floats (i32, u64, f32, f64, etc.)
         -- We forbid ALL numeric + pointer operations for safety
         local left_is_numeric = left_type and left_type.kind == "named_type" and
@@ -139,25 +139,8 @@ end
 function Expressions.infer_unary_type(typechecker, expr)
     local operand_type = Expressions.infer_type(typechecker, expr.operand)
 
-    if expr.op == "&" then
-        -- Address-of operator
-        local inferred = { kind = "pointer", to = operand_type }
-        expr.inferred_type = inferred
-        return inferred
-    elseif expr.op == "*" then
-        -- Dereference operator
-        if operand_type and operand_type.kind == "pointer" then
-            expr.inferred_type = operand_type.to
-            return operand_type.to
-        else
-            local line = expr.line or (expr.operand and expr.operand.line) or 0
-            local msg = "Cannot dereference non-pointer type"
-            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
-            typechecker:add_error(formatted_error)
-            return nil
-        end
-    elseif expr.op == "!" or expr.op == "not" then
+    -- Removed & (address-of) and * (dereference) operators - they no longer exist
+    if expr.op == "!" or expr.op == "not" then
         -- Logical not
         local inferred = { kind = "named_type", name = "bool" }
         expr.inferred_type = inferred

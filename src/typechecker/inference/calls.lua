@@ -35,7 +35,7 @@ function Calls.infer_call_type(typechecker, expr)
                     local caller_allows_mut = (arg.kind == "mut_arg" and arg.allows_mutation)
 
                     -- If callee wants mut but caller doesn't give it, error
-                    if param.mutable and param.type.kind == "pointer" and not caller_allows_mut then
+                    if param.mutable and param.type.kind == "nullable" and not caller_allows_mut then
                         local line = expr.line or 0
                         local msg = string.format(
                             "Function '%s' parameter %d requires mutable pointer (mut %s*), but caller passes immutable. Use 'mut' at call site.",
@@ -66,14 +66,14 @@ function Calls.infer_call_type(typechecker, expr)
         end
         
         -- Special handling for string methods with : syntax
-        if obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string") then
+        if obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string") then
             local method = expr.callee.method
             if method == "append" then
                 local return_type = { kind = "named_type", name = "void" }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "substring" then
-                local return_type = { kind = "pointer", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "string" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "find" or method == "index" then
@@ -85,7 +85,7 @@ function Calls.infer_call_type(typechecker, expr)
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "cut" then
-                local return_type = { kind = "pointer", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "string" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "prefix" or method == "suffix" then
@@ -93,15 +93,15 @@ function Calls.infer_call_type(typechecker, expr)
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "upper" or method == "lower" then
-                local return_type = { kind = "pointer", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "string" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "trim" or method == "ltrim" or method == "rtrim" then
-                local return_type = { kind = "pointer", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "string" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "cstr" then
-                local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+                local return_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
                 expr.inferred_type = return_type
                 return return_type
             end
@@ -134,21 +134,21 @@ function Calls.infer_call_type(typechecker, expr)
         -- Special handling for string.cstr() method
         if obj_type.kind == "string" and expr.callee.field == "cstr" then
             -- cstr() returns char* (pointer to i8)
-            local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+            local return_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
             expr.inferred_type = return_type
             return return_type
         end
         
         -- Special handling for string*.cstr() method
-        if obj_type.kind == "pointer" and obj_type.to.kind == "string" and expr.callee.field == "cstr" then
+        if obj_type.kind == "nullable" and obj_type.to.kind == "string" and expr.callee.field == "cstr" then
             -- cstr() returns char* (pointer to i8)
-            local return_type = { kind = "pointer", to = { kind = "named_type", name = "i8" } }
+            local return_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
             expr.inferred_type = return_type
             return return_type
         end
         
         -- Special handling for string:append(str) method
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "append" then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "append" then
             -- append() modifies in place, returns void (but we'll return the string pointer for chaining)
             local return_type = { kind = "named_type", name = "void" }
             expr.inferred_type = return_type
@@ -156,15 +156,15 @@ function Calls.infer_call_type(typechecker, expr)
         end
         
         -- Special handling for string:substring(start, end) method
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "substring" then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "substring" then
             -- substring() returns a new heap-allocated string*
-            local return_type = { kind = "pointer", to = { kind = "string" } }
+            local return_type = { kind = "nullable", to = { kind = "string" } }
             expr.inferred_type = return_type
             return return_type
         end
         
         -- Special handling for string:find(needle) or string:index(needle) method
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (expr.callee.field == "find" or expr.callee.field == "index") then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and (expr.callee.field == "find" or expr.callee.field == "index") then
             -- find/index() returns i32 (index or -1)
             local return_type = { kind = "named_type", name = "i32" }
             expr.inferred_type = return_type
@@ -172,7 +172,7 @@ function Calls.infer_call_type(typechecker, expr)
         end
         
         -- Special handling for string:contains(needle) method
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "contains" then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "contains" then
             -- contains() returns i32 (bool: 1 or 0)
             local return_type = { kind = "named_type", name = "i32" }
             expr.inferred_type = return_type
@@ -180,15 +180,15 @@ function Calls.infer_call_type(typechecker, expr)
         end
         
         -- Special handling for string:cut(separator) method
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and expr.callee.field == "cut" then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "cut" then
             -- cut() returns a new heap-allocated string*
-            local return_type = { kind = "pointer", to = { kind = "string" } }
+            local return_type = { kind = "nullable", to = { kind = "string" } }
             expr.inferred_type = return_type
             return return_type
         end
         
         -- Special handling for string:prefix(str) and string:suffix(str) methods
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (expr.callee.field == "prefix" or expr.callee.field == "suffix") then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and (expr.callee.field == "prefix" or expr.callee.field == "suffix") then
             -- prefix/suffix() returns i32 (bool: 1 or 0)
             local return_type = { kind = "named_type", name = "i32" }
             expr.inferred_type = return_type
@@ -196,18 +196,18 @@ function Calls.infer_call_type(typechecker, expr)
         end
         
         -- Special handling for string:upper() and string:lower() methods
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and (expr.callee.field == "upper" or expr.callee.field == "lower") then
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and (expr.callee.field == "upper" or expr.callee.field == "lower") then
             -- upper/lower() modifies in place, returns string* (for chaining)
-            local return_type = { kind = "pointer", to = { kind = "string" } }
+            local return_type = { kind = "nullable", to = { kind = "string" } }
             expr.inferred_type = return_type
             return return_type
         end
         
         -- Special handling for string:trim/ltrim/rtrim() methods
-        if (obj_type.kind == "string" or (obj_type.kind == "pointer" and obj_type.to.kind == "string")) and 
+        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and 
            (expr.callee.field == "trim" or expr.callee.field == "ltrim" or expr.callee.field == "rtrim") then
             -- trim() modifies in place, returns string* (for chaining)
-            local return_type = { kind = "pointer", to = { kind = "string" } }
+            local return_type = { kind = "nullable", to = { kind = "string" } }
             expr.inferred_type = return_type
             return return_type
         end
