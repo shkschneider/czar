@@ -18,9 +18,19 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     local method_name = expr.method
 
     -- Look up the method
-    local method = nil
+    local method_overloads = nil
     if ctx().functions[type_name] then
-        method = ctx().functions[type_name][method_name]
+        method_overloads = ctx().functions[type_name][method_name]
+    end
+    
+    local method = nil
+    if method_overloads then
+        -- Get the first overload (methods typically aren't overloaded, but support it)
+        if type(method_overloads) == "table" and #method_overloads > 0 then
+            method = method_overloads[1]
+        else
+            method = method_overloads
+        end
     end
 
     if method then
