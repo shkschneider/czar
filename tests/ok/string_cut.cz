@@ -4,7 +4,7 @@ fn main() i32 {
     string sep = string ","
     
     // Cut at first separator
-    string* result = s.cut(sep)
+    string? result = s.cut(sep)
     
     if result.length != 5 {
         free result
@@ -24,7 +24,7 @@ fn main() i32 {
     // Test when separator not found (should return copy of entire string)
     string s2 = string "NoSeparator"
     string sep2 = string ","
-    string* result2 = s2.cut(sep2)
+    string? result2 = s2.cut(sep2)
     
     if result2.length != 11 {
         free result2

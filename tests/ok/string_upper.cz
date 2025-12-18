@@ -1,6 +1,6 @@
 // Test string:upper() method
 fn main() i32 {
-    string* s = new string "Hello World"
+    string? s = new string "Hello World"
     
     // Convert to uppercase
     s:upper()

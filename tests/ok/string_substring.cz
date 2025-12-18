@@ -3,7 +3,7 @@ fn main() i32 {
     string s = string "Hello World"
     
     // Extract substring
-    string* sub = s.substring(0, 5)
+    string? sub = s.substring(0, 5)
     
     if sub.length != 5 {
         return 1

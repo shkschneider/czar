@@ -1,6 +1,6 @@
 // Test string:lower() method
 fn main() i32 {
-    string* s = new string "Hello World"
+    string? s = new string "Hello World"
     
     // Convert to lowercase
     s:lower()

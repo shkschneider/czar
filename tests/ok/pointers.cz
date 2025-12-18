@@ -10,7 +10,7 @@ fn not_modify(Vec2 p) void {
     // p.y = 20
 }
 
-fn modify(mut Vec2* p) void {
+fn modify(mut Vec2? p) void {
     p.x = 10
     p.y = 20
 }

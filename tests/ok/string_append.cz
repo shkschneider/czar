@@ -1,6 +1,6 @@
 // Test string:append() method
 fn main() i32 {
-    string* s = new string "Hello"
+    string? s = new string "Hello"
     string s2 = string " World"
     
     // Append to the string

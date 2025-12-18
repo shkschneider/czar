@@ -30,6 +30,10 @@ Errors.ErrorType = {
 
     -- Pointer arithmetic errors
     POINTER_ARITHMETIC_FORBIDDEN = "POINTER_ARITHMETIC_FORBIDDEN",
+    
+    -- Nullable safety errors  
+    UNSAFE_NULLABLE_ASSIGNMENT = "UNSAFE_NULLABLE_ASSIGNMENT",
+    UNSAFE_NULLABLE_ACCESS = "UNSAFE_NULLABLE_ACCESS",
 
     -- Array bounds errors
     ARRAY_INDEX_OUT_OF_BOUNDS = "ARRAY_INDEX_OUT_OF_BOUNDS",

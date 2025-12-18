@@ -1,5 +1,5 @@
 // Test pass immutable to mut pointer
-fn modify(mut i32* p) void {
+fn modify(mut i32? p) void {
     *p = 20
 }
 

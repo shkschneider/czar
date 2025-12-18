@@ -7,11 +7,11 @@ fn by_value(Value v) i32 {
     return v.data
 }
 
-fn by_pointer(Value* v) i32 {
+fn by_pointer(Value? v) i32 {
     return v.data
 }
 
-fn mixed(Value v, Value* p) i32 {
+fn mixed(Value v, Value? p) i32 {
     return v.data + p.data
 }
 

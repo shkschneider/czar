@@ -5,6 +5,6 @@ struct Data {
 }
 
 fn main() i32 {
-    Data* data = new Data {0}
+    Data? data = new Data {0}
     return 0
 }
