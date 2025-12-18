@@ -16,9 +16,14 @@ Builtins.calls = {
         return string.format('printf("%%s\\n", %s)', args[1])
     end,
     
-    -- Print string without newline
+    -- Print string without newline (works like printf with format string)
     print = function(args)
-        return string.format('printf("%%s", %s)', args[1])
+        if #args == 1 then
+            return string.format('printf("%%s", %s)', args[1])
+        else
+            -- Multiple arguments: treat like printf
+            return string.format('printf(%s)', table.concat(args, ", "))
+        end
     end,
     
     -- Direct printf binding with format string and variadic arguments

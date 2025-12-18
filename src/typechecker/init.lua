@@ -72,8 +72,13 @@ function Typechecker:register_builtins()
             name = "print",
             params = {
                 {
-                    name = "str",
+                    name = "format",
                     type = { kind = "nullable", to = { kind = "named_type", name = "char" } },
+                    mutable = false
+                },
+                {
+                    name = "args",
+                    type = { kind = "varargs", element_type = { kind = "named_type", name = "any" } },
                     mutable = false
                 }
             },

@@ -300,23 +300,21 @@ function Codegen:generate()
         end
     end
     
-    -- Include string implementation if any strings were discovered
-    if self.has_string_type then
-        -- Read the string implementation from cz_string.c
-        local string_impl_path = "src/codegen/cz_string.c"
-        local file = io.open(string_impl_path, "r")
-        if file then
-            local content = file:read("*all")
-            file:close()
-            -- Emit the entire string implementation
-            self:emit("// String implementation from cz_string.c")
-            for line in content:gmatch("[^\r\n]+") do
-                self:emit(line)
-            end
-            self:emit("")
-        else
-            error("Failed to open string implementation file: " .. string_impl_path)
+    -- Always include string implementation (it's small and harmless if unused)
+    -- Read the string implementation from cz_string.c
+    local string_impl_path = "src/codegen/cz_string.c"
+    local file = io.open(string_impl_path, "r")
+    if file then
+        local content = file:read("*all")
+        file:close()
+        -- Emit the entire string implementation
+        self:emit("// String implementation from cz_string.c")
+        for line in content:gmatch("[^\r\n]+") do
+            self:emit(line)
         end
+        self:emit("")
+    else
+        error("Failed to open string implementation file: " .. string_impl_path)
     end
     
     -- Generate forward declarations for all functions to avoid C ordering issues

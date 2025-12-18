@@ -246,9 +246,6 @@ function Collections.gen_new_string(expr)
     local str_value = expr.value
     local str_len = #str_value
     
-    -- Register string type for later struct generation
-    ctx().has_string_type = true
-    
     -- Generate code: malloc + initialize
     local statements = {}
     table.insert(statements, string.format("czar_string* _str = %s", 
@@ -272,9 +269,6 @@ function Collections.gen_string_literal(expr)
     -- string "text" - stack-allocated string
     local str_value = expr.value
     local str_len = #str_value
-    
-    -- Register string type for later struct generation
-    ctx().has_string_type = true
     
     -- For stack allocation, we need to create a compound literal with inline data
     -- We'll allocate capacity with room to grow (next power of 2, minimum 16)
