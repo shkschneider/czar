@@ -1,4 +1,5 @@
 // Test safe pointer casting scenarios
+import cz
 struct Vec2 {
     i32 x
     i32 y
