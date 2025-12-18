@@ -1,19 +1,18 @@
-// Test for loop with mutable array and mutable item  
+// Test for loop with mutable array and mutable item
 fn main() i32 {
     mut i32[3] arr = [ 10, 20, 30 ]
-    
+
     // Modify array in place using index
-    mut i32 idx = 0
-    repeat 3 {
-        arr[idx] = arr[idx] * 2
-        idx = idx + 1
+    for idx, mut item in arr {
+        item *= 2
     }
-    
+    #assert(arr[0] == 20)
+
     // Check results
     mut i32 sum = 0
     for _, val in arr {
         sum = sum + val
     }
-    
+
     return sum - 120  // 20 + 40 + 60 = 120
 }
