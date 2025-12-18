@@ -76,8 +76,8 @@ end
 
 -- Generate safe cast expression
 function Operators.gen_safe_cast(expr, gen_expr_fn)
-    -- Safe cast: expr as?<Type>(fallback)
-    -- For now, just performs the cast. Future: add runtime validation
+    -- Safe cast: <Type> expr ?? fallback
+    -- Cast both expr and fallback to target type
     local target_type_str = ctx():c_type(expr.target_type)
     local expr_str = gen_expr_fn(expr.expr)
     local fallback_str = gen_expr_fn(expr.fallback)
@@ -87,7 +87,8 @@ function Operators.gen_safe_cast(expr, gen_expr_fn)
         target_type_str = ctx():c_type(expr.target_type.to) .. "*"
     end
 
-    -- For now, just cast. Future: add try_cast logic and use fallback on failure
+    -- Cast the expression, fallback is implicitly cast to target type
+    -- For now, just use the cast. Future: add runtime validation and use fallback on failure
     return string.format("((%s)%s)", target_type_str, expr_str)
 end
 

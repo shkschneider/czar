@@ -164,18 +164,16 @@ function infer_type(typechecker, expr)
         expr.inferred_type = target_type
         return target_type
     elseif expr.kind == "safe_cast" then
-        -- Safe cast: expr as?<Type>(fallback)
-        -- Type-check that fallback matches target type
+        -- Safe cast: <Type> expr ?? fallback
+        -- Fallback value is implicitly converted to target type
         local target_type = expr.to_type or expr.target_type
         infer_type(typechecker, expr.expr)
         
-        local fallback_type = infer_type(typechecker, expr.fallback)
+        -- Infer fallback type but allow implicit conversion
+        infer_type(typechecker, expr.fallback)
         
-        -- Check that fallback type matches target type
-        if not Inference.types_compatible(target_type, fallback_type) then
-            error("Safe cast fallback type mismatch: expected " .. Inference.type_to_string(target_type) .. 
-                  ", got " .. Inference.type_to_string(fallback_type))
-        end
+        -- Note: We allow implicit conversion of fallback to target type
+        -- The programmer's responsibility to provide compatible fallback
         
         expr.inferred_type = target_type
         return target_type
