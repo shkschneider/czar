@@ -5,16 +5,23 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-// Print string without newline
-// Usage: cz_print("Hello World")
-static inline void cz_print(const char* str) {
-    printf("%s", str);
+// Print with format string and variadic arguments, without newline
+// Usage: cz_print("Hello %s", "World")
+static inline void cz_print(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
 }
 
-// Print string with newline
-// Usage: cz_println("Hello World")
-static inline void cz_println(const char* str) {
-    printf("%s\n", str);
+// Print with format string and variadic arguments, with newline
+// Usage: cz_println("Hello %s", "World")
+static inline void cz_println(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    printf("\n");
 }
 
 // Printf with format string and variadic arguments

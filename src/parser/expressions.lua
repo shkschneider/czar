@@ -405,28 +405,14 @@ function Expressions.parse_primary(parser)
         return { kind = "string", value = tok.value }
     elseif tok.type == "INTERPOLATED_STRING" then
         parser:advance()
-        -- Parse interpolated string into a format string and arguments
+        -- Parse interpolated string - expressions will be parsed during codegen
         local parts = tok.value.parts
         local interp = tok.value.interp
-        
-        -- We need to create a sub-lexer and parser for each interpolation expression
-        local Lexer = require("lexer")
-        local Parser = require("parser")
-        
-        local parsed_exprs = {}
-        for _, expr_str in ipairs(interp) do
-            -- Lex and parse the expression
-            local lexer = Lexer.new(expr_str)
-            lexer:tokenize()
-            local expr_parser = Parser.new(lexer.tokens, expr_str)
-            local expr_ast = Expressions.parse_expression(expr_parser)
-            table.insert(parsed_exprs, expr_ast)
-        end
         
         return { 
             kind = "interpolated_string", 
             parts = parts, 
-            expressions = parsed_exprs,
+            interp_strings = interp,  -- Keep as strings for now
             line = tok.line,
             col = tok.col
         }
