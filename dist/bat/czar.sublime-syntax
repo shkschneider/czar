@@ -1,0 +1,163 @@
+%YAML 1.2
+---
+# Syntax highlighting for the Czar programming language
+# https://github.com/shkschneider/czar
+name: Czar
+file_extensions:
+  - cz
+scope: source.czar
+version: 2
+
+contexts:
+  main:
+    # Comments
+    - include: comments
+
+    # Directives and macros
+    - match: '\#(FILE|FUNCTION|LINE|DEBUG|assert|log)\b'
+      scope: keyword.preprocessor.czar
+
+    # String literals
+    - match: '"'
+      scope: punctuation.definition.string.begin.czar
+      push: string
+
+    # Keywords - control flow
+    - match: '\b(if|else|elseif|elsif|while|for|repeat|break|continue|return|in)\b'
+      scope: keyword.control.czar
+
+    # Keywords - declarations and modifiers
+    - match: '\b(fn|fun|func|function|struct|module|import|pub|public|mut|mutable|new|alloc|stack|heap|free|type)\b'
+      scope: keyword.declaration.czar
+
+    # Keywords - operators and special
+    - match: '\b(and|or|not|is|self|clone|copy|sizeof)\b'
+      scope: keyword.operator.word.czar
+
+    # Boolean and null constants
+    - match: '\b(true|false|null|nil)\b'
+      scope: constant.language.czar
+
+    # Numeric constants - hex
+    - match: '\b0x[0-9A-Fa-f_]+\b'
+      scope: constant.numeric.integer.hexadecimal.czar
+
+    # Numeric constants - binary
+    - match: '\b0b[01_]+\b'
+      scope: constant.numeric.integer.binary.czar
+
+    # Numeric constants - floating point
+    - match: '\b[0-9][0-9_]*\.[0-9_]+([eE][+-]?[0-9]+)?\b'
+      scope: constant.numeric.float.czar
+
+    # Numeric constants - integer
+    - match: '\b[0-9][0-9_]*\b'
+      scope: constant.numeric.integer.decimal.czar
+
+    # Built-in types - integers
+    - match: '\b(i8|i16|i32|i64|u8|u16|u32|u64)\b'
+      scope: storage.type.numeric.czar
+
+    # Built-in types - floats
+    - match: '\b(f32|f64)\b'
+      scope: storage.type.numeric.czar
+
+    # Built-in types - other
+    - match: '\b(bool|boolean|void|string|cstr|any)\b'
+      scope: storage.type.czar
+
+    # Generic/collection types
+    - match: '\b(pair|array|map)\b'
+      scope: storage.type.collection.czar
+
+    # Cast syntax as<Type>
+    - match: '\bas<([a-zA-Z0-9_*]+)>'
+      scope: keyword.operator.cast.czar
+      captures:
+        1: storage.type.czar
+
+    # Generic type syntax with angle brackets
+    - match: '\b(pair|array|map)<'
+      scope: storage.type.collection.czar
+      push: generic_type
+
+    # Custom types (capitalized identifiers)
+    - match: '\b[A-Z][a-zA-Z0-9_]*\b'
+      scope: storage.type.custom.czar
+
+    # Function definitions
+    - match: '\b(fn)\s+([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?\s*\('
+      captures:
+        1: keyword.declaration.function.czar
+        2: entity.name.function.czar
+        3: entity.name.type.czar
+      push: function_params
+
+    # Function calls with methods (e.g., object:method())
+    - match: '([a-zA-Z_][a-zA-Z0-9_]*)\s*(:)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+      captures:
+        1: variable.other.czar
+        2: punctuation.accessor.czar
+        3: entity.name.function.czar
+
+    # Operators
+    - match: '[-+*/%=<>!&|^~?]|!!|::'
+      scope: keyword.operator.czar
+
+    # Brackets and parentheses
+    - match: '[\[\]{}()]'
+      scope: punctuation.section.czar
+
+    # Punctuation
+    - match: '[,;:.]'
+      scope: punctuation.separator.czar
+
+  comments:
+    # Single line comment
+    - match: '//'
+      scope: punctuation.definition.comment.czar
+      push: line_comment
+
+    # Multi-line comment
+    - match: '/\*'
+      scope: punctuation.definition.comment.begin.czar
+      push: block_comment
+
+  line_comment:
+    - meta_scope: comment.line.double-slash.czar
+    - match: '\b(TODO|XXX|FIXME|NOTE|HACK):?'
+      scope: markup.bold.todo.czar
+    - match: $
+      pop: 1
+
+  block_comment:
+    - meta_scope: comment.block.czar
+    - match: '\b(TODO|XXX|FIXME|NOTE|HACK):?'
+      scope: markup.bold.todo.czar
+    - match: '\*/'
+      scope: punctuation.definition.comment.end.czar
+      pop: 1
+
+  string:
+    - meta_scope: string.quoted.double.czar
+    - match: '\\([\"''nrt\\]|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})'
+      scope: constant.character.escape.czar
+    - match: '"'
+      scope: punctuation.definition.string.end.czar
+      pop: 1
+
+  generic_type:
+    - match: '>'
+      pop: 1
+    - match: '[a-zA-Z0-9_:*]+'
+      scope: storage.type.czar
+
+  function_params:
+    - match: '\)'
+      pop: 1
+    - match: '\b[a-zA-Z_][a-zA-Z0-9_]*\b'
+      scope: variable.parameter.czar
+    - match: '\b(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|boolean|void|string|cstr|any|pair|array|map)\b'
+      scope: storage.type.czar
+    - match: '\b[A-Z][a-zA-Z0-9_]*\b'
+      scope: storage.type.custom.czar
