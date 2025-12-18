@@ -300,21 +300,28 @@ function Codegen:generate()
         end
     end
     
-    -- Always include string implementation (it's small and harmless if unused)
-    -- Read the string implementation from cz_string.c
-    local string_impl_path = "src/codegen/cz_string.c"
-    local file = io.open(string_impl_path, "r")
-    if file then
-        local content = file:read("*all")
-        file:close()
-        -- Emit the entire string implementation
-        self:emit("// String implementation from cz_string.c")
-        for line in content:gmatch("[^\r\n]+") do
-            self:emit(line)
+    -- Always include raw C implementations from src/raw/ directory
+    -- These are internal C library files that the generated code relies on
+    local raw_c_files = {
+        "src/raw/cz_string.c",
+        "src/raw/cz_print.c",
+    }
+    
+    for _, raw_file_path in ipairs(raw_c_files) do
+        local file = io.open(raw_file_path, "r")
+        if file then
+            local content = file:read("*all")
+            file:close()
+            -- Extract just the filename for the comment
+            local filename = raw_file_path:match("([^/]+)$")
+            self:emit("// Raw C implementation from " .. filename)
+            for line in content:gmatch("[^\r\n]+") do
+                self:emit(line)
+            end
+            self:emit("")
+        else
+            error("Failed to open raw C file: " .. raw_file_path)
         end
-        self:emit("")
-    else
-        error("Failed to open string implementation file: " .. string_impl_path)
     end
     
     -- Generate forward declarations for all functions to avoid C ordering issues

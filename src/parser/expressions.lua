@@ -403,6 +403,33 @@ function Expressions.parse_primary(parser)
     elseif tok.type == "STRING" then
         parser:advance()
         return { kind = "string", value = tok.value }
+    elseif tok.type == "INTERPOLATED_STRING" then
+        parser:advance()
+        -- Parse interpolated string into a format string and arguments
+        local parts = tok.value.parts
+        local interp = tok.value.interp
+        
+        -- We need to create a sub-lexer and parser for each interpolation expression
+        local Lexer = require("lexer")
+        local Parser = require("parser")
+        
+        local parsed_exprs = {}
+        for _, expr_str in ipairs(interp) do
+            -- Lex and parse the expression
+            local lexer = Lexer.new(expr_str)
+            lexer:tokenize()
+            local expr_parser = Parser.new(lexer.tokens, expr_str)
+            local expr_ast = Expressions.parse_expression(expr_parser)
+            table.insert(parsed_exprs, expr_ast)
+        end
+        
+        return { 
+            kind = "interpolated_string", 
+            parts = parts, 
+            expressions = parsed_exprs,
+            line = tok.line,
+            col = tok.col
+        }
     elseif tok.type == "KEYWORD" and (tok.value == "true" or tok.value == "false") then
         parser:advance()
         return { kind = "bool", value = tok.value == "true" }

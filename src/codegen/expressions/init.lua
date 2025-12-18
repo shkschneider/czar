@@ -17,6 +17,8 @@ function Expressions.gen_expr(expr)
         return Literals.gen_int(expr)
     elseif expr.kind == "string" then
         return Literals.gen_string(expr)
+    elseif expr.kind == "interpolated_string" then
+        return Literals.gen_interpolated_string(expr, Expressions.gen_expr)
     elseif expr.kind == "bool" then
         return Literals.gen_bool(expr)
     elseif expr.kind == "null" then

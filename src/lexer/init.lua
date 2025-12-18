@@ -229,30 +229,96 @@ end
 
 function Lexer:lex_string()
     local start_col = self.col
-    local value = ""
+    local start_line = self.line
     self:advance() -- opening quote
+    
+    -- Parse string and collect parts and interpolations
+    local parts = {}  -- String literal parts
+    local interp = {}  -- Interpolation expressions
+    local current_part = ""
+    local has_interpolation = false
+    
     while true do
         local ch = self:peek()
         if not ch then
-            error(string.format("unterminated string at %d:%d", self.line, start_col))
+            error(string.format("unterminated string at %d:%d", start_line, start_col))
         end
+        
         if ch == '"' then
             self:advance()
+            -- Add final part
+            table.insert(parts, current_part)
             break
         elseif ch == '\\' then
+            -- Handle escape sequences
             self:advance()
             local next_ch = self:peek()
             if not next_ch then
                 error(string.format("unterminated escape at %d:%d", self.line, self.col))
             end
-            value = value .. '\\' .. next_ch
-            self:advance()
+            if next_ch == '{' then
+                -- \{ -> literal {
+                current_part = current_part .. '{'
+                self:advance()
+            elseif next_ch == '}' then
+                -- \} -> literal }
+                current_part = current_part .. '}'
+                self:advance()
+            else
+                -- Other escape sequences: preserve them as-is for C
+                current_part = current_part .. '\\' .. next_ch
+                self:advance()
+            end
+        elseif ch == '{' then
+            -- Start of interpolation
+            has_interpolation = true
+            table.insert(parts, current_part)
+            current_part = ""
+            
+            self:advance() -- consume {
+            
+            -- Read the expression inside {}
+            local expr = ""
+            local depth = 1
+            while true do
+                local inner_ch = self:peek()
+                if not inner_ch then
+                    error(string.format("unterminated interpolation at %d:%d", self.line, self.col))
+                end
+                
+                if inner_ch == '{' then
+                    depth = depth + 1
+                    expr = expr .. inner_ch
+                    self:advance()
+                elseif inner_ch == '}' then
+                    depth = depth - 1
+                    if depth == 0 then
+                        self:advance() -- consume }
+                        break
+                    else
+                        expr = expr .. inner_ch
+                        self:advance()
+                    end
+                else
+                    expr = expr .. inner_ch
+                    self:advance()
+                end
+            end
+            
+            table.insert(interp, expr)
         else
-            value = value .. ch
+            current_part = current_part .. ch
             self:advance()
         end
     end
-    self:add_token("STRING", value, self.line, start_col)
+    
+    -- Create token with interpolation metadata
+    if has_interpolation then
+        self:add_token("INTERPOLATED_STRING", { parts = parts, interp = interp }, start_line, start_col)
+    else
+        -- Regular string without interpolation
+        self:add_token("STRING", parts[1] or "", start_line, start_col)
+    end
 end
 
 function Lexer:next_token()
