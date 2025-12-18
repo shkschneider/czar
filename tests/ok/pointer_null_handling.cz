@@ -1,0 +1,38 @@
+// Demonstrates null pointer handling with the new syntax
+// Shows how to work with null pointers safely
+
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() i32 {
+    // null is (void*)0 and can be assigned to any pointer type
+    mut Point* p1 = null
+    mut Point* p2 = null
+    
+    // Create an actual Point
+    Point pt = Point{x: 10, y: 20}
+    mut Point* p3 = &pt
+    
+    // Null checks are done with the ! operator
+    // If pointer is null, program aborts; otherwise returns the pointer
+    if (p3 != null) {
+        println("Point: ", p3.x, ",", p3.y)
+    }
+    
+    // Can reassign null
+    p3 = null
+    
+    // Check if null before using
+    if (p1 == null) {
+        println("p1 is null")
+    }
+    
+    // Pointer comparison
+    if (p1 == p2) {
+        println("Both pointers are null")
+    }
+    
+    return 0
+}
