@@ -98,8 +98,90 @@ local function validate_overload_single_type_variance(existing_overloads, new_fu
     return true, nil
 end
 
+-- Helper: Replace generic type T with concrete type
+local function replace_generic_type(type_node, concrete_type)
+    if not type_node then
+        return nil
+    end
+    
+    if type_node.kind == "named_type" then
+        if type_node.name == "T" then
+            -- Replace T with concrete type
+            return { kind = "named_type", name = concrete_type }
+        else
+            return type_node
+        end
+    elseif type_node.kind == "pointer" then
+        return { kind = "pointer", to = replace_generic_type(type_node.to, concrete_type) }
+    elseif type_node.kind == "array" then
+        return { 
+            kind = "array", 
+            element_type = replace_generic_type(type_node.element_type, concrete_type),
+            size = type_node.size
+        }
+    elseif type_node.kind == "slice" then
+        return { 
+            kind = "slice", 
+            element_type = replace_generic_type(type_node.element_type, concrete_type)
+        }
+    elseif type_node.kind == "varargs" then
+        return {
+            kind = "varargs",
+            element_type = replace_generic_type(type_node.element_type, concrete_type)
+        }
+    else
+        return type_node
+    end
+end
+
+-- Helper: Expand a generic function into concrete overloads
+local function expand_generic_function(item, typechecker)
+    if not item.generic_types or #item.generic_types == 0 then
+        return {item}  -- Not generic, return as-is
+    end
+    
+    local expanded = {}
+    
+    for _, concrete_type in ipairs(item.generic_types) do
+        -- Deep copy the function item
+        local expanded_func = {
+            kind = "function",
+            name = item.name,
+            receiver_type = item.receiver_type,
+            params = {},
+            return_type = nil,
+            body = item.body,  -- Body is shared (will be used in codegen)
+            inline_directive = item.inline_directive,
+            line = item.line,
+            col = item.col,
+            is_generic_instance = true,
+            generic_concrete_type = concrete_type
+        }
+        
+        -- Replace T with concrete type in parameters
+        for _, param in ipairs(item.params) do
+            local new_param = {
+                name = param.name,
+                type = replace_generic_type(param.type, concrete_type),
+                mutable = param.mutable,
+                default_value = param.default_value
+            }
+            table.insert(expanded_func.params, new_param)
+        end
+        
+        -- Replace T with concrete type in return type
+        expanded_func.return_type = replace_generic_type(item.return_type, concrete_type)
+        
+        table.insert(expanded, expanded_func)
+    end
+    
+    return expanded
+end
+
 -- Collect all top-level declarations
 function Declarations.collect_declarations(typechecker)
+    local new_items = {}  -- Build new items list with expanded generics
+    
     for _, item in ipairs(typechecker.ast.items) do
         if item.kind == "struct" then
             -- Check for duplicate struct definition
@@ -132,6 +214,7 @@ function Declarations.collect_declarations(typechecker)
                 end
                 typechecker.structs[item.name] = item
             end
+            table.insert(new_items, item)  -- Keep struct in new items
         elseif item.kind == "enum" then
             -- Check for duplicate enum definition
             if typechecker.enums[item.name] then
@@ -163,6 +246,7 @@ function Declarations.collect_declarations(typechecker)
                 end
                 typechecker.enums[item.name] = item
             end
+            table.insert(new_items, item)  -- Keep enum in new items
         elseif item.kind == "function" then
             -- Determine if this is a method or a global function
             local type_name = "__global__"
@@ -195,24 +279,30 @@ function Declarations.collect_declarations(typechecker)
                 end
             end
 
-            -- Support function overloading: store as array of overloads
-            if not typechecker.functions[type_name][item.name] then
-                typechecker.functions[type_name][item.name] = {}
-            end
+            -- Expand generic functions into concrete overloads
+            local functions_to_add = expand_generic_function(item, typechecker)
             
-            local existing_overloads = typechecker.functions[type_name][item.name]
-            
-            -- Validate overload (single type variance check)
-            local valid, err_msg = validate_overload_single_type_variance(existing_overloads, item, item.name)
-            if not valid then
-                local line = item.line or 0
-                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                    Errors.ErrorType.DUPLICATE_FUNCTION, err_msg, typechecker.source_path)
-                typechecker:add_error(formatted_error)
-            else
-                -- Store the overload with its signature
-                item.signature = create_signature(item.params)
-                table.insert(typechecker.functions[type_name][item.name], item)
+            for _, func in ipairs(functions_to_add) do
+                -- Support function overloading: store as array of overloads
+                if not typechecker.functions[type_name][func.name] then
+                    typechecker.functions[type_name][func.name] = {}
+                end
+                
+                local existing_overloads = typechecker.functions[type_name][func.name]
+                
+                -- Validate overload (single type variance check)
+                local valid, err_msg = validate_overload_single_type_variance(existing_overloads, func, func.name)
+                if not valid then
+                    local line = func.line or 0
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.DUPLICATE_FUNCTION, err_msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                else
+                    -- Store the overload with its signature
+                    func.signature = create_signature(func.params)
+                    table.insert(typechecker.functions[type_name][func.name], func)
+                    table.insert(new_items, func)  -- Add expanded function to new items
+                end
             end
         elseif item.kind == "alias_macro" then
             -- Store type aliases
@@ -225,10 +315,15 @@ function Declarations.collect_declarations(typechecker)
             else
                 typechecker.type_aliases[item.alias_name] = item.target_type_str
             end
+            table.insert(new_items, item)  -- Keep macro in new items
         elseif item.kind == "allocator_macro" then
             -- Store other macros but don't type check them
+            table.insert(new_items, item)  -- Keep macro in new items
         end
     end
+    
+    -- Replace AST items with expanded items
+    typechecker.ast.items = new_items
 end
 
 return Declarations
