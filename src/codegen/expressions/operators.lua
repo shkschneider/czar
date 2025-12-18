@@ -283,7 +283,7 @@ function Operators.gen_compound_assign(expr, gen_expr_fn)
 end
 
 -- Generate prefix increment/decrement: ++i, --i
-function Operators.gen_prefix_op(expr, gen_expr_fn)
+function Operators.gen_prefix(expr, gen_expr_fn)
     local operand = gen_expr_fn(expr.operand)
     return string.format("%s%s", expr.op, operand)
 end
