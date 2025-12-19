@@ -5,46 +5,48 @@ _case insensitive_
 - _
 - and
 - any
+- array
 - assert
-- assert
-- bool / boolean
+- bool / _boolean_
 - break
-- clone / copy
+- clone / _copy_
 - continue
 - cz / czar
 - DEBUG
 - enum
 - f32 / f64
-- false
 - FILE
 - FIXME
-- fn / fun / func / function
-- free
+- fn / _fun_ / _func_ / _function_
+- free / _destructor_ / _alloc_
 - FUNCTION
 - i8 / i16 / i32 / i64
-- if / elseif / elsif / else
+- if / elseif / _elsif_ / else
 - import
 - inline / noinline
 - is
-- LOG
 - log
+- LOG
 - main
-- module
-- mut / mutable
-- new / alloc / stack / heap
-- null / nil
+- map
+- module / _package_
+- mut / _mutable_
+- new / _constructor_ / _alloc_
+- null / _nil_
 - or
-- pub / public
-- repeat
+- pair
+- pub / _public_ / _private_
+- repeat / _loop_
 - return
-- self / this / it
+- _safe_ / _unsafe_
+- self / _this_ / _it_
+- _stack_ / _heap_
 - string / cstr
-- struct / class
-- T / Type
+- struct / _class_
 - TODO
-- true
+- true / false
+- T / _Type_
 - typeof / sizeof
 - u8 / u16 / u32 / u64
-- unsafe
 - void
-- while / for / foreach
+- while / for / _foreach_
