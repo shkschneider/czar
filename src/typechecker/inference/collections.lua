@@ -12,33 +12,77 @@ Collections.types_compatible = nil
 
 -- Infer the type of an array literal
 function Collections.infer_array_literal_type(typechecker, expr)
-    -- Infer element type from first element
+    -- Check if we have an expected type hint (e.g., from variable declaration)
+    local element_type = nil
+    if expr.expected_type and expr.expected_type.kind == "array" then
+        element_type = expr.expected_type.element_type
+    end
+    
+    -- Handle empty array literals
     if #expr.elements == 0 then
-        local line = expr.line or 0
-        local msg = "Cannot infer type of empty array literal"
-        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
-        typechecker:add_error(formatted_error)
-        return nil
-    end
-    
-    local element_type = Collections.infer_type(typechecker, expr.elements[1])
-    if not element_type then
-        return nil
-    end
-    
-    -- Check that all elements have the same type
-    for i = 2, #expr.elements do
-        local elem_type = Collections.infer_type(typechecker, expr.elements[i])
-        if not Collections.types_compatible(element_type, elem_type, typechecker) then
+        if element_type then
+            -- Empty array with expected type - this is valid for zero initialization
+            -- Use the expected type's size if available
+            local size = 0
+            if expr.expected_type and expr.expected_type.size and expr.expected_type.size ~= "*" then
+                size = expr.expected_type.size
+            end
+            local inferred = { kind = "array", element_type = element_type, size = size }
+            expr.inferred_type = inferred
+            return inferred
+        else
             local line = expr.line or 0
-            local msg = string.format(
-                "Array literal element %d has type '%s', expected '%s'",
-                i, Collections.type_to_string(elem_type), Collections.type_to_string(element_type)
-            )
+            local msg = "Cannot infer type of empty array literal"
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                 Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
+    
+    if not element_type then
+        element_type = Collections.infer_type(typechecker, expr.elements[1])
+        if not element_type then
+            return nil
+        end
+    else
+        -- If we have an expected element type, set it as a hint on each element
+        -- This allows integer literals to be type-directed
+        for _, elem in ipairs(expr.elements) do
+            if elem.kind == "int" or elem.kind == "float" then
+                elem.expected_type = element_type
+            end
+        end
+    end
+    
+    -- Check that all elements have the same type or are compatible
+    for i, elem in ipairs(expr.elements) do
+        local elem_type = Collections.infer_type(typechecker, elem)
+        if not Collections.types_compatible(element_type, elem_type, typechecker) then
+            -- Check if it's a safe implicit cast (e.g., integer literal to smaller type)
+            local can_cast = false
+            if elem.kind == "int" and element_type.kind == "named_type" then
+                -- Integer literals can be implicitly cast to any integer type if in range
+                local target_type = element_type.name
+                if target_type:match("^[ui]%d+$") then
+                    -- For now, allow any integer literal to any integer type
+                    -- Proper range checking would be done at runtime or with warnings
+                    can_cast = true
+                    -- Store the target type for codegen to cast
+                    elem.cast_to_type = element_type
+                end
+            end
+            
+            if not can_cast then
+                local line = expr.line or 0
+                local msg = string.format(
+                    "Array literal element %d has type '%s', expected '%s'",
+                    i, Collections.type_to_string(elem_type), Collections.type_to_string(element_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+            end
         end
     end
     
