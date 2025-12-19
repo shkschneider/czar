@@ -1,0 +1,6 @@
+fn main() i32 {
+    u8[*] aa = [1, 2] // should infer type=u8 size=2
+    u8[2] bb = [1, 2] // should infer type=u8
+    u8[2] cc = []
+    return 0
+}

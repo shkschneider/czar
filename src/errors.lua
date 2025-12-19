@@ -30,8 +30,8 @@ Errors.ErrorType = {
 
     -- Pointer arithmetic errors
     POINTER_ARITHMETIC_FORBIDDEN = "POINTER_ARITHMETIC_FORBIDDEN",
-    
-    -- Nullable safety errors  
+
+    -- Nullable safety errors
     UNSAFE_NULLABLE_ASSIGNMENT = "UNSAFE_NULLABLE_ASSIGNMENT",
     UNSAFE_NULLABLE_ACCESS = "UNSAFE_NULLABLE_ACCESS",
 
