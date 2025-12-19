@@ -15,12 +15,13 @@ function Memory.pop_scope()
     table.remove(ctx().heap_vars_stack)
 end
 
-function Memory.add_var(name, type_node, mutable, needs_free)
+function Memory.add_var(name, type_node, mutable, needs_free, is_reference)
     if #ctx().scope_stack > 0 then
         ctx().scope_stack[#ctx().scope_stack][name] = {
             type = type_node,
             mutable = mutable or false,
             needs_free = needs_free or false,
+            is_reference = is_reference or false,  -- Track if variable is a reference (auto-dereference)
             used = false,  -- Track if variable is used
             declared_at = debug.getinfo(2, "l").currentline  -- Track declaration location
         }
