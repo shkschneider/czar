@@ -278,7 +278,7 @@ function Fields.infer_index_type(typechecker, expr)
     end
 
     -- Compile-time bounds checking: check if index is a constant integer (only for arrays, not slices or varargs)
-    if array_type.kind == "array" and expr.index.kind == "int" then
+    if array_type.kind == "array" and expr.index.kind == "int" and array_type.size ~= "*" then
         local index_value = expr.index.value
         local array_size = array_type.size
 
