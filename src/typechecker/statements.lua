@@ -72,6 +72,10 @@ function Statements.check_var_decl(typechecker, stmt)
                 Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
         else
+            -- Set expected type hint on the initializer for type-directed inference
+            if stmt.init.kind == "array_literal" then
+                stmt.init.expected_type = var_type
+            end
             local init_type = Inference.infer_type(typechecker, stmt.init)
 
             -- Check that initializer is an array literal or array
@@ -101,6 +105,11 @@ function Statements.check_var_decl(typechecker, stmt)
             end
         end
     elseif stmt.init then
+        -- Set expected type hint on the initializer for type-directed inference
+        if stmt.init.kind == "array_literal" and var_type.kind == "array" then
+            stmt.init.expected_type = var_type
+        end
+        
         -- Type check the initializer if present (for non-implicit arrays)
         local init_type = Inference.infer_type(typechecker, stmt.init)
         
