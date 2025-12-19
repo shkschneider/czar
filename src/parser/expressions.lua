@@ -310,6 +310,11 @@ function Expressions.parse_postfix(parser)
             -- Null check operator: a! (postfix)
             -- Converts nullable to non-nullable (with warning)
             expr = { kind = "null_check", operand = expr }
+        elseif parser:match("BANGBANG") then
+            -- Double null check operator: a!! (postfix)
+            -- Same as single null check, but may emit useless-pointer-safety warning
+            -- when used on nullable that returns nullable
+            expr = { kind = "null_check", operand = expr, double_bang = true }
         elseif parser:check("QUESTION") and parser.tokens[parser.pos + 1] and parser.tokens[parser.pos + 1].type == "DOT" then
             -- Safe navigation operator: a?.field
             parser:advance()  -- consume QUESTION
