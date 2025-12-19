@@ -364,10 +364,16 @@ local function cmd_compile(args)
     local fail_count = 0
 
     for _, source_path in ipairs(files) do
-        local ok, result = compile.compile(source_path, options)
+        local ok, result, exit_code = compile.compile(source_path, options)
         if not ok then
             io.stderr:write(string.format("%s: %s\n", source_path, result))
             fail_count = fail_count + 1
+            -- Exit immediately with the phase-specific error code
+            if exit_code then
+                os.exit(exit_code)
+            else
+                os.exit(1)  -- Default error code
+            end
         else
             io.stderr:write(string.format("Generated: %s\n", result))
             success_count = success_count + 1
