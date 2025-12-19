@@ -1,0 +1,21 @@
+// Test: Cannot compare different struct types
+// Should error with type mismatch
+
+struct Point {
+    i32 x
+    i32 y
+}
+
+struct Circle {
+    f64 radius
+}
+
+fn main() i32 {
+    Point p = Point { x: 1, y: 2 }
+    Circle c = Circle { radius: 3.14 }
+    
+    // Should error: comparing different struct types
+    bool result = (p == c)
+    
+    return 0
+}

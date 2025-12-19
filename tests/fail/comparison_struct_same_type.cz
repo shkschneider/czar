@@ -1,0 +1,17 @@
+// Test: Cannot compare same struct types directly
+// Should error - C doesn't support struct equality
+
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn main() i32 {
+    Point p1 = Point { x: 1, y: 2 }
+    Point p2 = Point { x: 3, y: 4 }
+    
+    // Should error: struct comparison not supported
+    bool result = (p1 == p2)
+    
+    return 0
+}
