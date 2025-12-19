@@ -109,7 +109,7 @@ echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
 cp ./src/bin/main.c ./build/main.c
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
-echo -e $GREEN"[CZ] "$(stat -c %s ./$OUT)"B $OUT"$WHITE" "$(file -b ./$OUT)
+echo -e "[CZ] "$GREEN$(du -h ./$OUT 2>/dev/null)$WHITE" "$(file -b ./$OUT 2>/dev/null )
 
 #install -m 755 ./$(OUT) /usr/local/bin/cz
 rm -rf ./build
