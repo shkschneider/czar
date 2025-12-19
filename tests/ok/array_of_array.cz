@@ -1,6 +1,4 @@
 fn main() i32 {
-    mut u8[*] aa = []
-    aa[0] = 1
-    aa[1] = 2
+    // TODO mut u8[][] aa
     return 0
 }
