@@ -69,8 +69,8 @@ function Codegen:pop_scope()
     Codegen.Memory.pop_scope()
 end
 
-function Codegen:add_var(name, type_node, mutable, needs_free)
-    Codegen.Memory.add_var(name, type_node, mutable, needs_free)
+function Codegen:add_var(name, type_node, mutable, needs_free, is_reference)
+    Codegen.Memory.add_var(name, type_node, mutable, needs_free, is_reference)
 end
 
 function Codegen:mark_freed(name)

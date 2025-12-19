@@ -408,8 +408,8 @@ function Statements.gen_for(stmt)
             -- Mutable item: get pointer to array element
             table.insert(parts, string.format("    %s* %s = &%s[%s];",
                 c_type, item_var, collection_expr, index_var))
-            -- Add to scope as pointer type
-            ctx():add_var(stmt.item_name, { kind = "nullable", to = element_type }, true)
+            -- Add to scope as pointer type, marked as reference for auto-dereferencing
+            ctx():add_var(stmt.item_name, { kind = "nullable", to = element_type }, true, false, true)
         else
             -- Immutable item: copy value
             table.insert(parts, string.format("    const %s %s = %s[%s];",

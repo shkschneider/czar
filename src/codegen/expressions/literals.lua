@@ -121,6 +121,11 @@ end
 -- Generate identifier reference
 function Literals.gen_identifier(expr)
     ctx():mark_var_used(expr.name)
+    -- Check if this identifier is a reference that needs auto-dereferencing
+    local var_info = ctx():get_var_info(expr.name)
+    if var_info and var_info.is_reference then
+        return "(*" .. expr.name .. ")"
+    end
     return expr.name
 end
 
