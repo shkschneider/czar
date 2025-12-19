@@ -81,6 +81,100 @@ function Expressions.infer_binary_type(typechecker, expr)
                 typechecker:add_error(formatted_error)
                 return nil
             end
+            
+            -- Check for struct/named type mismatches (except for built-in types)
+            -- For == and !=, both types must be the same
+            -- For <, >, <=, >=, both types must be numeric or both must be the same type
+            if left_type.kind == "named_type" and right_type.kind == "named_type" then
+                local ordering_op = (expr.op == "<" or expr.op == ">" or expr.op == "<=" or expr.op == ">=")
+                
+                -- Check if types are enums (enums are allowed in comparisons since they're int32_t in C)
+                local left_is_enum = typechecker.enums[left_type.name] ~= nil
+                local right_is_enum = typechecker.enums[right_type.name] ~= nil
+                
+                -- Check if types are user-defined structs (not built-in types or enums)
+                local left_is_struct = not left_is_numeric and not left_is_bool and not left_is_enum and
+                                      left_type.name ~= "void" and left_type.name ~= "any"
+                local right_is_struct = not right_is_numeric and not right_is_bool and not right_is_enum and
+                                       right_type.name ~= "void" and right_type.name ~= "any"
+                
+                -- For ordering operators, require both to be numeric or both to be enums
+                if ordering_op and not (left_is_numeric and right_is_numeric) and not (left_is_enum and right_is_enum) then
+                    local line = expr.line or (expr.left and expr.left.line) or 0
+                    local msg = string.format(
+                        "Cannot use ordering operator %s on non-numeric types %s and %s",
+                        expr.op,
+                        Expressions.type_to_string(left_type),
+                        Expressions.type_to_string(right_type)
+                    )
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                    return nil
+                end
+                
+                -- For equality operators, don't allow struct comparisons (C doesn't support them)
+                -- But allow enum comparisons (they're int32_t in C)
+                if not ordering_op and left_is_struct and right_is_struct then
+                    local line = expr.line or (expr.left and expr.left.line) or 0
+                    local msg = string.format(
+                        "Cannot compare struct types %s and %s directly (use field-by-field comparison)",
+                        Expressions.type_to_string(left_type),
+                        Expressions.type_to_string(right_type)
+                    )
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                    return nil
+                end
+                
+                -- For all comparison operators, types must match (or both be numeric for widening)
+                if left_type.name ~= right_type.name then
+                    -- Allow numeric widening comparisons (e.g., i32 vs i64)
+                    if not (left_is_numeric and right_is_numeric) then
+                        local line = expr.line or (expr.left and expr.left.line) or 0
+                        local msg = string.format(
+                            "Cannot compare %s with %s: incompatible types",
+                            Expressions.type_to_string(left_type),
+                            Expressions.type_to_string(right_type)
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                        return nil
+                    end
+                end
+            end
+            
+            -- Check for array type mismatches
+            if left_type.kind == "array" and right_type.kind == "array" then
+                -- Arrays cannot be directly compared
+                local line = expr.line or (expr.left and expr.left.line) or 0
+                local msg = string.format(
+                    "Cannot compare arrays directly: %s and %s",
+                    Expressions.type_to_string(left_type),
+                    Expressions.type_to_string(right_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+            
+            -- Check for array vs non-array mismatches
+            if (left_type.kind == "array" and right_type.kind ~= "array") or
+               (left_type.kind ~= "array" and right_type.kind == "array") then
+                local line = expr.line or (expr.left and expr.left.line) or 0
+                local msg = string.format(
+                    "Cannot compare %s with %s: incompatible types",
+                    Expressions.type_to_string(left_type),
+                    Expressions.type_to_string(right_type)
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
         end
         
         local inferred = { kind = "named_type", name = "bool" }
