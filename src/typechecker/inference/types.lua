@@ -79,7 +79,8 @@ function Types.types_compatible(type1, type2, typechecker)
         return Types.types_compatible(type2.to, type1, typechecker)
     elseif type1.kind == "array" and type2.kind == "array" then
         -- Arrays are compatible if element types match and sizes match
-        if type1.size ~= type2.size then
+        -- Special case: if either size is "*" (implicit), they're compatible for inference
+        if type1.size ~= "*" and type2.size ~= "*" and type1.size ~= type2.size then
             return false
         end
         return Types.types_compatible(type1.element_type, type2.element_type, typechecker)
