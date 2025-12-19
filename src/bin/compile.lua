@@ -1,6 +1,19 @@
 -- compile module: generates C code from .cz source file
 -- Contains all transpilation logic (lexer, parser, typechecker, lowering, analysis, codegen)
 -- This is the main compilation step that produces .c files
+--
+-- Returns:
+--   success, result, exit_code
+--   - success (boolean): true if compilation succeeded, false otherwise
+--   - result (string): output file path on success, error message on failure
+--   - exit_code (number): 0 on success, phase-specific error code on failure:
+--       1 = lexer error
+--       2 = parser error  
+--       3 = typechecker error
+--       4 = lowering error
+--       5 = analysis error
+--       6 = codegen error
+--       7 = file write error
 
 local lexer = require("lexer")
 local parser = require("parser")
@@ -37,7 +50,7 @@ function Compile.compile(source_path, options)
     
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
-        return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
+        return false, string.format("Error: source file must have .cz extension, got: %s", source_path), 1
     end
 
     -- Extract just the filename (not the full path) for #FILE
@@ -48,14 +61,14 @@ function Compile.compile(source_path, options)
     -- Read source file
     local source, err = read_file(source_path)
     if not source then
-        return false, string.format("Failed to read '%s': %s", source_path, err or "unknown error")
+        return false, string.format("Failed to read '%s': %s", source_path, err or "unknown error"), 1
     end
 
     -- Lex
     local ok, tokens = pcall(lexer, source)
     if not ok then
         local clean_error = tokens:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, string.format("Lexer error: %s", clean_error)
+        return false, string.format("Lexer error: %s", clean_error), 1
     end
 
     -- Parse (pass source for #unsafe blocks)
@@ -65,9 +78,9 @@ function Compile.compile(source_path, options)
         -- Extract line number if present in error
         local line_match = clean_error:match("at (%d+)")
         if line_match then
-            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error)
+            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error), 2
         else
-            return false, string.format("ERROR at %s Parser error: %s", source_path, clean_error)
+            return false, string.format("ERROR at %s Parser error: %s", source_path, clean_error), 2
         end
     end
 
@@ -75,21 +88,21 @@ function Compile.compile(source_path, options)
     local ok, typed_ast = pcall(typechecker, ast, options)
     if not ok then
         local clean_error = typed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, clean_error
+        return false, clean_error, 3
     end
 
     -- Lowering
     local ok, lowered_ast = pcall(lowering, typed_ast, options)
     if not ok then
         local clean_error = lowered_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, clean_error
+        return false, clean_error, 4
     end
 
     -- Analysis
     local ok, analyzed_ast = pcall(analysis, lowered_ast, options)
     if not ok then
         local clean_error = analyzed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, clean_error
+        return false, clean_error, 5
     end
 
     -- Generate C code
@@ -99,9 +112,9 @@ function Compile.compile(source_path, options)
         -- Extract line number if present in error
         local line_match = clean_error:match("line (%d+)")
         if line_match then
-            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error)
+            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error), 6
         else
-            return false, string.format("ERROR at %s Codegen error: %s", source_path, clean_error)
+            return false, string.format("ERROR at %s Codegen error: %s", source_path, clean_error), 6
         end
     end
 
@@ -111,10 +124,10 @@ function Compile.compile(source_path, options)
     -- Write C file
     local ok, err = write_file(c_source, output_path)
     if not ok then
-        return false, err
+        return false, err, 7
     end
 
-    return true, output_path
+    return true, output_path, 0
 end
 
 return Compile

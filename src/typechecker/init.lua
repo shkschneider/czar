@@ -178,8 +178,10 @@ function Typechecker:check_expression(expr)
 end
 
 -- Add error to error list
+-- Now implements fail-fast behavior: immediately throws the error instead of collecting
 function Typechecker:add_error(msg)
-    table.insert(self.errors, msg)
+    -- Immediately throw the error to stop compilation on first error
+    error(msg)
 end
 
 -- Get variable information (delegate to Scopes module)
