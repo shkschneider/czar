@@ -99,8 +99,19 @@ function infer_type(typechecker, expr)
             return result_type
         end
     elseif expr.kind == "null_check" then
-        -- Null check operator (!) returns the operand type (asserts non-null)
+        -- Null check operator (!) or (!!) returns the operand type (asserts non-null)
         local operand_type = infer_type(typechecker, expr.operand)
+        
+        -- Check if this is !! on a nullable type that stays nullable (useless)
+        if expr.double_bang and operand_type and operand_type.kind == "nullable" then
+            -- Double bang on nullable type - emit warning about useless-pointer-safety
+            local Warnings = require("warnings")
+            local msg = "Using !! on nullable pointer that remains nullable has no effect"
+            local function_name = typechecker.current_function and typechecker.current_function.name or nil
+            Warnings.emit(typechecker.source_file, expr.line or 0,
+                "USELESS_POINTER_SAFETY", msg, typechecker.source_path, function_name)
+        end
+        
         expr.inferred_type = operand_type
         return operand_type
     elseif expr.kind == "unsafe_cast" then
