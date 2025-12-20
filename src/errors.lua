@@ -117,22 +117,19 @@ function Errors.format(severity, filename, line, error_id, message, source_path,
         display_line = nil
     end
 
-    local location
-    if display_line then
-        location = string.format("%s:%d", filename, display_line)
-    else
-        location = filename
-    end
-
     -- Convert error ID to lowercase-hyphenated format
     local formatted_error_id = format_error_id(error_id)
 
-    -- Build error message parts in unified format: "TYPE in function() at filename:line error-code"
+    -- Build error message in unified format: "TYPE in function() at filename:line error-code"
     local prefix = severity
     if function_name then
         prefix = prefix .. string.format(" in %s()", function_name)
     end
-    prefix = prefix .. " at " .. location .. " " .. formatted_error_id
+    prefix = prefix .. " at " .. filename
+    if display_line then
+        prefix = prefix .. ":" .. display_line
+    end
+    prefix = prefix .. " " .. formatted_error_id
 
     local parts = {}
     table.insert(parts, prefix)
