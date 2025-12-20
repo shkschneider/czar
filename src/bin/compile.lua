@@ -68,7 +68,13 @@ function Compile.compile(source_path, options)
     local ok, tokens = pcall(lexer, source)
     if not ok then
         local clean_error = tokens:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, string.format("Lexer error: %s", clean_error), 1
+        -- Extract line number if present in lexer error
+        local line_match = clean_error:match("at (%d+)")
+        if line_match then
+            return false, string.format("ERROR at %s:%s lexer-error\n\t%s", source_path, line_match, clean_error), 1
+        else
+            return false, string.format("ERROR at %s lexer-error\n\t%s", source_path, clean_error), 1
+        end
     end
 
     -- Parse (pass source for #unsafe blocks)
@@ -78,9 +84,9 @@ function Compile.compile(source_path, options)
         -- Extract line number if present in error
         local line_match = clean_error:match("at (%d+)")
         if line_match then
-            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error), 2
+            return false, string.format("ERROR at %s:%s parser-error\n\t%s", source_path, line_match, clean_error), 2
         else
-            return false, string.format("ERROR at %s Parser error: %s", source_path, clean_error), 2
+            return false, string.format("ERROR at %s parser-error\n\t%s", source_path, clean_error), 2
         end
     end
 
@@ -95,14 +101,26 @@ function Compile.compile(source_path, options)
     local ok, lowered_ast = pcall(lowering, typed_ast, options)
     if not ok then
         local clean_error = lowered_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, clean_error, 4
+        -- Extract line number if present
+        local line_match = clean_error:match("at (%d+)")
+        if line_match then
+            return false, string.format("ERROR at %s:%s lowering-error\n\t%s", source_path, line_match, clean_error), 4
+        else
+            return false, string.format("ERROR at %s lowering-error\n\t%s", source_path, clean_error), 4
+        end
     end
 
     -- Analysis
     local ok, analyzed_ast = pcall(analysis, lowered_ast, options)
     if not ok then
         local clean_error = analyzed_ast:gsub("^%[string [^%]]+%]:%d+: ", "")
-        return false, clean_error, 5
+        -- Extract line number if present
+        local line_match = clean_error:match("at (%d+)")
+        if line_match then
+            return false, string.format("ERROR at %s:%s analysis-error\n\t%s", source_path, line_match, clean_error), 5
+        else
+            return false, string.format("ERROR at %s analysis-error\n\t%s", source_path, clean_error), 5
+        end
     end
 
     -- Generate C code
@@ -112,9 +130,9 @@ function Compile.compile(source_path, options)
         -- Extract line number if present in error
         local line_match = clean_error:match("line (%d+)")
         if line_match then
-            return false, string.format("ERROR at %s:%s\n\t%s", source_path, line_match, clean_error), 6
+            return false, string.format("ERROR at %s:%s codegen-error\n\t%s", source_path, line_match, clean_error), 6
         else
-            return false, string.format("ERROR at %s Codegen error: %s", source_path, clean_error), 6
+            return false, string.format("ERROR at %s codegen-error\n\t%s", source_path, clean_error), 6
         end
     end
 
