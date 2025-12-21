@@ -213,7 +213,19 @@ function Statements.check_var_decl(typechecker, stmt)
     end
 
     -- Add variable to scope
-    Scopes.add_var(typechecker, stmt.name, var_type, is_mutable)
+    local added = Scopes.add_var(typechecker, stmt.name, var_type, is_mutable)
+    
+    -- Check for duplicate variable declaration
+    if not added then
+        local line = stmt.line or 0
+        local msg = string.format(
+            "Variable '%s' is already declared in this scope",
+            stmt.name
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.DUPLICATE_VARIABLE, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+    end
 
     -- Annotate the statement with type information
     stmt.resolved_type = var_type
