@@ -25,9 +25,42 @@ function Operators.gen_unsafe_cast(expr, gen_expr_fn)
     -- Unsafe cast: <Type> expr !!
     -- Only emit warning for explicit unsafe casts (with !!)
     local Warnings = require("warnings")
+    local Errors = require("errors")
     local target_type_str = ctx():c_type(expr.target_type)
     local source_type = ctx():infer_type(expr.expr)
     local source_type_str = source_type and ctx():type_name_string(source_type) or "unknown"
+    
+    -- Check for interface cast validation
+    if expr.target_type.kind == "named_type" and source_type and source_type.kind == "named_type" then
+        local target_name = expr.target_type.name
+        local source_name = source_type.name
+        
+        -- Check if trying to cast to an interface
+        if ctx().ifaces[target_name] then
+            -- Source must be a struct that implements this interface
+            if ctx().structs[source_name] then
+                local struct_def = ctx().structs[source_name]
+                if struct_def.implements ~= target_name then
+                    local msg = string.format(
+                        "Cannot cast '%s' to interface '%s': struct does not implement this interface",
+                        source_name, target_name
+                    )
+                    local formatted_error = Errors.format("ERROR", ctx().source_file, expr.line or 0,
+                        Errors.ErrorType.INVALID_INTERFACE_CAST, msg, ctx().source_path)
+                    error(formatted_error)
+                end
+            else
+                -- Trying to cast a non-struct to an interface
+                local msg = string.format(
+                    "Cannot cast '%s' to interface '%s': only structs can implement interfaces",
+                    source_name, target_name
+                )
+                local formatted_error = Errors.format("ERROR", ctx().source_file, expr.line or 0,
+                    Errors.ErrorType.INVALID_INTERFACE_CAST, msg, ctx().source_path)
+                error(formatted_error)
+            end
+        end
+    end
     
     -- Helper: Check if cast is a safe widening cast
     local function is_safe_widening_cast(from_type, to_type)
@@ -183,8 +216,28 @@ function Operators.gen_is_check(expr)
         error("Cannot infer type for 'is' check expression")
     end
     local target_type = expr.type
+    
+    -- First check if types match directly
     local matches = ctx():types_match(expr_type, target_type)
-    return matches and "true" or "false"
+    if matches then
+        return "true"
+    end
+    
+    -- Check for interface polymorphism: if expr_type is a struct that implements target_type interface
+    if expr_type.kind == "named_type" and target_type.kind == "named_type" then
+        local struct_name = expr_type.name
+        local target_name = target_type.name
+        
+        -- Check if target is an interface and struct implements it
+        if ctx().ifaces[target_name] and ctx().structs[struct_name] then
+            local struct_def = ctx().structs[struct_name]
+            if struct_def.implements == target_name then
+                return "true"
+            end
+        end
+    end
+    
+    return "false"
 end
 
 -- Generate type_of expression

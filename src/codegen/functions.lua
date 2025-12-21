@@ -136,6 +136,8 @@ function Functions.collect_structs_and_functions()
             ctx().structs[item.name] = item
         elseif item.kind == "enum" then
             ctx().enums[item.name] = item
+        elseif item.kind == "iface" then
+            ctx().ifaces[item.name] = item
         elseif item.kind == "function" then
             -- Validate constructor/destructor signatures (new requirement)
             if item.receiver_type and (item.name == "new" or item.name == "free") then

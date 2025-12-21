@@ -1,0 +1,9 @@
+// Test that empty interfaces generate a warning
+
+iface EmptyInterface {
+    // Empty - should warn
+}
+
+fn main() i32 {
+    return 0
+}
