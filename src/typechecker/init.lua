@@ -253,6 +253,7 @@ function Typechecker:replace_function_aliases()
                     
                     if #parts == 2 then
                         -- Transform to static_method_call like "cz.print(...)"
+                        -- Only 2-level module.function is supported in the language
                         expr.kind = "static_method_call"
                         expr.type_name = parts[1]
                         expr.method = parts[2]
@@ -262,6 +263,9 @@ function Typechecker:replace_function_aliases()
                     elseif #parts == 1 then
                         -- Simple function rename
                         expr.callee.name = parts[1]
+                    else
+                        -- More than 2 parts - not supported, keep as-is and let type checker error
+                        -- This maintains current language semantics
                     end
                 end
             else
@@ -357,6 +361,9 @@ function Typechecker:replace_function_aliases()
     end
     
     -- Replace aliases in all function bodies
+    -- This is a single pass through the AST items (O(n) where n = number of items)
+    -- For each function, we traverse its body statements (O(m) where m = statements per function)
+    -- Total complexity: O(n * m) which is effectively O(total_ast_nodes)
     for _, item in ipairs(self.ast.items or {}) do
         if item.kind == "function" then
             local body_statements = (item.body and item.body.statements) or {}

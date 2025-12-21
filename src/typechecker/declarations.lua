@@ -334,12 +334,18 @@ function Declarations.collect_declarations(typechecker)
                     typechecker:add_error(formatted_error)
                 else
                     -- Check if target is itself an alias (prevent alias-of-alias)
-                    -- Extract the base name from qualified target (e.g., "cz.print" -> "print")
-                    local target_base = normalized_target:match("%.([^.]+)$") or normalized_target
-                    if typechecker.function_aliases[target_base] or typechecker.type_aliases[target_base] then
+                    -- For qualified names like "cz.print", check the last part "print"
+                    -- For simple names like "print", check the whole name
+                    local target_to_check = normalized_target
+                    if normalized_target:match("%.") then
+                        -- Qualified name - check if the last part is an alias
+                        target_to_check = normalized_target:match("%.([^.]+)$")
+                    end
+                    
+                    if typechecker.function_aliases[target_to_check] or typechecker.type_aliases[target_to_check] then
                         local line = item.line or 0
                         local msg = string.format("alias-of-alias: cannot alias '%s' because '%s' is already an alias", 
-                            item.alias_name, target_base)
+                            item.alias_name, target_to_check)
                         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                             Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
                         typechecker:add_error(formatted_error)
