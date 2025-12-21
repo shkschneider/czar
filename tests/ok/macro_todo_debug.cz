@@ -1,5 +1,5 @@
 // Test #TODO with #DEBUG enabled
-import cz
+#import cz
 // Verifies that #TODO prints at runtime when DEBUG is enabled
 
 fn test_todo_with_debug() i32 {

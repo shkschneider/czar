@@ -1,0 +1,10 @@
+// Test #use directive to flatten module namespace
+#import cz
+#use cz
+
+fn main() i32 {
+    // Can call print without cz. prefix
+    print("Hello from flattened cz module!\n")
+    println("Multiple functions work too")
+    return 0
+}

@@ -1,5 +1,5 @@
 // Test basic function aliasing
-import cz
+#import cz
 
 #alias print cz.print
 

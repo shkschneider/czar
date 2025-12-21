@@ -92,6 +92,7 @@ end
 function Parser:parse_program()
     local module_decl = nil
     local imports = {}
+    local uses = {}
     local items = {}
     
     -- Parse optional module declaration (must be first)
@@ -99,9 +100,26 @@ function Parser:parse_program()
         module_decl = Declarations.parse_module_declaration(self)
     end
     
-    -- Parse import statements (must come before other declarations)
-    while self:check("KEYWORD", "import") do
-        table.insert(imports, Declarations.parse_import(self))
+    -- Parse #import and #use directives (must come before other declarations)
+    -- Support inline syntax: #import foo ; #use foo
+    while self:check("DIRECTIVE") do
+        local directive_tok = self:current()
+        if directive_tok.value == "import" then
+            self:advance() -- consume DIRECTIVE
+            local import_node = Declarations.parse_import(self, directive_tok)
+            table.insert(imports, import_node)
+            -- Check for optional semicolon and continue parsing directives
+            self:match("SEMICOLON")
+        elseif directive_tok.value == "use" then
+            self:advance() -- consume DIRECTIVE
+            local use_node = Declarations.parse_use(self, directive_tok)
+            table.insert(uses, use_node)
+            -- Check for optional semicolon and continue parsing directives
+            self:match("SEMICOLON")
+        else
+            -- Not an import/use directive, stop parsing directives
+            break
+        end
     end
     
     -- Parse remaining top-level items
@@ -113,6 +131,7 @@ function Parser:parse_program()
         kind = "program", 
         module = module_decl,
         imports = imports,
+        uses = uses,
         items = items 
     }
 end

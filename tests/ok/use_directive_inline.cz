@@ -1,0 +1,7 @@
+// Test inline #import ; #use syntax
+#import cz ; #use cz
+
+fn main() i32 {
+    print("Testing inline directive syntax!\n")
+    return 0
+}

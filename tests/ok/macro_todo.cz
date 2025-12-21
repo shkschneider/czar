@@ -1,5 +1,5 @@
 // Test #TODO macro
-import cz
+#import cz
 // Verifies that #TODO prints to stderr during compilation and at runtime if DEBUG
 
 fn test_todo() i32 {

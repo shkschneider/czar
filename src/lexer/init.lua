@@ -52,7 +52,6 @@ local keywords = {
     ["pair"] = true,
     ["string"] = true,
     ["module"] = true,
-    ["import"] = true,
     ["pub"] = true,
     ["prv"] = true,
 }

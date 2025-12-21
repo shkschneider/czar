@@ -1,5 +1,5 @@
 // Test string:substring() method
-import cz
+#import cz
 fn main() i32 {
     string s = string "Hello World"
     
