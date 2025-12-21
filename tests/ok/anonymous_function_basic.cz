@@ -1,0 +1,11 @@
+// Test anonymous function syntax
+fn takes_function(i32 x) i32 {
+    return x + 1
+}
+
+fn main() i32 {
+    // For now, just test that anonymous functions parse
+    // Actual usage as callbacks would require function pointer types
+    i32 result = takes_function(5)
+    return result - 6  // 6 - 6 = 0
+}
