@@ -1,5 +1,5 @@
 // This file is in 'geometry' directory but declares wrong module
-module app.math
+#module app.math
 
 fn test() i32 {
     return 0

@@ -1,6 +1,20 @@
 # Compiler Directives
 
-Czar uses compiler directives (prefixed with `#`) for compile-time features like importing modules and C interop.
+Czar uses compiler directives (prefixed with `#`) for compile-time features like declaring modules, importing modules and C interop.
+
+## #module Directive
+
+The `#module` directive declares the module name for the current file.
+
+```czar
+#module app.utils
+
+fn helper() i32 {
+    return 42
+}
+```
+
+The module name must match the directory structure. For example, `#module app.utils` should be in `app/utils.cz`.
 
 ## #import Directive
 

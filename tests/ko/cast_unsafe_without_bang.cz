@@ -1,5 +1,5 @@
 // Test unsafe cast without !! should ERROR
-module main
+#module main
 
 fn main() i32 {
     u16 a = <u16> 300 !!

@@ -3,9 +3,10 @@
 
 local Declarations = {}
 
--- Parse module declaration: module foo.bar
-function Declarations.parse_module_declaration(parser)
-    parser:expect("KEYWORD", "module")
+-- Parse module declaration: #module foo.bar
+function Declarations.parse_module_declaration(parser, directive_tok)
+    -- directive_tok is the DIRECTIVE token with value "module"
+    local start_tok = directive_tok or parser:expect("DIRECTIVE", "module")
     local parts = {}
     table.insert(parts, parser:expect("IDENT").value)
     

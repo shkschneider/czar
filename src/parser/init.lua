@@ -95,9 +95,11 @@ function Parser:parse_program()
     local uses = {}
     local items = {}
     
-    -- Parse optional module declaration (must be first)
-    if self:check("KEYWORD", "module") then
-        module_decl = Declarations.parse_module_declaration(self)
+    -- Parse optional #module declaration (must be first)
+    if self:check("DIRECTIVE") and self:current().value == "module" then
+        local directive_tok = self:current()
+        self:advance() -- consume DIRECTIVE
+        module_decl = Declarations.parse_module_declaration(self, directive_tok)
     end
     
     -- Parse #import and #use directives (must come before other declarations)
