@@ -42,6 +42,7 @@ function Codegen.new(ast, options)
         repeat_counter = 0,  -- Counter for generating unique repeat loop variables
         loop_label_counter = 0,  -- Counter for generating unique loop labels
         loop_stack = {},  -- Stack of loop info for multi-level break/continue
+        c_imports = {},  -- C header files imported via import C : header.h
     }
     return setmetatable(self, Codegen)
 end
@@ -218,11 +219,26 @@ function Codegen:generate()
         end
     end
     
+    -- Collect C imports from AST
+    for _, import in ipairs(self.ast.imports or {}) do
+        if import.kind == "c_import" then
+            for _, header in ipairs(import.headers) do
+                table.insert(self.c_imports, header)
+            end
+        end
+    end
+    
     self:emit("#include <stdint.h>")
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
     self:emit("#include <string.h>")
+    
+    -- Emit C imports from import C : header.h
+    for _, header in ipairs(self.c_imports) do
+        self:emit(string.format("#include <%s>", header))
+    end
+    
     self:emit("")
     
     -- Global flag for runtime #DEBUG() support

@@ -35,6 +35,7 @@ function Typechecker.new(ast, options)
         require_main = options.require_main or false,  -- Whether to enforce presence of main function
         module_name = nil, -- Current module name
         imports = {},      -- Imported modules: { module_path, alias, used }
+        c_imports = {},    -- C header files imported via import C : header.h
     }
     setmetatable(self, Typechecker)
 
@@ -82,15 +83,27 @@ function Typechecker:check()
     
     -- Process imports
     for _, import in ipairs(self.ast.imports or {}) do
-        local module_path = table.concat(import.path, ".")
-        local alias = import.alias or import.path[#import.path]
-        table.insert(self.imports, {
-            path = module_path,
-            alias = alias,
-            used = false,
-            line = import.line,
-            col = import.col
-        })
+        if import.kind == "c_import" then
+            -- C import: import C : header.h, ...
+            for _, header in ipairs(import.headers) do
+                table.insert(self.c_imports, {
+                    header = header,
+                    line = import.line,
+                    col = import.col
+                })
+            end
+        else
+            -- Regular module import
+            local module_path = table.concat(import.path, ".")
+            local alias = import.alias or import.path[#import.path]
+            table.insert(self.imports, {
+                path = module_path,
+                alias = alias,
+                used = false,
+                line = import.line,
+                col = import.col
+            })
+        end
     end
     
     -- Pass 1: Collect all top-level declarations (structs, functions)

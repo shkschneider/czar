@@ -19,12 +19,50 @@ function Declarations.parse_module_declaration(parser)
     }
 end
 
--- Parse import statement: import foo.bar [as baz]
+-- Parse import statement: import foo.bar [as baz] OR import C : header.h, ...
 function Declarations.parse_import(parser)
     local start_tok = parser:expect("KEYWORD", "import")
     local parts = {}
     table.insert(parts, parser:expect("IDENT").value)
     
+    -- Check if this is a C import: import C : header.h, ...
+    if parts[1] == "C" and parser:match("COLON") then
+        local headers = {}
+        -- Parse header files (identifiers or strings with .h extension)
+        repeat
+            local header_tok = parser:current()
+            if header_tok.type == "STRING" then
+                table.insert(headers, header_tok.value)
+                parser:advance()
+            elseif header_tok.type == "IDENT" or header_tok.type == "KEYWORD" then
+                -- Parse identifier/keyword with dots (e.g., stdio.h, string.h)
+                -- We allow keywords here for header names like string.h
+                local header_parts = { header_tok.value }
+                parser:advance()
+                while parser:match("DOT") do
+                    local part_tok = parser:current()
+                    if part_tok.type == "IDENT" or part_tok.type == "KEYWORD" then
+                        table.insert(header_parts, part_tok.value)
+                        parser:advance()
+                    else
+                        error("Expected identifier in header file name")
+                    end
+                end
+                table.insert(headers, table.concat(header_parts, "."))
+            else
+                error("Expected header file name after 'import C :'")
+            end
+        until not parser:match("COMMA")
+        
+        return {
+            kind = "c_import",
+            headers = headers,
+            line = start_tok.line,
+            col = start_tok.col
+        }
+    end
+    
+    -- Regular module import: import foo.bar [as baz]
     while parser:match("DOT") do
         table.insert(parts, parser:expect("IDENT").value)
     end

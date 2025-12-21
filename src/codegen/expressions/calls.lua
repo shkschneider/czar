@@ -17,6 +17,16 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     local type_name = expr.type_name
     local method_name = expr.method
 
+    -- Special handling for C module functions (C interop)
+    if type_name == "C" then
+        local args = {}
+        for i, a in ipairs(expr.args) do
+            table.insert(args, gen_expr_fn(a))
+        end
+        -- C.function() -> function()
+        return string.format('%s(%s)', method_name, join(args, ", "))
+    end
+
     -- Special handling for cz module functions
     if type_name == "cz" then
         local args = {}
