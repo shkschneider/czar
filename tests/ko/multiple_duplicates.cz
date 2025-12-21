@@ -1,0 +1,9 @@
+// Test multiple duplicate declarations
+fn main() i32 {
+    i32 a = 1
+    i32 b = 2
+    i32 a = 3  // ERROR: duplicate
+    i32 c = 4
+    i32 b = 5  // ERROR: duplicate
+    return 0
+}
