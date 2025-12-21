@@ -3,6 +3,7 @@
 _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
+- `#alias` for types and functions
 - `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
 - `#assert` if condition is false
 - autofree when going out-of-scope
@@ -39,7 +40,7 @@ _un-ordered_
 - operator compounds: `+= -= *= /= %=`
 - package "main" is mandatory for multiple files
 - pointers: implicit (no `*` nor `&`)
-- private by default
+- `prv` module-private by default
 - `pub` accessible outside of module
 - single-line `//` and multi-line `/**/` comments
 - `sizeof` `x is T` and `type(x)` (string)
