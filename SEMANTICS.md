@@ -9,6 +9,7 @@ _case insensitive_
 - assert
 - bool / _boolean_
 - break
+- C
 - clone / _copy_
 - continue
 - cz / czar
