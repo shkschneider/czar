@@ -1,0 +1,18 @@
+// Test basic interface declaration and implementation
+
+iface MyInterface {
+    fn tostring() char?
+}
+
+struct MyStruct : MyInterface {
+    i32 value
+}
+
+fn MyStruct:tostring() char? {
+    return "MyStruct"
+}
+
+fn main() i32 {
+    MyStruct s = MyStruct { value: 42 }
+    return 0
+}

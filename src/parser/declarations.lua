@@ -131,6 +131,13 @@ function Declarations.parse_struct(parser)
     local Types = require("parser.types")
     local struct_tok = parser:expect("KEYWORD", "struct")
     local name = parser:expect("IDENT").value
+    
+    -- Check for interface implementation: struct Name : InterfaceName
+    local implements = nil
+    if parser:match("COLON") then
+        implements = parser:expect("IDENT").value
+    end
+    
     parser:expect("LBRACE")
     local fields = {}
     while not parser:check("RBRACE") do
@@ -158,7 +165,14 @@ function Declarations.parse_struct(parser)
         parser:match("COMMA")
     end
     parser:expect("RBRACE")
-    return { kind = "struct", name = name, fields = fields, line = struct_tok.line, col = struct_tok.col }
+    return { 
+        kind = "struct", 
+        name = name, 
+        fields = fields, 
+        implements = implements,
+        line = struct_tok.line, 
+        col = struct_tok.col 
+    }
 end
 
 function Declarations.parse_enum(parser)
@@ -181,6 +195,76 @@ function Declarations.parse_enum(parser)
     end
     parser:expect("RBRACE")
     return { kind = "enum", name = name, values = values, line = start_tok.line }
+end
+
+function Declarations.parse_iface(parser)
+    local Types = require("parser.types")
+    local iface_tok = parser:expect("KEYWORD", "iface")
+    local name = parser:expect("IDENT").value
+    parser:expect("LBRACE")
+    local methods = {}
+    
+    -- Parse method signatures (only declarations, no implementations)
+    while not parser:check("RBRACE") do
+        -- Only 'fn' declarations are allowed in interfaces
+        if not parser:check("KEYWORD", "fn") then
+            error(string.format("Interfaces can only contain method declarations (fn), found '%s'", 
+                parser:current().value or parser:current().type))
+        end
+        
+        parser:expect("KEYWORD", "fn")
+        local method_name = parser:expect("IDENT").value
+        parser:expect("LPAREN")
+        
+        -- Parse parameters
+        local params = {}
+        if not parser:check("RPAREN") then
+            repeat
+                local is_mut = parser:match("KEYWORD", "mut") ~= nil
+                local param_type = Types.parse_type_with_map_shorthand(parser)
+                local param_name = parser:expect("IDENT").value
+                table.insert(params, { name = param_name, type = param_type, mutable = is_mut })
+                if not parser:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma
+                if parser:check("RPAREN") then
+                    break
+                end
+            until false
+        end
+        parser:expect("RPAREN")
+        
+        -- Parse return type (optional - defaults to void)
+        local return_type
+        if parser:check("LBRACE") or parser:check("SEMICOLON") or parser:check("COMMA") or parser:check("RBRACE") then
+            -- No explicit return type, default to void
+            return_type = { kind = "named_type", name = "void" }
+        else
+            return_type = Types.parse_type(parser)
+        end
+        
+        table.insert(methods, { 
+            name = method_name, 
+            params = params, 
+            return_type = return_type,
+            line = iface_tok.line,
+            col = iface_tok.col
+        })
+        
+        -- Optional semicolon or comma between method declarations
+        parser:match("SEMICOLON")
+        parser:match("COMMA")
+    end
+    
+    parser:expect("RBRACE")
+    return { 
+        kind = "iface", 
+        name = name, 
+        methods = methods, 
+        line = iface_tok.line, 
+        col = iface_tok.col 
+    }
 end
 
 function Declarations.parse_function(parser)

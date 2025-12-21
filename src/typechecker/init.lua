@@ -22,6 +22,7 @@ function Typechecker.new(ast, options)
         ast = ast,
         structs = {},      -- struct_name -> struct_def
         enums = {},        -- enum_name -> enum_def
+        ifaces = {},       -- iface_name -> iface_def (new)
         functions = {},    -- type_name -> { method_name -> func_def } or "__global__" -> { func_name -> func_def }
         scope_stack = {},  -- stack of scopes for variable lookups
         errors = {},       -- collected type errors

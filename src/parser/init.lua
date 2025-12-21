@@ -191,6 +191,11 @@ function Parser:parse_top_level()
         enum_node.is_public = is_public
         enum_node.is_private = is_private
         return enum_node
+    elseif self:check("KEYWORD", "iface") then
+        local iface_node = Declarations.parse_iface(self)
+        iface_node.is_public = is_public
+        iface_node.is_private = is_private
+        return iface_node
     elseif self:check("KEYWORD", "fn") then
         local func_node = Declarations.parse_function(self)
         func_node.is_public = is_public
