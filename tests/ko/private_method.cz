@@ -1,0 +1,23 @@
+// Test that methods starting with _ are private
+struct Calculator {
+    i32 value
+}
+
+fn Calculator:_internal_compute() i32 {
+    return self.value * 2
+}
+
+fn Calculator:compute() i32 {
+    // Internal method call is allowed
+    return self:_internal_compute() + 10
+}
+
+fn main() i32 {
+    mut Calculator calc = Calculator { value: 5 }
+    
+    // Public method call is OK
+    i32 result = calc:compute()
+    
+    // This should ERROR: private method access from outside
+    return calc:_internal_compute()
+}
