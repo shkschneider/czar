@@ -8,6 +8,18 @@ local Literals = {}
 
 -- Infer integer literal type
 function Literals.infer_int_type(expr)
+    -- Check if we have an expected type hint (e.g., from array literal context)
+    if expr.expected_type and expr.expected_type.kind == "named_type" then
+        local target_type = expr.expected_type.name
+        -- If expected type is an integer type, use it
+        if target_type:match("^[ui]%d+$") then
+            local inferred = expr.expected_type
+            expr.inferred_type = inferred
+            return inferred
+        end
+    end
+    
+    -- Default to i32
     local inferred = { kind = "named_type", name = "i32" }
     expr.inferred_type = inferred
     return inferred
@@ -15,6 +27,18 @@ end
 
 -- Infer float literal type
 function Literals.infer_float_type(expr)
+    -- Check if we have an expected type hint (e.g., from array literal context)
+    if expr.expected_type and expr.expected_type.kind == "named_type" then
+        local target_type = expr.expected_type.name
+        -- If expected type is a float type, use it
+        if target_type:match("^f%d+$") then
+            local inferred = expr.expected_type
+            expr.inferred_type = inferred
+            return inferred
+        end
+    end
+    
+    -- Default to f64
     local inferred = { kind = "named_type", name = "f64" }
     expr.inferred_type = inferred
     return inferred
