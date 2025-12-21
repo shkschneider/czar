@@ -6,13 +6,13 @@ _case insensitive_
 - and
 - any
 - array
+- _as_
 - assert
 - bool / _boolean_
-- break
 - C
 - clone / _copy_
-- continue
-- cz / czar
+- continue / break
+- cz / _czar_
 - DEBUG
 - enum
 - f32 / f64
@@ -22,21 +22,22 @@ _case insensitive_
 - free / _destructor_ / _alloc_
 - FUNCTION
 - i8 / i16 / i32 / i64
+- iface / _interface_
 - if / elseif / _elsif_ / else
-- import
+- import / _include_
 - inline / noinline
 - is
 - log
-- LOG
 - main
 - map
 - module / _package_
 - mut / _mutable_
 - new / _constructor_ / _alloc_
-- null / _nil_
+- null / _nil_ / void
 - or
 - pair
-- pub / _public_ / _private_
+- prv / _private_
+- pub / _public_
 - repeat / _loop_
 - return
 - _safe_ / _unsafe_
@@ -49,5 +50,4 @@ _case insensitive_
 - T / _Type_
 - typeof / sizeof
 - u8 / u16 / u32 / u64
-- void
 - while / for / _foreach_
