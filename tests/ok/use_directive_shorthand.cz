@@ -1,0 +1,9 @@
+// Test shorthand #import module #use syntax
+#import cz #use
+
+fn main() i32 {
+    // Can call functions without cz. prefix using shorthand
+    print("Testing shorthand syntax!\n")
+    println("No module name needed after #use")
+    return 0
+}

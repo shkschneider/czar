@@ -62,6 +62,20 @@ fn main() i32 {
 }
 ```
 
+### Shorthand Syntax
+
+You can use a shorthand where `#use` immediately after `#import` automatically uses that module:
+
+```czar
+#import cz #use
+
+fn main() i32 {
+    // No need to specify module name after #use
+    print("Shorthand syntax!\n")
+    return 0
+}
+```
+
 ### Inline Syntax
 
 You can combine directives on the same line with semicolons:
