@@ -14,12 +14,20 @@ function Scopes.pop_scope(typechecker)
 end
 
 -- Add a variable to the current scope
+-- Returns true if successful, false if duplicate
 function Scopes.add_var(typechecker, name, type_node, is_mutable)
     local scope = typechecker.scope_stack[#typechecker.scope_stack]
+    
+    -- Check if variable already exists in current scope
+    if scope[name] then
+        return false
+    end
+    
     scope[name] = {
         type = type_node,
         mutable = is_mutable or false
     }
+    return true
 end
 
 -- Get variable information from scopes (searches from innermost to outermost)

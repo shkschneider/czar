@@ -1,0 +1,13 @@
+// Test that variable shadowing in nested scopes is allowed
+fn main() i32 {
+    i32 x = 10
+    
+    if true {
+        i32 x = 20  // This is allowed - different scope
+        if x == 20 {
+            return 0
+        }
+    }
+    
+    return 1
+}
