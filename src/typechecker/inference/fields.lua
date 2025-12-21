@@ -214,6 +214,37 @@ function Fields.infer_field_type(typechecker, expr)
     if struct_def then
         for _, field in ipairs(struct_def.fields) do
             if field.name == expr.field then
+                -- Check if field is private (starts with _)
+                if expr.field:sub(1, 1) == "_" then
+                    -- Check if we're accessing from within a method of this struct
+                    local is_internal_access = false
+                    if typechecker.current_function then
+                        -- Check for receiver_type (set by parser) or receiver (set by typechecker)
+                        local receiver_type_name = nil
+                        if typechecker.current_function.receiver_type then
+                            receiver_type_name = typechecker.current_function.receiver_type
+                        elseif typechecker.current_function.receiver then
+                            receiver_type_name = Fields.get_base_type_name(typechecker.current_function.receiver.type)
+                        end
+                        
+                        if receiver_type_name == type_name then
+                            is_internal_access = true
+                        end
+                    end
+                    
+                    if not is_internal_access then
+                        local line = expr.line or (expr.object and expr.object.line) or 0
+                        local msg = string.format(
+                            "Cannot access private field '%s' of struct '%s' from outside its methods",
+                            expr.field, type_name
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.PRIVATE_FIELD_ACCESS, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                        return nil
+                    end
+                end
+                
                 expr.inferred_type = field.type
                 return field.type
             end
