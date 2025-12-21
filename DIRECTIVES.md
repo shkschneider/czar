@@ -4,17 +4,35 @@ Czar uses compiler directives (prefixed with `#`) for compile-time features like
 
 ## #module Directive
 
-The `#module` directive declares the module name for the current file.
+The `#module` directive is **optional** and declares which module the current file belongs to.
+
+### Implicit Modules
+
+By default, modules are inferred from the directory structure:
+- `main.cz` → no module (top-level)
+- `mod1/file1.cz` → module `mod1`
+- `mod2/submod1/test1.cz` → module `mod2.submod1`
+
+### Flattening with #module
+
+You can use `#module` to flatten subdirectories into a parent module:
 
 ```czar
-#module app.utils
+// In mod2/submod1/test1.cz
+#module mod2
 
 fn helper() i32 {
     return 42
 }
 ```
 
-The module name must match the directory structure. For example, `#module app.utils` should be in `app/utils.cz`.
+This makes `test1.cz` part of module `mod2` instead of `mod2.submod1`, allowing you to split large modules across subdirectories.
+
+### Rules
+
+1. **Module names must be single words** (no dots): `#module mod2`, not `#module mod2.submod1`
+2. **Can only declare ancestor directories**: A file in `mod2/submod1/` can declare `#module mod2` but not `#module mod1`
+3. **`main` is special**: Can be declared anywhere as an entry point
 
 ## #import Directive
 

@@ -76,10 +76,15 @@ end
 
 -- Main entry point: type check the entire AST
 function Typechecker:check()
-    -- Process module declaration and validate module naming rules
+    -- Determine module name: either from #module declaration or inferred from path
     if self.ast.module then
+        -- Explicit #module declaration
         self.module_name = table.concat(self.ast.module.path, ".")
-        Validation.validate_module_name(self)
+        -- Validate that #module can only be an ancestor of the file's location
+        Validation.validate_module_declaration(self)
+    else
+        -- Infer module name from directory structure
+        self.module_name = Validation.infer_module_name(self)
     end
     
     -- Process imports

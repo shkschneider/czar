@@ -1,5 +1,5 @@
-// Point module - part of app.geometry
-#module app.geometry
+// Point module - flattened to app
+#module app
 
 // Public struct for 2D point
 pub struct Point {
