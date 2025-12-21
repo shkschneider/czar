@@ -305,15 +305,76 @@ function Declarations.collect_declarations(typechecker)
                 end
             end
         elseif item.kind == "alias_macro" then
-            -- Store type aliases
-            if typechecker.type_aliases[item.alias_name] then
-                local line = item.line or 0
-                local msg = string.format("duplicate #alias for '%s'", item.alias_name)
-                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                    Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
-                typechecker:add_error(formatted_error)
+            -- Determine if this is a type alias or function alias
+            -- Function aliases typically have dots (e.g., "cz.print" or "module.function")
+            -- Type aliases are typically simple names or pointer types (e.g., "MyType" or "char*")
+            -- Note: parser joins tokens with spaces, so "cz.print" becomes "cz . print"
+            local target = item.target_type_str
+            
+            -- Remove spaces for cleaner matching (but preserve spaces in type names like "char *")
+            -- For now, let's just check if the original contains a dot somewhere
+            local is_function_alias = target:match("%.")  -- Contains a dot, likely a qualified function name
+            
+            if is_function_alias then
+                -- Store function alias - normalize by removing spaces around dots
+                local normalized_target = target:gsub("%s*%.%s*", ".")
+                
+                if typechecker.function_aliases[item.alias_name] then
+                    local line = item.line or 0
+                    local msg = string.format("duplicate #alias for '%s'", item.alias_name)
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                -- Check if this name is already a type alias
+                elseif typechecker.type_aliases[item.alias_name] then
+                    local line = item.line or 0
+                    local msg = string.format("duplicate #alias for '%s' (already defined as type alias)", item.alias_name)
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                else
+                    -- Check if target is itself an alias (prevent alias-of-alias)
+                    -- Extract the base name from qualified target (e.g., "cz.print" -> "print")
+                    local target_base = normalized_target:match("%.([^.]+)$") or normalized_target
+                    if typechecker.function_aliases[target_base] or typechecker.type_aliases[target_base] then
+                        local line = item.line or 0
+                        local msg = string.format("alias-of-alias: cannot alias '%s' because '%s' is already an alias", 
+                            item.alias_name, target_base)
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    else
+                        typechecker.function_aliases[item.alias_name] = normalized_target
+                    end
+                end
             else
-                typechecker.type_aliases[item.alias_name] = item.target_type_str
+                -- Store type alias
+                if typechecker.type_aliases[item.alias_name] then
+                    local line = item.line or 0
+                    local msg = string.format("duplicate #alias for '%s'", item.alias_name)
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                -- Check if this name is already a function alias
+                elseif typechecker.function_aliases[item.alias_name] then
+                    local line = item.line or 0
+                    local msg = string.format("duplicate #alias for '%s' (already defined as function alias)", item.alias_name)
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                else
+                    -- Check if target is itself an alias (prevent alias-of-alias)
+                    if typechecker.type_aliases[target] or typechecker.function_aliases[target] then
+                        local line = item.line or 0
+                        local msg = string.format("alias-of-alias: cannot alias '%s' because '%s' is already an alias", 
+                            item.alias_name, target)
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.DUPLICATE_ALIAS, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    else
+                        typechecker.type_aliases[item.alias_name] = target
+                    end
+                end
             end
             table.insert(new_items, item)  -- Keep macro in new items
         elseif item.kind == "allocator_macro" then

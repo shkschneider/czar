@@ -28,6 +28,7 @@ function Typechecker.new(ast, options)
         type_aliases = {   -- type_name -> target_type_string
             ["String"] = "char*"  -- Built-in alias
         },
+        function_aliases = {}, -- function_name -> target_function_string (e.g., "print" -> "cz.print")
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
         source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
         loop_depth = 0,    -- Track if we're inside a loop for break/continue validation
@@ -150,6 +151,9 @@ function Typechecker:check()
     
     -- Pass 1: Collect all top-level declarations (structs, functions)
     Declarations.collect_declarations(self)
+    
+    -- Pass 1.5: Replace function aliases in the AST (must happen before type checking)
+    self:replace_function_aliases()
 
     -- Pass 2: Type check all functions
     Functions.check_all_functions(self)
@@ -202,6 +206,165 @@ end
 -- Pop scope (delegate to Scopes module)
 function Typechecker:pop_scope()
     return Scopes.pop_scope(self)
+end
+
+-- Replace function aliases in expressions throughout the AST
+-- This must happen before type checking to ensure pub/prv checks work correctly
+function Typechecker:replace_function_aliases()
+    -- Helper function to recursively replace aliases in an expression
+    local function replace_in_expr(expr)
+        if not expr then return end
+        
+        -- Replace identifier if it's an alias
+        if expr.kind == "identifier" then
+            local alias_target = self.function_aliases[expr.name]
+            if alias_target then
+                -- Transform "aliasName" into qualified access like "cz.print"
+                -- Parse the target to create appropriate expression
+                local parts = {}
+                for part in alias_target:gmatch("[^.]+") do
+                    table.insert(parts, part)
+                end
+                
+                if #parts >= 2 then
+                    -- Multi-part name like "cz.print" - keep as identifier for now
+                    -- When it's called, it will be transformed to static_method_call by caller
+                    -- For now, just replace with a field access
+                    expr.kind = "field"
+                    expr.object = { kind = "identifier", name = parts[1], line = expr.line, col = expr.col }
+                    expr.field = parts[2]
+                elseif #parts == 1 then
+                    -- Simple rename
+                    expr.name = parts[1]
+                end
+            end
+        -- Replace aliased function in call expressions
+        elseif expr.kind == "call" then
+            -- Special handling: if callee is an identifier that's an alias,
+            -- transform it before processing the call
+            if expr.callee.kind == "identifier" then
+                local alias_target = self.function_aliases[expr.callee.name]
+                if alias_target then
+                    -- Parse the target
+                    local parts = {}
+                    for part in alias_target:gmatch("[^.]+") do
+                        table.insert(parts, part)
+                    end
+                    
+                    if #parts == 2 then
+                        -- Transform to static_method_call like "cz.print(...)"
+                        expr.kind = "static_method_call"
+                        expr.type_name = parts[1]
+                        expr.method = parts[2]
+                        -- Keep args as they are
+                        -- Remove callee field since static_method_call doesn't use it
+                        expr.callee = nil
+                    elseif #parts == 1 then
+                        -- Simple function rename
+                        expr.callee.name = parts[1]
+                    end
+                end
+            else
+                -- Process callee expression
+                replace_in_expr(expr.callee)
+            end
+            
+            -- Process arguments
+            for _, arg in ipairs(expr.args or {}) do
+                replace_in_expr(arg)
+            end
+        -- Recursively process other expression types
+        elseif expr.kind == "field" or expr.kind == "safe_field" then
+            replace_in_expr(expr.object)
+        elseif expr.kind == "index" then
+            replace_in_expr(expr.object)
+            replace_in_expr(expr.index)
+        elseif expr.kind == "binary" then
+            replace_in_expr(expr.left)
+            replace_in_expr(expr.right)
+        elseif expr.kind == "unary" then
+            replace_in_expr(expr.operand)
+        elseif expr.kind == "cast" then
+            replace_in_expr(expr.expr)
+        elseif expr.kind == "assignment" then
+            replace_in_expr(expr.target)
+            replace_in_expr(expr.value)
+        elseif expr.kind == "array_literal" then
+            for _, elem in ipairs(expr.elements or {}) do
+                replace_in_expr(elem)
+            end
+        elseif expr.kind == "map_literal" then
+            for _, entry in ipairs(expr.entries or {}) do
+                replace_in_expr(entry.key)
+                replace_in_expr(entry.value)
+            end
+        elseif expr.kind == "pair_literal" then
+            replace_in_expr(expr.first)
+            replace_in_expr(expr.second)
+        elseif expr.kind == "interpolated_string" then
+            for _, part in ipairs(expr.parts or {}) do
+                if part.kind == "expr" then
+                    replace_in_expr(part.expr)
+                end
+            end
+        elseif expr.kind == "static_method_call" then
+            -- Process arguments in static method calls
+            for _, arg in ipairs(expr.args or {}) do
+                replace_in_expr(arg)
+            end
+        end
+    end
+    
+    -- Helper function to recursively replace aliases in a statement
+    local function replace_in_stmt(stmt)
+        if not stmt then return end
+        
+        if stmt.kind == "var_decl" then
+            replace_in_expr(stmt.init)
+        elseif stmt.kind == "expr_stmt" then
+            replace_in_expr(stmt.expression)
+        elseif stmt.kind == "return" then
+            replace_in_expr(stmt.value)
+        elseif stmt.kind == "if" then
+            replace_in_expr(stmt.condition)
+            for _, s in ipairs(stmt.then_block or {}) do
+                replace_in_stmt(s)
+            end
+            for _, elif in ipairs(stmt.elseif_blocks or {}) do
+                replace_in_expr(elif.condition)
+                for _, s in ipairs(elif.block or {}) do
+                    replace_in_stmt(s)
+                end
+            end
+            for _, s in ipairs(stmt.else_block or {}) do
+                replace_in_stmt(s)
+            end
+        elseif stmt.kind == "while" then
+            replace_in_expr(stmt.condition)
+            for _, s in ipairs(stmt.block or {}) do
+                replace_in_stmt(s)
+            end
+        elseif stmt.kind == "for" then
+            replace_in_expr(stmt.iterable)
+            for _, s in ipairs(stmt.block or {}) do
+                replace_in_stmt(s)
+            end
+        elseif stmt.kind == "assert_stmt" then
+            replace_in_expr(stmt.condition)
+        elseif stmt.kind == "log_stmt" then
+            replace_in_expr(stmt.message)
+        end
+    end
+    
+    -- Replace aliases in all function bodies
+    for _, item in ipairs(self.ast.items or {}) do
+        if item.kind == "function" then
+            local body_statements = (item.body and item.body.statements) or {}
+            for _, stmt in ipairs(body_statements) do
+                replace_in_stmt(stmt)
+            end
+        end
+    end
 end
 
 -- Helper: Convert type to string for error messages (delegate to Utils)
