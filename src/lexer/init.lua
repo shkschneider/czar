@@ -8,6 +8,7 @@ Lexer.__index = Lexer
 local keywords = {
     ["struct"] = true,
     ["enum"] = true,
+    ["iface"] = true,
     ["fn"] = true,
     ["return"] = true,
     ["mut"] = true,

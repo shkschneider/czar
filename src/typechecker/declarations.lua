@@ -215,6 +215,52 @@ function Declarations.collect_declarations(typechecker)
                 typechecker.structs[item.name] = item
             end
             table.insert(new_items, item)  -- Keep struct in new items
+        elseif item.kind == "iface" then
+            -- Check for duplicate interface definition
+            if typechecker.ifaces[item.name] then
+                local line = item.line or 0
+                local prev_line = typechecker.ifaces[item.name].line or 0
+                local msg = string.format(
+                    "Duplicate interface definition '%s' (previously defined at line %d)",
+                    item.name, prev_line
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.DUPLICATE_STRUCT, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+            else
+                -- Check for duplicate method names within the interface
+                local method_names = {}
+                for _, method in ipairs(item.methods) do
+                    if method_names[method.name] then
+                        local line = item.line or 0
+                        local msg = string.format(
+                            "Duplicate method '%s' in interface '%s'",
+                            method.name, item.name
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.DUPLICATE_FIELD, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    else
+                        method_names[method.name] = true
+                    end
+                end
+                
+                -- Warn if interface is empty (useless interface)
+                if #item.methods == 0 then
+                    local Warnings = require("warnings")
+                    Warnings.emit(
+                        typechecker.source_file,
+                        item.line or 0,
+                        Warnings.WarningType.USELESS_INTERFACE,
+                        string.format("Interface '%s' is empty and serves no purpose", item.name),
+                        typechecker.source_path,
+                        nil
+                    )
+                end
+                
+                typechecker.ifaces[item.name] = item
+            end
+            table.insert(new_items, item)  -- Keep interface in new items
         elseif item.kind == "enum" then
             -- Check for duplicate enum definition
             if typechecker.enums[item.name] then
@@ -410,6 +456,107 @@ function Declarations.collect_declarations(typechecker)
     
     -- Replace AST items with expanded items
     typechecker.ast.items = new_items
+    
+    -- Validate interface implementations
+    Declarations.validate_interface_implementations(typechecker)
+end
+
+-- Validate that structs properly implement their declared interfaces
+function Declarations.validate_interface_implementations(typechecker)
+    for struct_name, struct_def in pairs(typechecker.structs) do
+        if struct_def.implements then
+            local iface_name = struct_def.implements
+            local iface_def = typechecker.ifaces[iface_name]
+            
+            if not iface_def then
+                local msg = string.format(
+                    "Struct '%s' implements undefined interface '%s'",
+                    struct_name, iface_name
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, struct_def.line or 0,
+                    Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+            else
+                -- Check that all interface methods are implemented by the struct
+                local struct_methods = typechecker.functions[struct_name] or {}
+                
+                for _, iface_method in ipairs(iface_def.methods) do
+                    local method_name = iface_method.name
+                    local impl_overloads = struct_methods[method_name]
+                    
+                    if not impl_overloads or #impl_overloads == 0 then
+                        local msg = string.format(
+                            "Struct '%s' does not implement method '%s' required by interface '%s'",
+                            struct_name, method_name, iface_name
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, struct_def.line or 0,
+                            Errors.ErrorType.MISSING_METHOD, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    else
+                        -- Check that at least one overload matches the interface signature
+                        local found_match = false
+                        for _, impl_func in ipairs(impl_overloads) do
+                            -- Compare signatures (skip 'self' parameter for instance methods)
+                            local impl_params = impl_func.params
+                            local iface_params = iface_method.params
+                            
+                            -- Skip first parameter if it's 'self' (instance method)
+                            local impl_start_idx = 1
+                            if #impl_params > 0 and impl_params[1].name == "self" then
+                                impl_start_idx = 2
+                            end
+                            
+                            -- Check parameter count
+                            local impl_param_count = #impl_params - impl_start_idx + 1
+                            if impl_param_count == #iface_params then
+                                -- Check each parameter type
+                                local params_match = true
+                                for i = 1, #iface_params do
+                                    local impl_param = impl_params[impl_start_idx + i - 1]
+                                    local iface_param = iface_params[i]
+                                    local impl_type_str = type_to_signature_string(impl_param.type)
+                                    local iface_type_str = type_to_signature_string(iface_param.type)
+                                    if impl_type_str ~= iface_type_str then
+                                        params_match = false
+                                        break
+                                    end
+                                end
+                                
+                                -- Check return type
+                                local impl_ret_str = type_to_signature_string(impl_func.return_type)
+                                local iface_ret_str = type_to_signature_string(iface_method.return_type)
+                                
+                                if params_match and impl_ret_str == iface_ret_str then
+                                    found_match = true
+                                    break
+                                end
+                            end
+                        end
+                        
+                        if not found_match then
+                            -- Build expected signature string
+                            local param_strs = {}
+                            for _, param in ipairs(iface_method.params) do
+                                table.insert(param_strs, type_to_signature_string(param.type) .. " " .. param.name)
+                            end
+                            local expected_sig = string.format("%s(%s) %s",
+                                method_name,
+                                table.concat(param_strs, ", "),
+                                type_to_signature_string(iface_method.return_type))
+                            
+                            local msg = string.format(
+                                "Struct '%s' method '%s' does not match interface '%s' signature: expected '%s'",
+                                struct_name, method_name, iface_name, expected_sig
+                            )
+                            local formatted_error = Errors.format("ERROR", typechecker.source_file, struct_def.line or 0,
+                                Errors.ErrorType.MISMATCHED_SIGNATURE, msg, typechecker.source_path)
+                            typechecker:add_error(formatted_error)
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 return Declarations

@@ -22,6 +22,9 @@ Warnings.WarningType = {
 
     -- Enum warnings
     ENUM_VALUE_NOT_UPPERCASE = "ENUM_VALUE_NOT_UPPERCASE",
+    
+    -- Interface warnings
+    USELESS_INTERFACE = "USELESS_INTERFACE",
 }
 
 -- Cache for source file contents
