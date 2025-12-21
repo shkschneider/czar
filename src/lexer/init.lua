@@ -54,6 +54,7 @@ local keywords = {
     ["module"] = true,
     ["import"] = true,
     ["pub"] = true,
+    ["prv"] = true,
 }
 
 local simple_tokens = {

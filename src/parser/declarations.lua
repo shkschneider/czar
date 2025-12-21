@@ -50,6 +50,13 @@ function Declarations.parse_struct(parser)
     parser:expect("LBRACE")
     local fields = {}
     while not parser:check("RBRACE") do
+        -- Check for prv modifier on fields
+        local is_private = false
+        if parser:check("KEYWORD", "prv") then
+            parser:advance()
+            is_private = true
+        end
+        
         -- No mut keyword on fields - mutability comes from variable
         local field_type = Types.parse_type(parser)
         local field_name = parser:expect("IDENT").value
@@ -61,7 +68,7 @@ function Declarations.parse_struct(parser)
             field_type = { kind = "nullable", to = field_type }
         end
         
-        table.insert(fields, { name = field_name, type = field_type })
+        table.insert(fields, { name = field_name, type = field_type, is_private = is_private })
         
         -- Support optional comma between fields
         parser:match("COMMA")
