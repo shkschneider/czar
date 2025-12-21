@@ -208,8 +208,8 @@ function Declarations.parse_iface(parser)
     while not parser:check("RBRACE") do
         -- Only 'fn' declarations are allowed in interfaces
         if not parser:check("KEYWORD", "fn") then
-            error(string.format("Interfaces can only contain method declarations (fn), found '%s'", 
-                parser:current().value or parser:current().type))
+            error(string.format("Interface '%s' can only contain method declarations (fn), but found '%s'. Remove non-method declarations from the interface.", 
+                name, parser:current().value or parser:current().type))
         end
         
         parser:expect("KEYWORD", "fn")

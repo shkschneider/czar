@@ -19,7 +19,7 @@ fn MyStruct:tostring() char? {
 fn main() i32 {
     MyStruct s = MyStruct { value: 42 }
     
-    // This should ERROR: mystruct does not implement MyOtherIface
+    // This should ERROR: s does not implement MyOtherIface
     MyOtherIface i = <MyOtherIface> s !!
     
     return 0
