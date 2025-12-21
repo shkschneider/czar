@@ -16,8 +16,10 @@ _un-ordered_
 - `#DEBUG` to get or set global debug flag
 - `#FILE` injects current file
 - `fn function_name(parameters...) return_type`
+- `for idx, item in iterable {}`
 - `#FUNCTION` injects current function name
 - identifiers length must be less than 256 long
+- `iface` for interfaces (fields and methods)
 - `if {} elseif {} else {}`
 - `if this and that {}` logical and
 - `if this or that {}` logical or
@@ -28,8 +30,6 @@ _un-ordered_
 - integers `i8/16/32/64`
 - `#LINE` injects current line number of current file
 - `#log` to log to stderr
-- loop: `for idx, item in iterable {}`
-- loop: `while condition {}`
 - `module module_name` defaults to "main"
 - more compiler warnings
 - `mut` T allows to change its value or members
@@ -58,3 +58,4 @@ _un-ordered_
 - unsigned integers `u8/16/32/64`
 - unused `_` anything
 - variables: `type name`
+- `while condition {}`
