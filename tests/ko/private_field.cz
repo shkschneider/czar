@@ -1,0 +1,19 @@
+// Test that fields starting with _ are private
+struct Counter {
+    i32 _value
+    i32 count
+}
+
+fn Counter:increment() void {
+    // Internal access to _value is allowed
+    self._value = self._value + 1
+    self.count = self.count + 1
+}
+
+fn main() i32 {
+    mut Counter c = Counter { _value: 0, count: 0 }
+    c:increment()
+    
+    // This should ERROR: private field access from outside
+    return c._value
+}
