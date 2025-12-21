@@ -1,7 +1,15 @@
-// Test type aliasing (structs)
-#alias MyInt i32
+// Test type aliasing for structs
+struct Point {
+    i32 x
+    i32 y
+}
+
+#alias Pt Point
 
 fn main() i32 {
-    MyInt x = 42
-    return x
+    Pt p = Pt { x: 10, y: 20 }
+    if p.x == 10 and p.y == 20 {
+        return 0
+    }
+    return 1
 }
