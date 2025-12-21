@@ -3,20 +3,21 @@
 
 local Declarations = {}
 
--- Parse module declaration: #module foo.bar
+-- Parse module declaration: #module foo
+-- Module names must be single words (no dots)
 function Declarations.parse_module_declaration(parser, directive_tok)
     -- directive_tok is the DIRECTIVE token with value "module"
     local start_tok = directive_tok or parser:expect("DIRECTIVE", "module")
-    local parts = {}
-    table.insert(parts, parser:expect("IDENT").value)
+    local module_name = parser:expect("IDENT").value
     
-    while parser:match("DOT") do
-        table.insert(parts, parser:expect("IDENT").value)
+    -- Module names must be single words - no dots allowed
+    if parser:check("DOT") then
+        error("Module names must be single words. Use #module to specify an ancestor directory name (e.g., #module mod2 for mod2/submod1/file.cz)")
     end
     
     return {
         kind = "module",
-        path = parts
+        path = { module_name }  -- Single element array
     }
 end
 

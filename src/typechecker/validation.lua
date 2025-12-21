@@ -60,14 +60,16 @@ function Validation.validate_main_function(typechecker)
     end
 end
 
--- Validate module name follows directory structure rules
-function Validation.validate_module_name(typechecker)
-    if not typechecker.module_name or not typechecker.source_path then
-        return
+-- Infer module name from directory structure
+-- Returns the module name based on the file's path, or nil for top-level files
+function Validation.infer_module_name(typechecker)
+    if not typechecker.source_path then
+        return nil
     end
     
     -- Extract directory structure from source path
-    -- e.g., "tests/ok/app/geometry/point.cz" -> ["tests", "ok", "app", "geometry"]
+    -- e.g., "mod1/file1.cz" -> ["mod1"]
+    -- e.g., "mod2/submod1/test1.cz" -> ["mod2", "submod1"]
     local path_parts = {}
     for part in typechecker.source_path:gmatch("[^/]+") do
         table.insert(path_parts, part)
@@ -76,34 +78,84 @@ function Validation.validate_module_name(typechecker)
     -- Remove the filename (last part)
     table.remove(path_parts)
     
-    -- Get module name parts
-    local module_parts = {}
-    for part in typechecker.module_name:gmatch("[^.]+") do
-        table.insert(module_parts, part)
+    -- If no directory parts, this is a top-level file (no module)
+    if #path_parts == 0 then
+        return nil
     end
     
-    -- Exception: "main" module can be declared in any directory as an entry point
-    local is_main_module = (#module_parts == 1 and module_parts[1] == "main")
+    -- Join directory parts with dots to create module name
+    -- e.g., ["mod2", "submod1"] -> "mod2.submod1"
+    return table.concat(path_parts, ".")
+end
+
+-- Validate that explicit #module declaration is valid
+-- Rules: 
+-- 1. Module names must be single words (no dots)
+-- 2. #module can only be declared as an ancestor directory name
+function Validation.validate_module_declaration(typechecker)
+    if not typechecker.module_name or not typechecker.source_path then
+        return
+    end
     
-    -- For multi-part module names, or single-part non-main modules in subdirectories:
-    -- Module name must end with the directory name
-    if #path_parts > 0 and not is_main_module then
-        local dir_name = path_parts[#path_parts]
-        
-        -- Module name must end with the directory name
-        -- e.g., module "app.geometry" in directory "geometry" is valid
-        -- e.g., module "app" in directory "app" is valid
-        -- e.g., module "examples" in directory "ok" is invalid
-        -- e.g., module "app.math" in directory "geometry" is invalid
-        if #module_parts > 0 and module_parts[#module_parts] ~= dir_name then
-            local msg = string.format(
-                "Module name '%s' must end with directory name '%s' (expected: '...%s'). Only 'main' module can be declared as entry point in any folder.",
-                typechecker.module_name, dir_name, dir_name
-            )
-            local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
-                Errors.ErrorType.INVALID_MODULE_NAME, msg, typechecker.source_path)
-            typechecker:add_error(formatted_error)
+    -- Module names must be single words (no dots allowed)
+    if typechecker.module_name:find("%.") then
+        local msg = string.format(
+            "Module name '%s' is invalid. Module names must be single words (no dots). Use #module to specify an ancestor directory name.",
+            typechecker.module_name
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
+            Errors.ErrorType.INVALID_MODULE_NAME, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return
+    end
+    
+    -- Extract directory structure from source path
+    local path_parts = {}
+    for part in typechecker.source_path:gmatch("[^/]+") do
+        table.insert(path_parts, part)
+    end
+    
+    -- Remove the filename (last part)
+    table.remove(path_parts)
+    
+    -- Special case: "main" module can be declared anywhere (top-level entry point)
+    if typechecker.module_name == "main" then
+        return
+    end
+    
+    -- If there's no directory (top-level file), any module declaration is invalid
+    -- unless it's "main"
+    if #path_parts == 0 then
+        local msg = string.format(
+            "Top-level files cannot declare module '%s'. Only 'main' module can be declared at top level.",
+            typechecker.module_name
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
+            Errors.ErrorType.INVALID_MODULE_NAME, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return
+    end
+    
+    -- Validate that #module is one of the ancestor directory names
+    -- e.g., for file "mod2/submod1/test1.cz", valid modules are: "mod2"
+    -- The module must match one of the directories in the path
+    local is_ancestor = false
+    for _, dir in ipairs(path_parts) do
+        if dir == typechecker.module_name then
+            is_ancestor = true
+            break
         end
+    end
+    
+    if not is_ancestor then
+        local msg = string.format(
+            "Module '%s' cannot be declared in '%s'. Files can only declare modules that match ancestor directory names.",
+            typechecker.module_name, 
+            table.concat(path_parts, "/")
+        )
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
+            Errors.ErrorType.INVALID_MODULE_NAME, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
     end
 end
 
