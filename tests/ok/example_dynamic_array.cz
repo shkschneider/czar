@@ -1,5 +1,5 @@
 // Example demonstrating dynamic arrays (lists) in Czar
-import cz
+#import cz
 //
 // Dynamic arrays are heap-allocated and created with the `new [...]` syntax.
 // They <Type> return !![] (slices), making them compatible with slice parameters.

@@ -35,7 +35,8 @@ function Typechecker.new(ast, options)
         require_main = options.require_main or false,  -- Whether to enforce presence of main function
         module_name = nil, -- Current module name
         imports = {},      -- Imported modules: { module_path, alias, used }
-        c_imports = {},    -- C header files imported via import C : header.h
+        c_imports = {},    -- C header files imported via #import C : header.h
+        used_modules = {}, -- Modules flattened via #use directive
     }
     setmetatable(self, Typechecker)
 
@@ -84,7 +85,7 @@ function Typechecker:check()
     -- Process imports
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
-            -- C import: import C : header.h, ...
+            -- C import: #import C : header.h ...
             for _, header in ipairs(import.headers) do
                 table.insert(self.c_imports, {
                     header = header,
@@ -103,6 +104,30 @@ function Typechecker:check()
                 line = import.line,
                 col = import.col
             })
+        end
+    end
+    
+    -- Process #use directives
+    for _, use in ipairs(self.ast.uses or {}) do
+        local module_path = table.concat(use.path, ".")
+        -- Check if the module was imported
+        local imported = false
+        for _, import in ipairs(self.imports) do
+            if import.path == module_path or import.alias == module_path then
+                imported = true
+                import.used = true -- Mark as used
+                break
+            end
+        end
+        
+        if not imported then
+            local Errors = require("errors")
+            local msg = string.format("Cannot use module '%s' - it must be imported first with #import", module_path)
+            local formatted_error = Errors.format("ERROR", self.source_file, use.line or 0,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, self.source_path)
+            self:add_error(formatted_error)
+        else
+            table.insert(self.used_modules, module_path)
         end
     end
     

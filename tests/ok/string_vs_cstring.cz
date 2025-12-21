@@ -1,5 +1,5 @@
 // Test that "string literals" are different from string type
-import cz
+#import cz
 // String literals "..." are char? in C, not czar_string
 fn main() i32 {
     // This is a czar string (internal type)

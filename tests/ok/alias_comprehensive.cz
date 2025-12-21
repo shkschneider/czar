@@ -1,5 +1,5 @@
 // Comprehensive test for #alias macro
-import cz
+#import cz
 
 // Test struct type alias
 struct Point {

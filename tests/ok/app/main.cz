@@ -10,7 +10,7 @@ module app
 // import app.utils
 
 // Demonstrate unused import warning
-import app.unused
+#import app.unused
 
 // Define types and functions inline for single-file testing
 // In the future, these would come from separate module files

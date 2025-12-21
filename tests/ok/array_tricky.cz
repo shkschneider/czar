@@ -1,4 +1,4 @@
-import cz
+#import cz
 
 fn main() i32 {
     u8[*] aa = [1, 2] // should infer type=u8 size=2

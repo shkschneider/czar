@@ -1,5 +1,5 @@
 // Test string dynamic resizing and memory safety
-import cz
+#import cz
 fn main() i32 {
     // Test heap-allocated string
     string? s = new string "Hello"

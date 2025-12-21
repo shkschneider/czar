@@ -1,5 +1,5 @@
 // Test string:append() method
-import cz
+#import cz
 fn main() i32 {
     string? s = new string "Hello"
     string s2 = string " World"

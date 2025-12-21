@@ -1,5 +1,5 @@
 // Comprehensive test of all print functions
-import cz
+#import cz
 fn main() i32 {
     // Test println
     cz.println("=== Testing println ===")

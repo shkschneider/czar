@@ -1,5 +1,5 @@
 // Test #unsafe block
-import cz
+#import cz
 // Verifies that raw C code can be embedded and passed through
 
 fn test_unsafe() i32 {

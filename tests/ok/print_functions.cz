@@ -1,5 +1,5 @@
 // Test print functions: println, print, printf
-import cz
+#import cz
 fn main() i32 {
     cz.println("Hello, World!")
     cz.print("No")

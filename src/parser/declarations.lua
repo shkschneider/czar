@@ -19,16 +19,17 @@ function Declarations.parse_module_declaration(parser)
     }
 end
 
--- Parse import statement
+-- Parse #import directive
 -- Handles two types of imports:
--- 1. Regular module import: import foo.bar [as baz]
--- 2. C interop import: import C : header1.h header2.h ...
-function Declarations.parse_import(parser)
-    local start_tok = parser:expect("KEYWORD", "import")
+-- 1. Regular module import: #import foo.bar [as baz]
+-- 2. C interop import: #import C : header1.h header2.h ...
+function Declarations.parse_import(parser, directive_tok)
+    -- directive_tok is the DIRECTIVE token with value "import"
+    local start_tok = directive_tok or parser:expect("DIRECTIVE", "import")
     local parts = {}
     table.insert(parts, parser:expect("IDENT").value)
     
-    -- Check if this is a C import: import C : header.h ...
+    -- Check if this is a C import: #import C : header.h ...
     if parts[1] == "C" and parser:match("COLON") then
         local headers = {}
         -- Parse header files (identifiers or strings with .h extension)
@@ -73,7 +74,7 @@ function Declarations.parse_import(parser)
         if #headers == 0 then
             local tok = parser:current()
             local tok_label = tok and (tok.type .. " '" .. tostring(tok.value) .. "'") or "EOF"
-            error("Expected header file name (identifier, keyword, or string) after 'import C :', but found " .. tok_label)
+            error("Expected header file name (identifier, keyword, or string) after '#import C :', but found " .. tok_label)
         end
         
         return {
@@ -84,7 +85,7 @@ function Declarations.parse_import(parser)
         }
     end
     
-    -- Regular module import: import foo.bar [as baz]
+    -- Regular module import: #import foo.bar [as baz]
     while parser:match("DOT") do
         table.insert(parts, parser:expect("IDENT").value)
     end
@@ -98,6 +99,27 @@ function Declarations.parse_import(parser)
         kind = "import",
         path = parts,
         alias = alias,
+        line = start_tok.line,
+        col = start_tok.col
+    }
+end
+
+-- Parse #use directive
+-- Syntax: #use module_name
+-- Flattens the module so functions can be called without prefix
+function Declarations.parse_use(parser, directive_tok)
+    local start_tok = directive_tok or parser:expect("DIRECTIVE", "use")
+    local parts = {}
+    table.insert(parts, parser:expect("IDENT").value)
+    
+    -- Parse module path: foo.bar
+    while parser:match("DOT") do
+        table.insert(parts, parser:expect("IDENT").value)
+    end
+    
+    return {
+        kind = "use",
+        path = parts,
         line = start_tok.line,
         col = start_tok.col
     }
