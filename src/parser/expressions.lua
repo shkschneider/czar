@@ -411,6 +411,9 @@ function Expressions.parse_primary(parser)
     elseif tok.type == "FLOAT" then
         parser:advance()
         return { kind = "float", value = tonumber(tok.value) }
+    elseif tok.type == "CHAR" then
+        parser:advance()
+        return { kind = "char", value = tok.value }
     elseif tok.type == "STRING" then
         parser:advance()
         return { kind = "string", value = tok.value }

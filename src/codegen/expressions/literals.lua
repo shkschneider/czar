@@ -1,5 +1,5 @@
 -- Literal and simple expression generation
--- Handles: int, string, bool, null, identifier, macro, macro_call, mut_arg
+-- Handles: int, float, char, string, bool, null, identifier, macro, macro_call, mut_arg
 
 local Macros = require("src.macros")
 
@@ -20,6 +20,11 @@ function Literals.gen_float(expr)
         str = str .. ".0"
     end
     return str
+end
+
+-- Generate char literal (C-style single-quoted char)
+function Literals.gen_char(expr)
+    return string.format("'%s'", expr.value)
 end
 
 -- Generate string literal (C-style quoted string)
