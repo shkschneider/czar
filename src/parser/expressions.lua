@@ -676,6 +676,81 @@ function Expressions.parse_primary(parser)
         end
         parser:expect("RBRACKET")
         return { kind = "array_literal", elements = elements }
+    elseif tok.type == "KEYWORD" and tok.value == "fn" then
+        -- Anonymous function: fn(params) return_type { body }
+        local fn_tok = parser:advance()  -- consume 'fn'
+        local Types = require("parser.types")
+        local Statements = require("parser.statements")
+        
+        parser:expect("LPAREN")
+        local params = {}
+        
+        if not parser:check("RPAREN") then
+            repeat
+                local is_mut = parser:match("KEYWORD", "mut") ~= nil
+                local param_type = Types.parse_type_with_map_shorthand(parser)
+                local param_name = parser:expect("IDENT").value
+                local default_value = nil
+                if parser:match("EQUAL") then
+                    default_value = Expressions.parse_expression(parser)
+                end
+                table.insert(params, { name = param_name, type = param_type, mutable = is_mut, default_value = default_value })
+                if not parser:match("COMMA") then
+                    break
+                end
+                if parser:check("RPAREN") then
+                    break
+                end
+            until false
+        end
+        parser:expect("RPAREN")
+        
+        -- Return type is optional - if not present, defaults to void
+        local return_type
+        if parser:check("LBRACE") then
+            return_type = { kind = "named_type", name = "void" }
+        else
+            return_type = Types.parse_type(parser)
+        end
+        
+        local body = Statements.parse_block(parser)
+        
+        return { 
+            kind = "anonymous_function", 
+            name = "anonymous",
+            params = params, 
+            return_type = return_type, 
+            body = body,
+            line = fn_tok.line, 
+            col = fn_tok.col 
+        }
+    elseif tok.type == "KEYWORD" and tok.value == "struct" then
+        -- Anonymous structure: struct { field: value, ... }
+        local struct_tok = parser:advance()  -- consume 'struct'
+        parser:expect("LBRACE")
+        local fields = {}
+        if not parser:check("RBRACE") then
+            repeat
+                local name = parser:expect("IDENT").value
+                parser:expect("COLON")
+                local value = Expressions.parse_expression(parser)
+                table.insert(fields, { name = name, value = value })
+                if not parser:match("COMMA") then
+                    break
+                end
+                if parser:check("RBRACE") then
+                    break
+                end
+            until false
+        end
+        parser:expect("RBRACE")
+        return { 
+            kind = "anonymous_struct", 
+            name = "anonymous",
+            fields = fields,
+            line = struct_tok.line,
+            col = struct_tok.col
+        }
     else
         local token_label = require("parser.utils").token_label
         error(string.format("unexpected token: %s", token_label(tok)))
