@@ -282,7 +282,17 @@ function Types.type_name_string(type_node)
     if not type_node then return "unknown" end
 
     if type_node.kind == "named_type" then
-        return type_node.name
+        local type_name = type_node.name
+        -- Check if this is a struct type
+        if ctx().structs[type_name] then
+            return "struct"
+        end
+        -- Check if this is an interface type
+        if ctx().ifaces[type_name] then
+            return "iface"
+        end
+        -- Return the type name as-is for primitives
+        return type_name
     elseif type_node.kind == "nullable" then
         if type_node.is_clone then
             return Types.type_name_string(type_node.to)

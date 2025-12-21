@@ -1,0 +1,47 @@
+// Test case-insensitive type checking
+
+iface MyInterface {
+    fn tostring() char?
+}
+
+struct MyStruct : MyInterface {
+    i32 value
+}
+
+fn MyStruct:tostring() char? {
+    return "MyStruct"
+}
+
+fn main() i32 {
+    MyStruct MyStruct_var = MyStruct { value: 42 }
+    MyStruct mystruct = MyStruct { value: 99 }
+    
+    // Both should report type as "struct" regardless of case
+    if type MyStruct_var != "struct" {
+        return 1
+    }
+    
+    if type mystruct != "struct" {
+        return 2
+    }
+    
+    // Both variables should pass is checks regardless of case
+    if not (MyStruct_var is MyStruct) {
+        return 3
+    }
+    
+    if not (mystruct is MyStruct) {
+        return 4
+    }
+    
+    // Both should pass interface check
+    if not (MyStruct_var is MyInterface) {
+        return 5
+    }
+    
+    if not (mystruct is MyInterface) {
+        return 6
+    }
+    
+    return 0
+}

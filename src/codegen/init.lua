@@ -25,6 +25,7 @@ function Codegen.new(ast, options)
         ast = ast,
         structs = {},
         enums = {},
+        ifaces = {},  -- Add interfaces support
         functions = {},
         out = {},
         scope_stack = {},
