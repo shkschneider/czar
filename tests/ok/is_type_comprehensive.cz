@@ -45,7 +45,7 @@ fn main() i32 {
     }
 
     // Test 'type' built-in with struct
-    if type p == "Point" {
+    if type p == "struct" {
         // Should be true
     } else {
         return 6  // Fail

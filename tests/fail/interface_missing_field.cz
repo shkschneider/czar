@@ -1,0 +1,13 @@
+// Test interface field requirement - missing field should error
+
+iface HasName {
+    char? name
+}
+
+struct Person : HasName {
+    i32 age
+}
+
+fn main() i32 {
+    return 0
+}

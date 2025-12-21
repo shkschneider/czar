@@ -16,7 +16,7 @@ fn main() i32 {
     MyStruct MyStruct_var = MyStruct { value: 42 }
     MyStruct mystruct = MyStruct { value: 99 }
     
-    // Both should report type as "struct" regardless of case
+    // Both should report type as "struct" regardless of variable case
     if type MyStruct_var != "struct" {
         return 1
     }

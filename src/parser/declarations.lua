@@ -203,65 +203,80 @@ function Declarations.parse_iface(parser)
     local name = parser:expect("IDENT").value
     parser:expect("LBRACE")
     local methods = {}
+    local fields = {}
     
-    -- Parse method signatures (only declarations, no implementations)
+    -- Parse field and method signatures (only declarations, no implementations)
     while not parser:check("RBRACE") do
-        -- Only 'fn' declarations are allowed in interfaces
-        if not parser:check("KEYWORD", "fn") then
-            error(string.format("Interface '%s' can only contain method declarations (fn), but found '%s'. Remove non-method declarations from the interface.", 
-                name, parser:current().value or parser:current().type))
-        end
-        
-        parser:expect("KEYWORD", "fn")
-        local method_name = parser:expect("IDENT").value
-        parser:expect("LPAREN")
-        
-        -- Parse parameters
-        local params = {}
-        if not parser:check("RPAREN") then
-            repeat
-                local is_mut = parser:match("KEYWORD", "mut") ~= nil
-                local param_type = Types.parse_type_with_map_shorthand(parser)
-                local param_name = parser:expect("IDENT").value
-                table.insert(params, { name = param_name, type = param_type, mutable = is_mut })
-                if not parser:match("COMMA") then
-                    break
-                end
-                -- Allow trailing comma
-                if parser:check("RPAREN") then
-                    break
-                end
-            until false
-        end
-        parser:expect("RPAREN")
-        
-        -- Parse return type (optional - defaults to void)
-        local return_type
-        if parser:check("LBRACE") or parser:check("SEMICOLON") or parser:check("COMMA") or parser:check("RBRACE") then
-            -- No explicit return type, default to void
-            return_type = { kind = "named_type", name = "void" }
+        -- Check if this is a method (fn keyword) or a field (type keyword)
+        if parser:check("KEYWORD", "fn") then
+            -- Parse method signature
+            parser:expect("KEYWORD", "fn")
+            local method_name = parser:expect("IDENT").value
+            parser:expect("LPAREN")
+            
+            -- Parse parameters
+            local params = {}
+            if not parser:check("RPAREN") then
+                repeat
+                    local is_mut = parser:match("KEYWORD", "mut") ~= nil
+                    local param_type = Types.parse_type_with_map_shorthand(parser)
+                    local param_name = parser:expect("IDENT").value
+                    table.insert(params, { name = param_name, type = param_type, mutable = is_mut })
+                    if not parser:match("COMMA") then
+                        break
+                    end
+                    -- Allow trailing comma
+                    if parser:check("RPAREN") then
+                        break
+                    end
+                until false
+            end
+            parser:expect("RPAREN")
+            
+            -- Parse return type (optional - defaults to void)
+            local return_type
+            if parser:check("LBRACE") or parser:check("SEMICOLON") or parser:check("COMMA") or parser:check("RBRACE") then
+                -- No explicit return type, default to void
+                return_type = { kind = "named_type", name = "void" }
+            else
+                return_type = Types.parse_type(parser)
+            end
+            
+            table.insert(methods, { 
+                name = method_name, 
+                params = params, 
+                return_type = return_type,
+                line = iface_tok.line,
+                col = iface_tok.col
+            })
+            
+            -- Optional semicolon or comma between declarations
+            parser:match("SEMICOLON")
+            parser:match("COMMA")
         else
-            return_type = Types.parse_type(parser)
+            -- Parse field declaration
+            local field_type = Types.parse_type(parser)
+            local field_name = parser:expect("IDENT").value
+            
+            table.insert(fields, { 
+                name = field_name, 
+                type = field_type,
+                line = iface_tok.line,
+                col = iface_tok.col
+            })
+            
+            -- Optional semicolon or comma between declarations
+            parser:match("SEMICOLON")
+            parser:match("COMMA")
         end
-        
-        table.insert(methods, { 
-            name = method_name, 
-            params = params, 
-            return_type = return_type,
-            line = iface_tok.line,
-            col = iface_tok.col
-        })
-        
-        -- Optional semicolon or comma between method declarations
-        parser:match("SEMICOLON")
-        parser:match("COMMA")
     end
     
     parser:expect("RBRACE")
     return { 
         kind = "iface", 
         name = name, 
-        methods = methods, 
+        methods = methods,
+        fields = fields,
         line = iface_tok.line, 
         col = iface_tok.col 
     }

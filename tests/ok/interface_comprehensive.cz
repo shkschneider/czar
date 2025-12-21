@@ -19,15 +19,10 @@ fn MyStruct:tostring() char? {
 fn main() i32 {
     MyStruct mystruct = MyStruct { value: 42 }
     
-    // Test: type MyStruct == "struct"
+    // Test: type mystruct returns "struct" for struct types
     if type mystruct != "struct" {
         return 1
     }
-    
-    // Test: type MyInterface == "iface"
-    // Note: We need a variable of interface type to test this
-    // But interfaces are abstract, so we test with the type name directly
-    // For now, this is tested by checking struct type returns "struct"
     
     // Test: mystruct is MyStruct == true
     if not (mystruct is MyStruct) {
