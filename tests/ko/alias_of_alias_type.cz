@@ -1,0 +1,7 @@
+// Test that alias-of-alias is prevented
+#alias MyInt i32
+#alias AnotherInt MyInt  // Should error: alias-of-alias
+
+fn main() i32 {
+    return 0
+}
