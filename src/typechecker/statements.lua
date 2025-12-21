@@ -239,8 +239,15 @@ function Statements.check_assign(typechecker, stmt)
         return
     end
 
-    -- Type check both sides
+    -- Type check target first to get expected type
     local target_type = Inference.infer_type(typechecker, stmt.target)
+    
+    -- Set expected_type hint on value expression for literal type inference
+    if stmt.value.kind == "int" or stmt.value.kind == "float" then
+        stmt.value.expected_type = target_type
+    end
+    
+    -- Type check value
     local value_type = Inference.infer_type(typechecker, stmt.value)
 
     -- Check type compatibility

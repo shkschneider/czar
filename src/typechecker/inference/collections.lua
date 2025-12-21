@@ -41,6 +41,18 @@ function Collections.infer_array_literal_type(typechecker, expr)
     end
     
     if not element_type then
+        -- Even without element_type from expected_type, we should check
+        -- if elements have type hints to help with inference
+        -- Set expected_type on literal elements if we have it from the array type
+        if expr.expected_type and expr.expected_type.kind == "array" then
+            local expected_elem_type = expr.expected_type.element_type
+            for _, elem in ipairs(expr.elements) do
+                if elem.kind == "int" or elem.kind == "float" then
+                    elem.expected_type = expected_elem_type
+                end
+            end
+        end
+        
         element_type = Collections.infer_type(typechecker, expr.elements[1])
         if not element_type then
             return nil
