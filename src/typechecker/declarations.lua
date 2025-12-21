@@ -245,8 +245,39 @@ function Declarations.collect_declarations(typechecker)
                     end
                 end
                 
+                -- Check for duplicate field names within the interface
+                local field_names = {}
+                for _, field in ipairs(item.fields or {}) do
+                    if field_names[field.name] then
+                        local line = item.line or 0
+                        local msg = string.format(
+                            "Duplicate field '%s' in interface '%s'",
+                            field.name, item.name
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.DUPLICATE_FIELD, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    else
+                        field_names[field.name] = true
+                    end
+                end
+                
+                -- Check for name conflicts between fields and methods
+                for _, field in ipairs(item.fields or {}) do
+                    if method_names[field.name] then
+                        local line = item.line or 0
+                        local msg = string.format(
+                            "Interface '%s' has both field and method named '%s'",
+                            item.name, field.name
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.DUPLICATE_FIELD, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    end
+                end
+                
                 -- Warn if interface is empty (useless interface)
-                if #item.methods == 0 then
+                if #item.methods == 0 and #(item.fields or {}) == 0 then
                     local Warnings = require("warnings")
                     Warnings.emit(
                         typechecker.source_file,
@@ -486,6 +517,45 @@ function Declarations.validate_interface_implementations(typechecker)
                     Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
                 typechecker:add_error(formatted_error)
             else
+                -- Check that all interface fields are present in the struct
+                for _, iface_field in ipairs(iface_def.fields or {}) do
+                    local field_name = iface_field.name
+                    local found = false
+                    
+                    for _, struct_field in ipairs(struct_def.fields) do
+                        if struct_field.name == field_name then
+                            -- Check that field types match
+                            local struct_field_type_str = type_to_signature_string(struct_field.type)
+                            local iface_field_type_str = type_to_signature_string(iface_field.type)
+                            
+                            if struct_field_type_str == iface_field_type_str then
+                                found = true
+                                break
+                            else
+                                local msg = string.format(
+                                    "Struct '%s' field '%s' type '%s' does not match interface '%s' expected type '%s'",
+                                    struct_name, field_name, struct_field_type_str, iface_name, iface_field_type_str
+                                )
+                                local formatted_error = Errors.format("ERROR", typechecker.source_file, struct_def.line or 0,
+                                    Errors.ErrorType.MISMATCHED_SIGNATURE, msg, typechecker.source_path)
+                                typechecker:add_error(formatted_error)
+                                found = true
+                                break
+                            end
+                        end
+                    end
+                    
+                    if not found then
+                        local msg = string.format(
+                            "Struct '%s' does not have field '%s' required by interface '%s'",
+                            struct_name, field_name, iface_name
+                        )
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, struct_def.line or 0,
+                            Errors.ErrorType.MISSING_METHOD, msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    end
+                end
+                
                 -- Check that all interface methods are implemented by the struct
                 local struct_methods = typechecker.functions[struct_name] or {}
                 

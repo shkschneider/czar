@@ -1,0 +1,48 @@
+// Test interface with multiple methods
+
+iface Calculator {
+    fn add(i32 a, i32 b) i32
+    fn subtract(i32 a, i32 b) i32
+    fn multiply(i32 a, i32 b) i32
+}
+
+struct SimpleCalc : Calculator {
+    i32 dummy
+}
+
+fn SimpleCalc:add(i32 a, i32 b) i32 {
+    return a + b
+}
+
+fn SimpleCalc:subtract(i32 a, i32 b) i32 {
+    return a - b
+}
+
+fn SimpleCalc:multiply(i32 a, i32 b) i32 {
+    return a * b
+}
+
+fn main() i32 {
+    SimpleCalc calc = SimpleCalc { dummy: 0 }
+    
+    if calc is Calculator {
+        i32 sum = calc:add(5, 3)
+        if sum != 8 {
+            return 1
+        }
+        
+        i32 diff = calc:subtract(10, 4)
+        if diff != 6 {
+            return 2
+        }
+        
+        i32 prod = calc:multiply(3, 7)
+        if prod != 21 {
+            return 3
+        }
+        
+        return 0
+    }
+    
+    return 99
+}

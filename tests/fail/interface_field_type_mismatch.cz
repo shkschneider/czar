@@ -1,0 +1,13 @@
+// Test interface field type mismatch
+
+iface HasValue {
+    i32 value
+}
+
+struct Container : HasValue {
+    char? value  // Wrong type - should be i32
+}
+
+fn main() i32 {
+    return 0
+}

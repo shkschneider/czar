@@ -1,0 +1,57 @@
+// Test interface with parameters
+
+iface Comparable {
+    fn compare(i32 other) i32
+    fn equals(i32 other) bool
+}
+
+struct Number : Comparable {
+    i32 value
+}
+
+fn Number:compare(i32 other) i32 {
+    if self.value < other {
+        return -1
+    }
+    if self.value > other {
+        return 1
+    }
+    return 0
+}
+
+fn Number:equals(i32 other) bool {
+    return self.value == other
+}
+
+fn main() i32 {
+    Number n = Number { value: 10 }
+    
+    if not (n is Comparable) {
+        return 1
+    }
+    
+    i32 cmp1 = n:compare(5)
+    if cmp1 != 1 {
+        return 2
+    }
+    
+    i32 cmp2 = n:compare(15)
+    if cmp2 != -1 {
+        return 3
+    }
+    
+    i32 cmp3 = n:compare(10)
+    if cmp3 != 0 {
+        return 4
+    }
+    
+    if not n:equals(10) {
+        return 5
+    }
+    
+    if n:equals(5) {
+        return 6
+    }
+    
+    return 0
+}
