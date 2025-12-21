@@ -343,6 +343,15 @@ function Fields.infer_struct_literal_type(typechecker, expr)
     local struct_def = Resolver.resolve_struct(typechecker, struct_name)
 
     if struct_def then
+        -- Update the expression to use the actual struct name (resolve aliases)
+        local actual_struct_name = struct_def.name
+        if expr.struct_name then
+            expr.struct_name = actual_struct_name
+        end
+        if expr.type_name then
+            expr.type_name = actual_struct_name
+        end
+        
         -- Type check each field
         for _, field_init in ipairs(expr.fields) do
             local field_type = nil
@@ -367,7 +376,7 @@ function Fields.infer_struct_literal_type(typechecker, expr)
                     string.format(
                         "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
                         field_init.name,
-                        struct_name,
+                        actual_struct_name,
                         Fields.type_to_string(field_type),
                         Fields.type_to_string(value_type)
                     ),
@@ -381,7 +390,7 @@ function Fields.infer_struct_literal_type(typechecker, expr)
             end
         end
 
-        local inferred = { kind = "named_type", name = struct_name }
+        local inferred = { kind = "named_type", name = actual_struct_name }
         expr.inferred_type = inferred
         return inferred
     else
