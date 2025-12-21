@@ -5,7 +5,7 @@ The czar language now supports interoperability with C code through a simple imp
 ## Syntax
 
 ```czar
-import C : header1.h, header2.h, ...
+import C : header1.h header2.h ...
 ```
 
 This imports C header files and allows you to call C functions using the `C.` prefix.
@@ -28,7 +28,7 @@ fn main() i32 {
 You can import multiple C headers at once:
 
 ```czar
-import C : stdio.h, stdlib.h, string.h
+import C : stdio.h stdlib.h string.h
 
 fn main() i32 {
     C.printf("Testing multiple headers\n")
