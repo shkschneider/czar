@@ -19,7 +19,10 @@ function Declarations.parse_module_declaration(parser)
     }
 end
 
--- Parse import statement: import foo.bar [as baz] OR import C : header.h, ...
+-- Parse import statement
+-- Handles two types of imports:
+-- 1. Regular module import: import foo.bar [as baz]
+-- 2. C interop import: import C : header1.h, header2.h, ...
 function Declarations.parse_import(parser)
     local start_tok = parser:expect("KEYWORD", "import")
     local parts = {}
@@ -45,12 +48,16 @@ function Declarations.parse_import(parser)
                         table.insert(header_parts, part_tok.value)
                         parser:advance()
                     else
-                        error("Expected identifier in header file name")
+                        local tok = parser:current()
+                        local tok_label = tok and (tok.type .. " '" .. tostring(tok.value) .. "'") or "EOF"
+                        error("Expected identifier or keyword in header file name, but found " .. tok_label)
                     end
                 end
                 table.insert(headers, table.concat(header_parts, "."))
             else
-                error("Expected header file name after 'import C :'")
+                local tok = parser:current()
+                local tok_label = tok and (tok.type .. " '" .. tostring(tok.value) .. "'") or "EOF"
+                error("Expected header file name (identifier, keyword, or string) after 'import C :', but found " .. tok_label)
             end
         until not parser:match("COMMA")
         

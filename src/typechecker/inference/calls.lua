@@ -337,7 +337,7 @@ function Calls.infer_static_method_call_type(typechecker, expr)
         -- Check if any C headers are imported
         if #typechecker.c_imports == 0 then
             local Errors = require("errors")
-            local msg = string.format("C module must be imported to use C.%s(). Use: import C : header.h", expr.method)
+            local msg = string.format("C module must be imported to use C.%s(). Use 'import C : header.h' where header.h contains the function you want to call.", expr.method)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
                 Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)

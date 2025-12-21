@@ -1,0 +1,8 @@
+// Test C interop exactly as described in the problem statement
+import C : stdio.h
+
+fn main() i32 {
+    C.printf("Hello from C interop!\n")
+    C.printf("The answer is %d\n", 42)
+    return 0
+}
