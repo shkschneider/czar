@@ -1,5 +1,5 @@
 // Test C interop with multiple headers
-import C : stdio.h, stdlib.h, string.h
+import C : stdio.h stdlib.h string.h
 
 fn main() i32 {
     C.printf("Testing multiple headers\n")

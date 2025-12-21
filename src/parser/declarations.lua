@@ -22,24 +22,33 @@ end
 -- Parse import statement
 -- Handles two types of imports:
 -- 1. Regular module import: import foo.bar [as baz]
--- 2. C interop import: import C : header1.h, header2.h, ...
+-- 2. C interop import: import C : header1.h header2.h ...
 function Declarations.parse_import(parser)
     local start_tok = parser:expect("KEYWORD", "import")
     local parts = {}
     table.insert(parts, parser:expect("IDENT").value)
     
-    -- Check if this is a C import: import C : header.h, ...
+    -- Check if this is a C import: import C : header.h ...
     if parts[1] == "C" and parser:match("COLON") then
         local headers = {}
         -- Parse header files (identifiers or strings with .h extension)
-        repeat
+        -- Headers are space-separated, not comma-separated
+        -- Keywords that can appear in header names (like 'string' in string.h)
+        local valid_header_keywords = {
+            ["string"] = true,
+            ["type"] = true,
+            ["new"] = true,
+            ["free"] = true,
+        }
+        
+        while true do
             local header_tok = parser:current()
             if header_tok.type == "STRING" then
                 table.insert(headers, header_tok.value)
                 parser:advance()
-            elseif header_tok.type == "IDENT" or header_tok.type == "KEYWORD" then
+            elseif header_tok.type == "IDENT" or (header_tok.type == "KEYWORD" and valid_header_keywords[header_tok.value]) then
                 -- Parse identifier/keyword with dots (e.g., stdio.h, string.h)
-                -- We allow keywords here for header names like string.h
+                -- We allow specific keywords here for header names like string.h
                 local header_parts = { header_tok.value }
                 parser:advance()
                 while parser:match("DOT") do
@@ -55,11 +64,17 @@ function Declarations.parse_import(parser)
                 end
                 table.insert(headers, table.concat(header_parts, "."))
             else
-                local tok = parser:current()
-                local tok_label = tok and (tok.type .. " '" .. tostring(tok.value) .. "'") or "EOF"
-                error("Expected header file name (identifier, keyword, or string) after 'import C :', but found " .. tok_label)
+                -- No more headers to parse
+                break
             end
-        until not parser:match("COMMA")
+        end
+        
+        -- Ensure at least one header was provided
+        if #headers == 0 then
+            local tok = parser:current()
+            local tok_label = tok and (tok.type .. " '" .. tostring(tok.value) .. "'") or "EOF"
+            error("Expected header file name (identifier, keyword, or string) after 'import C :', but found " .. tok_label)
+        end
         
         return {
             kind = "c_import",
