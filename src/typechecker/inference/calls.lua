@@ -332,6 +332,26 @@ end
 
 -- Infer the type of a static method call
 function Calls.infer_static_method_call_type(typechecker, expr)
+    -- Special handling for C module functions (C interop)
+    if expr.type_name == "C" then
+        -- Check if any C headers are imported
+        if #typechecker.c_imports == 0 then
+            local Errors = require("errors")
+            local msg = string.format("C module must be imported to use C.%s(). Use: import C : header.h", expr.method)
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- For C interop, we trust the user knows what they're doing
+        -- We assume C functions return void unless we have more type info
+        -- In the future, we could parse headers or maintain a database
+        local return_type = { kind = "named_type", name = "void" }
+        expr.inferred_type = return_type
+        return return_type
+    end
+    
     -- Special handling for cz module functions
     if expr.type_name == "cz" then
         -- Check if cz module is imported
