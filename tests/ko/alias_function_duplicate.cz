@@ -1,6 +1,6 @@
 // Test duplicate function alias
-#alias foo cz.print
-#alias foo cz.printf  // Should error: duplicate alias
+#alias foo=cz.print
+#alias foo=cz.printf  // Should error: duplicate alias
 
 fn main() i32 {
     return 0

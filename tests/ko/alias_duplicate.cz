@@ -1,6 +1,6 @@
 // Test that duplicate alias fails
-#alias MyInt i32
-#alias MyInt i64  // Should error: duplicate alias
+#alias MyInt=i32
+#alias MyInt=i64  // Should error: duplicate alias
 
 fn main() i32 {
     return 0

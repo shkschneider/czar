@@ -31,34 +31,41 @@ function Macros.parse_top_level(parser, macro_tok)
             col = macro_tok.col
         }
     elseif macro_name == "ALIAS" then
-        -- #alias mytype existing_type
-        -- mytype is one word, existing_type can be multiple tokens (rest of the line)
+        -- #alias name=target
+        -- Aliases can target any public item (functions, structs, globals)
+        -- Two forbidden targets: entire modules and other aliases
+        -- Module aliases are not allowed (use import...as instead)
         local alias_name_tok = parser:expect("IDENT")
         local alias_name = alias_name_tok.value
         
-        -- Collect all remaining tokens until end of line/statement as the target type string
-        local target_type_tokens = {}
+        -- Expect '=' token
+        if not parser:match("EQUAL") then
+            error(string.format("#alias syntax error: expected '=' after '%s'. Use: #alias name=target", alias_name))
+        end
         
-        -- Keep reading tokens until we hit EOF, a macro, struct, or fn keyword
+        -- Collect all remaining tokens until end of line/statement as the target
+        local target_tokens = {}
+        
+        -- Keep reading tokens until we hit EOF, a directive, struct, or fn keyword
         while parser:current() and 
               not parser:check("EOF") and 
               not parser:check("DIRECTIVE") and
               not (parser:check("KEYWORD", "struct") or parser:check("KEYWORD", "fn")) do
             local tok = parser:current()
-            table.insert(target_type_tokens, tok.value)
+            table.insert(target_tokens, tok.value)
             parser:advance()
         end
         
-        if #target_type_tokens == 0 then
-            error(string.format("#alias requires a target type after '%s'", alias_name))
+        if #target_tokens == 0 then
+            error(string.format("#alias requires a target after '%s='", alias_name))
         end
         
-        local target_type_str = table.concat(target_type_tokens, " ")
+        local target_str = table.concat(target_tokens, " ")
         
         return {
             kind = "alias_macro",
             alias_name = alias_name,
-            target_type_str = target_type_str,
+            target_type_str = target_str,
             line = macro_tok.line,
             col = macro_tok.col
         }

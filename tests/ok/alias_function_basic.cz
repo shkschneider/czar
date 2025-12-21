@@ -1,7 +1,7 @@
 // Test basic function aliasing
 #import cz
 
-#alias print cz.print
+#alias print=cz.print
 
 fn main() i32 {
     print("Hello from aliased print!")
