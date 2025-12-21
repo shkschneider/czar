@@ -207,7 +207,7 @@ function Declarations.parse_iface(parser)
     
     -- Parse field and method signatures (only declarations, no implementations)
     while not parser:check("RBRACE") do
-        -- Check if this is a method (fn keyword) or a field (type keyword)
+        -- Check if this is a method (fn keyword) or a field (type followed by name)
         if parser:check("KEYWORD", "fn") then
             -- Parse method signature
             parser:expect("KEYWORD", "fn")

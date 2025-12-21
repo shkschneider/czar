@@ -277,7 +277,9 @@ function Declarations.collect_declarations(typechecker)
                 end
                 
                 -- Warn if interface is empty (useless interface)
-                if #item.methods == 0 and #(item.fields or {}) == 0 then
+                local has_fields = item.fields and #item.fields > 0
+                local has_methods = item.methods and #item.methods > 0
+                if not has_fields and not has_methods then
                     local Warnings = require("warnings")
                     Warnings.emit(
                         typechecker.source_file,
@@ -551,7 +553,7 @@ function Declarations.validate_interface_implementations(typechecker)
                             struct_name, field_name, iface_name
                         )
                         local formatted_error = Errors.format("ERROR", typechecker.source_file, struct_def.line or 0,
-                            Errors.ErrorType.MISSING_METHOD, msg, typechecker.source_path)
+                            Errors.ErrorType.MISSING_FIELD, msg, typechecker.source_path)
                         typechecker:add_error(formatted_error)
                     end
                 end
