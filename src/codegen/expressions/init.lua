@@ -17,6 +17,8 @@ function Expressions.gen_expr(expr)
         return Literals.gen_int(expr)
     elseif expr.kind == "float" then
         return Literals.gen_float(expr)
+    elseif expr.kind == "char" then
+        return Literals.gen_char(expr)
     elseif expr.kind == "string" then
         return Literals.gen_string(expr)
     elseif expr.kind == "interpolated_string" then

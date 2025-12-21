@@ -275,6 +275,47 @@ function Lexer:lex_directive()
     self:add_token("DIRECTIVE", value, self.line, start_col)
 end
 
+function Lexer:lex_char()
+    local start_col = self.col
+    local start_line = self.line
+    self:advance() -- opening single quote
+    
+    local ch = self:peek()
+    if not ch then
+        error(string.format("unterminated char at %d:%d", start_line, start_col))
+    end
+    
+    local value = ""
+    
+    if ch == '\\' then
+        -- Handle escape sequences
+        self:advance()
+        local next_ch = self:peek()
+        if not next_ch then
+            error(string.format("unterminated escape in char at %d:%d", self.line, self.col))
+        end
+        -- Escape sequences for char literals
+        value = '\\' .. next_ch
+        self:advance()
+    elseif ch == "'" then
+        -- Empty char literal is not allowed
+        error(string.format("empty char literal at %d:%d", start_line, start_col))
+    else
+        -- Regular character
+        value = ch
+        self:advance()
+    end
+    
+    -- Check for closing quote
+    local closing = self:peek()
+    if closing ~= "'" then
+        error(string.format("char literal must contain exactly one character at %d:%d", start_line, start_col))
+    end
+    self:advance() -- consume closing quote
+    
+    self:add_token("CHAR", value, start_line, start_col)
+end
+
 function Lexer:lex_string()
     local start_col = self.col
     local start_line = self.line
@@ -417,6 +458,11 @@ function Lexer:next_token()
 
     if ch == '"' then
         self:lex_string()
+        return true
+    end
+
+    if ch == "'" then
+        self:lex_char()
         return true
     end
 
