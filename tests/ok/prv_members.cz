@@ -1,27 +1,27 @@
 // Test that private fields and methods work correctly within the struct
-struct SecretBox {
-    i32 _secret
+pub struct SecretBox {
+    prv i32 secret
     i32 public_value
 }
 
-fn SecretBox:_calculate_secret() i32 {
+prv fn SecretBox:calculate_secret() i32 {
     // Private method can access private field
-    return self._secret * 3
+    return self.secret * 3
 }
 
 fn SecretBox:get_result() i32 {
     // Public method can call private method and access private field
-    i32 calculated = self:_calculate_secret()
+    i32 calculated = self:calculate_secret()
     return calculated + self.public_value
 }
 
 fn SecretBox:update_secret(i32 new_val) void {
     // Private field can be modified from within methods
-    self._secret = new_val
+    self.secret = new_val
 }
 
 fn main() i32 {
-    mut SecretBox box = SecretBox { _secret: 10, public_value: 5 }
+    mut SecretBox box = SecretBox { secret: 10, public_value: 5 }
     
     // Can call public methods
     i32 result1 = box:get_result()  // (10 * 3) + 5 = 35

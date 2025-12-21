@@ -1,0 +1,23 @@
+// Test that prv methods in pub struct are private
+pub struct Calculator {
+    i32 value
+}
+
+prv fn Calculator:compute_internal() i32 {
+    return self.value * 2
+}
+
+fn Calculator:compute() i32 {
+    // Internal method call is allowed
+    return self:compute_internal() + 10
+}
+
+fn main() i32 {
+    Calculator calc = Calculator { value: 5 }
+    
+    // Public method call is OK
+    i32 result = calc:compute()
+    
+    // This should ERROR: cannot call private method
+    return calc:compute_internal()
+}

@@ -1,0 +1,17 @@
+// Test that prv fields in pub struct are private
+pub struct BankAccount {
+    prv i32 balance
+    i32 account_number
+}
+
+fn BankAccount:get_balance() i32 {
+    // Internal access to private field is allowed
+    return self.balance
+}
+
+fn main() i32 {
+    BankAccount acc = BankAccount { balance: 100, account_number: 12345 }
+    
+    // This should ERROR: cannot access private field
+    return acc.balance
+}

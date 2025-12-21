@@ -118,28 +118,35 @@ function Parser:parse_program()
 end
 
 function Parser:parse_top_level()
-    -- Check for pub modifier
+    -- Check for pub or prv modifier
     local is_public = false
+    local is_private = false
     if self:check("KEYWORD", "pub") then
         self:advance()
         is_public = true
+    elseif self:check("KEYWORD", "prv") then
+        self:advance()
+        is_private = true
     end
     
     if self:check("KEYWORD", "struct") then
         local struct_node = Declarations.parse_struct(self)
         struct_node.is_public = is_public
+        struct_node.is_private = is_private
         return struct_node
     elseif self:check("KEYWORD", "enum") then
         local enum_node = Declarations.parse_enum(self)
         enum_node.is_public = is_public
+        enum_node.is_private = is_private
         return enum_node
     elseif self:check("KEYWORD", "fn") then
         local func_node = Declarations.parse_function(self)
         func_node.is_public = is_public
+        func_node.is_private = is_private
         return func_node
     elseif self:check("DIRECTIVE") then
-        if is_public then
-            error("pub modifier cannot be used with preprocessor directives like #assert or #log")
+        if is_public or is_private then
+            error("pub/prv modifier cannot be used with preprocessor directives like #assert or #log")
         end
         return self:parse_top_level_directive()
     else
