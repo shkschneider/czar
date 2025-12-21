@@ -461,6 +461,15 @@ function Declarations.collect_declarations(typechecker)
     Declarations.validate_interface_implementations(typechecker)
 end
 
+-- Helper: Get parameter count for method signature comparison, optionally skipping 'self'
+local function get_method_param_count(params, skip_self)
+    local start_idx = 1
+    if skip_self and #params > 0 and params[1].name == "self" then
+        start_idx = 2
+    end
+    return #params - start_idx + 1, start_idx
+end
+
 -- Validate that structs properly implement their declared interfaces
 function Declarations.validate_interface_implementations(typechecker)
     for struct_name, struct_def in pairs(typechecker.structs) do
@@ -500,14 +509,10 @@ function Declarations.validate_interface_implementations(typechecker)
                             local impl_params = impl_func.params
                             local iface_params = iface_method.params
                             
-                            -- Skip first parameter if it's 'self' (instance method)
-                            local impl_start_idx = 1
-                            if #impl_params > 0 and impl_params[1].name == "self" then
-                                impl_start_idx = 2
-                            end
+                            -- Get parameter count, skipping 'self' if present
+                            local impl_param_count, impl_start_idx = get_method_param_count(impl_params, true)
                             
                             -- Check parameter count
-                            local impl_param_count = #impl_params - impl_start_idx + 1
                             if impl_param_count == #iface_params then
                                 -- Check each parameter type
                                 local params_match = true
