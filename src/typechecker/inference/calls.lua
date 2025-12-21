@@ -111,20 +111,12 @@ function Calls.infer_call_type(typechecker, expr)
         local method_def = Resolver.resolve_function(typechecker, type_name, expr.callee.method)
 
         if method_def then
-            -- Check if method is private (starts with _)
-            if expr.callee.method:sub(1, 1) == "_" then
-                -- Check if we're calling from within a method of the same struct
+            -- Check if method is private (prv keyword)
+            if method_def.is_private then
+                -- Private method can only be called from within methods of the same struct
                 local is_internal_call = false
-                if typechecker.current_function then
-                    -- Check for receiver_type (set by parser) or receiver (set by typechecker)
-                    local receiver_type_name = nil
-                    if typechecker.current_function.receiver_type then
-                        receiver_type_name = typechecker.current_function.receiver_type
-                    elseif typechecker.current_function.receiver then
-                        receiver_type_name = Calls.get_base_type_name(typechecker.current_function.receiver.type)
-                    end
-                    
-                    if receiver_type_name == type_name then
+                if typechecker.current_function and typechecker.current_function.receiver_type then
+                    if typechecker.current_function.receiver_type == type_name then
                         is_internal_call = true
                     end
                 end
@@ -132,11 +124,11 @@ function Calls.infer_call_type(typechecker, expr)
                 if not is_internal_call then
                     local line = expr.line or (expr.callee and expr.callee.object and expr.callee.object.line) or 0
                     local msg = string.format(
-                        "Cannot call private method '%s' of struct '%s' from outside its methods",
+                        "Cannot call private method '%s()' in '%s'",
                         expr.callee.method, type_name
                     )
                     local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                        Errors.ErrorType.PRIVATE_METHOD_ACCESS, msg, typechecker.source_path)
+                        Errors.ErrorType.PRIVATE_ACCESS, msg, typechecker.source_path)
                     typechecker:add_error(formatted_error)
                     return nil
                 end
@@ -248,20 +240,12 @@ function Calls.infer_call_type(typechecker, expr)
         local method_def = Resolver.resolve_function(typechecker, type_name, expr.callee.field)
         
         if method_def then
-            -- Check if method is private (starts with _)
-            if expr.callee.field:sub(1, 1) == "_" then
-                -- Check if we're calling from within a method of the same struct
+            -- Check if method is private (prv keyword)
+            if method_def.is_private then
+                -- Private method can only be called from within methods of the same struct
                 local is_internal_call = false
-                if typechecker.current_function then
-                    -- Check for receiver_type (set by parser) or receiver (set by typechecker)
-                    local receiver_type_name = nil
-                    if typechecker.current_function.receiver_type then
-                        receiver_type_name = typechecker.current_function.receiver_type
-                    elseif typechecker.current_function.receiver then
-                        receiver_type_name = Calls.get_base_type_name(typechecker.current_function.receiver.type)
-                    end
-                    
-                    if receiver_type_name == type_name then
+                if typechecker.current_function and typechecker.current_function.receiver_type then
+                    if typechecker.current_function.receiver_type == type_name then
                         is_internal_call = true
                     end
                 end
@@ -269,11 +253,11 @@ function Calls.infer_call_type(typechecker, expr)
                 if not is_internal_call then
                     local line = expr.line or (expr.callee and expr.callee.object and expr.callee.object.line) or 0
                     local msg = string.format(
-                        "Cannot call private method '%s' of struct '%s' from outside its methods",
+                        "Cannot call private method '%s()' in '%s'",
                         expr.callee.field, type_name
                     )
                     local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                        Errors.ErrorType.PRIVATE_METHOD_ACCESS, msg, typechecker.source_path)
+                        Errors.ErrorType.PRIVATE_ACCESS, msg, typechecker.source_path)
                     typechecker:add_error(formatted_error)
                     return nil
                 end
@@ -308,20 +292,12 @@ function Calls.infer_method_call_type(typechecker, expr)
     local method_def = Resolver.resolve_function(typechecker, type_name, expr.method)
 
     if method_def then
-        -- Check if method is private (starts with _)
-        if expr.method:sub(1, 1) == "_" then
-            -- Check if we're calling from within a method of the same struct
+        -- Check if method is private (prv keyword)
+        if method_def.is_private then
+            -- Private method can only be called from within methods of the same struct
             local is_internal_call = false
-            if typechecker.current_function then
-                -- Check for receiver_type (set by parser) or receiver (set by typechecker)
-                local receiver_type_name = nil
-                if typechecker.current_function.receiver_type then
-                    receiver_type_name = typechecker.current_function.receiver_type
-                elseif typechecker.current_function.receiver then
-                    receiver_type_name = Calls.get_base_type_name(typechecker.current_function.receiver.type)
-                end
-                
-                if receiver_type_name == type_name then
+            if typechecker.current_function and typechecker.current_function.receiver_type then
+                if typechecker.current_function.receiver_type == type_name then
                     is_internal_call = true
                 end
             end
@@ -329,11 +305,11 @@ function Calls.infer_method_call_type(typechecker, expr)
             if not is_internal_call then
                 local line = expr.line or (expr.object and expr.object.line) or 0
                 local msg = string.format(
-                    "Cannot call private method '%s' of struct '%s' from outside its methods",
+                    "Cannot call private method '%s()' in '%s'",
                     expr.method, type_name
                 )
                 local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                    Errors.ErrorType.PRIVATE_METHOD_ACCESS, msg, typechecker.source_path)
+                    Errors.ErrorType.PRIVATE_ACCESS, msg, typechecker.source_path)
                 typechecker:add_error(formatted_error)
                 return nil
             end
