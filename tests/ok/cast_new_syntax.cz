@@ -1,5 +1,5 @@
 // Test new cast syntax with <Type> expr
-module main
+#module main
 
 fn main() i32 {
     // Safe widening cast - no error, no warning

@@ -1,6 +1,6 @@
 // Test that non-main modules must match directory name
 // This should fail because module "examples" doesn't end with "ok"
-module examples
+#module examples
 
 fn test() i32 {
     return 0

@@ -51,7 +51,6 @@ local keywords = {
     ["map"] = true,
     ["pair"] = true,
     ["string"] = true,
-    ["module"] = true,
     ["pub"] = true,
     ["prv"] = true,
 }

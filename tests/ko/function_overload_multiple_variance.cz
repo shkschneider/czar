@@ -1,5 +1,5 @@
 // Test invalid function overloading - multiple type variance
-module main
+#module main
 
 // This should error: first overload varies on both param types
 fn bad_add(u8 a, u8 b) u8 {

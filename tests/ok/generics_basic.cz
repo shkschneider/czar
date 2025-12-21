@@ -1,5 +1,5 @@
 // Test basic generics with single type parameter
-module main
+#module main
 
 // Generic function for unsigned integers
 fn <u8:u16:u32:u64> add(T a, T b) T {
