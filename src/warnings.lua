@@ -23,6 +23,10 @@ Warnings.WarningType = {
     -- Enum warnings
     ENUM_VALUE_NOT_UPPERCASE = "ENUM_VALUE_NOT_UPPERCASE",
     
+    -- Naming convention warnings
+    STRUCT_NOT_TITLECASE = "STRUCT_NOT_TITLECASE",
+    INTERFACE_WRONG_FORMAT = "INTERFACE_WRONG_FORMAT",
+    
     -- Interface warnings
     USELESS_INTERFACE = "USELESS_INTERFACE",
     
