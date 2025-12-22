@@ -204,17 +204,17 @@ end
 
 -- Check if a struct has a constructor method (Type:new)
 function Functions.has_constructor(struct_name)
-    if ctx().functions[struct_name] and ctx().functions[struct_name]["new"] then
-        local overloads = ctx().functions[struct_name]["new"]
+    if ctx().functions[struct_name] and ctx().functions[struct_name]["init"] then
+        local overloads = ctx().functions[struct_name]["init"]
         return #overloads > 0
     end
     return false
 end
 
--- Check if a struct has a destructor method (Type:free)
+-- Check if a struct has a destructor method (Type:fini)
 function Functions.has_destructor(struct_name)
-    if ctx().functions[struct_name] and ctx().functions[struct_name]["free"] then
-        local overloads = ctx().functions[struct_name]["free"]
+    if ctx().functions[struct_name] and ctx().functions[struct_name]["fini"] then
+        local overloads = ctx().functions[struct_name]["fini"]
         return #overloads > 0
     end
     return false
@@ -223,7 +223,7 @@ end
 -- Generate constructor call for a struct variable
 function Functions.gen_constructor_call(struct_name, var_name)
     if Functions.has_constructor(struct_name) then
-        return string.format("%s_constructor(%s);", struct_name, var_name)
+        return string.format("%s_init(%s);", struct_name, var_name)
     end
     return nil
 end
@@ -231,7 +231,7 @@ end
 -- Generate destructor call for a struct variable
 function Functions.gen_destructor_call(struct_name, var_name)
     if Functions.has_destructor(struct_name) then
-        return string.format("%s_destructor(%s);", struct_name, var_name)
+        return string.format("%s_fini(%s);", struct_name, var_name)
     end
     return nil
 end
@@ -336,10 +336,10 @@ function Functions.gen_function_declaration(fn)
 
     -- Special handling for constructor/destructor methods to avoid C name conflicts
     if fn.receiver_type then
-        if name == "new" then
-            c_name = fn.receiver_type .. "_constructor"
-        elseif name == "free" then
-            c_name = fn.receiver_type .. "_destructor"
+        if name == "init" then
+            c_name = fn.receiver_type .. "_init"
+        elseif name == "fini" then
+            c_name = fn.receiver_type .. "_fini"
         end
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
@@ -379,10 +379,10 @@ function Functions.gen_function(fn)
 
     -- Special handling for constructor/destructor methods to avoid C name conflicts
     if fn.receiver_type then
-        if name == "new" then
-            c_name = fn.receiver_type .. "_constructor"
-        elseif name == "free" then
-            c_name = fn.receiver_type .. "_destructor"
+        if name == "init" then
+            c_name = fn.receiver_type .. "_init"
+        elseif name == "fini" then
+            c_name = fn.receiver_type .. "_fini"
         end
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions

@@ -10,16 +10,16 @@ struct arena {
 }
 
 // Constructor - allocates the arena buffer
-fn arena:new() void {
+fn arena:init() void {
     #unsafe {
-        _cz_alloc_arena_constructor(self);
+        _cz_alloc_arena_init(self);
     }
 }
 
 // Destructor - frees the arena buffer
-fn arena:free() void {
+fn arena:fini() void {
     #unsafe {
-        _cz_alloc_arena_destructor(self);
+        _cz_alloc_arena_fini(self);
     }
 }
 

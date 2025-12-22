@@ -3,11 +3,11 @@ struct Counter {
     i32 value
 }
 
-fn Counter:new() void {
+fn Counter:init() void {
     self.value = 100
 }
 
-fn Counter:free() void {
+fn Counter:fini() void {
     // In a real program, this would do cleanup
     // For testing, we just verify the constructor set value
 }
