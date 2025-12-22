@@ -8,11 +8,13 @@ local function ctx() return _G.Codegen end
 function Memory.push_scope()
     table.insert(ctx().scope_stack, {})
     table.insert(ctx().heap_vars_stack, {})
+    table.insert(ctx().deferred_stack, {})
 end
 
 function Memory.pop_scope()
     table.remove(ctx().scope_stack)
     table.remove(ctx().heap_vars_stack)
+    table.remove(ctx().deferred_stack)
 end
 
 function Memory.add_var(name, type_node, mutable, needs_free, is_reference)
@@ -52,7 +54,22 @@ function Memory.mark_freed(name)
     end
 end
 
+function Memory.add_deferred(stmt_code)
+    -- Add a deferred statement to the current scope
+    if #ctx().deferred_stack > 0 then
+        table.insert(ctx().deferred_stack[#ctx().deferred_stack], stmt_code)
+    end
+end
+
 function Memory.get_scope_cleanup()    local cleanup = {}
+    -- First, add deferred statements in reverse order (LIFO)
+    if #ctx().deferred_stack > 0 then
+        local deferred = ctx().deferred_stack[#ctx().deferred_stack]
+        for i = #deferred, 1, -1 do
+            table.insert(cleanup, deferred[i])
+        end
+    end
+    -- Then add automatic free calls for heap-allocated variables
     if #ctx().heap_vars_stack > 0 then
         local heap_vars = ctx().heap_vars_stack[#ctx().heap_vars_stack]
         for i = #heap_vars, 1, -1 do
@@ -76,6 +93,14 @@ end
 
 function Memory.get_all_scope_cleanup()    local cleanup = {}
     for scope_idx = #ctx().heap_vars_stack, 1, -1 do
+        -- Add deferred statements for this scope in reverse order (LIFO)
+        if ctx().deferred_stack[scope_idx] then
+            local deferred = ctx().deferred_stack[scope_idx]
+            for i = #deferred, 1, -1 do
+                table.insert(cleanup, deferred[i])
+            end
+        end
+        -- Add automatic free calls for heap-allocated variables
         local heap_vars = ctx().heap_vars_stack[scope_idx]
         for i = #heap_vars, 1, -1 do
             local var_name = heap_vars[i]

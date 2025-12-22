@@ -27,6 +27,7 @@ local keywords = {
     ["clone"] = true,
     ["new"] = true,
     ["free"] = true,
+    ["defer"] = true,
     ["is"] = true,
     ["as"] = true,
     ["type"] = true,
