@@ -53,9 +53,12 @@ function Codegen:emit(line)
 end
 
 -- Delegate to modules (they use _G.codegen_ctx directly)
-function Codegen:malloc_call(size_expr, is_explicit)
-    return Codegen.Memory.malloc_call(size_expr, is_explicit)
+function Codegen:alloc_call(size_expr, is_explicit)
+    return Codegen.Memory.alloc_call(size_expr, is_explicit)
 end
+
+-- Keep old name for backward compatibility
+Codegen.malloc_call = Codegen.alloc_call
 
 function Codegen:free_call(ptr_expr, is_explicit)
     return Codegen.Memory.free_call(ptr_expr, is_explicit)

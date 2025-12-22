@@ -1,0 +1,47 @@
+// alloc_arena.cz - Arena allocator for fast bump allocation
+// Part of the Czar standard library
+
+struct arena {
+    u64 size
+    any buffer
+    u64 offset
+}
+
+// Constructor - allocates the arena buffer
+fn arena:new() void {
+    #unsafe {
+        _cz_alloc_arena_constructor(self);
+    }
+}
+
+// Destructor - frees the arena buffer
+fn arena:free() void {
+    #unsafe {
+        _cz_alloc_arena_destructor(self);
+    }
+}
+
+// Allocate memory from arena
+fn arena:alloc(u64 size) any {
+    mut any result = null
+    #unsafe {
+        result = _alloc(self, size);
+    }
+    return result
+}
+
+// Reallocate memory within arena
+fn arena:ralloc(any ptr, u64 new_size) any {
+    mut any result = null
+    #unsafe {
+        result = _ralloc(self, ptr, new_size);
+    }
+    return result
+}
+
+// Clear arena (reset all allocations)
+fn arena:clear() void {
+    #unsafe {
+        _clear(self);
+    }
+}

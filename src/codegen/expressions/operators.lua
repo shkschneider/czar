@@ -182,11 +182,11 @@ function Operators.gen_clone(expr, gen_expr_fn)
     if expr.target_type and source_type then
         -- With cast (implicit allocation - clone)
         return string.format("({ %s* _ptr = %s; *_ptr = (%s)%s; _ptr; })",
-            target_type_str, ctx():malloc_call("sizeof(" .. target_type_str .. ")", false), target_type_str, source_expr)
+            target_type_str, ctx():alloc_call("sizeof(" .. target_type_str .. ")", false), target_type_str, source_expr)
     else
         -- Without cast (implicit allocation - clone)
         return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
-            target_type_str, ctx():malloc_call("sizeof(" .. target_type_str .. ")", false), source_expr)
+            target_type_str, ctx():alloc_call("sizeof(" .. target_type_str .. ")", false), source_expr)
     end
 end
 

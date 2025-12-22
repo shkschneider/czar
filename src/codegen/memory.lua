@@ -182,27 +182,30 @@ function Memory.check_unused_vars()
     end
 end
 
-function Memory.malloc_call(size_expr, is_explicit)
-    -- Use custom allocator interface if set, otherwise use default malloc
+function Memory.alloc_call(size_expr, is_explicit)
+    -- Use custom allocator interface if set, otherwise use default alloc
     local allocator_interface = ctx().custom_allocator_interface
     
     if allocator_interface == "cz.alloc.debug" then
         -- Use our debug tracking allocator with explicit flag
         local alloc_prefix = allocator_interface:gsub("%.", "_")
         local explicit_flag = is_explicit and "1" or "0"
-        return string.format("%s_malloc(%s, %s)", alloc_prefix, size_expr, explicit_flag)
+        return string.format("%s_alloc(%s, %s)", alloc_prefix, size_expr, explicit_flag)
     elseif allocator_interface == "cz.alloc.default" then
         -- Use standard C malloc for cz.alloc.default
         return string.format("malloc(%s)", size_expr)
     elseif allocator_interface then
-        -- Use custom allocator interface's malloc function (no tracking)
+        -- Use custom allocator interface's alloc function (no tracking)
         local alloc_prefix = allocator_interface:gsub("%.", "_")
-        return string.format("%s_malloc(%s)", alloc_prefix, size_expr)
+        return string.format("%s_alloc(%s)", alloc_prefix, size_expr)
     else
         -- No custom allocator, use default malloc
         return string.format("malloc(%s)", size_expr)
     end
 end
+
+-- Keep old name for backward compatibility
+Memory.malloc_call = Memory.alloc_call
 
 function Memory.free_call(ptr_expr, is_explicit)
     -- Use custom allocator interface if set, otherwise use default free
