@@ -13,6 +13,8 @@ _un-ordered_
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
+- `cz.os` struct
+- `cz.print*` functions
 - `#DEBUG` to get or set global debug flag
 - `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
