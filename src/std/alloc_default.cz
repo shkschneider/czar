@@ -1,0 +1,7 @@
+// alloc_default.cz - Default C allocator interface
+// Part of the Czar standard library
+// Uses standard C malloc/free under the hood
+
+// Note: This is a module interface that configures the code generator
+// to use standard C allocation functions (malloc/free)
+// No struct is needed as this is handled by the #alloc directive
