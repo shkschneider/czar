@@ -82,7 +82,7 @@ The `#alloc` directive allows you to specify a custom allocator interface for me
 
 fn main() i32 {
     any p = new ...
-    defer free(p)
+    #defer free(p)
     return 0
 }
 ```

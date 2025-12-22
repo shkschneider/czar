@@ -56,12 +56,14 @@ end
 
 function Memory.add_deferred(stmt_code)
     -- Add a deferred statement to the current scope
-    if #ctx().deferred_stack > 0 then
-        table.insert(ctx().deferred_stack[#ctx().deferred_stack], stmt_code)
+    if #ctx().deferred_stack == 0 then
+        error("Cannot use #defer outside of a scope")
     end
+    table.insert(ctx().deferred_stack[#ctx().deferred_stack], stmt_code)
 end
 
-function Memory.get_scope_cleanup()    local cleanup = {}
+function Memory.get_scope_cleanup()
+    local cleanup = {}
     -- First, add deferred statements in reverse order (LIFO)
     if #ctx().deferred_stack > 0 then
         local deferred = ctx().deferred_stack[#ctx().deferred_stack]
@@ -91,7 +93,8 @@ function Memory.get_scope_cleanup()    local cleanup = {}
     return cleanup
 end
 
-function Memory.get_all_scope_cleanup()    local cleanup = {}
+function Memory.get_all_scope_cleanup()
+    local cleanup = {}
     for scope_idx = #ctx().heap_vars_stack, 1, -1 do
         -- Add deferred statements for this scope in reverse order (LIFO)
         if ctx().deferred_stack[scope_idx] then
