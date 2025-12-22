@@ -1,7 +1,34 @@
-// alloc_default.cz - Default C allocator interface
+// alloc_default.cz - Default C allocator implementation
 // Part of the Czar standard library
-// Uses standard C malloc/free under the hood
+// Uses standard C malloc/realloc/free under the hood
 
-// Note: This is a module interface that configures the code generator
-// to use standard C allocation functions (malloc/free)
-// No struct is needed as this is handled by the #alloc directive
+#import alloc
+
+// Default allocator struct that implements the alloc interface
+struct alloc_default : alloc {
+}
+
+// Allocate memory using C malloc
+fn alloc_default:alloc(u64 size) any {
+    mut any result = null
+    #unsafe {
+        result = malloc(size);
+    }
+    return result
+}
+
+// Reallocate memory using C realloc
+fn alloc_default:ralloc(any ptr, u64 new_size) any {
+    mut any result = null
+    #unsafe {
+        result = realloc(ptr, new_size);
+    }
+    return result
+}
+
+// Free memory using C free
+fn alloc_default:free(any ptr) void {
+    #unsafe {
+        free(ptr);
+    }
+}
