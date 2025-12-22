@@ -2,10 +2,10 @@
 // Part of the Czar standard library
 #module cz
 
-#import alloc
+#import iAlloc
 
 // Arena allocator struct that implements the alloc interface
-struct arena : alloc {
+struct arena : iAlloc {
     u64 size
     any buffer
     u64 offset
