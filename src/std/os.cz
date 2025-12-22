@@ -2,6 +2,12 @@
 // Part of the Czar standard library
 #module cz
 
+#init {
+    #unsafe {
+        _cz_os_init();
+    }
+}
+
 // OS information struct with fields
 struct os {
     String name      // "linux", "windows", "macos", or "unknown"
