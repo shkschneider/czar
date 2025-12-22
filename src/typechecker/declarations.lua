@@ -180,10 +180,39 @@ end
 
 -- Collect all top-level declarations
 function Declarations.collect_declarations(typechecker)
+    local Warnings = require("warnings")
     local new_items = {}  -- Build new items list with expanded generics
+    
+    -- Helper function to check if a name is TitleCase (starts with uppercase)
+    local function is_titlecase(name)
+        return name:match("^%u")
+    end
+    
+    -- Helper function to check if interface name follows iInterfaceName format
+    local function is_valid_interface_name(name)
+        -- Should start with lowercase 'i' followed by an uppercase letter
+        return name:match("^i%u")
+    end
     
     for _, item in ipairs(typechecker.ast.items) do
         if item.kind == "struct" then
+            -- Check naming convention: structs should be TitleCase
+            if not is_titlecase(item.name) then
+                local msg = string.format(
+                    "Struct '%s' should be TitleCase (e.g., '%s')",
+                    item.name,
+                    item.name:sub(1,1):upper() .. item.name:sub(2)
+                )
+                Warnings.emit(
+                    typechecker.source_file,
+                    item.line,
+                    Warnings.WarningType.STRUCT_NOT_TITLECASE,
+                    msg,
+                    typechecker.source_path,
+                    nil
+                )
+            end
+            
             -- Check for duplicate struct definition
             if typechecker.structs[item.name] then
                 local line = item.line or 0
@@ -216,6 +245,24 @@ function Declarations.collect_declarations(typechecker)
             end
             table.insert(new_items, item)  -- Keep struct in new items
         elseif item.kind == "iface" then
+            -- Check naming convention: interfaces should follow iInterfaceName format
+            if not is_valid_interface_name(item.name) then
+                local suggested_name = "i" .. item.name:sub(1,1):upper() .. item.name:sub(2)
+                local msg = string.format(
+                    "Interface '%s' should follow format 'iInterfaceName' with lowercase 'i' prefix (e.g., '%s')",
+                    item.name,
+                    suggested_name
+                )
+                Warnings.emit(
+                    typechecker.source_file,
+                    item.line,
+                    Warnings.WarningType.INTERFACE_WRONG_FORMAT,
+                    msg,
+                    typechecker.source_path,
+                    nil
+                )
+            end
+            
             -- Check for duplicate interface definition
             if typechecker.ifaces[item.name] then
                 local line = item.line or 0
