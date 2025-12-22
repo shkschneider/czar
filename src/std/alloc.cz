@@ -1,0 +1,22 @@
+// alloc.cz - Memory allocator interface
+// Part of the Czar standard library
+//
+// This interface defines the contract for memory allocators.
+// Different allocator implementations (default, debug, arena) must implement these methods.
+
+// Memory allocator interface
+iface alloc {
+    // Allocate memory of the specified size
+    // Returns pointer to allocated memory, or null if allocation fails
+    fn alloc(u64 size) any
+    
+    // Reallocate memory to a new size
+    // ptr: pointer to existing allocation (or null for new allocation)
+    // new_size: new size in bytes
+    // Returns pointer to reallocated memory, or null if reallocation fails
+    fn ralloc(any ptr, u64 new_size) any
+    
+    // Free allocated memory
+    // ptr: pointer to memory to free
+    fn free(any ptr) void
+}
