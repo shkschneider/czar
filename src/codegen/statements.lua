@@ -152,6 +152,8 @@ function Statements.gen_statement(stmt)
         local is_pointer_type = stmt.type.kind == "nullable"
         local is_array_type = stmt.type.kind == "array"
         local is_slice_type = stmt.type.kind == "slice"
+        
+        local result_code
 
         if is_array_type then
             -- Array type declaration
@@ -163,7 +165,7 @@ function Statements.gen_statement(stmt)
             if stmt.init then
                 decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
             end
-            return decl .. ";"
+            result_code = decl .. ";"
         elseif is_slice_type then
             -- Slice type declaration (always immutable)
             ctx():add_var(stmt.name, stmt.type, false, needs_free)
@@ -172,7 +174,7 @@ function Statements.gen_statement(stmt)
             if stmt.init then
                 decl = decl .. " = " .. Codegen.Expressions.gen_expr(stmt.init)
             end
-            return decl .. ";"
+            result_code = decl .. ";"
         elseif is_pointer_type then
             -- This is an explicit pointer type (Type*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
@@ -209,11 +211,13 @@ function Statements.gen_statement(stmt)
                 local struct_type_name = stmt.type.to.name
                 local constructor_call = Codegen.Functions.gen_constructor_call(struct_type_name, stmt.name)
                 if constructor_call then
-                    return decl .. ";\n    " .. constructor_call
+                    result_code = decl .. ";\n    " .. constructor_call
+                else
+                    result_code = decl .. ";"
                 end
+            else
+                result_code = decl .. ";"
             end
-
-            return decl .. ";"
         else
             -- This is a value type (or any type which is void*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
@@ -237,12 +241,36 @@ function Statements.gen_statement(stmt)
                 local struct_type_name = stmt.type.name
                 local constructor_call = Codegen.Functions.gen_constructor_call(struct_type_name, "&" .. stmt.name)
                 if constructor_call then
-                    return decl .. ";\n    " .. constructor_call
+                    result_code = decl .. ";\n    " .. constructor_call
+                else
+                    result_code = decl .. ";"
+                end
+            else
+                result_code = decl .. ";"
+            end
+        end
+        
+        -- Handle auto-defer: if #defer was specified after the init expression
+        if stmt.auto_defer then
+            -- Generate deferred free statement
+            local var_type = ctx():get_var_type(stmt.name)
+            local destructor_code = ""
+            if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
+                local struct_name = var_type.to.name
+                local destructor_call = Codegen.Functions.gen_destructor_call(struct_name, stmt.name)
+                if destructor_call then
+                    destructor_code = destructor_call .. "; "
                 end
             end
-
-            return decl .. ";"
+            local deferred_code = destructor_code .. ctx():free_call(stmt.name, true) .. ";"
+            ctx():add_deferred(deferred_code)
+            -- Mark as freed so automatic cleanup doesn't try to free it again
+            ctx():mark_freed(stmt.name)
+            -- Add comment about the auto-defer
+            result_code = result_code .. "\n    // auto-defer free " .. stmt.name
         end
+        
+        return result_code
     elseif stmt.kind == "expr_stmt" then
         -- Check if this is an underscore assignment in expression form
         local expr = stmt.expression

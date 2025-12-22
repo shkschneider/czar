@@ -178,11 +178,17 @@ function Statements.parse_statement(parser)
             local name_tok = parser:expect("IDENT")
             local name = name_tok.value
             local init = nil
+            local auto_defer = false
             if parser:match("EQUAL") then
                 init = Expressions.parse_expression(parser)
+                -- Check for #defer shorthand after the init expression
+                if parser:check("DIRECTIVE") and parser:current().value:upper() == "DEFER" then
+                    parser:advance()  -- consume #defer
+                    auto_defer = true
+                end
             end
             parser:match("SEMICOLON")
-            return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init, line = start_tok.line, col = start_tok.col }
+            return { kind = "var_decl", name = name, type = type_, mutable = mutable, init = init, auto_defer = auto_defer, line = start_tok.line, col = start_tok.col }
         else
             -- Reset and parse as expression statement
             parser.pos = saved_pos
