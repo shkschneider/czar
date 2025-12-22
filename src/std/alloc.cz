@@ -2,7 +2,7 @@
 // Part of the Czar standard library
 //
 // This interface defines the contract for memory allocators.
-// Different allocator implementations (default, debug, arena) must implement these methods.
+// Different allocator implementations (heap, debug, arena) must implement these methods.
 #module cz.alloc
 
 // Memory allocator interface
