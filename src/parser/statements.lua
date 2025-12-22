@@ -184,11 +184,12 @@ function Statements.parse_statement(parser)
                 -- Check for #defer shorthand after the init expression
                 -- Only consume #defer if it's on the same line (auto-defer syntax)
                 -- If #defer is on a new line, it's a separate statement
-                local init_line = init.line or name_tok.line
-                if parser:check("DIRECTIVE") and parser:current().value:upper() == "DEFER" then
+                -- Use init's line if available, otherwise fall back to variable name line
+                local init_line = init and init.line or name_tok.line
+                if init_line and parser:check("DIRECTIVE") and parser:current().value:upper() == "DEFER" then
                     local defer_tok = parser:current()
                     -- Only treat as auto-defer if it's on the same line
-                    if defer_tok.line == init_line or defer_tok.line == name_tok.line then
+                    if defer_tok.line == init_line then
                         parser:advance()  -- consume #defer
                         auto_defer = true
                     end
