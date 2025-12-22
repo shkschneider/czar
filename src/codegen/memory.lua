@@ -186,11 +186,18 @@ function Memory.malloc_call(size_expr, is_explicit)
     -- Use custom allocator interface if set, otherwise use default malloc
     local allocator_interface = ctx().custom_allocator_interface
     
-    if allocator_interface then
-        -- Use the allocator interface's malloc function
+    if allocator_interface == "cz.alloc.debug" then
+        -- Use our debug tracking allocator with explicit flag
         local alloc_prefix = allocator_interface:gsub("%.", "_")
         local explicit_flag = is_explicit and "1" or "0"
         return string.format("%s_malloc(%s, %s)", alloc_prefix, size_expr, explicit_flag)
+    elseif allocator_interface == "cz.alloc.default" then
+        -- Use standard C malloc for cz.alloc.default
+        return string.format("malloc(%s)", size_expr)
+    elseif allocator_interface then
+        -- Use custom allocator interface's malloc function (no tracking)
+        local alloc_prefix = allocator_interface:gsub("%.", "_")
+        return string.format("%s_malloc(%s)", alloc_prefix, size_expr)
     else
         -- No custom allocator, use default malloc
         return string.format("malloc(%s)", size_expr)
@@ -201,11 +208,18 @@ function Memory.free_call(ptr_expr, is_explicit)
     -- Use custom allocator interface if set, otherwise use default free
     local allocator_interface = ctx().custom_allocator_interface
     
-    if allocator_interface then
-        -- Use the allocator interface's free function
+    if allocator_interface == "cz.alloc.debug" then
+        -- Use our debug tracking allocator with explicit flag
         local alloc_prefix = allocator_interface:gsub("%.", "_")
         local explicit_flag = is_explicit and "1" or "0"
         return string.format("%s_free(%s, %s)", alloc_prefix, ptr_expr, explicit_flag)
+    elseif allocator_interface == "cz.alloc.default" then
+        -- Use standard C free for cz.alloc.default
+        return string.format("free(%s)", ptr_expr)
+    elseif allocator_interface then
+        -- Use custom allocator interface's free function (no tracking)
+        local alloc_prefix = allocator_interface:gsub("%.", "_")
+        return string.format("%s_free(%s)", alloc_prefix, ptr_expr)
     else
         -- No custom deallocator, use default free
         return string.format("free(%s)", ptr_expr)
@@ -213,7 +227,7 @@ function Memory.free_call(ptr_expr, is_explicit)
 end
 
 function Memory.gen_memory_tracking_helpers()
-    local allocator_interface = ctx().custom_allocator_interface or "cz.alloc"
+    local allocator_interface = ctx().custom_allocator_interface or "cz.alloc.default"
     local alloc_prefix = allocator_interface:gsub("%.", "_")
     
     ctx():emit("// Memory tracking helpers for " .. allocator_interface)

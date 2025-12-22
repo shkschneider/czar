@@ -214,9 +214,13 @@ function Codegen:generate()
     -- Delegate to Macros module
     Macros.process_top_level(self, self.ast)
     
-    -- In debug mode, automatically use cz.alloc if not already overridden
-    if self.debug and not self.custom_allocator_interface then
-        self.custom_allocator_interface = "cz.alloc"
+    -- Set default allocator based on debug mode if not already overridden
+    if not self.custom_allocator_interface then
+        if self.debug then
+            self.custom_allocator_interface = "cz.alloc.debug"
+        else
+            self.custom_allocator_interface = "cz.alloc.default"
+        end
     end
     
     -- Collect C imports from AST
@@ -245,7 +249,8 @@ function Codegen:generate()
     self:emit(string.format("static bool czar_debug_flag = %s;", self.debug and "true" or "false"))
     self:emit("")
 
-    if self.debug then
+    -- Generate memory tracking helpers only for cz.alloc.debug
+    if self.custom_allocator_interface == "cz.alloc.debug" then
         Codegen.Memory.gen_memory_tracking_helpers()
     end
 

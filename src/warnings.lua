@@ -25,6 +25,9 @@ Warnings.WarningType = {
     
     -- Interface warnings
     USELESS_INTERFACE = "USELESS_INTERFACE",
+    
+    -- Allocator warnings
+    USELESS_ALLOC_DIRECTIVE = "USELESS_ALLOC_DIRECTIVE",
 }
 
 -- Cache for source file contents
