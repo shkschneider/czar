@@ -493,12 +493,9 @@ function Functions.gen_wrapper(has_main)
             -- With debug allocator, capture return value and print stats
             ctx():emit("int main(void) {")
             
-            -- Generate init macro calls
-            for _, init_macro in ipairs(ctx().init_macros) do
-                for _, stmt in ipairs(init_macro.statements) do
-                    local stmt_code = ctx():gen_statement(stmt)
-                    ctx():emit("    " .. stmt_code)
-                end
+            -- Generate stdlib init calls based on imports
+            if ctx().stdlib_imports["cz.os"] then
+                ctx():emit("    _cz_os_init();")
             end
             
             ctx():emit("    int _ret = main_main();")
@@ -508,12 +505,9 @@ function Functions.gen_wrapper(has_main)
         else
             ctx():emit("int main(void) {")
             
-            -- Generate init macro calls
-            for _, init_macro in ipairs(ctx().init_macros) do
-                for _, stmt in ipairs(init_macro.statements) do
-                    local stmt_code = ctx():gen_statement(stmt)
-                    ctx():emit("    " .. stmt_code)
-                end
+            -- Generate stdlib init calls based on imports
+            if ctx().stdlib_imports["cz.os"] then
+                ctx():emit("    _cz_os_init();")
             end
             
             ctx():emit("    return main_main();")
