@@ -492,12 +492,32 @@ function Functions.gen_wrapper(has_main)
         if ctx().custom_allocator_interface == "cz.alloc.debug" then
             -- With debug allocator, capture return value and print stats
             ctx():emit("int main(void) {")
+            
+            -- Generate init macro calls
+            for _, init_macro in ipairs(ctx().init_macros) do
+                for _, stmt in ipairs(init_macro.statements) do
+                    local stmt_code = ctx():gen_statement(stmt)
+                    ctx():emit("    " .. stmt_code)
+                end
+            end
+            
             ctx():emit("    int _ret = main_main();")
             ctx():emit("    _czar_print_memory_stats();")
             ctx():emit("    return _ret;")
             ctx():emit("}")
         else
-            ctx():emit("int main(void) { return main_main(); }")
+            ctx():emit("int main(void) {")
+            
+            -- Generate init macro calls
+            for _, init_macro in ipairs(ctx().init_macros) do
+                for _, stmt in ipairs(init_macro.statements) do
+                    local stmt_code = ctx():gen_statement(stmt)
+                    ctx():emit("    " .. stmt_code)
+                end
+            end
+            
+            ctx():emit("    return main_main();")
+            ctx():emit("}")
         end
     end
 end

@@ -96,19 +96,20 @@ end
 function Fields.infer_field_type(typechecker, expr)
     -- Check if this is cz.os access
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
-        -- Check if cz module is imported
-        local cz_imported = false
+        -- Check if cz.os module is imported
+        local cz_os_imported = false
         for _, import in ipairs(typechecker.imports) do
-            if import.path == "cz" or import.alias == "cz" then
-                cz_imported = true
+            local import_path = type(import.path) == "table" and table.concat(import.path, ".") or import.path
+            if import_path == "cz.os" or import.alias == "cz" then
+                cz_os_imported = true
                 import.used = true
                 break
             end
         end
         
-        if not cz_imported then
+        if not cz_os_imported then
             local line = expr.line or (expr.object and expr.object.line) or 0
-            local msg = "Module 'cz' must be imported to use cz.os"
+            local msg = "Module 'cz.os' must be imported to use cz.os (use: #import cz.os)"
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
                 Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)

@@ -198,7 +198,7 @@ end
 -- CODEGEN MACROS
 -- ============================================================================
 
--- Process allocator macros (#alloc) and alias macros
+-- Process allocator macros (#alloc), alias macros, and init macros (#init)
 -- Called during codegen initialization
 function Macros.process_top_level(codegen, ast)
     local alloc_macro_count = 0
@@ -237,6 +237,9 @@ function Macros.process_top_level(codegen, ast)
                     item.alias_name, item.line, item.col))
             end
             codegen.type_aliases[item.alias_name] = item.target_type_str
+        elseif item.kind == "init_macro" then
+            -- Collect init macro for execution during program initialization
+            table.insert(codegen.init_macros, item)
         end
     end
 end

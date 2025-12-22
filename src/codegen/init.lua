@@ -19,6 +19,50 @@ local function join(list, sep)
     return table.concat(list, sep or "")
 end
 
+-- Parse a specific stdlib .cz file to collect #init macros
+local function parse_stdlib_file(file_path)
+    local init_macros = {}
+    
+    -- Read the file
+    local file = io.open(file_path, "r")
+    if not file then
+        return init_macros
+    end
+    
+    local source = file:read("*all")
+    file:close()
+    
+    -- Parse using the already-loaded lexer and parser
+    local lexer = require("lexer")
+    local parser = require("parser")
+    
+    local tokens = lexer(source, file_path)
+    local ast = parser(tokens, file_path)
+    
+    -- Collect #init macros from this file
+    for _, item in ipairs(ast.items) do
+        if item.kind == "init_macro" then
+            table.insert(init_macros, item)
+        end
+    end
+    
+    return init_macros
+end
+
+-- Map module imports to their .cz file paths
+local function get_stdlib_file_path(import_path)
+    local module_to_file = {
+        ["cz.os"] = "src/std/os.cz",
+        ["cz.print"] = "src/std/print.cz",
+        ["cz.alloc"] = "src/std/alloc/ialloc.cz",
+        ["cz.alloc.heap"] = "src/std/alloc/heap.cz",
+        ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
+        ["cz.alloc.arena"] = "src/std/alloc/arena.cz",
+    }
+    
+    return module_to_file[import_path]
+end
+
 function Codegen.new(ast, options)
     options = options or {}
     local self = {
@@ -44,6 +88,7 @@ function Codegen.new(ast, options)
         loop_label_counter = 0,  -- Counter for generating unique loop labels
         loop_stack = {},  -- Stack of loop info for multi-level break/continue
         c_imports = {},  -- C header files imported via import C : header.h
+        init_macros = {},  -- #init macros to run during initialization
     }
     return setmetatable(self, Codegen)
 end
@@ -226,11 +271,31 @@ function Codegen:generate()
         end
     end
     
-    -- Collect C imports from AST
+    -- Collect C imports and stdlib imports from AST
+    self.stdlib_imports = {}  -- Track stdlib imports like "cz.os", "cz.alloc", etc.
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
             for _, header in ipairs(import.headers) do
                 table.insert(self.c_imports, header)
+            end
+        elseif import.kind == "import" then
+            -- Track stdlib imports
+            -- import.path is a table of parts, e.g., {"cz", "os"} or {"cz", "alloc"}
+            local import_path = table.concat(import.path, ".")
+            
+            -- Only handle specific cz.* imports (not just "cz")
+            if import_path:match("^cz%.") then
+                self.stdlib_imports[import_path] = true
+                
+                -- Get the stdlib file path for this import
+                local stdlib_file = get_stdlib_file_path(import_path)
+                if stdlib_file then
+                    -- Parse the stdlib file and collect #init macros
+                    local init_macros = parse_stdlib_file(stdlib_file)
+                    for _, init_macro in ipairs(init_macros) do
+                        table.insert(self.init_macros, init_macro)
+                    end
+                end
             end
         end
     end

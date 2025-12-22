@@ -116,10 +116,10 @@ static void _cz_os_init() {
     #endif
 }
 
-// Get OS struct - initializes on first call
+// Get OS struct - returns pointer to OS data
 // Raw C function with _cz_ prefix, called from generated code
+// NOTE: _cz_os_init() must be called via #init macro before accessing this
 static inline _cz_os_t* _cz_os_get() {
-    _cz_os_init();
     return &__cz_os;
 }
 
