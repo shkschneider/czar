@@ -1,7 +1,0 @@
-// Test #malloc malloc and #free free reset to standard C
-#malloc malloc
-#free free
-
-fn main() i32 {
-    return 0
-}

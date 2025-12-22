@@ -116,23 +116,6 @@ fn main() i32 {
 }
 ```
 
-## Backward Compatibility
-
-The existing `#malloc` and `#free` directives are still supported for fine-grained control:
-
-```czar
-#malloc my_malloc
-#free my_free
-
-fn main() i32 {
-    any p = new ...  // Uses my_malloc
-    free p           // Uses my_free
-    return 0
-}
-```
-
-However, `#alloc` is recommended as it provides a more structured interface for custom allocators.
-
 ## Best Practices
 
 1. **Use `#defer` for explicit cleanup**: When you need precise control over when cleanup happens

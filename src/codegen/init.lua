@@ -35,8 +35,6 @@ function Codegen.new(ast, options)
         source_file = options.source_file or "unknown",
         source_path = options.source_path or options.source_file or "unknown",
         current_function = nil,
-        custom_malloc = nil,
-        custom_free = nil,
         custom_allocator_interface = nil,  -- Interface for custom allocator (#alloc)
         type_aliases = {
             -- Built-in alias for String -> char*
@@ -208,18 +206,13 @@ end
 function Codegen:generate()
     self:collect_structs_and_functions()
     
-    -- Process allocator macros (#malloc, #free) and type aliases (#alias)
+    -- Process allocator macros (#alloc) and type aliases (#alias)
     -- Delegate to Macros module
     Macros.process_top_level(self, self.ast)
     
-    -- In debug mode, automatically use cz_malloc/cz_free if not already overridden
-    if self.debug then
-        if not self.custom_malloc then
-            self.custom_malloc = "cz_malloc"
-        end
-        if not self.custom_free then
-            self.custom_free = "cz_free"
-        end
+    -- In debug mode, automatically use cz.alloc if not already overridden
+    if self.debug and not self.custom_allocator_interface then
+        self.custom_allocator_interface = "cz.alloc"
     end
     
     -- Collect C imports from AST

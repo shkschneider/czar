@@ -177,55 +177,40 @@ function Memory.check_unused_vars()
 end
 
 function Memory.malloc_call(size_expr, is_explicit)
-    -- Use custom allocator interface if set, otherwise use custom malloc or default
+    -- Use custom allocator interface if set, otherwise use default malloc
     local allocator_interface = ctx().custom_allocator_interface
-    local malloc_func = ctx().custom_malloc
     
     if allocator_interface then
         -- Use the allocator interface's malloc function
-        return string.format("%s_malloc(%s)", allocator_interface:gsub("%.", "_"), size_expr)
-    elseif not malloc_func then
+        local alloc_prefix = allocator_interface:gsub("%.", "_")
+        local explicit_flag = is_explicit and "1" or "0"
+        return string.format("%s_malloc(%s, %s)", alloc_prefix, size_expr, explicit_flag)
+    else
         -- No custom allocator, use default malloc
         return string.format("malloc(%s)", size_expr)
-    elseif malloc_func == "malloc" then
-        -- Explicitly reset to standard C malloc
-        return string.format("malloc(%s)", size_expr)
-    elseif malloc_func == "cz_malloc" then
-        -- Using the debug wrapper which needs the is_explicit flag
-        local explicit_flag = is_explicit and "1" or "0"
-        return string.format("cz_malloc(%s, %s)", size_expr, explicit_flag)
-    else
-        -- Custom allocator - assume it has standard malloc signature
-        return string.format("%s(%s)", malloc_func, size_expr)
     end
 end
 
 function Memory.free_call(ptr_expr, is_explicit)
-    -- Use custom allocator interface if set, otherwise use custom free or default
+    -- Use custom allocator interface if set, otherwise use default free
     local allocator_interface = ctx().custom_allocator_interface
-    local free_func = ctx().custom_free
     
     if allocator_interface then
         -- Use the allocator interface's free function
-        return string.format("%s_free(%s)", allocator_interface:gsub("%.", "_"), ptr_expr)
-    elseif not free_func then
+        local alloc_prefix = allocator_interface:gsub("%.", "_")
+        local explicit_flag = is_explicit and "1" or "0"
+        return string.format("%s_free(%s, %s)", alloc_prefix, ptr_expr, explicit_flag)
+    else
         -- No custom deallocator, use default free
         return string.format("free(%s)", ptr_expr)
-    elseif free_func == "free" then
-        -- Explicitly reset to standard C free
-        return string.format("free(%s)", ptr_expr)
-    elseif free_func == "cz_free" then
-        -- Using the debug wrapper which needs the is_explicit flag
-        local explicit_flag = is_explicit and "1" or "0"
-        return string.format("cz_free(%s, %s)", ptr_expr, explicit_flag)
-    else
-        -- Custom deallocator - assume it has standard free signature
-        return string.format("%s(%s)", free_func, ptr_expr)
     end
 end
 
 function Memory.gen_memory_tracking_helpers()
-    ctx():emit("// Memory tracking helpers")
+    local allocator_interface = ctx().custom_allocator_interface or "cz.alloc"
+    local alloc_prefix = allocator_interface:gsub("%.", "_")
+    
+    ctx():emit("// Memory tracking helpers for " .. allocator_interface)
     ctx():emit("static size_t _czar_explicit_alloc_count = 0;")
     ctx():emit("static size_t _czar_explicit_alloc_bytes = 0;")
     ctx():emit("static size_t _czar_implicit_alloc_count = 0;")
@@ -237,7 +222,7 @@ function Memory.gen_memory_tracking_helpers()
     ctx():emit("static size_t _czar_peak_alloc_count = 0;")
     ctx():emit("static size_t _czar_peak_alloc_bytes = 0;")
     ctx():emit("")
-    ctx():emit("void* cz_malloc(size_t size, int is_explicit) {")
+    ctx():emit("void* " .. alloc_prefix .. "_malloc(size_t size, int is_explicit) {")
     ctx():emit("    void* ptr = malloc(size);")
     ctx():emit("    if (ptr) {")
     ctx():emit("        if (is_explicit) {")
@@ -259,7 +244,12 @@ function Memory.gen_memory_tracking_helpers()
     ctx():emit("    return ptr;")
     ctx():emit("}")
     ctx():emit("")
-    ctx():emit("void cz_free(void* ptr, int is_explicit) {")
+    ctx():emit("void* " .. alloc_prefix .. "_realloc(void* ptr, size_t new_size) {")
+    ctx():emit("    // Note: tracking for realloc is simplified - doesn't track size changes")
+    ctx():emit("    return realloc(ptr, new_size);")
+    ctx():emit("}")
+    ctx():emit("")
+    ctx():emit("void " .. alloc_prefix .. "_free(void* ptr, int is_explicit) {")
     ctx():emit("    if (ptr) {")
     ctx():emit("        if (is_explicit) {")
     ctx():emit("            _czar_explicit_free_count++;")
@@ -276,7 +266,7 @@ function Memory.gen_memory_tracking_helpers()
     ctx():emit("    size_t total_alloc_count = _czar_explicit_alloc_count + _czar_implicit_alloc_count;")
     ctx():emit("    size_t total_alloc_bytes = _czar_explicit_alloc_bytes + _czar_implicit_alloc_bytes;")
     ctx():emit("    size_t total_free_count = _czar_explicit_free_count + _czar_implicit_free_count;")
-    ctx():emit("    fprintf(stderr, \"\\n=== Memory Summary ===\\n\");")
+    ctx():emit("    fprintf(stderr, \"\\n=== Memory Summary (" .. allocator_interface .. ") ===\\n\");")
     ctx():emit("    fprintf(stderr, \"Allocations:\\n\");")
     ctx():emit("    fprintf(stderr, \"  Explicit: %zu (%zu bytes)\\n\", _czar_explicit_alloc_count, _czar_explicit_alloc_bytes);")
     ctx():emit("    fprintf(stderr, \"  Implicit: %zu (%zu bytes)\\n\", _czar_implicit_alloc_count, _czar_implicit_alloc_bytes);")

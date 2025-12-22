@@ -7,7 +7,7 @@ local Macros = {}
 -- PARSER MACROS
 -- ============================================================================
 
--- Parse top-level macros (#malloc, #free, #alias)
+-- Parse top-level macros (#alloc, #alias)
 -- These appear at module scope and configure the compiler
 function Macros.parse_top_level(parser, macro_tok)
     local macro_name = macro_tok.value:upper()
@@ -39,24 +39,6 @@ function Macros.parse_top_level(parser, macro_tok)
         return { 
             kind = "alloc_macro", 
             interface_name = interface_name,
-            line = macro_tok.line,
-            col = macro_tok.col
-        }
-    -- #malloc and #free macros take a function name argument
-    elseif macro_name == "MALLOC" or macro_name == "FREE" then
-        -- Accept both IDENT and KEYWORD tokens (e.g., "malloc" and "free" are keywords)
-        local func_name_tok = parser:current()
-        if not func_name_tok or (func_name_tok.type ~= "IDENT" and func_name_tok.type ~= "KEYWORD") then
-            error(string.format("expected function name after #%s but found %s", 
-                macro_name:lower(), 
-                parser.token_label and parser.token_label(func_name_tok) or tostring(func_name_tok)))
-        end
-        parser:advance()
-        
-        return { 
-            kind = "allocator_macro", 
-            macro_type = macro_name:lower(),
-            function_name = func_name_tok.value,
             line = macro_tok.line,
             col = macro_tok.col
         }
@@ -199,14 +181,10 @@ end
 -- CODEGEN MACROS
 -- ============================================================================
 
--- Process allocator macros (#alloc, #malloc, #free) and alias macros
+-- Process allocator macros (#alloc) and alias macros
 -- Called during codegen initialization
 function Macros.process_top_level(codegen, ast)
-    local malloc_macro_count = 0
-    local free_macro_count = 0
     local alloc_macro_count = 0
-    local malloc_macro_line = nil
-    local free_macro_line = nil
     local alloc_macro_line = nil
     
     for _, item in ipairs(ast.items) do
@@ -218,24 +196,6 @@ function Macros.process_top_level(codegen, ast)
             end
             codegen.custom_allocator_interface = item.interface_name
             alloc_macro_line = item
-        elseif item.kind == "allocator_macro" then
-            if item.macro_type == "malloc" then
-                malloc_macro_count = malloc_macro_count + 1
-                if malloc_macro_count > 1 then
-                    error(string.format("duplicate #malloc macro at %d:%d (previous at %d:%d)", 
-                        item.line, item.col, malloc_macro_line.line, malloc_macro_line.col))
-                end
-                codegen.custom_malloc = item.function_name
-                malloc_macro_line = item
-            elseif item.macro_type == "free" then
-                free_macro_count = free_macro_count + 1
-                if free_macro_count > 1 then
-                    error(string.format("duplicate #free macro at %d:%d (previous at %d:%d)", 
-                        item.line, item.col, free_macro_line.line, free_macro_line.col))
-                end
-                codegen.custom_free = item.function_name
-                free_macro_line = item
-            end
         elseif item.kind == "alias_macro" then
             -- Store type alias for replacement
             if codegen.type_aliases[item.alias_name] then
