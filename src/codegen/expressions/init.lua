@@ -8,6 +8,8 @@ local Collections = require("codegen.expressions.collections")
 
 local Expressions = {}
 
+local function ctx() return _G.Codegen end
+
 function Expressions.gen_expr(expr)
     if not expr then
         error("gen_expr called with nil expression", 2)
