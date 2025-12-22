@@ -25,7 +25,7 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
     -- Explicit allocation with 'new' keyword
     return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
-        expr.type_name, ctx():malloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
+        expr.type_name, ctx():alloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
 end
 
 -- Generate new heap-allocated array
@@ -49,7 +49,7 @@ function Collections.gen_new_array(expr, gen_expr_fn)
     local statements = {}
     table.insert(statements, string.format("%s* _ptr = %s", 
         element_type_str, 
-        ctx():malloc_call(string.format("sizeof(%s) * %d", element_type_str, array_size), true)))
+        ctx():alloc_call(string.format("sizeof(%s) * %d", element_type_str, array_size), true)))
     
     for i, elem_expr in ipairs(element_parts) do
         table.insert(statements, string.format("_ptr[%d] = %s", i-1, elem_expr))
@@ -92,13 +92,13 @@ function Collections.gen_new_map(expr, gen_expr_fn)
     local capacity = math.max(MAP_MIN_CAPACITY, #expr.entries * 2)
     table.insert(statements, string.format("%s* _map = %s", 
         map_type_name, 
-        ctx():malloc_call(string.format("sizeof(%s)", map_type_name), true)))
+        ctx():alloc_call(string.format("sizeof(%s)", map_type_name), true)))
     table.insert(statements, string.format("_map->capacity = %d", capacity))
     table.insert(statements, string.format("_map->size = %d", #expr.entries))
     table.insert(statements, string.format("_map->keys = %s", 
-        ctx():malloc_call(string.format("sizeof(%s) * %d", key_type_str, capacity), true)))
+        ctx():alloc_call(string.format("sizeof(%s) * %d", key_type_str, capacity), true)))
     table.insert(statements, string.format("_map->values = %s", 
-        ctx():malloc_call(string.format("sizeof(%s) * %d", value_type_str, capacity), true)))
+        ctx():alloc_call(string.format("sizeof(%s) * %d", value_type_str, capacity), true)))
     
     -- Initialize entries
     for i, entry in ipairs(expr.entries) do
@@ -164,7 +164,7 @@ function Collections.gen_new_pair(expr, gen_expr_fn)
     local statements = {}
     table.insert(statements, string.format("%s* _pair = %s", 
         pair_type_name,
-        ctx():malloc_call(string.format("sizeof(%s)", pair_type_name), true)))
+        ctx():alloc_call(string.format("sizeof(%s)", pair_type_name), true)))
     table.insert(statements, string.format("_pair->left = %s", left_expr))
     table.insert(statements, string.format("_pair->right = %s", right_expr))
     table.insert(statements, "_pair")
@@ -249,11 +249,11 @@ function Collections.gen_new_string(expr)
     -- Generate code: malloc + initialize
     local statements = {}
     table.insert(statements, string.format("czar_string* _str = %s", 
-        ctx():malloc_call("sizeof(czar_string)", true)))
+        ctx():alloc_call("sizeof(czar_string)", true)))
     -- Allocate capacity with room to grow (next power of 2, minimum 16)
     local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
     table.insert(statements, string.format("_str->data = %s",
-        ctx():malloc_call(tostring(capacity), false)))
+        ctx():alloc_call(tostring(capacity), false)))
     table.insert(statements, string.format("_str->length = %d", str_len))
     table.insert(statements, string.format("_str->capacity = %d", capacity))
     -- Copy the string data
@@ -277,7 +277,7 @@ function Collections.gen_string_literal(expr)
     -- Generate code: compound literal with malloc for data
     local statements = {}
     table.insert(statements, string.format("char* _data = %s",
-        ctx():malloc_call(tostring(capacity), false)))
+        ctx():alloc_call(tostring(capacity), false)))
     table.insert(statements, string.format("memcpy(_data, \"%s\", %d)", str_value, str_len))
     table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
     table.insert(statements, string.format("(czar_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
