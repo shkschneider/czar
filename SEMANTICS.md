@@ -3,18 +3,21 @@
 _case insensitive_
 
 - _
+- alloc
 - and
 - _anonymous_
 - any
 - array
 - _as_
 - assert
+- _auto_
 - bool / _boolean_
 - C
 - clone / _copy_
 - continue / break
 - cz / _czar_
 - DEBUG
+- defer
 - enum
 - f32 / f64
 - FILE

@@ -11,7 +11,6 @@
 extern const char luaJIT_BC_main[];
 extern const char luaJIT_BC_lexer_init[];
 extern const char luaJIT_BC_parser_init[];
-extern const char luaJIT_BC_parser_utils[];
 extern const char luaJIT_BC_parser_types[];
 extern const char luaJIT_BC_parser_declarations[];
 extern const char luaJIT_BC_parser_statements[];
@@ -63,7 +62,6 @@ extern const char luaJIT_BC_inspect[];
 extern const size_t luaJIT_BC_main_size;
 extern const size_t luaJIT_BC_lexer_init_size;
 extern const size_t luaJIT_BC_parser_init_size;
-extern const size_t luaJIT_BC_parser_utils_size;
 extern const size_t luaJIT_BC_parser_types_size;
 extern const size_t luaJIT_BC_parser_declarations_size;
 extern const size_t luaJIT_BC_parser_statements_size;
@@ -156,7 +154,6 @@ int main(int argc, char **argv) {
     // Load modules into package.preload
     if (load_module(L, "lexer", luaJIT_BC_lexer_init, luaJIT_BC_lexer_init_size) != 0 ||
         load_module(L, "parser", luaJIT_BC_parser_init, luaJIT_BC_parser_init_size) != 0 ||
-        load_module(L, "parser.utils", luaJIT_BC_parser_utils, luaJIT_BC_parser_utils_size) != 0 ||
         load_module(L, "parser.types", luaJIT_BC_parser_types, luaJIT_BC_parser_types_size) != 0 ||
         load_module(L, "parser.declarations", luaJIT_BC_parser_declarations, luaJIT_BC_parser_declarations_size) != 0 ||
         load_module(L, "parser.statements", luaJIT_BC_parser_statements, luaJIT_BC_parser_statements_size) != 0 ||

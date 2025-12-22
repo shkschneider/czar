@@ -14,7 +14,7 @@ _un-ordered_
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
 - `#DEBUG` to get or set global debug flag
-- `#defer` defers execution of a statement until scope exit; shorthand: `p = new {} #defer` auto-frees at scope exit
+- `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
 - `fn function_name(parameters...) return_type`
 - `for idx, item in iterable {}`
