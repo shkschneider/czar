@@ -22,7 +22,7 @@ done
 OUT="dist/cz"
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 LDFLAGS="-L./build -lczar -Wl"
-STATIC=false
+STATIC=${STATIC:-false}
 
 dynamic() {
     echo -e $YELLOW"[LUA] dynamic"$WHITE
@@ -56,12 +56,6 @@ static() {
     return 0
 }
 
-if [[ $STATIC == true ]] ; then
-    static || dynamic
-else
-    dynamic
-fi
-
 set -e
 SOURCES=$(cd ./src && find * -type f -name "*.lua")
 LIBRARY=libczar.a
@@ -82,6 +76,12 @@ for src in ${SOURCES[@]} ; do
     echo "[LUAJIT] $src -> $obj"
     luajit -b -n $name ./src/$src ./build/$obj # bytecode module-name
 done
+
+if [[ $STATIC == true ]] ; then
+    static || dynamic
+else
+    dynamic
+fi
 
 echo -n "[NM] main.h"
 echo "// Auto-generated" > ./build/main.h
