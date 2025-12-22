@@ -1,5 +1,5 @@
 // Test shorthand #import module #use syntax
-#import cz #use
+#import cz.fmt #use
 
 fn main() i32 {
     // Can call functions without cz. prefix using shorthand

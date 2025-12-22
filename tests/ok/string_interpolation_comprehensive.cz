@@ -1,35 +1,36 @@
 // Comprehensive test of string interpolation features
-#import cz
+#import cz.fmt
+
 fn main() i32 {
     i32 age = 30
     i32 year = 2025
     bool flag = true
-    
+
     // Basic interpolation
-    cz.println("Age is {age}")
-    
+    cz.fmt.println("Age is {age}")
+
     // Multiple interpolations
-    cz.println("I am {age} years old in {year}")
-    
+    cz.fmt.println("I am {age} years old in {year}")
+
     // Expressions in interpolation
-    cz.println("Next year I'll be {age + 1}")
-    cz.println("Double my age: {age * 2}")
-    
+    cz.fmt.println("Next year I'll be {age + 1}")
+    cz.fmt.println("Double my age: {age * 2}")
+
     // Different types
-    cz.println("Flag value: {flag}")
-    
+    cz.fmt.println("Flag value: {flag}")
+
     // Escaped braces
-    cz.println("Literal braces: \{not_a_variable\}")
-    
+    cz.fmt.println("Literal braces: \{not_a_variable\}")
+
     // With print (no newline)
-    cz.print("Hello ")
-    cz.print("{age}")
-    cz.println("!")
-    
+    cz.fmt.print("Hello ")
+    cz.fmt.print("{age}")
+    cz.fmt.println("!")
+
     // Nested expressions
     i32 a = 10
     i32 b = 20
-    cz.println("Sum: {a + b}, Product: {a * b}")
-    
+    cz.fmt.println("Sum: {a + b}, Product: {a * b}")
+
     return 0
 }

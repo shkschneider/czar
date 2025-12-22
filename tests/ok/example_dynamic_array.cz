@@ -1,5 +1,4 @@
 // Example demonstrating dynamic arrays (lists) in Czar
-#import cz
 //
 // Dynamic arrays are heap-allocated and created with the `new [...]` syntax.
 // They <Type> return !![] (slices), making them compatible with slice parameters.
@@ -18,16 +17,16 @@ fn print_array(i32[] arr, i32 len) void {
 fn main() i32 {
     // Create a dynamic array on the heap
     i32[] numbers = new [10, 20, 30, 40, 50]
-    
+
     // Access elements like regular arrays
     i32 first = numbers[0]    // 10
     i32 second = numbers[1]   // 20
-    
+
     // Pass to functions expecting slices
     print_array(numbers, 5)
-    
+
     // Memory is automatically freed at scope exit
-    
+
     return 0
 }
 

@@ -3,4 +3,4 @@
 //
 // Note: print, println, printf are function pointers in the cz struct
 // They point to raw C functions _cz_print, _cz_println, _cz_printf
-#module cz
+#module cz.fmt

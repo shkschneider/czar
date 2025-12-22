@@ -1,32 +1,33 @@
 // Comprehensive test of all print functions
-#import cz
+#import cz.fmt
+
 fn main() i32 {
     // Test println
-    cz.println("=== Testing println ===")
-    cz.println("Line 1")
-    cz.println("Line 2")
-    
+    cz.fmt.println("=== Testing println ===")
+    cz.fmt.println("Line 1")
+    cz.fmt.println("Line 2")
+
     // Test print
-    cz.print("=== Testing print ===")
-    cz.print("\n")
-    cz.print("A")
-    cz.print("B")
-    cz.print("C")
-    cz.println("")
-    
+    cz.fmt.print("=== Testing print ===")
+    cz.fmt.print("\n")
+    cz.fmt.print("A")
+    cz.fmt.print("B")
+    cz.fmt.print("C")
+    cz.fmt.println("")
+
     // Test printf with various types
-    cz.println("=== Testing printf ===")
+    cz.fmt.println("=== Testing printf ===")
     i32 age = 25
     i32 year = 2024
-    cz.printf("Age: %d, Year: %d\n", age, year)
-    
+    cz.fmt.printf("Age: %d, Year: %d\n", age, year)
+
     i32 a = 10
     i32 b = 20
     i32 c = 30
-    cz.printf("Values: %d, %d, %d\n", a, b, c)
-    
+    cz.fmt.printf("Values: %d, %d, %d\n", a, b, c)
+
     // Printf without arguments
-    cz.printf("Done!\n")
-    
+    cz.fmt.printf("Done!\n")
+
     return 0
 }
