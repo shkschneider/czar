@@ -6,7 +6,7 @@ fn main() i32 {
     // Test UTF-8 strings with multi-byte characters
     // "Hello" = 5 ASCII chars = 5 bytes
     // "世界" = 2 Chinese chars = 6 bytes (3 bytes each in UTF-8)
-    // "😁" = 1 emoji (U+1F601) = 4 bytes in UTF-8
+    // "😁" = 1 emoji (U+1F601 - grinning face with smiling eyes) = 4 bytes in UTF-8
     
     cz.print("=== Basic UTF-8 Tests ===")
     
@@ -74,7 +74,7 @@ fn main() i32 {
     
     // Test 7: Find 😁 in string
     string haystack = string "Hello 😁 World"
-    // "Hello " = 6 bytes, so 😁 starts at byte 6
+    // "Hello " = 6 bytes, so 😁 starts at byte offset 6 (counting from 0)
     i32 emoji_idx = haystack.index(smiley)
     if emoji_idx != 6 {
         cz.print("ERROR: 😁 should be at byte offset 6")
