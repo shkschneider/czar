@@ -5,6 +5,7 @@ _un-ordered_
 - `!!` abort() if _null_ (or cast failed)
 - `#alias` for types and functions
 - `#alloc` interface with alloc() realloc() free() (cz.alloc.default for standard C allocator, cz.alloc.debug for memory tracking)
+- arena allocators with `cz_alloc_arena` struct for fast bump allocation
 - anonymous functions and structs
 - `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
 - `#assert` if condition is false
