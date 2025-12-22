@@ -45,7 +45,10 @@ function Statements.check_statement(typechecker, stmt)
             Inference.infer_type(typechecker, stmt.expr or stmt.expression)
         end
     elseif stmt.kind == "free" then
-        Inference.infer_type(typechecker, stmt.expr)
+        Inference.infer_type(typechecker, stmt.value)
+    elseif stmt.kind == "defer" then
+        -- Defer statement - type check the expression
+        Inference.infer_type(typechecker, stmt.value)
     end
 end
 

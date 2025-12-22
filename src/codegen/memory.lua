@@ -174,10 +174,14 @@ function Memory.check_unused_vars()
 end
 
 function Memory.malloc_call(size_expr, is_explicit)
-    -- Use custom malloc if set, otherwise use default or debug wrapper
+    -- Use custom allocator interface if set, otherwise use custom malloc or default
+    local allocator_interface = ctx().custom_allocator_interface
     local malloc_func = ctx().custom_malloc
     
-    if not malloc_func then
+    if allocator_interface then
+        -- Use the allocator interface's malloc function
+        return string.format("%s_malloc(%s)", allocator_interface:gsub("%.", "_"), size_expr)
+    elseif not malloc_func then
         -- No custom allocator, use default malloc
         return string.format("malloc(%s)", size_expr)
     elseif malloc_func == "malloc" then
@@ -194,10 +198,14 @@ function Memory.malloc_call(size_expr, is_explicit)
 end
 
 function Memory.free_call(ptr_expr, is_explicit)
-    -- Use custom free if set, otherwise use default or debug wrapper
+    -- Use custom allocator interface if set, otherwise use custom free or default
+    local allocator_interface = ctx().custom_allocator_interface
     local free_func = ctx().custom_free
     
-    if not free_func then
+    if allocator_interface then
+        -- Use the allocator interface's free function
+        return string.format("%s_free(%s)", allocator_interface:gsub("%.", "_"), ptr_expr)
+    elseif not free_func then
         -- No custom deallocator, use default free
         return string.format("free(%s)", ptr_expr)
     elseif free_func == "free" then
