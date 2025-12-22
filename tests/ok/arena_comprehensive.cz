@@ -6,15 +6,15 @@ struct cz_alloc_arena {
     u64 offset
 }
 
-fn cz_alloc_arena:new() void {
+fn cz_alloc_arena:init() void {
     #unsafe {
-        _cz_alloc_arena_constructor(self);
+        _cz_alloc_arena_init(self);
     }
 }
 
-fn cz_alloc_arena:free() void {
+fn cz_alloc_arena:fini() void {
     #unsafe {
-        _cz_alloc_arena_destructor(self);
+        _cz_alloc_arena_fini(self);
     }
 }
 

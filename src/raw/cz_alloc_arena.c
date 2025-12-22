@@ -10,7 +10,7 @@
 typedef struct cz_alloc_arena cz_alloc_arena;
 
 // Constructor for any arena struct
-void _cz_alloc_arena_constructor(cz_alloc_arena* self) {
+void _cz_alloc_arena_init(cz_alloc_arena* self) {
     // Arena struct layout: uint64_t size, void* buffer, uint64_t offset
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
@@ -25,7 +25,7 @@ void _cz_alloc_arena_constructor(cz_alloc_arena* self) {
 }
 
 // Destructor for any arena struct
-void _cz_alloc_arena_destructor(cz_alloc_arena* self) {
+void _cz_alloc_arena_fini(cz_alloc_arena* self) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));

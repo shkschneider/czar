@@ -3,7 +3,7 @@ struct Counter {
     i32 value
 }
 
-fn Counter:new() void {
+fn Counter:init() void {
     self.value = 10
 }
 
