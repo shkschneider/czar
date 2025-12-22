@@ -1,0 +1,57 @@
+// Test basic arena allocator functionality
+
+struct cz_alloc_arena {
+    u64 size
+    any buffer
+    u64 offset
+}
+
+// Constructor - calls raw C
+fn cz_alloc_arena:new() void {
+    #unsafe {
+        _cz_alloc_arena_constructor(self);
+    }
+}
+
+// Destructor - calls raw C
+fn cz_alloc_arena:free() void {
+    #unsafe {
+        _cz_alloc_arena_destructor(self);
+    }
+}
+
+// Allocate from arena
+fn cz_alloc_arena:alloc(u64 size) any {
+    mut any result = null
+    #unsafe {
+        result = _alloc(self, size);
+    }
+    return result
+}
+
+// Reallocate within arena
+fn cz_alloc_arena:ralloc(any ptr, u64 new_size) any {
+    mut any result = null
+    #unsafe {
+        result = _ralloc(self, ptr, new_size);
+    }
+    return result
+}
+
+// Clear arena
+fn cz_alloc_arena:clear() void {
+    #unsafe {
+        _clear(self);
+    }
+}
+
+fn main() i32 {
+    // Create arena with 1024 bytes
+    cz_alloc_arena? arena = new cz_alloc_arena { size: 1024 }
+    #defer free arena
+    
+    // Test allocation
+    any p = arena:alloc(100)
+    
+    return 0
+}

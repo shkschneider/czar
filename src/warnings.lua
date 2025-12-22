@@ -28,6 +28,8 @@ Warnings.WarningType = {
     
     -- Allocator warnings
     USELESS_ALLOC_DIRECTIVE = "USELESS_ALLOC_DIRECTIVE",
+    USELESS_ARENA_ON_STACK = "USELESS_ARENA_ON_STACK",
+    IMMUTABLE_ARENA = "IMMUTABLE_ARENA",
 }
 
 -- Cache for source file contents

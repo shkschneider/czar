@@ -178,6 +178,22 @@ function Statements.gen_statement(stmt)
         elseif is_pointer_type then
             -- This is an explicit pointer type (Type*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
+            
+            -- Warning: check for immutable arena (immutable-arena)
+            if stmt.type.to and stmt.type.to.kind == "named_type" and 
+               stmt.type.to.name == "cz_alloc_arena" and not stmt.mutable then
+                local Warnings = require("src.warnings")
+                Warnings.emit(
+                    ctx().source_file,
+                    stmt.line,
+                    Warnings.WarningType.IMMUTABLE_ARENA,
+                    "Arena allocator declared as immutable doesn't make sense. " ..
+                    "Arena needs to be mutable to allocate memory. Use 'mut cz_alloc_arena? " .. stmt.name .. " = ...'",
+                    ctx().source_path,
+                    ctx().current_function
+                )
+            end
+            
             local base_type = Codegen.Types.c_type(stmt.type.to)
             local decl
             if stmt.mutable then
@@ -221,6 +237,38 @@ function Statements.gen_statement(stmt)
         else
             -- This is a value type (or any type which is void*)
             ctx():add_var(stmt.name, stmt.type, stmt.mutable, needs_free)
+            
+            -- Warning: check for arena allocated on stack (useless-arena-on-stack)
+            if stmt.type and stmt.type.kind == "named_type" and stmt.type.name == "cz_alloc_arena" then
+                local Warnings = require("src.warnings")
+                Warnings.emit(
+                    ctx().source_file,
+                    stmt.line,
+                    Warnings.WarningType.USELESS_ARENA_ON_STACK,
+                    "Arena allocator 'cz_alloc_arena' allocated on stack is inefficient. " ..
+                    "Arena allocators should be heap-allocated using 'new cz_alloc_arena { size: n }' " ..
+                    "to properly manage heap memory.",
+                    ctx().source_path,
+                    ctx().current_function
+                )
+            end
+            
+            -- Warning: check for immutable arena (immutable-arena)
+            if stmt.type and stmt.type.kind == "nullable" and stmt.type.to and 
+               stmt.type.to.kind == "named_type" and stmt.type.to.name == "cz_alloc_arena" and
+               not stmt.mutable then
+                local Warnings = require("src.warnings")
+                Warnings.emit(
+                    ctx().source_file,
+                    stmt.line,
+                    Warnings.WarningType.IMMUTABLE_ARENA,
+                    "Arena allocator declared as immutable doesn't make sense. " ..
+                    "Arena needs to be mutable to allocate memory. Use 'mut cz_alloc_arena? " .. stmt.name .. " = ...'",
+                    ctx().source_path,
+                    ctx().current_function
+                )
+            end
+            
             local prefix = stmt.mutable and "" or "const "
             local decl = string.format("%s%s %s", prefix, Codegen.Types.c_type(stmt.type), stmt.name)
             if stmt.init then
