@@ -13,6 +13,7 @@ function Analysis.new(lowered_ast, options)
         ast = lowered_ast,
         freed_vars = {},     -- Track variables that have been freed in current scope
         scope_stack = {},    -- Stack of scopes for tracking freed variables
+        deferred_frees = {}, -- Stack of deferred frees per scope
         errors = {},         -- Collected analysis errors
         source_file = options.source_file or "<unknown>",  -- Source filename for error messages
         source_path = options.source_path or options.source_file or "<unknown>",  -- Full path for reading source
@@ -107,12 +108,31 @@ function Analysis:analyze_statement(stmt)
             self:analyze_expression(stmt.expr, nil)
         end
     elseif stmt.kind == "free" then
-        -- Mark the variable as freed
+        -- NOTE: Free statements should only be marked as freed if they're NOT deferred
+        -- If we reach here, it's a direct free (not deferred), so mark as freed
         local free_expr = stmt.expr or stmt.value
         if free_expr and free_expr.kind == "identifier" then
             local var_name = free_expr.name
             self:mark_freed(var_name)
         end
+    elseif stmt.kind == "defer" then
+        -- Handle defer statement - track deferred frees but don't mark as freed yet
+        -- We don't analyze the deferred statement itself, as that would incorrectly
+        -- mark variables as freed before the scope exits
+        if stmt.value and stmt.value.kind == "free" then
+            local free_expr = stmt.value.expr or stmt.value.value
+            if free_expr and free_expr.kind == "identifier" then
+                local var_name = free_expr.name
+                self:mark_deferred_free(var_name)
+            end
+        end
+        -- Note: We don't analyze deferred expressions for use-after-free
+        -- because they execute at scope exit, not when the defer is encountered
+    elseif stmt.kind == "block" then
+        -- Handle bare block statements (nested scopes)
+        self:push_scope()
+        self:analyze_block(stmt)
+        self:pop_scope()
     end
 end
 
@@ -184,16 +204,30 @@ end
 -- Scope management for tracking freed variables
 function Analysis:push_scope()
     table.insert(self.scope_stack, {})
+    table.insert(self.deferred_frees, {})
 end
 
 function Analysis:pop_scope()
+    -- Note: We don't apply deferred frees to the freed tracking
+    -- because deferred frees happen at scope exit, so the variable
+    -- remains valid throughout the entire scope
     table.remove(self.scope_stack)
+    table.remove(self.deferred_frees)
 end
 
 function Analysis:mark_freed(var_name)
     local scope = self.scope_stack[#self.scope_stack]
     if scope then
         scope[var_name] = true
+    end
+end
+
+function Analysis:mark_deferred_free(var_name)
+    -- Track deferred frees but don't mark as freed
+    -- The variable remains valid until scope exit
+    local deferred = self.deferred_frees[#self.deferred_frees]
+    if deferred then
+        deferred[var_name] = true
     end
 end
 
