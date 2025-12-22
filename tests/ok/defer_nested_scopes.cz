@@ -6,20 +6,20 @@ struct Person {
 
 fn main() i32 {
     i32 result = 0
-    
+
     {
         Person? p1 = new Person { age: 10 }
-        #defer free(p1)
+        #defer free p1
         result = result + p1.age
         // p1 freed here at inner scope exit
     }
-    
+
     {
         Person? p2 = new Person { age: 20 }
-        #defer free(p2)
+        #defer free p2
         result = result + p2.age
         // p2 freed here at inner scope exit
     }
-    
+
     return result - 30
 }
