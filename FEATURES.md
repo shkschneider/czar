@@ -13,7 +13,8 @@ _un-ordered_
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
-- customizable memory allocators (`#malloc` `#free`...)
+- customizable memory allocators (`#alloc` `#malloc` `#free`...)
+- `defer` defers execution of a statement until scope exit
 - `#DEBUG` to get or set global debug flag
 - `#FILE` injects current file
 - `fn function_name(parameters...) return_type`

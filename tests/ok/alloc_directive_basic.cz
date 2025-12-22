@@ -1,0 +1,14 @@
+// Test #alloc directive
+
+#alloc cz.alloc
+
+struct Person {
+    i32 age
+}
+
+fn main() i32 {
+    Person? p = new Person { age: 42 }
+    defer free(p)
+    
+    return p.age - 42
+}
