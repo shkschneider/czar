@@ -15,7 +15,6 @@ _case insensitive_
 - continue / break
 - cz / _czar_
 - DEBUG
-- defer
 - enum
 - f32 / f64
 - FILE

@@ -1,17 +1,17 @@
-# Memory Handling with defer and #alloc
+# Memory Handling with #defer and #alloc
 
-This document describes the new memory handling features in Czar: the `defer` keyword and the `#alloc` directive.
+This document describes the new memory handling features in Czar: the `#defer` directive and the `#alloc` directive.
 
-## The `defer` Keyword
+## The `#defer` Directive
 
-The `defer` keyword allows you to defer the execution of a statement until the current scope exits. Deferred statements execute in LIFO (Last-In-First-Out) order.
+The `#defer` directive allows you to defer the execution of a statement until the current scope exits. Deferred statements execute in LIFO (Last-In-First-Out) order.
 
 ### Basic Usage
 
 ```czar
 fn main() i32 {
     any p = new ...
-    defer free(p)
+    #defer free(p)
     
     // Use p here
     
@@ -27,13 +27,13 @@ When you have multiple defer statements, they execute in reverse order:
 ```czar
 fn main() i32 {
     any p1 = new ...
-    defer free(p1)    // Executes last
+    #defer free(p1)    // Executes last
     
     any p2 = new ...
-    defer free(p2)    // Executes second
+    #defer free(p2)    // Executes second
     
     any p3 = new ...
-    defer free(p3)    // Executes first
+    #defer free(p3)    // Executes first
     
     return 0
 }
@@ -48,13 +48,13 @@ Deferred statements are scoped to the block they are declared in:
 fn main() i32 {
     {
         any p1 = new ...
-        defer free(p1)
+        #defer free(p1)
         // p1 freed here at inner scope exit
     }
     
     {
         any p2 = new ...
-        defer free(p2)
+        #defer free(p2)
         // p2 freed here at inner scope exit
     }
     
@@ -67,9 +67,9 @@ fn main() i32 {
 Czar supports two mechanisms for memory cleanup:
 
 1. **Automatic free-at-scope-exit**: Variables allocated with `new` are automatically freed when they go out of scope (unless explicitly freed)
-2. **Defer**: Explicitly defer execution of any statement (including `free`) to scope exit
+2. **#defer**: Explicitly defer execution of any statement (including `free`) to scope exit
 
-The `defer` keyword gives you more control and can be used for any cleanup operation, not just freeing memory (e.g., closing files, releasing resources).
+The `#defer` directive gives you more control and can be used for any cleanup operation, not just freeing memory (e.g., closing files, releasing resources).
 
 ## The `#alloc` Directive
 
@@ -111,7 +111,7 @@ iface Alloc {
 
 fn main() i32 {
     any p = new ...  // Uses my.custom.allocator.malloc
-    defer free(p)    // Uses my.custom.allocator.free
+    #defer free(p)   // Uses my.custom.allocator.free
     return 0
 }
 ```
@@ -135,10 +135,10 @@ However, `#alloc` is recommended as it provides a more structured interface for 
 
 ## Best Practices
 
-1. **Use `defer` for explicit cleanup**: When you need precise control over when cleanup happens
+1. **Use `#defer` for explicit cleanup**: When you need precise control over when cleanup happens
 2. **Use automatic free for simple cases**: Let the compiler handle freeing for you
 3. **Use `#alloc` for custom allocators**: When you need a complete allocator interface
-4. **Combine `defer` with other cleanup operations**: Not just memory, but files, locks, etc.
+4. **Combine `#defer` with other cleanup operations**: Not just memory, but files, locks, etc.
 
 Example combining multiple features:
 
@@ -147,10 +147,10 @@ Example combining multiple features:
 
 fn process_file() i32 {
     any file = open("data.txt")
-    defer close(file)
+    #defer close(file)
     
     any buffer = new Buffer { size: 1024 }
-    defer free(buffer)
+    #defer free(buffer)
     
     // Process file with buffer
     // Both cleanup operations happen automatically at scope exit
