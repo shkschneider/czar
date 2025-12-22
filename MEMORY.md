@@ -87,12 +87,25 @@ fn main() i32 {
 
 ### Defer vs Automatic Free
 
-Czar supports two mechanisms for memory cleanup:
+With the introduction of `#defer`, memory cleanup now works as follows:
 
-1. **Automatic free-at-scope-exit**: Variables allocated with `new` are automatically freed when they go out of scope (unless explicitly freed)
-2. **#defer**: Explicitly defer execution of any statement (including `free`) to scope exit
+1. **Explicit pointers (nullable types like `Type?`)**: Require manual cleanup using `#defer` or explicit `free`
+2. **Implicit pointers (value types with auto-dereference)**: Automatically freed at scope exit (legacy behavior)
 
-The `#defer` directive gives you more control and can be used for any cleanup operation, not just freeing memory (e.g., closing files, releasing resources).
+Example:
+```czar
+fn main() i32 {
+    // Explicit pointer - requires manual defer or free
+    Person? p1 = new Person { age: 25 } #defer
+    
+    // Implicit pointer (if supported) - auto-freed at scope exit
+    Person p2 = ... // value type
+    
+    return 0
+}
+```
+
+The `#defer` directive gives you explicit control over cleanup timing and can be used for any cleanup operation, not just freeing memory (e.g., closing files, releasing resources).
 
 ## The `#alloc` Directive
 
