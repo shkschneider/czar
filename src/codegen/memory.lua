@@ -72,12 +72,15 @@ function Memory.get_scope_cleanup()
         end
     end
     -- Then add automatic free calls for heap-allocated variables
+    -- Note: With defer, automatic cleanup only applies to implicit pointers (is_reference = true)
+    -- Explicit pointers (nullable types) require manual #defer or free
     if #ctx().heap_vars_stack > 0 then
         local heap_vars = ctx().heap_vars_stack[#ctx().heap_vars_stack]
         for i = #heap_vars, 1, -1 do
             local var_name = heap_vars[i]
             local var_info = Memory.get_var_info(var_name)
-            if var_info and var_info.needs_free then
+            -- Only auto-free implicit pointers (is_reference = true)
+            if var_info and var_info.needs_free and var_info.is_reference then
                 local var_type = var_info.type
                 if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
                     local struct_name = var_type.to.name
@@ -104,11 +107,14 @@ function Memory.get_all_scope_cleanup()
             end
         end
         -- Add automatic free calls for heap-allocated variables
+        -- Note: With defer, automatic cleanup only applies to implicit pointers (is_reference = true)
+        -- Explicit pointers (nullable types) require manual #defer or free
         local heap_vars = ctx().heap_vars_stack[scope_idx]
         for i = #heap_vars, 1, -1 do
             local var_name = heap_vars[i]
             local var_info = Memory.get_var_info(var_name)
-            if var_info and var_info.needs_free then
+            -- Only auto-free implicit pointers (is_reference = true)
+            if var_info and var_info.needs_free and var_info.is_reference then
                 local var_type = var_info.type
                 if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
                     local struct_name = var_type.to.name
