@@ -10,7 +10,7 @@ A concise guide for Copilot: what to install, how to build, run and test the pro
 
 Example installs
 - Debian/Ubuntu:
-  - sudo apt install -y luajit build-essential make luarocks
+  - sudo apt install -y luajit-dev build-essential make luarocks
 - macOS (Homebrew):
   - brew install luajit gcc make luarocks
 - Windows:
