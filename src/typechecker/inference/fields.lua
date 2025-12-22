@@ -115,8 +115,8 @@ function Fields.infer_field_type(typechecker, expr)
             return nil
         end
         
-        -- Return cz_os_t* (pointer to struct)
-        local os_type = { kind = "nullable", to = { kind = "named_type", name = "cz_os_t" } }
+        -- Return _cz_os_t* (pointer to struct from raw C)
+        local os_type = { kind = "nullable", to = { kind = "named_type", name = "_cz_os_t" } }
         expr.inferred_type = os_type
         return os_type
     end
@@ -235,8 +235,8 @@ function Fields.infer_field_type(typechecker, expr)
         end
     end
     
-    -- Handle cz_os_t struct fields (special built-in struct)
-    if base_type.kind == "named_type" and base_type.name == "cz_os_t" then
+    -- Handle _cz_os_t struct fields (special built-in struct from raw C)
+    if base_type.kind == "named_type" and base_type.name == "_cz_os_t" then
         if expr.field == "name" or expr.field == "version" or expr.field == "kernel" then
             -- String fields
             local string_ptr_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }

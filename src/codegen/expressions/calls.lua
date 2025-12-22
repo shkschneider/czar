@@ -36,15 +36,15 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         
         if method_name == "print" then
             if #args == 1 then
-                return string.format('cz_print(%s)', args[1])
+                return string.format('_cz_print(%s)', args[1])
             else
                 -- Multiple arguments: treat like printf
-                return string.format('cz_printf(%s)', join(args, ", "))
+                return string.format('_cz_printf(%s)', join(args, ", "))
             end
         elseif method_name == "println" then
-            return string.format('cz_println(%s)', join(args, ", "))
+            return string.format('_cz_println(%s)', join(args, ", "))
         elseif method_name == "printf" then
-            return string.format('cz_printf(%s)', join(args, ", "))
+            return string.format('_cz_printf(%s)', join(args, ", "))
         else
             error(string.format("Unknown method %s on cz module", method_name))
         end
@@ -457,8 +457,8 @@ end
 function Calls.gen_field(expr, gen_expr_fn)
     -- Check if this is cz.os access
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
-        -- Return pointer to the OS struct
-        return "cz_os_get()"
+        -- Return pointer to the OS struct from raw C
+        return "_cz_os_get()"
     end
     
     -- Check if this is enum member access (e.g., Status.SUCCESS)
@@ -493,8 +493,8 @@ function Calls.gen_field(expr, gen_expr_fn)
         end
     end
     
-    -- Special case: if object expression is cz_os_get(), always use arrow
-    if not use_arrow and obj_expr == "cz_os_get()" then
+    -- Special case: if object expression is _cz_os_get(), always use arrow
+    if not use_arrow and obj_expr == "_cz_os_get()" then
         use_arrow = true
     end
     
