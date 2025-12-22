@@ -4,16 +4,15 @@ _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
 - `#alias` for types and functions
+- alloc: interface with alloc() realloc() free()
 - anonymous functions and structs
 - `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
 - `#assert` if condition is false
-- autofree when going out-of-scope
 - `! & | ^ << >>` bitwise operators
 - `bool`
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
-- customizable memory allocators (`#alloc` `#malloc` `#free`...)
 - `#DEBUG` to get or set global debug flag
 - `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
@@ -47,7 +46,6 @@ _un-ordered_
 - single-line `//` and multi-line `/**/` comments
 - `sizeof` `x is T` and `type(x)` (string)
 - stack allocation warns at 1MB and errors at 2MB
-- stack usage should be less than 1MB and must be less than 2MB
 - `string` type
 - struct constructor method `new()` and destructor `free()`
 - `struct Name { members... }`
