@@ -20,6 +20,29 @@ fn main() i32 {
 }
 ```
 
+### Auto-Defer Shorthand
+
+You can use the `#defer` shorthand directly after a heap allocation to automatically free the variable at scope exit:
+
+```czar
+fn main() i32 {
+    Person? p = new Person { age: 25 } #defer
+    
+    // Use p here
+    
+    // p will be automatically freed at scope exit
+    return 0
+}
+```
+
+This is equivalent to:
+```czar
+Person? p = new Person { age: 25 }
+#defer free p
+```
+
+**Important:** The `#defer` shorthand must be directly attached to the allocation expression without a semicolon in between. `p = new {} #defer` works, but `p = new {} ; #defer` does not.
+
 ### Multiple Defer Statements
 
 When you have multiple defer statements, they execute in reverse order:

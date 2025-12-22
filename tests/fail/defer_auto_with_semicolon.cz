@@ -1,0 +1,11 @@
+// Test that semicolon before #defer doesn't work as auto-defer
+struct Person {
+    i32 age
+}
+
+fn main() i32 {
+    // This should fail - semicolon breaks the auto-defer context
+    Person? p = new Person { age: 25 } ; #defer
+    
+    return 0
+}
