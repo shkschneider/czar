@@ -5,11 +5,11 @@
 fn test_todo_with_debug() i32 {
     // Enable debug mode (and discard the result)
     _ = #DEBUG(true)
-    
+
     #TODO("Check this code path")
     i32 x = 42
     #TODO
-    
+
     return 0
 }
 

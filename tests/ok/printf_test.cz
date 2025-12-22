@@ -1,12 +1,13 @@
 // Test printf with format strings and arguments
-#import cz
+#import cz.fmt
+
 fn main() i32 {
     i32 x = 42
     i32 y = 100
-    
-    cz.printf("The value is %d\n", x)
-    cz.printf("x = %d, y = %d\n", x, y)
-    cz.printf("Simple test\n")
-    
+
+    cz.fmt.printf("The value is %d\n", x)
+    cz.fmt.printf("x = %d, y = %d\n", x, y)
+    cz.fmt.printf("Simple test\n")
+
     return 0
 }

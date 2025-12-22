@@ -1,6 +1,6 @@
 // Test #use directive to flatten module namespace
-#import cz
-#use cz
+#import cz.fmt
+#use cz.fmt
 
 fn main() i32 {
     // Can call print without cz. prefix

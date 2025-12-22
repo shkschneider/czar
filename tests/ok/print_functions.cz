@@ -1,9 +1,10 @@
 // Test print functions: println, print, printf
-#import cz
+#import cz.fmt
+
 fn main() i32 {
-    cz.println("Hello, World!")
-    cz.print("No")
-    cz.print(" newline")
-    cz.println(" here")
+    cz.fmt.println("Hello, World!")
+    cz.fmt.print("No")
+    cz.fmt.print(" newline")
+    cz.fmt.println(" here")
     return 0
 }

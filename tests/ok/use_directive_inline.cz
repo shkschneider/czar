@@ -1,5 +1,5 @@
 // Test inline #import ; #use syntax
-#import cz ; #use cz
+#import cz.fmt ; #use cz.fmt
 
 fn main() i32 {
     print("Testing inline directive syntax!\n")
