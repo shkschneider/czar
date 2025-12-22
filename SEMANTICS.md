@@ -3,7 +3,7 @@
 _case insensitive_
 
 - _
-- alloc
+- alloc / _malloc_
 - and
 - _anonymous_
 - any
@@ -21,14 +21,16 @@ _case insensitive_
 - enum
 - f32 / f64
 - FILE
+- fini / _descructor_
 - FIXME
-- fn / _fun_ / _func_ / _function_
-- free / _destructor_ / _alloc_
+- fn / _function_
+- free
 - FUNCTION
 - i8 / i16 / i32 / i64
 - iface / _interface_
 - if / elseif / _elsif_ / else
 - import / _include_
+- init / _constructor_
 - inline / noinline
 - is
 - log
@@ -36,12 +38,13 @@ _case insensitive_
 - map
 - module / _package_
 - mut / _mutable_
-- new / _constructor_ / _alloc_
+- new
 - null / _nil_ / void
 - or
 - pair
 - prv / _private_
 - pub / _public_
+- ralloc / _realloc_
 - repeat / _loop_
 - return
 - _safe_ / _unsafe_

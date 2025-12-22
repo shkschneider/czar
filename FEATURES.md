@@ -4,9 +4,9 @@ _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
 - `#alias` for types and functions
-- `#alloc` interface with alloc() realloc() free() (cz.alloc.default for standard C allocator, cz.alloc.debug for memory tracking)
-- arena allocators with `cz_alloc_arena` struct for fast bump allocation
+- `#alloc` interface with alloc() ralloc() free(): `cz.alloc.default` `cz.alloc.debug`
 - anonymous functions and structs
+- arena allocator `cz.alloc.arena`
 - `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
 - `#assert` if condition is false
 - `! & | ^ << >>` bitwise operators
@@ -14,6 +14,8 @@ _un-ordered_
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
+- `cz.os` struct
+- `cz.print*` functions
 - `#DEBUG` to get or set global debug flag
 - `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
@@ -48,7 +50,7 @@ _un-ordered_
 - `sizeof` `x is T` and `type(x)` (string)
 - stack allocation warns at 1MB and errors at 2MB
 - `string` type
-- struct constructor method `new()` and destructor `free()`
+- struct constructor method `init()` and destructor `fini()`
 - `struct Name { members... }`
 - struct with methods: `fn Name:method() {}` with implicit `self`
 - `Type` safe (non-null) pointer
