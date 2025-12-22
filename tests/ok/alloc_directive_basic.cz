@@ -8,7 +8,7 @@ struct Person {
 
 fn main() i32 {
     Person? p = new Person { age: 42 }
-    defer free(p)
+    #defer free(p)
     
     return p.age - 42
 }

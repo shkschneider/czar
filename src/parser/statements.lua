@@ -47,14 +47,16 @@ function Statements.parse_statement(parser)
         local expr = Expressions.parse_expression(parser)
         parser:match("SEMICOLON")  -- semicolons are optional
         return { kind = "free", value = expr }
-    elseif parser:check("KEYWORD", "defer") then
-        parser:advance()
-        local expr = Expressions.parse_expression(parser)
-        parser:match("SEMICOLON")  -- semicolons are optional
-        return { kind = "defer", value = expr }
     elseif parser:check("DIRECTIVE") then
-        -- Statement-level directives like #assert and #log
+        -- Statement-level directives like #assert, #log, #defer
         local directive_tok = parser:advance()
+        
+        -- Check if this is a #defer directive
+        if directive_tok.value:upper() == "DEFER" then
+            local expr = Expressions.parse_expression(parser)
+            parser:match("SEMICOLON")  -- semicolons are optional
+            return { kind = "defer", value = expr, line = directive_tok.line, col = directive_tok.col }
+        end
         
         -- Check if this is an #unsafe block
         if directive_tok.value:upper() == "UNSAFE" then
