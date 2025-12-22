@@ -14,7 +14,9 @@
 //
 // IMPORTANT NOTES:
 // - upper() and lower() only work correctly for ASCII characters (bytes 0-127)
-//   Multi-byte UTF-8 characters will not be converted properly
+//   Bytes 128-255 in UTF-8 are part of multi-byte sequences, and attempting
+//   case conversion on them individually would corrupt the UTF-8 encoding.
+//   Multi-byte UTF-8 characters will not be converted and are preserved as-is.
 // - All string operations preserve UTF-8 byte sequences correctly as long as
 //   you work on character boundaries (don't split multi-byte characters)
 
@@ -226,8 +228,10 @@ static inline int32_t czar_string_suffix(czar_string* s, czar_string* suffix) {
 // String helper function: upper - convert string to uppercase
 // Modifies the string in place, returns the string
 // NOTE: This function only works correctly for ASCII characters (bytes 0-127).
-// Multi-byte UTF-8 characters (non-ASCII) will not be converted and will be
-// preserved as-is. For proper UTF-8 case conversion, a Unicode library would be needed.
+// Multi-byte UTF-8 characters (bytes 128-255) are part of multi-byte sequences,
+// and attempting case conversion on them would corrupt the UTF-8 encoding.
+// Non-ASCII characters are preserved as-is. For proper UTF-8 case conversion,
+// a Unicode library would be needed.
 static inline czar_string* czar_string_upper(czar_string* s) {
     for (int32_t i = 0; i < s->length; i++) {
         s->data[i] = (char)toupper((unsigned char)s->data[i]);
@@ -238,8 +242,10 @@ static inline czar_string* czar_string_upper(czar_string* s) {
 // String helper function: lower - convert string to lowercase
 // Modifies the string in place, returns the string
 // NOTE: This function only works correctly for ASCII characters (bytes 0-127).
-// Multi-byte UTF-8 characters (non-ASCII) will not be converted and will be
-// preserved as-is. For proper UTF-8 case conversion, a Unicode library would be needed.
+// Multi-byte UTF-8 characters (bytes 128-255) are part of multi-byte sequences,
+// and attempting case conversion on them would corrupt the UTF-8 encoding.
+// Non-ASCII characters are preserved as-is. For proper UTF-8 case conversion,
+// a Unicode library would be needed.
 static inline czar_string* czar_string_lower(czar_string* s) {
     for (int32_t i = 0; i < s->length; i++) {
         s->data[i] = (char)tolower((unsigned char)s->data[i]);
