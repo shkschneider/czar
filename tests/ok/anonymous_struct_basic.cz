@@ -1,6 +1,14 @@
 // Test anonymous struct syntax - struct literal without type name
 fn main() i32 {
-    // Anonymous struct with fields
-    // This tests that the parser can handle struct { field: value } as an expression
+    // Test that anonymous struct syntax is parsed correctly
+    // This creates an anonymous struct with fields
+    struct { x: 10, y: 20 }
+    
+    // Test anonymous struct with single field
+    struct { value: 42 }
+    
+    // Test anonymous struct with multiple fields of different types
+    struct { a: 5, b: true, c: 10 }
+    
     return 0
 }
