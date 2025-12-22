@@ -4,6 +4,7 @@ _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
 - `#alias` for types and functions
+- anonymous functions and structs
 - `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
 - `#assert` if condition is false
 - autofree when going out-of-scope

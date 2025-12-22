@@ -4,6 +4,7 @@ _case insensitive_
 
 - _
 - and
+- _anonymous_
 - any
 - array
 - _as_
