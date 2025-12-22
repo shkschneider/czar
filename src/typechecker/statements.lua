@@ -23,6 +23,9 @@ function Statements.check_statement(typechecker, stmt)
         Statements.check_var_decl(typechecker, stmt)
     elseif stmt.kind == "assign" then
         Statements.check_assign(typechecker, stmt)
+    elseif stmt.kind == "block" then
+        -- Bare block statement - check all statements within
+        Statements.check_block(typechecker, stmt)
     elseif stmt.kind == "if" then
         Statements.check_if(typechecker, stmt)
     elseif stmt.kind == "while" then

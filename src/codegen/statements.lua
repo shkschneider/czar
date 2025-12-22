@@ -251,6 +251,22 @@ function Statements.gen_statement(stmt)
             return "(void)(" .. Codegen.Expressions.gen_expr(expr.value) .. ");"
         end
         return Codegen.Expressions.gen_expr(stmt.expression) .. ";"
+    elseif stmt.kind == "block" then
+        -- Bare block statement (for nested scopes)
+        local parts = {}
+        table.insert(parts, "{")
+        ctx():push_scope()
+        for _, s in ipairs(stmt.statements) do
+            table.insert(parts, "    " .. Statements.gen_statement(s))
+        end
+        -- Insert cleanup for this scope
+        local cleanup = ctx():get_scope_cleanup()
+        for _, cleanup_code in ipairs(cleanup) do
+            table.insert(parts, "    " .. cleanup_code)
+        end
+        ctx():pop_scope()
+        table.insert(parts, "}")
+        return table.concat(parts, "\n    ")
     elseif stmt.kind == "if" then
         return Statements.gen_if(stmt)
     elseif stmt.kind == "while" then
