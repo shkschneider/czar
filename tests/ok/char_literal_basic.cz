@@ -1,0 +1,15 @@
+// Test basic char literal functionality
+fn main() i32 {
+    u8 a = 'a'
+    u8 newline = '\n'
+    u8 tab = '\t'
+    u8 quote = '\''
+    u8 backslash = '\\'
+    
+    // Test that char literals are u8
+    if a != <u8> 97 !! {
+        return 1
+    }
+    
+    return 0
+}

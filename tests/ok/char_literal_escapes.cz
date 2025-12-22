@@ -1,0 +1,34 @@
+// Test char literal edge cases
+fn main() i32 {
+    // Test regular ASCII character
+    u8 letter = 'A'
+    
+    // Test escape sequences
+    u8 newline = '\n'
+    u8 tab = '\t'
+    u8 backslash = '\\'
+    u8 single_quote = '\''
+    
+    // Verify values
+    if letter != <u8> 65 !! {
+        return 1
+    }
+    
+    if newline != <u8> 10 !! {
+        return 2
+    }
+    
+    if tab != <u8> 9 !! {
+        return 3
+    }
+    
+    if backslash != <u8> 92 !! {
+        return 4
+    }
+    
+    if single_quote != <u8> 39 !! {
+        return 5
+    }
+    
+    return 0
+}
