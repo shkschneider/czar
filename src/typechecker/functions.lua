@@ -33,11 +33,30 @@ function Functions.check_function(typechecker, func)
     end
 
     -- Add parameters to scope and validate varargs
+    local Warnings = require("warnings")
     local has_varargs = false
     for i, param in ipairs(func.params) do
         local param_type = param.type
         -- In explicit pointer model, check mutable field directly
         local is_mutable = param.mutable or false
+
+        -- Check parameter naming convention: parameters should be snake_case
+        if param.name ~= "self" and param.name:match("%u") then
+            local suggested_name = param.name:gsub("(%u)", function(c) return "_" .. c:lower() end):gsub("^_", "")
+            local msg = string.format(
+                "Parameter '%s' should be snake_case (all lowercase with underscores, e.g., '%s')",
+                param.name,
+                suggested_name
+            )
+            Warnings.emit(
+                typechecker.source_file,
+                func.line,
+                Warnings.WarningType.VARIABLE_NOT_SNAKE_CASE,
+                msg,
+                typechecker.source_path,
+                func.name
+            )
+        end
 
         -- Check for varargs
         if param_type.kind == "varargs" then
