@@ -1,5 +1,6 @@
 // os.cz - Operating system interface
 // Part of the Czar standard library
+#module cz
 
 // OS information struct with fields
 struct os {
