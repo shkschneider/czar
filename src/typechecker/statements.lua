@@ -48,6 +48,8 @@ function Statements.check_statement(typechecker, stmt)
         Inference.infer_type(typechecker, stmt.value)
     elseif stmt.kind == "defer" then
         -- Defer statement - type check the expression
+        -- The expression is typically a function call (e.g., free(p), close(f))
+        -- but could be any valid expression that should execute at scope exit
         Inference.infer_type(typechecker, stmt.value)
     end
 end
