@@ -11,7 +11,7 @@ The `#defer` directive allows you to defer the execution of a statement until th
 ```czar
 fn main() i32 {
     any p = new ...
-    #defer free(p)
+    #defer free p
 
     // Use p here
 
@@ -27,13 +27,13 @@ When you have multiple defer statements, they execute in reverse order:
 ```czar
 fn main() i32 {
     any p1 = new ...
-    #defer free(p1)    // Executes last
+    #defer free p1    // Executes last
 
     any p2 = new ...
-    #defer free(p2)    // Executes second
+    #defer free p2    // Executes second
 
     any p3 = new ...
-    #defer free(p3)    // Executes first
+    #defer free p3    // Executes first
 
     return 0
 }
@@ -48,13 +48,13 @@ Deferred statements are scoped to the block they are declared in:
 fn main() i32 {
     {
         any p1 = new ...
-        #defer free(p1)
+        #defer free p1
         // p1 freed here at inner scope exit
     }
 
     {
         any p2 = new ...
-        #defer free(p2)
+        #defer free p2
         // p2 freed here at inner scope exit
     }
 
@@ -82,7 +82,7 @@ The `#alloc` directive allows you to specify a custom allocator interface for me
 
 fn main() i32 {
     any p = new ...
-    #defer free(p)
+    #defer free p
     return 0
 }
 ```
@@ -111,7 +111,7 @@ iface Alloc {
 
 fn main() i32 {
     any p = new ...  // Uses my.custom.allocator.malloc
-    #defer free(p)   // Uses my.custom.allocator.free
+    #defer free p   // Uses my.custom.allocator.free
     return 0
 }
 ```
@@ -133,7 +133,7 @@ fn process_file() i32 {
     #defer close(file)
 
     any buffer = new Buffer { size: 1024 }
-    #defer free(buffer)
+    #defer free buffer
 
     // Process file with buffer
     // Both cleanup operations happen automatically at scope exit
