@@ -6,20 +6,23 @@ fn main() i32 {
     // cz.os.name should be "linux", "windows", "macos", etc.
     // cz.os.version should be the kernel version
     // cz.os.kernel should be "kernel_name kernel_version"
-    
+
     // Check boolean flags
     if cz.os.linux {
+        cz.print("linux")
         return 0  // Success on Linux
     }
-    
+
     if cz.os.windows {
+        cz.print("windows")
         return 0  // Success on Windows
     }
-    
+
     if cz.os.macos {
+        cz.print("macos")
         return 0  // Success on macOS
     }
-    
+
     // Unknown OS
     return 1
 }
