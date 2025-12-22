@@ -100,8 +100,31 @@ function Statements.gen_statement(stmt)
         return destructor_code .. ctx():free_call(expr.name, true) .. ";"  -- Explicit free statement
     elseif stmt.kind == "defer" then
         -- Defer statement - add to deferred stack for execution at scope exit
-        -- The expression should be a call expression (e.g., free(p), close(f))
-        local deferred_code = Codegen.Expressions.gen_expr(stmt.value) .. ";"
+        -- The value can be either an expression (e.g., close(f)) or a statement (e.g., free p)
+        local deferred_code
+        if stmt.value.kind == "free" then
+            -- Handle deferred free statement
+            local expr = stmt.value.value
+            if expr.kind ~= "identifier" then
+                error("free can only be used with variable names, got " .. expr.kind)
+            end
+            -- Generate the free code (without marking as freed since it's deferred)
+            local var_type = ctx():get_var_type(expr.name)
+            local destructor_code = ""
+            if var_type and var_type.kind == "nullable" and var_type.to and var_type.to.kind == "named_type" then
+                local struct_name = var_type.to.name
+                local destructor_call = Codegen.Functions.gen_destructor_call(struct_name, expr.name)
+                if destructor_call then
+                    destructor_code = destructor_call .. "; "
+                end
+            end
+            deferred_code = destructor_code .. ctx():free_call(expr.name, true) .. ";"
+            -- Mark as freed so automatic cleanup doesn't try to free it again
+            ctx():mark_freed(expr.name)
+        else
+            -- Handle deferred expression (function call, etc.)
+            deferred_code = Codegen.Expressions.gen_expr(stmt.value) .. ";"
+        end
         ctx():add_deferred(deferred_code)
         -- Return empty string - defer doesn't execute immediately
         return "// defer " .. deferred_code

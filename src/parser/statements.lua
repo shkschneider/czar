@@ -53,9 +53,25 @@ function Statements.parse_statement(parser)
         
         -- Check if this is a #defer directive
         if directive_tok.value:upper() == "DEFER" then
-            local expr = Expressions.parse_expression(parser)
-            parser:match("SEMICOLON")  -- semicolons are optional
-            return { kind = "defer", value = expr, line = directive_tok.line, col = directive_tok.col }
+            -- #defer can defer either a statement or an expression
+            -- Check if it's a free statement (special case)
+            if parser:check("KEYWORD", "free") then
+                parser:advance()  -- consume 'free'
+                local expr = Expressions.parse_expression(parser)
+                parser:match("SEMICOLON")  -- semicolons are optional
+                -- Return a defer that wraps a free statement
+                return { 
+                    kind = "defer", 
+                    value = { kind = "free", value = expr },
+                    line = directive_tok.line, 
+                    col = directive_tok.col 
+                }
+            else
+                -- Parse as expression (for function calls, etc.)
+                local expr = Expressions.parse_expression(parser)
+                parser:match("SEMICOLON")  -- semicolons are optional
+                return { kind = "defer", value = expr, line = directive_tok.line, col = directive_tok.col }
+            end
         end
         
         -- Check if this is an #unsafe block

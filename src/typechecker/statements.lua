@@ -47,10 +47,15 @@ function Statements.check_statement(typechecker, stmt)
     elseif stmt.kind == "free" then
         Inference.infer_type(typechecker, stmt.value)
     elseif stmt.kind == "defer" then
-        -- Defer statement - type check the expression
-        -- The expression is typically a function call (e.g., free(p), close(f))
-        -- but could be any valid expression that should execute at scope exit
-        Inference.infer_type(typechecker, stmt.value)
+        -- Defer statement - type check the value
+        -- The value can be either an expression (function call) or a statement (free)
+        if stmt.value.kind == "free" then
+            -- Handle deferred free statement
+            Inference.infer_type(typechecker, stmt.value.value)
+        else
+            -- Handle deferred expression
+            Inference.infer_type(typechecker, stmt.value)
+        end
     end
 end
 
