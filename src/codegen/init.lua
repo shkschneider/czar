@@ -79,6 +79,10 @@ function Codegen:mark_freed(name)
     Codegen.Memory.mark_freed(name)
 end
 
+function Codegen:add_deferred(stmt_code)
+    Codegen.Memory.add_deferred(stmt_code)
+end
+
 function Codegen:get_scope_cleanup()
     return Codegen.Memory.get_scope_cleanup()
 end

@@ -135,6 +135,9 @@ function Statements.parse_statement(parser)
         return Statements.parse_for(parser)
     elseif parser:check("KEYWORD", "repeat") then
         return Statements.parse_repeat(parser)
+    elseif parser:check("LBRACE") then
+        -- Bare block statement (for scoping)
+        return Statements.parse_block(parser)
     else
         -- Try to parse as variable declaration (mut Type name = ... or Type name = ...)
         -- Save position to backtrack if needed
