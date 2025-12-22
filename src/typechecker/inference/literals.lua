@@ -165,6 +165,22 @@ function Literals.infer_identifier_type(typechecker, expr)
         expr.inferred_type = var_info.type
         return var_info.type
     else
+        -- Before erroring, check if this identifier is a namespace prefix for an imported module
+        -- For example, "cz" in "cz.fmt.println()" where "cz.fmt" is imported
+        -- We'll create a special namespace marker type that field access can check
+        for _, import in ipairs(typechecker.imports) do
+            if import.path:match("^" .. expr.name .. "%.") then
+                -- This identifier is a namespace prefix for an imported module
+                -- Return a special marker type
+                local namespace_type = { 
+                    kind = "namespace",
+                    name = expr.name
+                }
+                expr.inferred_type = namespace_type
+                return namespace_type
+            end
+        end
+        
         local line = expr.line or 0
         local msg = string.format("Undeclared identifier: %s", expr.name)
         local formatted_error = Errors.format("ERROR", typechecker.source_file, line,

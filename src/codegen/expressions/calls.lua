@@ -27,8 +27,8 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         return string.format('%s(%s)', method_name, join(args, ", "))
     end
 
-    -- Special handling for cz module functions
-    if type_name == "cz" then
+    -- Special handling for cz.* module functions
+    if type_name == "cz" or type_name == "cz.fmt" then
         local args = {}
         for i, a in ipairs(expr.args) do
             table.insert(args, gen_expr_fn(a))
@@ -46,7 +46,7 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         elseif method_name == "printf" then
             return string.format('_cz_printf(%s)', join(args, ", "))
         else
-            error(string.format("Unknown method %s on cz module", method_name))
+            error(string.format("Unknown method %s on %s module", method_name, type_name))
         end
     end
 
