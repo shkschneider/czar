@@ -12,9 +12,9 @@ The `#defer` directive allows you to defer the execution of a statement until th
 fn main() i32 {
     any p = new ...
     #defer free(p)
-    
+
     // Use p here
-    
+
     // No explicit free needed - defer will handle it at scope exit
     return 0
 }
@@ -28,13 +28,13 @@ When you have multiple defer statements, they execute in reverse order:
 fn main() i32 {
     any p1 = new ...
     #defer free(p1)    // Executes last
-    
+
     any p2 = new ...
     #defer free(p2)    // Executes second
-    
+
     any p3 = new ...
     #defer free(p3)    // Executes first
-    
+
     return 0
 }
 // Execution order at scope exit: free(p3), free(p2), free(p1)
@@ -51,13 +51,13 @@ fn main() i32 {
         #defer free(p1)
         // p1 freed here at inner scope exit
     }
-    
+
     {
         any p2 = new ...
         #defer free(p2)
         // p2 freed here at inner scope exit
     }
-    
+
     return 0
 }
 ```
@@ -148,13 +148,13 @@ Example combining multiple features:
 fn process_file() i32 {
     any file = open("data.txt")
     #defer close(file)
-    
+
     any buffer = new Buffer { size: 1024 }
     #defer free(buffer)
-    
+
     // Process file with buffer
     // Both cleanup operations happen automatically at scope exit
-    
+
     return 0
 }
 ```
