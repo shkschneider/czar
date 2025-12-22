@@ -1,6 +1,14 @@
 // Test anonymous function syntax - inline function expression
 fn main() i32 {
-    // Anonymous function that gets immediately invoked
-    // This tests that the parser can handle fn(params) { body } as an expression
+    // Test that anonymous function syntax is parsed correctly
+    // This creates an anonymous function but doesn't do anything with it yet
+    fn(i32 x) i32 { return x + 1 }
+    
+    // Test anonymous function with void return
+    fn(i32 a, i32 b) { }
+    
+    // Test anonymous function with no parameters
+    fn() i32 { return 42 }
+    
     return 0
 }

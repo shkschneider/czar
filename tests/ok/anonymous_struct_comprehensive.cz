@@ -1,11 +1,16 @@
 // Test anonymous struct with actual field initialization
 fn main() i32 {
-    // This is a simple test that parses an anonymous struct
-    // In the future, this could be used to create ad-hoc struct instances
-    // For now, we just test that the syntax is recognized
+    // Test anonymous struct with computed values
+    struct { width: 3 + 2, height: 4 * 2 }
     
-    // Simulated usage: struct { x: 10, y: 20 }
-    // Would be used like: process(struct { x: 10, y: 20 })
+    // Test anonymous struct with nested expressions
+    struct { x: 10, y: 20, z: 30 }
+    
+    // Test anonymous struct with various types
+    struct { count: 5, active: true, total: 100 }
+    
+    // Test empty anonymous struct
+    struct { }
     
     return 0
 }
