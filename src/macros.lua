@@ -81,6 +81,23 @@ function Macros.parse_top_level(parser, macro_tok)
             line = macro_tok.line,
             col = macro_tok.col
         }
+    elseif macro_name == "INIT" then
+        -- #init { ... }
+        -- Runs initialization code when the module is imported
+        local Statements = require("parser.statements")
+        parser:expect("LBRACE")
+        local statements = {}
+        while not parser:check("RBRACE") do
+            table.insert(statements, Statements.parse_statement(parser))
+        end
+        parser:expect("RBRACE")
+        
+        return {
+            kind = "init_macro",
+            statements = statements,
+            line = macro_tok.line,
+            col = macro_tok.col
+        }
     else
         error(string.format("unknown top-level macro: #%s at %d:%d", 
             macro_tok.value, macro_tok.line, macro_tok.col))

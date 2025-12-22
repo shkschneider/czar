@@ -94,6 +94,33 @@ end
 
 -- Infer the type of a field access
 function Fields.infer_field_type(typechecker, expr)
+    -- Check if this is cz.os access
+    if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
+        -- Check if cz module is imported
+        local cz_imported = false
+        for _, import in ipairs(typechecker.imports) do
+            if import.path == "cz" or import.alias == "cz" then
+                cz_imported = true
+                import.used = true
+                break
+            end
+        end
+        
+        if not cz_imported then
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = "Module 'cz' must be imported to use cz.os"
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- Return cz_os_t* (pointer to struct)
+        local os_type = { kind = "nullable", to = { kind = "named_type", name = "cz_os_t" } }
+        expr.inferred_type = os_type
+        return os_type
+    end
+    
     -- Check if this is enum member access (e.g., Status.SUCCESS)
     -- This happens when object is an identifier that refers to an enum type name
     if expr.object.kind == "identifier" then
@@ -199,6 +226,31 @@ function Fields.infer_field_type(typechecker, expr)
             local line = expr.line or (expr.object and expr.object.line) or 0
             local msg = string.format(
                 "Field '%s' not found in string type (available: length, capacity). Use .cstr() method for C-string access.",
+                expr.field
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
+    
+    -- Handle cz_os_t struct fields (special built-in struct)
+    if base_type.kind == "named_type" and base_type.name == "cz_os_t" then
+        if expr.field == "name" or expr.field == "version" or expr.field == "kernel" then
+            -- String fields
+            local string_ptr_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
+            expr.inferred_type = string_ptr_type
+            return string_ptr_type
+        elseif expr.field == "linux" or expr.field == "windows" or expr.field == "macos" then
+            -- Boolean fields
+            local bool_type = { kind = "named_type", name = "bool" }
+            expr.inferred_type = bool_type
+            return bool_type
+        else
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = string.format(
+                "Field '%s' not found in cz.os (available: name, version, kernel, linux, windows, macos)",
                 expr.field
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,

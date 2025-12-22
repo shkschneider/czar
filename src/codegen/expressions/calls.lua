@@ -455,6 +455,12 @@ end
 
 -- Generate field access
 function Calls.gen_field(expr, gen_expr_fn)
+    -- Check if this is cz.os access
+    if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
+        -- Return pointer to the OS struct
+        return "cz_os_get()"
+    end
+    
     -- Check if this is enum member access (e.g., Status.SUCCESS)
     if expr.object.kind == "identifier" then
         local enum_name = expr.object.name
@@ -466,23 +472,32 @@ function Calls.gen_field(expr, gen_expr_fn)
     
     local obj_expr = gen_expr_fn(expr.object)
     -- Determine if we need -> or .
-    -- Check if the object is an identifier and if its type is a pointer or map
+    -- Check the object's type to determine the accessor
     local use_arrow = false
+    
+    -- Try to get type from identifier variable
     if expr.object.kind == "identifier" then
         local var_type = ctx():get_var_type(expr.object.name)
         if var_type then
-            if ctx():is_pointer_type(var_type) then
-                use_arrow = true
-            elseif var_type.kind == "map" then
-                -- Maps are always pointers
+            if ctx():is_pointer_type(var_type) or var_type.kind == "map" then
                 use_arrow = true
             end
         end
-    -- Removed: explicit dereference operator (*) no longer exists
-    elseif expr.object.inferred_type and expr.object.inferred_type.kind == "map" then
-        -- Map type always uses arrow
+    end
+    
+    -- Always check inferred_type (from typechecker)
+    if not use_arrow and expr.object.inferred_type then
+        local inf_type = expr.object.inferred_type
+        if inf_type.kind == "nullable" or inf_type.kind == "map" then
+            use_arrow = true
+        end
+    end
+    
+    -- Special case: if object expression is cz_os_get(), always use arrow
+    if not use_arrow and obj_expr == "cz_os_get()" then
         use_arrow = true
     end
+    
     local accessor = use_arrow and "->" or "."
     return string.format("%s%s%s", obj_expr, accessor, expr.field)
 end
