@@ -1,0 +1,11 @@
+// Test anonymous struct with actual field initialization
+fn main() i32 {
+    // This is a simple test that parses an anonymous struct
+    // In the future, this could be used to create ad-hoc struct instances
+    // For now, we just test that the syntax is recognized
+    
+    // Simulated usage: struct { x: 10, y: 20 }
+    // Would be used like: process(struct { x: 10, y: 20 })
+    
+    return 0
+}

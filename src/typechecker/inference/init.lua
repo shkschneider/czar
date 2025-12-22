@@ -240,6 +240,21 @@ function infer_type(typechecker, expr)
         return Collections.infer_new_string_type(typechecker, expr)
     elseif expr.kind == "string_literal" then
         return Collections.infer_string_literal_type(typechecker, expr)
+    
+    -- Anonymous functions and structures
+    elseif expr.kind == "anonymous_function" then
+        -- Anonymous function: fn(params) return_type { body }
+        -- For now, treat it as a function pointer type
+        -- Return type is a function pointer (represented as void* for simplicity)
+        local result_type = { kind = "named_type", name = "any" }
+        expr.inferred_type = result_type
+        return result_type
+    elseif expr.kind == "anonymous_struct" then
+        -- Anonymous struct: struct { field: value, ... }
+        -- Create an anonymous struct type
+        local result_type = { kind = "named_type", name = "anonymous" }
+        expr.inferred_type = result_type
+        return result_type
     end
 
     return nil

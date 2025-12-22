@@ -96,6 +96,23 @@ function Expressions.gen_expr(expr)
         return Collections.gen_new_string(expr)
     elseif expr.kind == "string_literal" then
         return Collections.gen_string_literal(expr)
+    -- Anonymous functions and structures
+    elseif expr.kind == "anonymous_function" then
+        -- For now, generate a placeholder comment
+        -- Full implementation would require function pointer support
+        return "/* anonymous function */"
+    elseif expr.kind == "anonymous_struct" then
+        -- Generate an anonymous struct literal
+        local parts = {}
+        table.insert(parts, "(struct { ")
+        for i, field in ipairs(expr.fields) do
+            if i > 1 then
+                table.insert(parts, ", ")
+            end
+            table.insert(parts, Expressions.gen_expr(field.value))
+        end
+        table.insert(parts, " })")
+        return table.concat(parts)
     else
         error("unknown expression kind: " .. tostring(expr.kind))
     end
