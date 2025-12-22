@@ -7,11 +7,11 @@ struct Person {
 fn main() i32 {
     // Heap allocation with defer free
     Person? p = new Person { age: 25 }
-    #defer free(p)
-    
+    #defer free p
+
     // Use the person
     i32 result = p.age
-    
+
     // No explicit free needed - defer will handle it at scope exit
     return result - 25
 }
