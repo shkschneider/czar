@@ -20,6 +20,8 @@ local function join(list, sep)
 end
 
 -- Parse a specific stdlib .cz file to collect #init macros
+-- Note: Currently not used, as we hardcode init calls based on imports
+-- This function is kept for potential future use when we want to parse #init macros
 local function parse_stdlib_file(file_path)
     local init_macros = {}
     
@@ -37,7 +39,7 @@ local function parse_stdlib_file(file_path)
     local parser = require("parser")
     
     local tokens = lexer(source, file_path)
-    local ast = parser(tokens, file_path)
+    local ast = parser(tokens, source)  -- Pass source as second parameter
     
     -- Collect #init macros from this file
     for _, item in ipairs(ast.items) do
@@ -286,16 +288,6 @@ function Codegen:generate()
             -- Only handle specific cz.* imports (not just "cz")
             if import_path:match("^cz%.") then
                 self.stdlib_imports[import_path] = true
-                
-                -- Get the stdlib file path for this import
-                local stdlib_file = get_stdlib_file_path(import_path)
-                if stdlib_file then
-                    -- Parse the stdlib file and collect #init macros
-                    local init_macros = parse_stdlib_file(stdlib_file)
-                    for _, init_macro in ipairs(init_macros) do
-                        table.insert(self.init_macros, init_macro)
-                    end
-                end
             end
         end
     end

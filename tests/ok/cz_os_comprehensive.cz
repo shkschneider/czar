@@ -1,5 +1,6 @@
 // Comprehensive test for cz.os struct
-#import cz
+#import cz.os
+#import cz.print
 
 fn main() i32 {
     // Test all fields exist and can be accessed
