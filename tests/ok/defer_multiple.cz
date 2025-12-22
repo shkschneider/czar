@@ -1,0 +1,23 @@
+// Test defer with multiple statements
+
+struct Person {
+    i32 age
+}
+
+fn main() i32 {
+    // Multiple defer statements execute in LIFO order
+    Person? p1 = new Person { age: 10 }
+    defer free(p1)
+    
+    Person? p2 = new Person { age: 20 }
+    defer free(p2)
+    
+    Person? p3 = new Person { age: 30 }
+    defer free(p3)
+    
+    // Calculate result
+    i32 total = p1.age + p2.age + p3.age
+    
+    // All three defer statements will execute in reverse order at scope exit
+    return total - 60
+}
