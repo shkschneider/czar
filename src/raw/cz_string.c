@@ -1,6 +1,22 @@
 // czar_string.c - Safe string implementation for Czar language
 // This file contains all string helper functions that are memory-safe and bounds-checked.
 // Generated code will include this file to provide string functionality.
+//
+// UTF-8 SUPPORT:
+// The czar_string type treats strings as byte arrays, not character arrays.
+// This design naturally supports UTF-8 encoding, where multi-byte characters
+// are stored as sequences of bytes.
+//
+// - `length` field represents the number of BYTES, not the number of characters
+// - `data` field is a byte array that can contain UTF-8 encoded text
+// - Operations like substring(), index(), find(), etc. work on BYTE offsets
+// - This means a UTF-8 character may span multiple bytes (1-4 bytes per character)
+//
+// IMPORTANT NOTES:
+// - upper() and lower() only work correctly for ASCII characters (bytes 0-127)
+//   Multi-byte UTF-8 characters will not be converted properly
+// - All string operations preserve UTF-8 byte sequences correctly as long as
+//   you work on character boundaries (don't split multi-byte characters)
 
 #include <stdlib.h>
 #include <string.h>
@@ -8,10 +24,11 @@
 #include <ctype.h>
 
 // String struct definition
+// Represents a dynamically-sized byte array suitable for UTF-8 text
 typedef struct czar_string {
-    char* data;
-    int32_t length;
-    int32_t capacity;
+    char* data;         // Byte array (can contain UTF-8 encoded text)
+    int32_t length;     // Number of BYTES (not characters)
+    int32_t capacity;   // Allocated capacity in BYTES
 } czar_string;
 
 // String helper function: get C-style null-terminated string
@@ -38,6 +55,8 @@ static inline void czar_string_ensure_capacity(czar_string* s, int32_t required_
 
 // String helper function: safe append (dynamically resizes, bounds-checked)
 // This is the instance method version: string:append(str)
+// NOTE: Appends BYTES, not characters. Works correctly with UTF-8 as it
+// preserves all byte sequences without interpretation.
 static inline void czar_string_append_cstr(czar_string* dest, const char* src, int32_t src_len) {
     int32_t required = dest->length + src_len + 1; // +1 for null terminator
     czar_string_ensure_capacity(dest, required);
@@ -94,6 +113,10 @@ static inline void czar_string_copy(czar_string* dest, const char* src, int32_t 
 
 // String helper function: substring - extract a portion of the string
 // Returns a new heap-allocated string
+// NOTE: Works on BYTE offsets, not character offsets.
+// For UTF-8 strings, ensure start and end are on character boundaries to avoid
+// splitting multi-byte characters. This function will correctly copy UTF-8 byte
+// sequences as long as the offsets are valid.
 static inline czar_string* czar_string_substring(czar_string* s, int32_t start, int32_t end) {
     // Handle negative indices
     if (start < 0) start = 0;
@@ -136,6 +159,8 @@ static inline czar_string* czar_string_substring(czar_string* s, int32_t start, 
 // String helper function: find substring using safe strstr()
 // Returns index of first occurrence, or -1 if not found
 // Renamed to czar_string_index to match the new API
+// NOTE: Returns BYTE offset, not character offset. Works correctly with UTF-8
+// strings as it performs byte-by-byte comparison.
 static inline int32_t czar_string_index(czar_string* haystack, czar_string* needle) {
     if (needle->length == 0) return 0;
     if (needle->length > haystack->length) return -1;
@@ -200,6 +225,9 @@ static inline int32_t czar_string_suffix(czar_string* s, czar_string* suffix) {
 
 // String helper function: upper - convert string to uppercase
 // Modifies the string in place, returns the string
+// NOTE: This function only works correctly for ASCII characters (bytes 0-127).
+// Multi-byte UTF-8 characters (non-ASCII) will not be converted and will be
+// preserved as-is. For proper UTF-8 case conversion, a Unicode library would be needed.
 static inline czar_string* czar_string_upper(czar_string* s) {
     for (int32_t i = 0; i < s->length; i++) {
         s->data[i] = (char)toupper((unsigned char)s->data[i]);
@@ -209,6 +237,9 @@ static inline czar_string* czar_string_upper(czar_string* s) {
 
 // String helper function: lower - convert string to lowercase
 // Modifies the string in place, returns the string
+// NOTE: This function only works correctly for ASCII characters (bytes 0-127).
+// Multi-byte UTF-8 characters (non-ASCII) will not be converted and will be
+// preserved as-is. For proper UTF-8 case conversion, a Unicode library would be needed.
 static inline czar_string* czar_string_lower(czar_string* s) {
     for (int32_t i = 0; i < s->length; i++) {
         s->data[i] = (char)tolower((unsigned char)s->data[i]);
