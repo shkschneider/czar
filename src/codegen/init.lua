@@ -326,6 +326,7 @@ function Codegen:generate()
     local raw_c_files = {
         "src/raw/cz_string.c",
         "src/raw/cz_print.c",
+        "src/raw/cz_os.c",
     }
     
     for _, raw_file_path in ipairs(raw_c_files) do
