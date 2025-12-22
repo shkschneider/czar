@@ -188,10 +188,21 @@ function Declarations.collect_declarations(typechecker)
         return name:match("^%u")
     end
     
+    -- Helper function to check if a name has underscores
+    local function has_underscore(name)
+        return name:match("_")
+    end
+    
     -- Helper function to check if interface name follows iInterfaceName format
     local function is_valid_interface_name(name)
         -- Should start with lowercase 'i' followed by an uppercase letter
         return name:match("^i%u")
+    end
+    
+    -- Helper function to check if a name is snake_case (lowercase with underscores)
+    local function is_snake_case(name)
+        -- Should be all lowercase, can have underscores, no uppercase letters
+        return not name:match("%u")
     end
     
     for _, item in ipairs(typechecker.ast.items) do
@@ -207,6 +218,24 @@ function Declarations.collect_declarations(typechecker)
                     typechecker.source_file,
                     item.line,
                     Warnings.WarningType.STRUCT_NOT_TITLECASE,
+                    msg,
+                    typechecker.source_path,
+                    nil
+                )
+            end
+            
+            -- Check naming convention: structs should not have underscores (use PascalCase)
+            if has_underscore(item.name) then
+                local suggested_name = item.name:gsub("_(%l)", function(c) return c:upper() end):gsub("_", "")
+                local msg = string.format(
+                    "Struct '%s' should not contain underscores. Use PascalCase instead (e.g., '%s')",
+                    item.name,
+                    suggested_name
+                )
+                Warnings.emit(
+                    typechecker.source_file,
+                    item.line,
+                    Warnings.WarningType.STRUCT_HAS_UNDERSCORE,
                     msg,
                     typechecker.source_path,
                     nil
@@ -257,6 +286,26 @@ function Declarations.collect_declarations(typechecker)
                     typechecker.source_file,
                     item.line,
                     Warnings.WarningType.INTERFACE_WRONG_FORMAT,
+                    msg,
+                    typechecker.source_path,
+                    nil
+                )
+            end
+            
+            -- Check naming convention: interfaces should not have underscores (use iPascalCase)
+            if has_underscore(item.name) then
+                -- Remove underscores and convert to PascalCase, keeping the 'i' prefix if present
+                local name_without_i = item.name:match("^i(.+)") or item.name
+                local suggested_name = "i" .. name_without_i:gsub("_(%l)", function(c) return c:upper() end):gsub("_", "")
+                local msg = string.format(
+                    "Interface '%s' should not contain underscores. Use iPascalCase instead (e.g., '%s')",
+                    item.name,
+                    suggested_name
+                )
+                Warnings.emit(
+                    typechecker.source_file,
+                    item.line,
+                    Warnings.WarningType.INTERFACE_HAS_UNDERSCORE,
                     msg,
                     typechecker.source_path,
                     nil

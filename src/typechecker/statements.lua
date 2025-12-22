@@ -225,6 +225,25 @@ function Statements.check_var_decl(typechecker, stmt)
         stmt.init.inferred_type = init_type
     end
 
+    -- Check variable naming convention: variables should be snake_case
+    local Warnings = require("warnings")
+    if stmt.name:match("%u") then
+        local suggested_name = stmt.name:gsub("(%u)", function(c) return "_" .. c:lower() end):gsub("^_", "")
+        local msg = string.format(
+            "Variable '%s' should be snake_case (all lowercase with underscores, e.g., '%s')",
+            stmt.name,
+            suggested_name
+        )
+        Warnings.emit(
+            typechecker.source_file,
+            stmt.line,
+            Warnings.WarningType.VARIABLE_NOT_SNAKE_CASE,
+            msg,
+            typechecker.source_path,
+            typechecker.current_function
+        )
+    end
+
     -- Add variable to scope
     local added = Scopes.add_var(typechecker, stmt.name, var_type, is_mutable)
     
