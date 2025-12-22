@@ -3,10 +3,10 @@
 // Uses standard C malloc/realloc/free under the hood
 #module cz.alloc
 
-#import alloc
+#import iAlloc
 
 // Heap allocator struct that implements the alloc interface
-struct heap : alloc {}
+struct heap : iAlloc {}
 
 // Allocate memory using C malloc
 fn heap:alloc(u64 size) any {

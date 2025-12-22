@@ -3,11 +3,11 @@
 // Tracks allocations/frees and detects memory leaks
 #module cz.alloc
 
-#import alloc
+#import iAlloc
 
 // Debug allocator struct that implements the alloc interface
 // Wraps malloc/realloc/free with debug tracking
-struct debug : alloc {}
+struct debug : iAlloc {}
 
 // Allocate memory with debug tracking
 fn debug:alloc(u64 size) any {
