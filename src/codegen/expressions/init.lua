@@ -102,15 +102,38 @@ function Expressions.gen_expr(expr)
         -- Full implementation would require function pointer support
         return "/* anonymous function */"
     elseif expr.kind == "anonymous_struct" then
-        -- Generate an anonymous struct literal
+        -- Generate an anonymous struct literal with alphabetic field names
+        -- Supports up to 26 members (a-z)
+        if #expr.fields > 26 then
+            error(string.format("Anonymous struct has %d fields, but maximum is 26", #expr.fields))
+        end
+        
         local parts = {}
         table.insert(parts, "(struct { ")
+        
+        -- Generate field declarations with alphabetic names
         for i, field in ipairs(expr.fields) do
+            local field_name = string.char(96 + i)  -- 97 is 'a', so 96+1='a', 96+2='b', etc.
+            if i > 1 then
+                table.insert(parts, "; ")
+            end
+            -- Need to infer the type from the value
+            local field_type = ctx():get_expr_type(field.value, 0)
+            local c_type = ctx():c_type(field_type)
+            table.insert(parts, c_type .. " " .. field_name)
+        end
+        
+        table.insert(parts, "; }){ ")
+        
+        -- Generate field initializers
+        for i, field in ipairs(expr.fields) do
+            local field_name = string.char(96 + i)
             if i > 1 then
                 table.insert(parts, ", ")
             end
-            table.insert(parts, Expressions.gen_expr(field.value))
+            table.insert(parts, "." .. field_name .. " = " .. Expressions.gen_expr(field.value))
         end
+        
         table.insert(parts, " })")
         return table.concat(parts)
     else
