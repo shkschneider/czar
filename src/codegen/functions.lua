@@ -489,8 +489,8 @@ end
 
 function Functions.gen_wrapper(has_main)
     if has_main then
-        if ctx().debug then
-            -- With memory tracking, capture return value and print stats
+        if ctx().custom_allocator_interface == "cz.alloc.debug" then
+            -- With debug allocator, capture return value and print stats
             ctx():emit("int main(void) {")
             ctx():emit("    int _ret = main_main();")
             ctx():emit("    _czar_print_memory_stats();")

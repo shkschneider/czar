@@ -1,6 +1,6 @@
 // Test #alloc directive
 
-#alloc cz.alloc
+#alloc cz.alloc.default
 
 struct Person {
     i32 age

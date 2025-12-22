@@ -37,7 +37,7 @@ function Macros.parse_top_level(parser, macro_tok)
         local interface_name = table.concat(interface_tokens, "")
         
         return { 
-            kind = "alloc_macro", 
+            kind = "allocator_macro", 
             interface_name = interface_name,
             line = macro_tok.line,
             col = macro_tok.col
@@ -188,13 +188,30 @@ function Macros.process_top_level(codegen, ast)
     local alloc_macro_line = nil
     
     for _, item in ipairs(ast.items) do
-        if item.kind == "alloc_macro" then
+        if item.kind == "allocator_macro" then
             alloc_macro_count = alloc_macro_count + 1
             if alloc_macro_count > 1 then
                 error(string.format("duplicate #alloc macro at %d:%d (previous at %d:%d)", 
                     item.line, item.col, alloc_macro_line.line, alloc_macro_line.col))
             end
-            codegen.custom_allocator_interface = item.interface_name
+            
+            -- Check for useless #alloc cz.alloc directive (unspecified)
+            if item.interface_name == "cz.alloc" then
+                local Warnings = require("src.warnings")
+                Warnings.emit(
+                    codegen.source_file,
+                    item.line,
+                    Warnings.WarningType.USELESS_ALLOC_DIRECTIVE,
+                    string.format("Unspecified allocator directive '#alloc cz.alloc' is useless. " ..
+                                "Use '#alloc cz.alloc.default' or '#alloc cz.alloc.debug' explicitly, " ..
+                                "or remove the directive to use the default allocator based on debug mode."),
+                    codegen.source_path,
+                    nil
+                )
+                -- Ignore this directive - let the default logic handle it
+            else
+                codegen.custom_allocator_interface = item.interface_name
+            end
             alloc_macro_line = item
         elseif item.kind == "alias_macro" then
             -- Store type alias for replacement
