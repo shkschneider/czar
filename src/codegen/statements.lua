@@ -98,6 +98,13 @@ function Statements.gen_statement(stmt)
 
         ctx():mark_freed(expr.name)
         return destructor_code .. ctx():free_call(expr.name, true) .. ";"  -- Explicit free statement
+    elseif stmt.kind == "defer" then
+        -- Defer statement - add to deferred stack for execution at scope exit
+        -- The expression should be a call expression (e.g., free(p), close(f))
+        local deferred_code = Codegen.Expressions.gen_expr(stmt.value) .. ";"
+        ctx():add_deferred(deferred_code)
+        -- Return empty string - defer doesn't execute immediately
+        return "// defer " .. deferred_code
     elseif stmt.kind == "assert_stmt" or stmt.kind == "log_stmt" or stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
         -- Handle statement-level macros (#assert, #log, #TODO, #FIXME)
         return Macros.generate_statement(stmt, ctx()) .. ";"

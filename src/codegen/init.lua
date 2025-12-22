@@ -30,12 +30,14 @@ function Codegen.new(ast, options)
         out = {},
         scope_stack = {},
         heap_vars_stack = {},
+        deferred_stack = {},  -- Stack of deferred statements per scope
         debug = options.debug or false,
         source_file = options.source_file or "unknown",
         source_path = options.source_path or options.source_file or "unknown",
         current_function = nil,
         custom_malloc = nil,
         custom_free = nil,
+        custom_allocator_interface = nil,  -- Interface for custom allocator (#alloc)
         type_aliases = {
             -- Built-in alias for String -> char*
             ["String"] = "char*"

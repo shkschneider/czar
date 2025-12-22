@@ -47,6 +47,11 @@ function Statements.parse_statement(parser)
         local expr = Expressions.parse_expression(parser)
         parser:match("SEMICOLON")  -- semicolons are optional
         return { kind = "free", value = expr }
+    elseif parser:check("KEYWORD", "defer") then
+        parser:advance()
+        local expr = Expressions.parse_expression(parser)
+        parser:match("SEMICOLON")  -- semicolons are optional
+        return { kind = "defer", value = expr }
     elseif parser:check("DIRECTIVE") then
         -- Statement-level directives like #assert and #log
         local directive_tok = parser:advance()
