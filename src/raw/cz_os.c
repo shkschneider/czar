@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifdef __linux__
+    #include <sys/utsname.h>
+#endif
+
 #ifdef _WIN32
     #define CZ_OS_WINDOWS 1
     #define CZ_OS_LINUX 0
@@ -84,14 +88,36 @@ static void cz_os_init() {
         __cz_os.macos = false;
         
         // Try to get kernel version using uname
-        #include <sys/utsname.h>
         struct utsname buffer;
         if (uname(&buffer) == 0) {
             // Allocate static buffers for version and kernel strings
             static char version_buf[256];
             static char kernel_buf[512];
-            snprintf(version_buf, sizeof(version_buf), "%s", buffer.release);
-            snprintf(kernel_buf, sizeof(kernel_buf), "%s %s", buffer.sysname, buffer.release);
+            // Safely copy release version
+            size_t release_len = strlen(buffer.release);
+            if (release_len >= sizeof(version_buf)) {
+                release_len = sizeof(version_buf) - 1;
+            }
+            memcpy(version_buf, buffer.release, release_len);
+            version_buf[release_len] = '\0';
+            
+            // Safely construct kernel string (sysname + space + release)
+            size_t sysname_len = strlen(buffer.sysname);
+            size_t total_len = 0;
+            if (sysname_len < sizeof(kernel_buf) - 1) {
+                memcpy(kernel_buf, buffer.sysname, sysname_len);
+                kernel_buf[sysname_len] = ' ';
+                total_len = sysname_len + 1;
+                
+                size_t remaining = sizeof(kernel_buf) - total_len - 1;
+                if (release_len > remaining) {
+                    release_len = remaining;
+                }
+                memcpy(kernel_buf + total_len, buffer.release, release_len);
+                total_len += release_len;
+            }
+            kernel_buf[total_len] = '\0';
+            
             __cz_os.version = version_buf;
             __cz_os.kernel = kernel_buf;
         } else {
