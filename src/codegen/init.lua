@@ -55,7 +55,7 @@ end
 local function get_stdlib_file_path(import_path)
     local module_to_file = {
         ["cz.os"] = "src/std/os.cz",
-        ["cz.print"] = "src/std/print.cz",
+        ["cz.fmt"] = "src/std/fmt.cz",
         ["cz.alloc"] = "src/std/alloc/ialloc.cz",
         ["cz.alloc.heap"] = "src/std/alloc/heap.cz",
         ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
@@ -385,7 +385,7 @@ function Codegen:generate()
     -- These are internal C library files that the generated code relies on
     local raw_c_files = {
         "src/raw/cz_string.c",
-        "src/raw/cz_print.c",
+        "src/raw/cz_fmt.c",
         "src/raw/cz_os.c",
         "src/raw/cz_alloc_arena.c",
     }

@@ -94,6 +94,55 @@ end
 
 -- Infer the type of a field access
 function Fields.infer_field_type(typechecker, expr)
+    io.stderr:write(string.format("DEBUG field_type: object=%s, field=%s\n", 
+        expr.object.kind, expr.field))
+    
+    -- First, infer the type of the object if it's an identifier
+    -- This is needed to detect namespace types
+    if expr.object.kind == "identifier" and not expr.object.inferred_type then
+        io.stderr:write(string.format("DEBUG: Inferring type for identifier %s\n", expr.object.name))
+        Fields.infer_type(typechecker, expr.object)
+        if expr.object.inferred_type then
+            io.stderr:write(string.format("DEBUG: Inferred type kind = %s\n", expr.object.inferred_type.kind))
+        end
+    end
+    
+    -- Check if the object is a namespace type
+    -- This handles cases like cz.fmt where cz is a namespace and fmt is a module
+    if expr.object.kind == "identifier" and expr.object.inferred_type and expr.object.inferred_type.kind == "namespace" then
+        io.stderr:write(string.format("DEBUG: Detected namespace %s.%s\n", expr.object.name, expr.field))
+        local namespace = expr.object.name
+        local module_path = namespace .. "." .. expr.field
+        
+        -- Check if this module is imported
+        local module_imported = false
+        for _, import in ipairs(typechecker.imports) do
+            if import.path == module_path then
+                module_imported = true
+                import.used = true
+                break
+            end
+        end
+        
+        if not module_imported then
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = string.format("Module '%s' must be imported to use %s (use: #import %s)", 
+                module_path, module_path, module_path)
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- Return a module type marker
+        local module_type = {
+            kind = "module",
+            path = module_path
+        }
+        expr.inferred_type = module_type
+        return module_type
+    end
+    
     -- Check if this is cz.os access
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
         -- Check if cz.os module is imported
