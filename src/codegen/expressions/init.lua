@@ -110,6 +110,11 @@ function Expressions.gen_expr(expr)
             error(string.format("Anonymous struct has %d fields, but maximum is 26", #expr.fields))
         end
         
+        -- Handle empty struct
+        if #expr.fields == 0 then
+            return "(struct { int _dummy; }){ 0 }"
+        end
+        
         local parts = {}
         table.insert(parts, "(struct { ")
         
