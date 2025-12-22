@@ -1,5 +1,5 @@
 -- Literal type inference
--- Handles basic literals like integers, booleans, strings, null, identifiers, and macros
+-- Handles basic literals like integers, floats, chars, booleans, strings, null, identifiers, and macros
 
 local Resolver = require("typechecker.resolver")
 local Errors = require("errors")
@@ -47,6 +47,13 @@ end
 -- Infer boolean literal type
 function Literals.infer_bool_type(expr)
     local inferred = { kind = "named_type", name = "bool" }
+    expr.inferred_type = inferred
+    return inferred
+end
+
+-- Infer char literal type (u8)
+function Literals.infer_char_type(expr)
+    local inferred = { kind = "named_type", name = "u8" }
     expr.inferred_type = inferred
     return inferred
 end
