@@ -124,8 +124,11 @@ function Expressions.gen_expr(expr)
             if i > 1 then
                 table.insert(parts, "; ")
             end
-            -- Need to infer the type from the value
-            local field_type = ctx():get_expr_type(field.value, 0)
+            -- Infer the type from the value expression
+            local field_type = ctx():infer_type(field.value)
+            if not field_type then
+                error(string.format("Could not infer type for anonymous struct field '%s'", field.name or tostring(i)))
+            end
             local c_type = ctx():c_type(field_type)
             table.insert(parts, c_type .. " " .. field_name)
         end
@@ -141,7 +144,7 @@ function Expressions.gen_expr(expr)
             table.insert(parts, "." .. field_name .. " = " .. Expressions.gen_expr(field.value))
         end
         
-        table.insert(parts, " })")
+        table.insert(parts, " }")
         return table.concat(parts)
     else
         error("unknown expression kind: " .. tostring(expr.kind))
