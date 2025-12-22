@@ -1,59 +1,12 @@
 // os.cz - Operating system interface
 // Part of the Czar standard library
-//
-// The os struct acts as a namespace with static methods
-// that wrap raw C functions for OS detection and information.
 
-// Empty struct - used as namespace for static methods
+// OS information struct with fields
 struct os {
-}
-
-// Static method to get OS name
-// Returns: "linux", "windows", "macos", or "unknown"
-fn os.name() String {
-    #unsafe {
-        _cz_os_init();
-        return __cz_os.name;
-    }
-}
-
-// Static method to get kernel version
-fn os.version() String {
-    #unsafe {
-        _cz_os_init();
-        return __cz_os.version;
-    }
-}
-
-// Static method to get kernel name
-// Returns: "linux", "darwin", "windows", or "unknown"
-fn os.kernel() String {
-    #unsafe {
-        _cz_os_init();
-        return __cz_os.kernel;
-    }
-}
-
-// Static method to check if running on Linux
-fn os.linux() bool {
-    #unsafe {
-        _cz_os_init();
-        return __cz_os.linux;
-    }
-}
-
-// Static method to check if running on Windows
-fn os.windows() bool {
-    #unsafe {
-        _cz_os_init();
-        return __cz_os.windows;
-    }
-}
-
-// Static method to check if running on macOS
-fn os.macos() bool {
-    #unsafe {
-        _cz_os_init();
-        return __cz_os.macos;
-    }
+    String name      // "linux", "windows", "macos", or "unknown"
+    String version   // Kernel version string
+    String kernel    // Kernel name: "linux", "darwin", "windows", or "unknown"
+    bool linux       // true if running on Linux
+    bool windows     // true if running on Windows
+    bool macos       // true if running on macOS
 }
