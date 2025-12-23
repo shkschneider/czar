@@ -52,12 +52,13 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     end
 
     if method then
-        -- Check if this is a varargs-style function (has #unsafe and fewer params than args)
+        -- Check if this is a C varargs function
+        -- These are functions with #unsafe blocks that are part of stdlib modules (have dots in type_name)
         -- For these functions, pass all call-site arguments directly to the C function
-        local is_varargs = method.has_unsafe_block and #expr.args > #method.params
+        local is_c_varargs = method.has_unsafe_block and type_name:match("%.")
         
-        if is_varargs then
-            -- For varargs functions, pass all call-site arguments directly
+        if is_c_varargs then
+            -- For C varargs functions, pass all call-site arguments directly
             local args = {}
             for i, a in ipairs(expr.args) do
                 table.insert(args, gen_expr_fn(a))

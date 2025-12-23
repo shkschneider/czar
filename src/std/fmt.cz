@@ -2,18 +2,15 @@
 // Part of the Czar standard library
 //
 // This module provides formatted printing functions that wrap the C stdio functions.
-// These functions accept variable arguments in the C layer.
-#module cz
-
-// Define a dummy struct to hold static methods
-struct fmt {
-}
+// NOTE: These functions use C varargs, not Czar varargs. They accept variable arguments
+// at the call site which are passed directly to the C functions.
+#module cz.fmt
 
 // Print formatted string without newline
 // Args:
 //   format: i8? - format string with printf-style placeholders
-// Note: Additional arguments are passed through to the C function
-fn fmt.print(i8? format) void {
+// Additional arguments are passed through to the C varargs function
+fn print(i8? format) void {
     #unsafe {
         czar_fmt_print(format);
     }
@@ -22,8 +19,8 @@ fn fmt.print(i8? format) void {
 // Print formatted string with newline
 // Args:
 //   format: i8? - format string with printf-style placeholders
-// Note: Additional arguments are passed through to the C function
-fn fmt.println(i8? format) void {
+// Additional arguments are passed through to the C varargs function
+fn println(i8? format) void {
     #unsafe {
         czar_fmt_println(format);
     }
@@ -32,8 +29,8 @@ fn fmt.println(i8? format) void {
 // Print formatted string (alias for print)
 // Args:
 //   format: i8? - format string with printf-style placeholders
-// Note: Additional arguments are passed through to the C function
-fn fmt.printf(i8? format) void {
+// Additional arguments are passed through to the C varargs function
+fn printf(i8? format) void {
     #unsafe {
         czar_fmt_printf(format);
     }

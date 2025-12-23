@@ -2,16 +2,12 @@
 // Part of the Czar standard library
 //
 // This module provides OS-level operations like process exit and environment access.
-#module cz
-
-// Define a struct to hold static methods
-struct os {
-}
+#module cz.os
 
 // Exit the program with a status code
 // Args:
 //   code: i32 - exit status code (0 = success, non-zero = error)
-fn os.exit(i32 code) void {
+fn exit(i32 code) void {
     #unsafe {
         czar_os_exit(code);
     }
@@ -22,7 +18,7 @@ fn os.exit(i32 code) void {
 //   name: i8? - null-terminated name of environment variable
 // Returns:
 //   i8? - null-terminated value of variable, or null if not found
-fn os.getenv(i8? name) i8? {
+fn getenv(i8? name) i8? {
     #unsafe {
         return czar_os_getenv(name);
     }

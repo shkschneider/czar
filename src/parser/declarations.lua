@@ -3,23 +3,23 @@
 
 local Declarations = {}
 
--- Parse module declaration: #module foo
--- Module names must be single words (no dots)
+-- Parse module declaration: #module foo.bar
+-- Module names can have dots to represent hierarchical namespaces
 -- This represents the namespace that all identifiers in this file belong to
 function Declarations.parse_module_declaration(parser, directive_tok)
     -- directive_tok is the DIRECTIVE token with value "module"
     local start_tok = directive_tok or parser:expect("DIRECTIVE", "module")
-    local module_name = parser:expect("IDENT").value
+    local parts = {}
+    table.insert(parts, parser:expect("IDENT").value)
     
-    -- Module names must be single words - no dots allowed
-    -- The module name is the namespace for identifiers in this file
-    if parser:check("DOT") then
-        error("Module names must be single words (no dots). Use #module to specify the namespace for identifiers in this file.")
+    -- Parse dotted module name (e.g., cz.fmt, cz.os)
+    while parser:match("DOT") do
+        table.insert(parts, parser:expect("IDENT").value)
     end
     
     return {
         kind = "module",
-        path = { module_name }  -- Single element array
+        path = parts  -- Array of module path components
     }
 end
 

@@ -355,6 +355,14 @@ function Codegen:generate()
                 if not self.functions[import_path][item.name] then
                     self.functions[import_path][item.name] = {}
                 end
+                
+                -- Set c_name for stdlib functions (czar_module_function format)
+                -- e.g., fmt.printf -> czar_fmt_printf
+                if not item.c_name then
+                    local module_flat = import_path:gsub("%.", "_")  -- cz.fmt -> cz_fmt
+                    item.c_name = "czar_" .. module_flat .. "_" .. item.name
+                end
+                
                 table.insert(self.functions[import_path][item.name], item)
             end
         end
