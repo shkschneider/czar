@@ -25,10 +25,6 @@ pkg-config --exists luajit || {
     echo -e "ERROR: "$RED"MISSING luajit"$WHITE >&2
     exit 1
 }
-pkg-config --cflags luajit | cut -c3- | xargs -I{} find {}/luajit.h &>/dev/null || {
-    echo -e "ERROR: "$RED"MISSING luajit.h"$WHITE >&2
-    exit 1
-}
 
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 LDFLAGS="-L./build -lczar -Wl"
