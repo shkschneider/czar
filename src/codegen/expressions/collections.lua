@@ -248,10 +248,9 @@ function Collections.gen_new_string(expr)
     -- Allocate the string struct
     local alloc_expr = string.format("%s", ctx():alloc_call("sizeof(czar_string)", true))
     
-    -- Call the constructor: string_init(ptr, "text")
-    -- The constructor will handle all initialization
+    -- Call the constructor: czar_string_init(ptr, "text")
     local escaped_value = str_value:gsub("\\", "\\\\"):gsub('"', '\\"')
-    local init_call = string.format("string_init(%s, \"%s\")", alloc_expr, escaped_value)
+    local init_call = string.format("czar_string_init(%s, \"%s\")", alloc_expr, escaped_value)
     
     return string.format("(%s, %s)", init_call, alloc_expr)
 end

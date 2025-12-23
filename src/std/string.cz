@@ -69,7 +69,7 @@ fn string:fini() void {
 // Returns: i8? - pointer to internal null-terminated byte array
 fn string:cstr() i8? {
     #unsafe {
-        return _cz_string_cstr(self);
+        return czar_string_cstr(self);
     }
 }
 
@@ -79,7 +79,7 @@ fn string:cstr() i8? {
 //   len: i32 - length of the C string in bytes
 fn string:append_cstr(i8? cstr, i32 len) void {
     #unsafe {
-        _cz_string_append_cstr(self, cstr, len);
+        czar_string_append_cstr(self, cstr, len);
     }
 }
 
@@ -88,7 +88,7 @@ fn string:append_cstr(i8? cstr, i32 len) void {
 //   other: string? - pointer to string to append
 fn string:append(string? other) void {
     #unsafe {
-        _cz_string_append_string(self, other);
+        czar_string_append_string(self, other);
     }
 }
 
@@ -99,7 +99,7 @@ fn string:append(string? other) void {
 // Returns: string? - new heap-allocated concatenated string
 fn string.concat(string? s1, string? s2) string? {
     #unsafe {
-        return _cz_string_concat_static(s1, s2);
+        return czar_string_concat_static(s1, s2);
     }
 }
 
@@ -109,7 +109,7 @@ fn string.concat(string? s1, string? s2) string? {
 //   len: i32 - length of the C string in bytes
 fn string:copy(i8? cstr, i32 len) void {
     #unsafe {
-        _cz_string_copy(self, cstr, len);
+        czar_string_copy(self, cstr, len);
     }
 }
 
@@ -121,7 +121,7 @@ fn string:copy(i8? cstr, i32 len) void {
 // Note: Works on byte offsets. For UTF-8, ensure offsets are on character boundaries.
 fn string:substring(i32 start, i32 end) string? {
     #unsafe {
-        return _cz_string_substring(self, start, end);
+        return czar_string_substring(self, start, end);
     }
 }
 
@@ -131,14 +131,14 @@ fn string:substring(i32 start, i32 end) string? {
 // Returns: i32 - byte offset of first occurrence, or -1 if not found
 fn string:find(string? needle) i32 {
     #unsafe {
-        return _cz_string_find(self, needle);
+        return czar_string_find(self, needle);
     }
 }
 
 // Instance method: Alias for find()
 fn string:index(string? needle) i32 {
     #unsafe {
-        return _cz_string_index(self, needle);
+        return czar_string_index(self, needle);
     }
 }
 
@@ -148,7 +148,7 @@ fn string:index(string? needle) i32 {
 // Returns: i32 - 1 if found, 0 if not found (treated as boolean)
 fn string:contains(string? needle) i32 {
     #unsafe {
-        return _cz_string_contains(self, needle);
+        return czar_string_contains(self, needle);
     }
 }
 
@@ -157,7 +157,7 @@ fn string:contains(string? needle) i32 {
 // Note: Only ASCII characters are converted. UTF-8 multi-byte sequences are preserved.
 fn string:upper() string? {
     #unsafe {
-        return _cz_string_upper(self);
+        return czar_string_upper(self);
     }
 }
 
@@ -166,7 +166,7 @@ fn string:upper() string? {
 // Note: Only ASCII characters are converted. UTF-8 multi-byte sequences are preserved.
 fn string:lower() string? {
     #unsafe {
-        return _cz_string_lower(self);
+        return czar_string_lower(self);
     }
 }
 
@@ -177,6 +177,6 @@ fn string:lower() string? {
 // Note: This is a simplified version. A full implementation would return an array.
 fn string:cut(string? separator) string? {
     #unsafe {
-        return _cz_string_cut(self, separator);
+        return czar_string_cut(self, separator);
     }
 }

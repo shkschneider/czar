@@ -34,8 +34,8 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         for i, a in ipairs(expr.args) do
             table.insert(args, gen_expr_fn(a))
         end
-        -- Call the raw C function with module name in function: _cz_fmt_printf()
-        return string.format('_cz_fmt_%s(%s)', method_name, join(args, ", "))
+        -- Call the raw C function: czar_fmt_printf()
+        return string.format('czar_fmt_%s(%s)', method_name, join(args, ", "))
     end
 
     -- Look up the method in the module's function table

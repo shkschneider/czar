@@ -218,7 +218,7 @@ end
 -- Generate constructor call for a struct variable
 function Functions.gen_constructor_call(struct_name, var_name)
     if Functions.has_constructor(struct_name) then
-        return string.format("%s_init(%s);", struct_name, var_name)
+        return string.format("czar_%s_init(%s);", struct_name, var_name)
     end
     return nil
 end
@@ -226,7 +226,7 @@ end
 -- Generate destructor call for a struct variable
 function Functions.gen_destructor_call(struct_name, var_name)
     if Functions.has_destructor(struct_name) then
-        return string.format("%s_fini(%s);", struct_name, var_name)
+        return string.format("czar_%s_fini(%s);", struct_name, var_name)
     end
     return nil
 end
@@ -329,12 +329,17 @@ function Functions.gen_function_declaration(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    -- Special handling for constructor/destructor methods
     if fn.receiver_type then
+        local receiver = fn.receiver_type
+        -- Use czar_ prefix for consistency
         if name == "init" then
-            c_name = fn.receiver_type .. "_init"
+            c_name = "czar_" .. receiver .. "_init"
         elseif name == "fini" then
-            c_name = fn.receiver_type .. "_fini"
+            c_name = "czar_" .. receiver .. "_fini"
+        else
+            -- Regular instance/static methods use czar_ prefix too
+            c_name = "czar_" .. receiver .. "_" .. name
         end
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
@@ -372,12 +377,17 @@ function Functions.gen_function(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    -- Special handling for constructor/destructor methods
     if fn.receiver_type then
+        local receiver = fn.receiver_type
+        -- Use czar_ prefix for consistency
         if name == "init" then
-            c_name = fn.receiver_type .. "_init"
+            c_name = "czar_" .. receiver .. "_init"
         elseif name == "fini" then
-            c_name = fn.receiver_type .. "_fini"
+            c_name = "czar_" .. receiver .. "_fini"
+        else
+            -- Regular instance/static methods use czar_ prefix too
+            c_name = "czar_" .. receiver .. "_" .. name
         end
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
