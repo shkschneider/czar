@@ -6,19 +6,19 @@ A concise guide for Copilot: what to install, how to build, run and test the pro
 
 - LuaJIT (preferred runtime)
 - C toolchain: gcc/clang, make (for any native C/extension pieces)
-- Optional (for testing / linting): luarocks, busted, luacheck
+- Library: glibc (possibly musl)
 
 Example installs
 - Debian/Ubuntu:
-  - sudo apt install -y luajit-dev build-essential make luarocks
+  - sudo apt install -y build-essential luajit luajit-5.1-dev gcc
 - macOS (Homebrew):
-  - brew install luajit gcc make luarocks
+  - brew install luajit gcc
 - Windows:
-  - Use WSL or install LuaJIT & a C toolchain; or use Chocolatey for packages.
+  - _unsupported/untested for now_
 
 ## Setup
 
-1. Install `luajit` ; test with `luajit -v`
+1. Install `luajit`, `luajit-dev` ; test with `luajit -v`
 
 2. Clone the repo https://github.com/shkschneider/czar.git
 
@@ -32,7 +32,7 @@ Example installs
 ## Run
 
 ```
-./dist/cz <run> ...
+./dist/cz run ...
 ```
 
 ## Test
@@ -41,20 +41,17 @@ Example installs
 # test all
 ./check.sh
 # test some
-./dist/cz <test> ...
+./check.sh ...
 ```
 
 ## Format
 
+> work-in-progress
 ```
-# work-in-progress
 ./dist/cz format ...
-# do not use for now
 ```
 
 ## Automation
 
-```
-.github/workflows/build.yml
-.github/workflows/test.yml
-```
+- `.github/workflows/build.yml`
+- `.github/workflows/test.yml`
