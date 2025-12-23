@@ -31,10 +31,16 @@ function Statements.gen_statement(stmt)
         -- For return statements, we need to:
         -- 1. Evaluate the return expression FIRST
         -- 2. Then cleanup
-        -- 3. Then return
+        -- 3. If this is main with debug allocator, print memory stats
+        -- 4. Then return
         -- We use a temporary variable to hold the return value
         local cleanup = ctx():get_all_scope_cleanup()
-        if #cleanup > 0 then
+        
+        -- Check if we need to add memory stats printing (main function with debug allocator)
+        local need_memory_stats = ctx().current_function == "main" and 
+                                  ctx().custom_allocator_interface == "cz.alloc.debug"
+        
+        if #cleanup > 0 or need_memory_stats then
             -- Need to use temporary for return value
             local return_expr = Codegen.Expressions.gen_expr(stmt.value)
             local parts = {}
@@ -43,6 +49,9 @@ function Statements.gen_statement(stmt)
             table.insert(parts, "typeof(" .. return_expr .. ") _ret_val = " .. return_expr .. "; ")
             for _, cleanup_code in ipairs(cleanup) do
                 table.insert(parts, cleanup_code .. " ")
+            end
+            if need_memory_stats then
+                table.insert(parts, "_czar_print_memory_stats(); ")
             end
             table.insert(parts, "return _ret_val; }")
             return table.concat(parts, "")

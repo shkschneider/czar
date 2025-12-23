@@ -37,7 +37,7 @@ end
 -- For overloaded functions, append type signature to name
 local function generate_c_function_name(func_name, params, is_overloaded)
     if not is_overloaded then
-        return func_name == "main" and "main_main" or func_name
+        return func_name
     end
     
     -- For overloaded functions, append the first non-matching type to the name
@@ -326,7 +326,7 @@ end
 -- Generate forward declaration for a function
 function Functions.gen_function_declaration(fn)
     local name = fn.name
-    local c_name = name == "main" and "main_main" or name
+    local c_name = name
 
     -- Check if this function is overloaded
     local is_overloaded = false
@@ -369,7 +369,7 @@ end
 
 function Functions.gen_function(fn)
     local name = fn.name
-    local c_name = name == "main" and "main_main" or name
+    local c_name = name
 
     -- Check if this function is overloaded
     local is_overloaded = false
@@ -426,6 +426,28 @@ function Functions.gen_function(fn)
         end
     end
 
+    -- If this is main function, add stdlib init calls and debug allocator setup
+    if name == "main" then
+        -- Generate stdlib init calls based on parsed #init blocks from imports
+        for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
+            for _, init_block in ipairs(init_blocks) do
+                -- Generate code for each statement in the init block
+                for _, stmt in ipairs(init_block.statements) do
+                    local stmt_code = ctx():gen_statement(stmt)
+                    if stmt_code and stmt_code ~= "" then
+                        -- For unsafe blocks, the code already includes its own formatting
+                        -- (extracted as raw C from the source file between #unsafe { })
+                        if stmt.kind == "unsafe_block" then
+                            ctx():emit(stmt_code)
+                        else
+                            ctx():emit("    " .. stmt_code)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     -- Generate function body statements
     for _, stmt in ipairs(fn.body.statements) do
         ctx():emit("    " .. Codegen.Statements.gen_statement(stmt))
@@ -438,6 +460,11 @@ function Functions.gen_function(fn)
         local cleanup = ctx():get_scope_cleanup()
         for _, cleanup_code in ipairs(cleanup) do
             ctx():emit("    " .. cleanup_code)
+        end
+        
+        -- If this is main function with debug allocator, print memory stats before implicit return
+        if name == "main" and ctx().custom_allocator_interface == "cz.alloc.debug" then
+            ctx():emit("    _czar_print_memory_stats();")
         end
     end
 
@@ -487,46 +514,9 @@ function Functions.gen_enum(item)
     ctx():emit("")
 end
 
--- Helper function to generate init calls from stdlib imports
--- For each imported stdlib module, emit code for any #init blocks it contains
-local function gen_stdlib_init_calls()
-    -- Generate stdlib init calls based on parsed #init blocks from imports
-    for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
-        for _, init_block in ipairs(init_blocks) do
-            -- Generate code for each statement in the init block
-            for _, stmt in ipairs(init_block.statements) do
-                local stmt_code = ctx():gen_statement(stmt)
-                if stmt_code and stmt_code ~= "" then
-                    -- For unsafe blocks, the code already includes its own formatting
-                    -- (extracted as raw C from the source file between #unsafe { })
-                    if stmt.kind == "unsafe_block" then
-                        ctx():emit(stmt_code)
-                    else
-                        ctx():emit("    " .. stmt_code)
-                    end
-                end
-            end
-        end
-    end
-end
-
 function Functions.gen_wrapper(has_main)
-    if has_main then
-        if ctx().custom_allocator_interface == "cz.alloc.debug" then
-            -- With debug allocator, capture return value and print stats
-            ctx():emit("int main(void) {")
-            gen_stdlib_init_calls()
-            ctx():emit("    int _ret = main_main();")
-            ctx():emit("    _czar_print_memory_stats();")
-            ctx():emit("    return _ret;")
-            ctx():emit("}")
-        else
-            ctx():emit("int main(void) {")
-            gen_stdlib_init_calls()
-            ctx():emit("    return main_main();")
-            ctx():emit("}")
-        end
-    end
+    -- No longer needed - main function is generated directly with init calls inline
+    -- This function is kept for backward compatibility but does nothing
 end
 
 return Functions

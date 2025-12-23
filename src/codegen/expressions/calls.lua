@@ -368,7 +368,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                 callee = func_name .. "_" .. type_suffix
             else
                 -- Use regular name (already set by gen_expr_fn)
-                callee = func_name == "main" and "main_main" or func_name
+                callee = func_name
             end
 
             -- Resolve arguments (handle named args and defaults)
