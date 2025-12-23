@@ -244,7 +244,9 @@ function Calls.gen_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
 
-            return string.format("%s(%s)", method_name, join(args, ", "))
+            -- Use the c_name if available (handles czar_ prefix for methods)
+            local c_func_name = method.c_name or method_name
+            return string.format("%s(%s)", c_func_name, join(args, ", "))
         else
             error(string.format("Unknown method %s on type %s", method_name, receiver_type_name or "unknown"))
         end
@@ -321,7 +323,9 @@ function Calls.gen_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
 
-            return string.format("%s(%s)", method_name, join(args, ", "))
+            -- Use the c_name if available (handles czar_ prefix for methods)
+            local c_func_name = method.c_name or method_name
+            return string.format("%s(%s)", c_func_name, join(args, ", "))
         end
     end
 
