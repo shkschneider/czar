@@ -474,7 +474,8 @@ function Functions.gen_function(fn)
     ctx():emit("")
 end
 
-function Functions.gen_struct(item)    ctx():emit("typedef struct " .. item.name .. " {")
+function Functions.gen_struct(item)
+    ctx():emit("typedef struct " .. item.name .. " {")
     for _, field in ipairs(item.fields) do
         ctx():emit(string.format("    %s %s;", Codegen.Types.c_type_in_struct(field.type, item.name), field.name))
     end
