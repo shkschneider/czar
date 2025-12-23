@@ -455,18 +455,44 @@ end
 
 -- Generate field access
 function Calls.gen_field(expr, gen_expr_fn)
-    -- Check if this is a module alias field access (e.g., os.field)
-    if expr.object.kind == "identifier" and expr.object.inferred_type then
-        -- Check if object is the os struct (from cz.os module)
-        if expr.object.inferred_type.kind == "named_type" and expr.object.inferred_type.name == "os" then
-            -- Return pointer to the OS struct and access the field
-            return string.format("_cz_os_get()->%s", expr.field)
+    -- Check if this is a module alias field access
+    if expr.object.kind == "identifier" then
+        local obj_name = expr.object.name
+        
+        -- Check if this identifier is a module alias by checking stdlib_imports
+        -- This handles any module, not just hardcoded ones
+        if ctx().stdlib_imports then
+            for module_path, _ in pairs(ctx().stdlib_imports) do
+                -- Extract the alias (last part of the path)
+                local alias = module_path:match("%.([^.]+)$") or module_path
+                
+                if alias == obj_name then
+                    -- Found a matching module alias
+                    -- Generate module-specific code based on the module
+                    if module_path == "cz.os" then
+                        -- OS module uses a special C function
+                        return string.format("_cz_os_get()->%s", expr.field)
+                    end
+                    -- For other modules, we'd need to know their structure
+                    -- This would require metadata about how modules expose their fields
+                    break
+                end
+            end
         end
-        -- Legacy: Check if object has inferred type of _cz_os_t*
-        if expr.object.inferred_type.kind == "nullable" and
-           expr.object.inferred_type.to and expr.object.inferred_type.to.name == "_cz_os_t" then
-            -- Return pointer to the OS struct and access the field
-            return string.format("_cz_os_get()->%s", expr.field)
+        
+        -- Fallback: Check using inferred_type if available
+        if expr.object.inferred_type then
+            -- Check if object is the os struct (from cz.os module)
+            if expr.object.inferred_type.kind == "named_type" and expr.object.inferred_type.name == "os" then
+                -- Return pointer to the OS struct and access the field
+                return string.format("_cz_os_get()->%s", expr.field)
+            end
+            -- Legacy: Check if object has inferred type of _cz_os_t*
+            if expr.object.inferred_type.kind == "nullable" and
+               expr.object.inferred_type.to and expr.object.inferred_type.to.name == "_cz_os_t" then
+                -- Return pointer to the OS struct and access the field
+                return string.format("_cz_os_get()->%s", expr.field)
+            end
         end
     end
     
