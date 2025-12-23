@@ -7,8 +7,18 @@
 // This replaces the old `string` keyword (which was just an alias for char*)
 // with a proper struct type that includes length and capacity.
 // 
-// Note: string is a global built-in type, not module-scoped, so it's available
-// everywhere without needing to import cz.string
+// NOTE: string is a GLOBAL BUILT-IN TYPE, not module-scoped
+// ============================================================
+// Unlike other stdlib modules (cz.fmt, cz.os), string does NOT use #module.
+// This means:
+//   - Available everywhere without importing (like i32, bool, f32)
+//   - No need for `#import cz.string` in user code
+//   - Automatically loaded by compiler during typechecking and codegen
+//   - Accessible in all scopes and files
+//
+// This design choice ensures backward compatibility with existing code that
+// uses `string` as a fundamental type while providing modern memory-safe
+// UTF-8 string operations.
 
 // string struct - represents a dynamic byte array suitable for UTF-8 text
 // Fields:

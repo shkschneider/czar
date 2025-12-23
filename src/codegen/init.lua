@@ -305,9 +305,10 @@ function Codegen:generate()
     
     -- ALWAYS load string.cz since string is a global built-in type
     local string_ast = parse_stdlib_ast("src/std/string.cz")
-    if string_ast then
-        self.stdlib_asts["__builtin__string"] = string_ast
+    if not string_ast then
+        error("FATAL: Failed to load src/std/string.cz - string is a required built-in type")
     end
+    self.stdlib_asts["__builtin__string"] = string_ast
     
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then

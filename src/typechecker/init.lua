@@ -158,8 +158,11 @@ function Typechecker:check()
     
     -- ALWAYS load string.cz since string is a global built-in type
     local string_ast = parse_stdlib_ast("src/std/string.cz")
-    if string_ast then
-        for _, item in ipairs(string_ast.items or {}) do
+    if not string_ast then
+        error("FATAL: Failed to load src/std/string.cz - string is a required built-in type")
+    end
+    -- Register string struct and methods globally
+    for _, item in ipairs(string_ast.items or {}) do
             if item.kind == "struct" then
                 self.structs[item.name] = item
             elseif item.kind == "enum" then
@@ -184,8 +187,6 @@ function Typechecker:check()
             end
         end
     end
-    
-    -- Also collect declarations from imported stdlib modules
     for _, import in ipairs(self.imports) do
         -- Only process cz.* stdlib imports
         if import.path:match("^cz%.") then
