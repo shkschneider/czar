@@ -3,7 +3,7 @@
 //
 // This interface defines the contract for memory allocators.
 // Different allocator implementations (heap, debug, arena) must implement these methods.
-#module cz.alloc
+#module cz
 
 // Memory allocator interface
 iface iAlloc {

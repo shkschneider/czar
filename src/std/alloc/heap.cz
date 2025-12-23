@@ -1,7 +1,7 @@
 // heap.cz - Heap allocator implementation
 // Part of the Czar standard library
 // Uses standard C malloc/realloc/free under the hood
-#module cz.alloc
+#module cz
 
 #import iAlloc
 
