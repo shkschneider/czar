@@ -1,21 +1,55 @@
-// print.cz - Print functions for formatted output
+// fmt.cz - Print functions for formatted output
 // Part of the Czar standard library
 //
-// Note: print, println, printf are function pointers in the cz struct
-// They point to raw C functions _cz_print, _cz_println, _cz_printf
+// These are wrapper functions that call raw C print functions via #unsafe blocks
+// When users import cz.fmt and call fmt.printf(), it goes through these functions
 #module cz
 
-#import C : stdio.h
-
-fn print(string fmt, any... args) {
-    #unsafe { printf("print called") }
-    _cz_print(fmt:cstr(), args)
+// Single argument versions
+fn print(string fmt) {
+    #unsafe {
+        printf("print called\n");
+        _cz_printf(fmt.data);
+    }
 }
 
-fn printf(string fmt, any... args) {
-    _cz_printf(fmt:cstr(), args)
+fn printf(string fmt) {
+    #unsafe {
+        _cz_printf(fmt.data);
+    }
 }
 
-fn println(string fmt, any... args) {
-    _cz_printf(fmt:cstr(), args)
+fn println(string fmt) {
+    #unsafe {
+        _cz_printf(fmt.data);
+        printf("\n");
+    }
+}
+
+// Two argument overloads
+fn printf(string fmt, i32 arg1) {
+    #unsafe {
+        _cz_printf(fmt.data, arg1);
+    }
+}
+
+fn println(string fmt, i32 arg1) {
+    #unsafe {
+        _cz_printf(fmt.data, arg1);
+        printf("\n");
+    }
+}
+
+// Three argument overloads
+fn printf(string fmt, i32 arg1, i32 arg2) {
+    #unsafe {
+        _cz_printf(fmt.data, arg1, arg2);
+    }
+}
+
+fn println(string fmt, i32 arg1, i32 arg2) {
+    #unsafe {
+        _cz_printf(fmt.data, arg1, arg2);
+        printf("\n");
+    }
 }

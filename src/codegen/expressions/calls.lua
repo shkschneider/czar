@@ -27,30 +27,8 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         return string.format('%s(%s)', method_name, join(args, ", "))
     end
 
-    -- Special handling for cz.* module functions
-    if type_name == "cz" or type_name == "cz.fmt" then
-        local args = {}
-        for i, a in ipairs(expr.args) do
-            table.insert(args, gen_expr_fn(a))
-        end
-
-        if method_name == "print" then
-            if #args == 1 then
-                return string.format('_cz_print(%s)', args[1])
-            else
-                -- Multiple arguments: treat like printf
-                return string.format('_cz_printf(%s)', join(args, ", "))
-            end
-        elseif method_name == "println" then
-            return string.format('_cz_println(%s)', join(args, ", "))
-        elseif method_name == "printf" then
-            return string.format('_cz_printf(%s)', join(args, ", "))
-        else
-            error(string.format("Unknown method %s on %s module", method_name, type_name))
-        end
-    end
-
-    -- Look up the method
+    -- Look up the method in the module's function table
+    -- For cz.* modules, functions should be registered in the functions table under the module name
     local method_overloads = nil
     if ctx().functions[type_name] then
         method_overloads = ctx().functions[type_name][method_name]

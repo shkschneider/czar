@@ -21,6 +21,7 @@ end
 
 -- Cache for parsed stdlib files to avoid redundant parsing
 local stdlib_file_cache = {}
+local stdlib_ast_cache = {}
 
 -- Parse a specific stdlib .cz file to collect #init blocks
 -- This function is used during code generation to extract #init blocks
@@ -60,6 +61,35 @@ local function parse_stdlib_file(file_path)
     -- Cache the result
     stdlib_file_cache[file_path] = init_macros
     return init_macros
+end
+
+-- Parse and fully process a stdlib .cz file to get its full AST
+-- This is used to compile stdlib modules and include their functions
+local function parse_stdlib_ast(file_path)
+    -- Check cache first
+    if stdlib_ast_cache[file_path] then
+        return stdlib_ast_cache[file_path]
+    end
+
+    -- Read the file
+    local file = io.open(file_path, "r")
+    if not file then
+        return nil
+    end
+
+    local source = file:read("*all")
+    file:close()
+
+    -- Parse using the already-loaded lexer and parser
+    local lexer = require("lexer")
+    local parser = require("parser")
+
+    local tokens = lexer(source, file_path)
+    local ast = parser(tokens, source)
+
+    -- Cache the result
+    stdlib_ast_cache[file_path] = ast
+    return ast
 end
 
 -- Map module imports to their .cz file paths
@@ -266,24 +296,12 @@ function Codegen:gen_expr(expr)
 end
 
 function Codegen:generate()
-    self:collect_structs_and_functions()
-
-    -- Process allocator macros (#alloc)
-    -- Delegate to Macros module
-    Macros.process_top_level(self, self.ast)
-
-    -- Set default allocator based on debug mode if not already overridden
-    if not self.custom_allocator_interface then
-        if self.debug then
-            self.custom_allocator_interface = "cz.alloc.debug"
-        else
-            self.custom_allocator_interface = "cz.alloc.default"
-        end
-    end
-
-    -- Collect C imports and stdlib imports from AST
+    -- First, collect C imports and stdlib imports from AST
+    -- This needs to happen before collect_structs_and_functions so that
+    -- stdlib functions are available during collection
     self.stdlib_imports = {}  -- Track stdlib imports like "cz.os", "cz.alloc", etc.
     self.stdlib_init_blocks = {}  -- Track #init blocks from imported stdlib modules
+    self.stdlib_asts = {}  -- Track full ASTs of imported stdlib modules
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
             for _, header in ipairs(import.headers) do
@@ -298,15 +316,60 @@ function Codegen:generate()
             if import_path:match("^cz%.") then
                 self.stdlib_imports[import_path] = true
 
-                -- Parse the stdlib file to extract #init blocks
+                -- Parse the stdlib file to extract #init blocks AND full AST
                 local file_path = get_stdlib_file_path(import_path)
                 if file_path then
                     local init_blocks = parse_stdlib_file(file_path)
                     if #init_blocks > 0 then
                         self.stdlib_init_blocks[import_path] = init_blocks
                     end
+                    
+                    -- Also parse full AST for function compilation
+                    local stdlib_ast = parse_stdlib_ast(file_path)
+                    if stdlib_ast then
+                        self.stdlib_asts[import_path] = stdlib_ast
+                    end
                 end
             end
+        end
+    end
+
+    -- Now collect structs and functions from main AST
+    self:collect_structs_and_functions()
+    
+    -- Also collect structs and functions from stdlib ASTs
+    for import_path, stdlib_ast in pairs(self.stdlib_asts) do
+        -- Collect functions from stdlib module and register them under the module name
+        for _, item in ipairs(stdlib_ast.items or {}) do
+            if item.kind == "struct" then
+                self.structs[item.name] = item
+            elseif item.kind == "enum" then
+                self.enums[item.name] = item
+            elseif item.kind == "iface" then
+                self.ifaces[item.name] = item
+            elseif item.kind == "function" then
+                -- Register function under the module name (e.g., "cz.fmt")
+                if not self.functions[import_path] then
+                    self.functions[import_path] = {}
+                end
+                if not self.functions[import_path][item.name] then
+                    self.functions[import_path][item.name] = {}
+                end
+                table.insert(self.functions[import_path][item.name], item)
+            end
+        end
+    end
+
+    -- Process allocator macros (#alloc)
+    -- Delegate to Macros module
+    Macros.process_top_level(self, self.ast)
+
+    -- Set default allocator based on debug mode if not already overridden
+    if not self.custom_allocator_interface then
+        if self.debug then
+            self.custom_allocator_interface = "cz.alloc.debug"
+        else
+            self.custom_allocator_interface = "cz.alloc.default"
         end
     end
 
@@ -370,6 +433,16 @@ function Codegen:generate()
             self:gen_function(item)
         end
     end
+    
+    -- Also generate functions from stdlib modules
+    for import_path, stdlib_ast in pairs(self.stdlib_asts) do
+        for _, item in ipairs(stdlib_ast.items) do
+            if item.kind == "function" then
+                self:gen_function(item)
+            end
+        end
+    end
+    
     local function_code = self.out
     self.out = saved_out
 
@@ -430,6 +503,15 @@ function Codegen:generate()
     for _, item in ipairs(self.ast.items) do
         if item.kind == "function" then
             Codegen.Functions.gen_function_declaration(item)
+        end
+    end
+    
+    -- Also forward declare stdlib functions
+    for import_path, stdlib_ast in pairs(self.stdlib_asts) do
+        for _, item in ipairs(stdlib_ast.items) do
+            if item.kind == "function" then
+                Codegen.Functions.gen_function_declaration(item)
+            end
         end
     end
     self:emit("")
