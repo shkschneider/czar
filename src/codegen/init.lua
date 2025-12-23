@@ -19,15 +19,24 @@ local function join(list, sep)
     return table.concat(list, sep or "")
 end
 
+-- Cache for parsed stdlib files to avoid redundant parsing
+local stdlib_file_cache = {}
+
 -- Parse a specific stdlib .cz file to collect #init macros
--- Note: Currently not used, as we hardcode init calls based on imports
--- This function is kept for potential future use when we want to parse #init macros
+-- This function is used during code generation to extract #init blocks
+-- from imported stdlib modules, enabling automatic initialization
 local function parse_stdlib_file(file_path)
+    -- Check cache first to avoid redundant parsing
+    if stdlib_file_cache[file_path] then
+        return stdlib_file_cache[file_path]
+    end
+
     local init_macros = {}
 
     -- Read the file
     local file = io.open(file_path, "r")
     if not file then
+        stdlib_file_cache[file_path] = init_macros
         return init_macros
     end
 
@@ -48,6 +57,8 @@ local function parse_stdlib_file(file_path)
         end
     end
 
+    -- Cache the result
+    stdlib_file_cache[file_path] = init_macros
     return init_macros
 end
 
@@ -286,7 +297,7 @@ function Codegen:generate()
             -- Only handle specific cz.* imports (not just "cz")
             if import_path:match("^cz%.") then
                 self.stdlib_imports[import_path] = true
-                
+
                 -- Parse the stdlib file to extract #init blocks
                 local file_path = get_stdlib_file_path(import_path)
                 if file_path then
