@@ -1,23 +1,23 @@
 // Comprehensive test for cz.os struct
 #import cz.os
-#import cz.print
+#import cz.fmt
 
 fn main() i32 {
     // Test all fields exist and can be accessed
     // Test string fields
-    cz.println(cz.os.name)
-    cz.println(cz.os.version)
-    cz.println(cz.os.kernel)
+    fmt.println(os.name)
+    fmt.println(os.version)
+    fmt.println(os.kernel)
 
     // Test boolean fields - exactly one should be true
     mut i32 count = 0
-    if cz.os.linux {
+    if os.linux {
         count = count + 1
     }
-    if cz.os.windows {
+    if os.windows {
         count = count + 1
     }
-    if cz.os.macos {
+    if os.macos {
         count = count + 1
     }
 

@@ -15,7 +15,7 @@ fn main() i32 {
     }
 
     // Test C-string conversion
-    cz.fmt.print(s.cstr())
+    fmt.print(s.cstr())
 
     return 0
 }

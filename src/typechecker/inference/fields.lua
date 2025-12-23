@@ -94,56 +94,30 @@ end
 
 -- Infer the type of a field access
 function Fields.infer_field_type(typechecker, expr)
-    io.stderr:write(string.format("DEBUG field_type: object=%s, field=%s\n", 
-        expr.object.kind, expr.field))
-    
-    -- First, infer the type of the object if it's an identifier
-    -- This is needed to detect namespace types
-    if expr.object.kind == "identifier" and not expr.object.inferred_type then
-        io.stderr:write(string.format("DEBUG: Inferring type for identifier %s\n", expr.object.name))
-        Fields.infer_type(typechecker, expr.object)
-        if expr.object.inferred_type then
-            io.stderr:write(string.format("DEBUG: Inferred type kind = %s\n", expr.object.inferred_type.kind))
-        end
-    end
-    
-    -- Check if the object is a namespace type
-    -- This handles cases like cz.fmt where cz is a namespace and fmt is a module
-    if expr.object.kind == "identifier" and expr.object.inferred_type and expr.object.inferred_type.kind == "namespace" then
-        io.stderr:write(string.format("DEBUG: Detected namespace %s.%s\n", expr.object.name, expr.field))
-        local namespace = expr.object.name
-        local module_path = namespace .. "." .. expr.field
-        
-        -- Check if this module is imported
-        local module_imported = false
+    -- Check if object is a module alias (e.g., os in os.linux where cz.os is imported)
+    if expr.object.kind == "identifier" then
+        local obj_name = expr.object.name
         for _, import in ipairs(typechecker.imports) do
-            if import.path == module_path then
-                module_imported = true
+            if import.alias == obj_name then
+                -- This is accessing a field on a module
                 import.used = true
-                break
+                
+                -- Handle specific module types
+                if import.path == "cz.os" then
+                    -- This is accessing a field on the os module (e.g., os.linux)
+                    -- The os module exposes an "os" struct with the OS fields
+                    -- We treat the module alias as if it were an instance of the os struct
+                    local os_type = { kind = "named_type", name = "os" }
+                    expr.object.inferred_type = os_type
+                    -- Continue to normal field inference which will look up fields in the os struct
+                    break
+                end
+                -- For other modules, we can add handling as needed
             end
         end
-        
-        if not module_imported then
-            local line = expr.line or (expr.object and expr.object.line) or 0
-            local msg = string.format("Module '%s' must be imported to use %s (use: #import %s)", 
-                module_path, module_path, module_path)
-            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
-            typechecker:add_error(formatted_error)
-            return nil
-        end
-        
-        -- Return a module type marker
-        local module_type = {
-            kind = "module",
-            path = module_path
-        }
-        expr.inferred_type = module_type
-        return module_type
     end
     
-    -- Check if this is cz.os access
+    -- Check if this is cz.os access (legacy - now use os.field directly)
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
         -- Check if cz.os module is imported
         local cz_os_imported = false
@@ -276,6 +250,31 @@ function Fields.infer_field_type(typechecker, expr)
             local line = expr.line or (expr.object and expr.object.line) or 0
             local msg = string.format(
                 "Field '%s' not found in string type (available: length, capacity). Use .cstr() method for C-string access.",
+                expr.field
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+    end
+    
+    -- Handle os struct fields (from cz.os module)
+    if base_type.kind == "named_type" and base_type.name == "os" then
+        if expr.field == "name" or expr.field == "version" or expr.field == "kernel" then
+            -- String fields
+            local string_ptr_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
+            expr.inferred_type = string_ptr_type
+            return string_ptr_type
+        elseif expr.field == "linux" or expr.field == "windows" or expr.field == "macos" then
+            -- Boolean fields
+            local bool_type = { kind = "named_type", name = "bool" }
+            expr.inferred_type = bool_type
+            return bool_type
+        else
+            local line = expr.line or (expr.object and expr.object.line) or 0
+            local msg = string.format(
+                "Field '%s' not found in os module (available: name, version, kernel, linux, windows, macos)",
                 expr.field
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,

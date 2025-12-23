@@ -3,31 +3,31 @@
 
 fn main() i32 {
     // Test println
-    cz.fmt.println("=== Testing println ===")
-    cz.fmt.println("Line 1")
-    cz.fmt.println("Line 2")
+    fmt.println("=== Testing println ===")
+    fmt.println("Line 1")
+    fmt.println("Line 2")
 
     // Test print
-    cz.fmt.print("=== Testing print ===")
-    cz.fmt.print("\n")
-    cz.fmt.print("A")
-    cz.fmt.print("B")
-    cz.fmt.print("C")
-    cz.fmt.println("")
+    fmt.print("=== Testing print ===")
+    fmt.print("\n")
+    fmt.print("A")
+    fmt.print("B")
+    fmt.print("C")
+    fmt.println("")
 
     // Test printf with various types
-    cz.fmt.println("=== Testing printf ===")
+    fmt.println("=== Testing printf ===")
     i32 age = 25
     i32 year = 2024
-    cz.fmt.printf("Age: %d, Year: %d\n", age, year)
+    fmt.printf("Age: %d, Year: %d\n", age, year)
 
     i32 a = 10
     i32 b = 20
     i32 c = 30
-    cz.fmt.printf("Values: %d, %d, %d\n", a, b, c)
+    fmt.printf("Values: %d, %d, %d\n", a, b, c)
 
     // Printf without arguments
-    cz.fmt.printf("Done!\n")
+    fmt.printf("Done!\n")
 
     return 0
 }

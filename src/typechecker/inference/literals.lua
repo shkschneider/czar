@@ -160,24 +160,27 @@ end
 
 -- Infer identifier type
 function Literals.infer_identifier_type(typechecker, expr)
+    -- Check if type was already inferred (cached)
+    if expr.inferred_type then
+        return expr.inferred_type
+    end
+    
     local var_info = Resolver.resolve_name(typechecker, expr.name)
     if var_info then
         expr.inferred_type = var_info.type
         return var_info.type
     else
-        -- Before erroring, check if this identifier is a namespace prefix for an imported module
-        -- For example, "cz" in "cz.fmt.println()" where "cz.fmt" is imported
-        -- We'll create a special namespace marker type that field access can check
+        -- Check if this identifier is a module alias before erroring
+        -- For example, "fmt" could be an alias for "cz.fmt"
         for _, import in ipairs(typechecker.imports) do
-            if import.path:match("^" .. expr.name .. "%.") then
-                -- This identifier is a namespace prefix for an imported module
-                -- Return a special marker type
-                local namespace_type = { 
-                    kind = "namespace",
-                    name = expr.name
+            if import.alias == expr.name then
+                -- This is a module alias, return a special module type
+                local module_type = {
+                    kind = "module",
+                    path = import.path
                 }
-                expr.inferred_type = namespace_type
-                return namespace_type
+                expr.inferred_type = module_type
+                return module_type
             end
         end
         
