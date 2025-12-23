@@ -6,6 +6,6 @@ fn main() i32 {
     mut u8[2] cc = []
     cc[0] = 1
     cc[1] = 2
-    cz.fmt.print("%d", cc[0])
+    fmt.print("%d", cc[0])
     return 0
 }

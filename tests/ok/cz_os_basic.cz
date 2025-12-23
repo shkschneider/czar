@@ -3,21 +3,20 @@
 
 fn main() i32 {
     // Access OS information
-    // cz.os.name should be "linux", "windows", "macos", etc.
-    // cz.os.version should be the kernel version
-    // cz.os.kernel should be "kernel_name kernel_version"
+    // os.name should be "linux", "windows", "macos", etc.
+    // os.version should be the kernel version
+    // os.kernel should be "kernel_name kernel_version"
 
     // Check boolean flags
-    if cz.os.linux {
-        // Can't use cz.print here without importing it
+    if os.linux {
         return 0  // Success on Linux
     }
 
-    if cz.os.windows {
+    if os.windows {
         return 0  // Success on Windows
     }
 
-    if cz.os.macos {
+    if os.macos {
         return 0  // Success on macOS
     }
 

@@ -10,6 +10,39 @@ local Calls = {}
 Calls.infer_type = nil
 Calls.get_base_type_name = nil
 
+-- Helper: Convert a field access expression to a dotted path string
+-- Example: cz.fmt becomes "cz.fmt"
+local function field_access_to_path(expr)
+    if expr.kind == "identifier" then
+        return expr.name
+    elseif expr.kind == "field" then
+        local base_path = field_access_to_path(expr.object)
+        if base_path then
+            return base_path .. "." .. expr.field
+        end
+    end
+    return nil
+end
+
+-- Helper: Check if an expression represents an imported module
+-- Returns the module path if it matches, nil otherwise
+local function get_module_path_if_imported(typechecker, expr)
+    local path = field_access_to_path(expr)
+    if not path then
+        return nil
+    end
+    
+    -- Check if this path matches an imported module
+    for _, import in ipairs(typechecker.imports) do
+        if import.path == path then
+            import.used = true
+            return path
+        end
+    end
+    
+    return nil
+end
+
 -- Infer the type of a function call
 function Calls.infer_call_type(typechecker, expr)
     if expr.callee.kind == "identifier" then
@@ -28,7 +61,7 @@ function Calls.infer_call_type(typechecker, expr)
         if not func_def then
             for _, used_module in ipairs(typechecker.used_modules) do
                 -- Try to resolve as module.function
-                -- Support cz and cz.* modules
+                -- Support cz.fmt and legacy cz modules
                 if used_module == "cz" or used_module == "cz.fmt" then
                     -- Check if this is a print function that's been flattened via #use
                     if func_name == "print" or func_name == "println" or func_name == "printf" then
@@ -179,6 +212,16 @@ function Calls.infer_call_type(typechecker, expr)
             return nil
         end
         
+        -- Check if this is a method call on a module (e.g., fmt.println())
+        if obj_type.kind == "module" then
+            -- Transform to static method call
+            expr.kind = "static_method_call"
+            expr.type_name = obj_type.path
+            expr.method = expr.callee.field
+            -- Copy args if needed (they should already be in expr.args)
+            return Calls.infer_static_method_call_type(typechecker, expr)
+        end
+        
         -- Special handling for string.cstr() method
         if obj_type.kind == "string" and expr.callee.field == "cstr" then
             -- cstr() returns char* (pointer to i8)
@@ -308,24 +351,32 @@ end
 
 -- Infer the type of a method call
 function Calls.infer_method_call_type(typechecker, expr)
-    local obj_type = Calls.infer_type(typechecker, expr.object)
-    if not obj_type then
-        io.stderr:write(string.format("DEBUG: obj_type is nil for method call %s\n", expr.method))
-        return nil
+    -- Check if this is a method call on an imported module alias
+    -- For example: fmt.println() where fmt is an alias for cz.fmt
+    if expr.object.kind == "identifier" then
+        local obj_name = expr.object.name
+        for _, import in ipairs(typechecker.imports) do
+            if import.alias == obj_name then
+                -- This is a static method call on a module
+                import.used = true
+                expr.kind = "static_method_call"
+                expr.type_name = import.path
+                return Calls.infer_static_method_call_type(typechecker, expr)
+            end
+        end
     end
-
-    io.stderr:write(string.format("DEBUG: obj_type.kind = %s for method call %s\n", obj_type.kind or "nil", expr.method))
-
-    -- Check if this is a method call on a module (e.g., cz.fmt.println())
-    if obj_type.kind == "module" then
-        io.stderr:write(string.format("DEBUG: Detected module call: %s.%s()\n", obj_type.path, expr.method))
-        -- Transform this into a static method call
-        -- For example, cz.fmt.println() becomes a call to _cz_println()
+    
+    -- If object already has a module type, handle it
+    local obj_type = Calls.infer_type(typechecker, expr.object)
+    if obj_type and obj_type.kind == "module" then
+        -- This is a method call on a module
         expr.kind = "static_method_call"
         expr.type_name = obj_type.path
-        -- Method name stays the same
-        -- Now handle as static method call
         return Calls.infer_static_method_call_type(typechecker, expr)
+    end
+    
+    if not obj_type then
+        return nil
     end
 
     local type_name = Calls.get_base_type_name(obj_type)
@@ -392,41 +443,84 @@ function Calls.infer_static_method_call_type(typechecker, expr)
         return return_type
     end
     
-    -- Special handling for cz.* module functions
-    if expr.type_name == "cz" or expr.type_name:match("^cz%.") then
-        -- Check if the specific module is imported
+    -- Generic handling for stdlib modules (cz.fmt, cz.os, etc.)
+    if expr.type_name:match("^cz%.") then
+        -- Check if this specific module is imported
         local module_imported = false
+        local module_alias = nil
         for _, import in ipairs(typechecker.imports) do
             if import.path == expr.type_name then
                 module_imported = true
-                import.used = true -- Mark as used
+                module_alias = import.alias
+                import.used = true
                 break
             end
         end
         
         if not module_imported then
             local Errors = require("errors")
+            local alias_hint = expr.type_name:match("%.([^.]+)$") or expr.type_name
             local msg = string.format("Module '%s' must be imported to use %s.%s() (use: #import %s)", 
-                expr.type_name, expr.type_name, expr.method, expr.type_name)
+                expr.type_name, alias_hint, expr.method, expr.type_name)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
                 Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
         end
         
-        -- Return type for cz.fmt module functions (print, println, printf)
-        if expr.type_name == "cz.fmt" and (expr.method == "print" or expr.method == "println" or expr.method == "printf") then
-            local void_type = { kind = "named_type", name = "void" }
-            expr.inferred_type = void_type
-            return void_type
-        -- Legacy support for cz.print, cz.println, cz.printf (deprecated)
-        elseif expr.type_name == "cz" and (expr.method == "print" or expr.method == "println" or expr.method == "printf") then
+        -- Handle specific module functions
+        if expr.type_name == "cz.fmt" then
+            -- Return type for fmt module functions
+            if expr.method == "print" or expr.method == "println" or expr.method == "printf" then
+                local void_type = { kind = "named_type", name = "void" }
+                expr.inferred_type = void_type
+                return void_type
+            else
+                local Errors = require("errors")
+                local msg = string.format("Unknown function '%s.%s()'", module_alias or "fmt", expr.method)
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                    Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+        end
+        
+        -- For other cz.* modules, we can add handling here as needed
+        -- For now, return void as a default
+        local void_type = { kind = "named_type", name = "void" }
+        expr.inferred_type = void_type
+        return void_type
+    end
+    
+    -- Legacy handling for old cz module (deprecated - use cz.fmt instead)
+    if expr.type_name == "cz" then
+        -- Check if cz module is imported
+        local cz_imported = false
+        for _, import in ipairs(typechecker.imports) do
+            if import.path == "cz" or import.alias == "cz" then
+                cz_imported = true
+                import.used = true -- Mark as used
+                break
+            end
+        end
+        
+        if not cz_imported then
+            local Errors = require("errors")
+            local msg = string.format("Module 'cz' must be imported to use cz.%s()", expr.method)
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return nil
+        end
+        
+        -- Return type for cz module functions
+        if expr.method == "print" or expr.method == "println" or expr.method == "printf" then
             local void_type = { kind = "named_type", name = "void" }
             expr.inferred_type = void_type
             return void_type
         else
             local Errors = require("errors")
-            local msg = string.format("Unknown function '%s.%s()'", expr.type_name, expr.method)
+            local msg = string.format("Unknown function 'cz.%s()'", expr.method)
             local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
                 Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)

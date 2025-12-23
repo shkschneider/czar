@@ -455,7 +455,22 @@ end
 
 -- Generate field access
 function Calls.gen_field(expr, gen_expr_fn)
-    -- Check if this is cz.os access
+    -- Check if this is a module alias field access (e.g., os.field)
+    if expr.object.kind == "identifier" and expr.object.inferred_type then
+        -- Check if object is the os struct (from cz.os module)
+        if expr.object.inferred_type.kind == "named_type" and expr.object.inferred_type.name == "os" then
+            -- Return pointer to the OS struct and access the field
+            return string.format("_cz_os_get()->%s", expr.field)
+        end
+        -- Legacy: Check if object has inferred type of _cz_os_t*
+        if expr.object.inferred_type.kind == "nullable" and
+           expr.object.inferred_type.to and expr.object.inferred_type.to.name == "_cz_os_t" then
+            -- Return pointer to the OS struct and access the field
+            return string.format("_cz_os_get()->%s", expr.field)
+        end
+    end
+    
+    -- Check if this is cz.os access (legacy)
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
         -- Return pointer to the OS struct from raw C
         return "_cz_os_get()"

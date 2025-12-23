@@ -7,30 +7,30 @@ fn main() i32 {
     bool flag = true
 
     // Basic interpolation
-    cz.fmt.println("Age is {age}")
+    fmt.println("Age is {age}")
 
     // Multiple interpolations
-    cz.fmt.println("I am {age} years old in {year}")
+    fmt.println("I am {age} years old in {year}")
 
     // Expressions in interpolation
-    cz.fmt.println("Next year I'll be {age + 1}")
-    cz.fmt.println("Double my age: {age * 2}")
+    fmt.println("Next year I'll be {age + 1}")
+    fmt.println("Double my age: {age * 2}")
 
     // Different types
-    cz.fmt.println("Flag value: {flag}")
+    fmt.println("Flag value: {flag}")
 
     // Escaped braces
-    cz.fmt.println("Literal braces: \{not_a_variable\}")
+    fmt.println("Literal braces: \{not_a_variable\}")
 
     // With print (no newline)
-    cz.fmt.print("Hello ")
-    cz.fmt.print("{age}")
-    cz.fmt.println("!")
+    fmt.print("Hello ")
+    fmt.print("{age}")
+    fmt.println("!")
 
     // Nested expressions
     i32 a = 10
     i32 b = 20
-    cz.fmt.println("Sum: {a + b}, Product: {a * b}")
+    fmt.println("Sum: {a + b}, Product: {a * b}")
 
     return 0
 }
