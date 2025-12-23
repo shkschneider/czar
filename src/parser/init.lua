@@ -96,7 +96,6 @@ end
 function Parser:parse_program()
     local module_decl = nil
     local imports = {}
-    local uses = {}
     local items = {}
 
     -- Parse optional #module declaration (must be first)
@@ -106,9 +105,7 @@ function Parser:parse_program()
         module_decl = Declarations.parse_module_declaration(self, directive_tok)
     end
 
-    -- Parse #import and #use directives (must come before other declarations)
-    -- Support inline syntax: #import foo ; #use foo
-    -- Support shorthand: #import foo #use (automatically uses foo)
+    -- Parse #import directives (must come before other declarations)
     while self:check("DIRECTIVE") do
         local directive_tok = self:current()
         if directive_tok.value == "import" then
@@ -116,45 +113,10 @@ function Parser:parse_program()
             local import_node = Declarations.parse_import(self, directive_tok)
             table.insert(imports, import_node)
 
-            -- Check for shorthand: #import module #use
-            -- This means: use the module that was just imported
-            if self:check("DIRECTIVE") and self:current().value == "use" then
-                local use_tok = self:current()
-                self:advance() -- consume #use DIRECTIVE
-
-                -- Check if there's a module name after #use
-                if self:check("IDENT") then
-                    -- Regular #use with module name
-                    local use_node = Declarations.parse_use(self, use_tok)
-                    table.insert(uses, use_node)
-                else
-                    -- Shorthand: #import module #use (without module name)
-                    -- Automatically use the imported module
-                    if import_node.kind == "import" then
-                        -- Create a use node for the imported module
-                        local use_node = {
-                            kind = "use",
-                            path = import_node.path,
-                            line = use_tok.line,
-                            col = use_tok.col
-                        }
-                        table.insert(uses, use_node)
-                    else
-                        error("Shorthand #use can only be used with regular module imports, not C imports")
-                    end
-                end
-            end
-
-            -- Check for optional semicolon and continue parsing directives
-            self:match("SEMICOLON")
-        elseif directive_tok.value == "use" then
-            self:advance() -- consume DIRECTIVE
-            local use_node = Declarations.parse_use(self, directive_tok)
-            table.insert(uses, use_node)
             -- Check for optional semicolon and continue parsing directives
             self:match("SEMICOLON")
         else
-            -- Not an import/use directive, stop parsing directives
+            -- Not an import directive, stop parsing directives
             break
         end
     end
@@ -168,7 +130,6 @@ function Parser:parse_program()
         kind = "program",
         module = module_decl,
         imports = imports,
-        uses = uses,
         items = items
     }
 end
