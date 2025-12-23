@@ -1,28 +1,29 @@
 #!/usr/bin/env bash
 
+OUT="dist/cz"
+STATIC=${STATIC:-false}
+VERBOSE=${VERBOSE:-false}
 RED="\e[31m"
 YELLOW="\e[33m"
 GREEN="\e[32m"
 WHITE="\e[0m"
 
 r=0
-echo "[CHECK] ..."
-for dep in git pkg-config luajit nm ar cc stat file ; do
-    echo -n "- $dep: "
+deps=(git pkg-config luajit nm ar cc stat file)
+echo "[CHECK] ${deps[@]} ..."
+for dep in ${deps[@]} ; do
     path=$(command -v $dep 2>/dev/null)
     if [[ -n "$path" ]] ; then
-        echo "$path"
+        [[ $VERBOSE == true ]] && echo "- $dep: $path"
     else
-        echo -e $RED"MISSING"$WHITE
+        echo -e "- $dep: "$RED"MISSING"$WHITE
         (( r += 1))
     fi
 done
-(( r == 0 )) || exit 1
+(( r == 0 )) || exit $r
 
-OUT="dist/cz"
 CFLAGS="$(pkg-config --cflags luajit 2>/dev/null) -O2"
 LDFLAGS="-L./build -lczar -Wl"
-STATIC=${STATIC:-false}
 
 dynamic() {
     echo -e $YELLOW"[LUA] dynamic"$WHITE
@@ -57,10 +58,11 @@ static() {
 }
 
 set -e
-SOURCES=$(cd ./src && find * -type f -name "*.lua")
+SOURCES=($(cd ./src && find * -type f -name "*.lua"))
 LIBRARY=libczar.a
 
 mkdir -p ./build ./dist
+[[ $VERBOSE == false ]] && echo "[LUAJIT] *.lua (${#SOURCES[@]}) ..."
 for src in ${SOURCES[@]} ; do
     # For module naming, use just the base filename (without directory)
     # unless it's in a subdirectory like lexer/init.lua, parser/init.lua, etc.
@@ -73,7 +75,7 @@ for src in ${SOURCES[@]} ; do
         name="$(basename $src .lua)"
     fi
     obj="$name.o"
-    echo "[LUAJIT] $src -> $obj"
+    [[ $VERBOSE == true ]] && echo "[LUAJIT] $src -> $obj"
     luajit -b -n $name ./src/$src ./build/$obj # bytecode module-name
 done
 
