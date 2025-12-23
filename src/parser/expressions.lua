@@ -608,8 +608,9 @@ function Expressions.parse_primary(parser)
         parser:match("COMMA")  -- Optional trailing comma
         parser:expect("RBRACKET")
         return { kind = "pair_literal", left = left, right = right }
-    elseif tok.type == "KEYWORD" and tok.value == "string" then
+    elseif (tok.type == "KEYWORD" and tok.value == "string") or (tok.type == "IDENT" and tok.value == "string") then
         -- Stack string literal: string "text"
+        -- string can be either a keyword (old behavior) or identifier (new behavior as struct type)
         parser:advance()
         local str_tok = parser:expect("STRING")
         return { kind = "string_literal", value = str_tok.value }
