@@ -242,26 +242,18 @@ end
 
 -- Generate new heap-allocated string
 function Collections.gen_new_string(expr)
-    -- new string "text" - heap-allocated string
+    -- new "text" - heap-allocated string using constructor
     local str_value = expr.value
-    local str_len = #str_value
     
-    -- Generate code: malloc + initialize
-    local statements = {}
-    table.insert(statements, string.format("czar_string* _str = %s", 
-        ctx():alloc_call("sizeof(czar_string)", true)))
-    -- Allocate capacity with room to grow (next power of 2, minimum 16)
-    local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
-    table.insert(statements, string.format("_str->data = %s",
-        ctx():alloc_call(tostring(capacity), false)))
-    table.insert(statements, string.format("_str->length = %d", str_len))
-    table.insert(statements, string.format("_str->capacity = %d", capacity))
-    -- Copy the string data
-    table.insert(statements, string.format("memcpy(_str->data, \"%s\", %d)", str_value, str_len))
-    table.insert(statements, "_str->data[_str->length] = '\\0'")
-    table.insert(statements, "_str")
+    -- Allocate the string struct
+    local alloc_expr = string.format("%s", ctx():alloc_call("sizeof(czar_string)", true))
     
-    return string.format("({ %s; })", join(statements, "; "))
+    -- Call the constructor: string_init(ptr, "text")
+    -- The constructor will handle all initialization
+    local escaped_value = str_value:gsub("\\", "\\\\"):gsub('"', '\\"')
+    local init_call = string.format("string_init(%s, \"%s\")", alloc_expr, escaped_value)
+    
+    return string.format("(%s, %s)", init_call, alloc_expr)
 end
 
 -- Generate stack-allocated string literal

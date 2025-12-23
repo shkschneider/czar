@@ -52,6 +52,11 @@ function Types.c_type(type_node)
         return "czar_string"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
+        
+        -- Special case: string is now a proper struct, map to czar_string
+        if name == "string" then
+            return "czar_string"
+        end
                 
         if name == "i8" then
             return "int8_t"

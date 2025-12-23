@@ -529,8 +529,8 @@ function Expressions.parse_primary(parser)
             return { kind = "new_pair", left = left, right = right }
         end
         
-        if parser:check("KEYWORD", "string") then
-            parser:advance()
+        -- Check for string literal shorthand: new "text"
+        if parser:check("STRING") then
             local str_tok = parser:expect("STRING")
             return { kind = "new_string", value = str_tok.value }
         end

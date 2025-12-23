@@ -19,21 +19,49 @@ struct string {
     i32 capacity
 }
 
-// Static method: Create a new empty string
-// Returns: string? - pointer to new heap-allocated string
-fn string.create() string? {
+// Constructor: Initialize a string from a C string literal
+// Usage: new string { "text" } or shorthand: new "text"
+// Args:
+//   cstr: i8? - pointer to null-terminated C string (can be null for empty string)
+fn string:init(i8? cstr) void {
     #unsafe {
-        return _cz_string_new();
+        if (cstr == null) {
+            // Empty string
+            self.capacity = 16;
+            self.data = (i8?)malloc(self.capacity);
+            if (self.data == null) {
+                printf("ERROR: String malloc failed\n");
+                exit(1);
+            }
+            self.length = 0;
+            self.data[0] = '\0';
+        } else {
+            // Initialize from C string
+            i32 len = (i32)strlen(cstr);
+            i32 capacity = 16;
+            while (capacity < len + 1) {
+                capacity = capacity * 2;
+            }
+            self.capacity = capacity;
+            self.data = (i8?)malloc(capacity);
+            if (self.data == null) {
+                printf("ERROR: String malloc failed\n");
+                exit(1);
+            }
+            self.length = len;
+            memcpy(self.data, cstr, len);
+            self.data[len] = '\0';
+        }
     }
 }
 
-// Static method: Create a string from a C string literal
-// Args:
-//   cstr: i8? - pointer to null-terminated C string
-// Returns: string? - pointer to new heap-allocated string
-fn string.from(i8? cstr) string? {
+// Destructor: Free the string's memory
+fn string:fini() void {
     #unsafe {
-        return _cz_string_from_cstr(cstr);
+        if (self.data != null) {
+            free(self.data);
+            self.data = null;
+        }
     }
 }
 
@@ -69,7 +97,7 @@ fn string:append(string? other) void {
 //   s1: string? - first string
 //   s2: string? - second string
 // Returns: string? - new heap-allocated concatenated string
-fn string:concat(string? s1, string? s2) string? {
+fn string.concat(string? s1, string? s2) string? {
     #unsafe {
         return _cz_string_concat_static(s1, s2);
     }
@@ -150,12 +178,5 @@ fn string:lower() string? {
 fn string:cut(string? separator) string? {
     #unsafe {
         return _cz_string_cut(self, separator);
-    }
-}
-
-// Instance method: Free the string's memory
-fn string:free() void {
-    #unsafe {
-        _cz_string_free(self);
     }
 }
