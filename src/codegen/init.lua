@@ -302,6 +302,13 @@ function Codegen:generate()
     self.stdlib_imports = {}  -- Track stdlib imports like "cz.os", "cz.alloc", etc.
     self.stdlib_init_blocks = {}  -- Track #init blocks from imported stdlib modules
     self.stdlib_asts = {}  -- Track full ASTs of imported stdlib modules
+    
+    -- ALWAYS load string.cz since string is a global built-in type
+    local string_ast = parse_stdlib_ast("src/std/string.cz")
+    if string_ast then
+        self.stdlib_asts["__builtin__string"] = string_ast
+    end
+    
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
             for _, header in ipairs(import.headers) do
