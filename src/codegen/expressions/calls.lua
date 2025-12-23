@@ -33,7 +33,7 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         for i, a in ipairs(expr.args) do
             table.insert(args, gen_expr_fn(a))
         end
-        
+
         if method_name == "print" then
             if #args == 1 then
                 return string.format('_cz_print(%s)', args[1])
@@ -55,7 +55,7 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     if ctx().functions[type_name] then
         method_overloads = ctx().functions[type_name][method_name]
     end
-    
+
     local method = nil
     if method_overloads then
         -- Get the first overload (methods typically aren't overloaded, but support it)
@@ -85,11 +85,11 @@ end
 local function gen_string_method(obj, obj_type, method_name, args, gen_expr_fn)
     local obj_expr = gen_expr_fn(obj)
     local is_ptr = (obj_type.kind == "nullable")
-    
+
     if method_name == "append" then
         if #args ~= 1 then error("append() requires exactly 1 argument") end
         local arg_expr = gen_expr_fn(args[1])
-        return is_ptr 
+        return is_ptr
             and string.format("czar_string_append_string(%s, &%s)", obj_expr, arg_expr)
             or string.format("czar_string_append_string(&%s, &%s)", obj_expr, arg_expr)
     elseif method_name == "substring" then
@@ -147,7 +147,7 @@ local function gen_string_method(obj, obj_type, method_name, args, gen_expr_fn)
             and string.format("czar_string_cstr(%s)", obj_expr)
             or string.format("czar_string_cstr(&%s)", obj_expr)
     end
-    
+
     return nil
 end
 
@@ -169,7 +169,7 @@ function Calls.gen_call(expr, gen_expr_fn)
         if obj.kind == "identifier" then
             obj_type = ctx():get_var_type(obj.name)
         end
-        
+
         -- Special handling for string methods with : syntax
         if is_string_type(obj_type) then
             local result = gen_string_method(obj, obj_type, method_name, expr.args, gen_expr_fn)
@@ -191,7 +191,7 @@ function Calls.gen_call(expr, gen_expr_fn)
         if receiver_type_name and ctx().functions[receiver_type_name] then
             method_overloads = ctx().functions[receiver_type_name][method_name]
         end
-        
+
         local method = nil
         if method_overloads then
             -- Get the first overload (methods typically aren't overloaded, but support it)
@@ -268,7 +268,7 @@ function Calls.gen_call(expr, gen_expr_fn)
         if receiver_type_name and ctx().functions[receiver_type_name] then
             method_overloads = ctx().functions[receiver_type_name][method_name]
         end
-        
+
         local method = nil
         if method_overloads then
             -- Get the first overload (methods typically aren't overloaded, but support it)
@@ -323,7 +323,7 @@ function Calls.gen_call(expr, gen_expr_fn)
     if expr.callee.kind == "identifier" and ctx().functions["__global__"] then
         local func_overloads = ctx().functions["__global__"][expr.callee.name]
         local func_def = nil
-        
+
         -- Use the resolved function from typechecker if available
         if expr.resolved_function then
             func_def = expr.resolved_function
@@ -335,7 +335,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                 func_def = func_overloads
             end
         end
-        
+
         if func_def then
             -- Generate the C name for the function
             -- Check if this function is overloaded
@@ -343,7 +343,7 @@ function Calls.gen_call(expr, gen_expr_fn)
             local type_name = "__global__"
             local overloads = ctx().functions[type_name] and ctx().functions[type_name][func_name]
             local is_overloaded = overloads and type(overloads) == "table" and #overloads > 1
-            
+
             if is_overloaded then
                 -- Generate unique C name for overloaded functions
                 local function type_to_c_name(type_node)
@@ -357,7 +357,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                     end
                     return "unknown"
                 end
-                
+
                 local type_suffix = ""
                 for _, param in ipairs(func_def.params) do
                     local type_name = type_to_c_name(param.type)
@@ -370,14 +370,14 @@ function Calls.gen_call(expr, gen_expr_fn)
                 -- Use regular name (already set by gen_expr_fn)
                 callee = func_name == "main" and "main_main" or func_name
             end
-            
+
             -- Resolve arguments (handle named args and defaults)
             local resolved_args = ctx():resolve_arguments(expr.callee.name, expr.args, func_def.params)
-            
+
             -- Check if this is a builtin that handles its own varargs (like printf)
             local Builtins = require("src.builtins")
             local is_builtin_varargs = Builtins.calls[func_name] ~= nil and func_def.is_builtin
-            
+
             for i, a in ipairs(resolved_args) do
                 if a.kind == "varargs_list" and not is_builtin_varargs then
                     -- Generate varargs array (not for builtins like printf)
@@ -404,11 +404,11 @@ function Calls.gen_call(expr, gen_expr_fn)
                     end
                 else
                     local arg_expr = gen_expr_fn(a)
-                    
+
                     -- Check if we need to add & for safe to unsafe pointer conversion
                     if i <= #func_def.params then
                         local param_type = func_def.params[i].type
-                        
+
                         -- If parameter is unsafe pointer or any, and argument is a simple identifier
                         if a.kind == "identifier" then
                             local arg_type = ctx():get_var_type(a.name)
@@ -424,7 +424,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                             end
                         end
                     end
-                    
+
                     table.insert(args, arg_expr)
                 end
             end
@@ -458,14 +458,14 @@ function Calls.gen_field(expr, gen_expr_fn)
     -- Check if this is a module alias field access
     if expr.object.kind == "identifier" then
         local obj_name = expr.object.name
-        
+
         -- Check if this identifier is a module alias by checking stdlib_imports
         -- This handles any module, not just hardcoded ones
         if ctx().stdlib_imports then
             for module_path, _ in pairs(ctx().stdlib_imports) do
                 -- Extract the alias (last part of the path)
                 local alias = module_path:match("%.([^.]+)$") or module_path
-                
+
                 if alias == obj_name then
                     -- Found a matching module alias
                     -- Generate module-specific code based on the module
@@ -479,7 +479,7 @@ function Calls.gen_field(expr, gen_expr_fn)
                 end
             end
         end
-        
+
         -- Fallback: Check using inferred_type if available
         if expr.object.inferred_type then
             -- Check if object is the os struct (from cz.os module)
@@ -495,13 +495,13 @@ function Calls.gen_field(expr, gen_expr_fn)
             end
         end
     end
-    
+
     -- Check if this is cz.os access (legacy)
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
         -- Return pointer to the OS struct from raw C
         return "_cz_os_get()"
     end
-    
+
     -- Check if this is enum member access (e.g., Status.SUCCESS)
     if expr.object.kind == "identifier" then
         local enum_name = expr.object.name
@@ -510,12 +510,12 @@ function Calls.gen_field(expr, gen_expr_fn)
             return string.format("%s_%s", enum_name, expr.field)
         end
     end
-    
+
     local obj_expr = gen_expr_fn(expr.object)
     -- Determine if we need -> or .
     -- Check the object's type to determine the accessor
     local use_arrow = false
-    
+
     -- Try to get type from identifier variable
     if expr.object.kind == "identifier" then
         local var_type = ctx():get_var_type(expr.object.name)
@@ -525,7 +525,7 @@ function Calls.gen_field(expr, gen_expr_fn)
             end
         end
     end
-    
+
     -- Always check inferred_type (from typechecker)
     if not use_arrow and expr.object.inferred_type then
         local inf_type = expr.object.inferred_type
@@ -533,12 +533,12 @@ function Calls.gen_field(expr, gen_expr_fn)
             use_arrow = true
         end
     end
-    
+
     -- Special case: if object expression is _cz_os_get(), always use arrow
     if not use_arrow and obj_expr == "_cz_os_get()" then
         use_arrow = true
     end
-    
+
     local accessor = use_arrow and "->" or "."
     return string.format("%s%s%s", obj_expr, accessor, expr.field)
 end
@@ -548,7 +548,7 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
     local parts = {}
     for _, f in ipairs(expr.fields) do
         local field_expr = gen_expr_fn(f.value)
-        
+
         -- Check if we need to add & for safe to unsafe pointer conversion
         if f.value_type and f.value_type.kind == "named_type" and f.value.kind == "identifier" then
             -- Safe pointer to unsafe pointer: Type -> Type?
@@ -559,7 +559,7 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
                 field_expr = "&" .. field_expr
             end
         end
-        
+
         table.insert(parts, string.format(".%s = %s", f.name, field_expr))
     end
     -- In explicit pointer model, struct literals are just values

@@ -4,3 +4,18 @@
 // Note: print, println, printf are function pointers in the cz struct
 // They point to raw C functions _cz_print, _cz_println, _cz_printf
 #module cz
+
+#import C : stdio.h
+
+fn print(string fmt, any... args) {
+    #unsafe { printf("print called") }
+    _cz_print(fmt:cstr(), args)
+}
+
+fn printf(string fmt, any... args) {
+    _cz_printf(fmt:cstr(), args)
+}
+
+fn println(string fmt, any... args) {
+    _cz_printf(fmt:cstr(), args)
+}
