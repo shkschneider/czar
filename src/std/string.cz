@@ -78,10 +78,11 @@ fn string:fini() void {
 }
 
 // Instance method: Get C-style null-terminated string pointer
-// Returns: i8? - pointer to internal null-terminated byte array
+// Returns: i8? - pointer to internal null-terminated byte array (guaranteed null-terminated)
+// This returns the internal data pointer which is always kept null-terminated
 fn string:cstr() i8? {
     #unsafe {
-        return czar_string_cstr(self);
+        return self.data;
     }
 }
 
@@ -190,5 +191,25 @@ fn string:lower() string? {
 fn string:cut(string? separator) string? {
     #unsafe {
         return czar_string_cut(self, separator);
+    }
+}
+
+// Instance method: Check if string starts with prefix
+// Args:
+//   prefix: string? - prefix to check
+// Returns: i32 - 1 if starts with prefix, 0 otherwise
+fn string:prefix(string? prefix) i32 {
+    #unsafe {
+        return czar_string_prefix(self, prefix);
+    }
+}
+
+// Instance method: Check if string ends with suffix
+// Args:
+//   suffix: string? - suffix to check
+// Returns: i32 - 1 if ends with suffix, 0 otherwise
+fn string:suffix(string? suffix) i32 {
+    #unsafe {
+        return czar_string_suffix(self, suffix);
     }
 }

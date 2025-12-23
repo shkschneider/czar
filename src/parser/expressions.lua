@@ -535,6 +535,13 @@ function Expressions.parse_primary(parser)
             return { kind = "new_string", value = str_tok.value }
         end
         
+        -- Check for special case: new string "text" (without braces)
+        if parser:check("IDENT", "string") and parser.tokens[parser.pos + 1] and parser.tokens[parser.pos + 1].type == "STRING" then
+            parser:advance()  -- consume "string"
+            local str_tok = parser:expect("STRING")
+            return { kind = "new_string", value = str_tok.value }
+        end
+        
         -- Otherwise, it's a struct allocation: new Type { ... }
         local type_name_tok = parser:expect("IDENT")
         local type_name = type_name_tok.value
