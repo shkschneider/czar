@@ -1,10 +1,10 @@
-// Test #use directive to flatten module namespace
+// Test that importing a module gives direct access to the last component
+// #import cz.fmt gives access to fmt.print(), not cz.fmt.print()
 #import cz.fmt
-#use cz.fmt
 
 fn main() i32 {
-    // Can call print without cz. prefix
-    print("Hello from flattened cz module!\n")
-    println("Multiple functions work too")
+    // Can call functions using the last component of the import path
+    fmt.print("Imports automatically scope to last component!\n")
+    fmt.println("No #use directive needed")
     return 0
 }

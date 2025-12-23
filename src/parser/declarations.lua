@@ -108,27 +108,6 @@ function Declarations.parse_import(parser, directive_tok)
     }
 end
 
--- Parse #use directive
--- Syntax: #use module_name
--- Flattens the module so functions can be called without prefix
-function Declarations.parse_use(parser, directive_tok)
-    local start_tok = directive_tok or parser:expect("DIRECTIVE", "use")
-    local parts = {}
-    table.insert(parts, parser:expect("IDENT").value)
-    
-    -- Parse module path: foo.bar
-    while parser:match("DOT") do
-        table.insert(parts, parser:expect("IDENT").value)
-    end
-    
-    return {
-        kind = "use",
-        path = parts,
-        line = start_tok.line,
-        col = start_tok.col
-    }
-end
-
 function Declarations.parse_struct(parser)
     local Types = require("parser.types")
     local struct_tok = parser:expect("KEYWORD", "struct")

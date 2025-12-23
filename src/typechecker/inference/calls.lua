@@ -57,31 +57,6 @@ function Calls.infer_call_type(typechecker, expr)
         
         local func_def = Resolver.resolve_function(typechecker, "__global__", func_name, arg_types)
 
-        -- If function not found, check if it's from a used module
-        if not func_def then
-            for _, used_module in ipairs(typechecker.used_modules) do
-                -- Try to resolve as module.function
-                -- Support cz.fmt and legacy cz modules
-                if used_module == "cz" or used_module == "cz.fmt" then
-                    -- Check if this is a print function that's been flattened via #use
-                    if func_name == "print" or func_name == "println" or func_name == "printf" then
-                        -- Create a synthetic static method call for used modules
-                        expr.callee = {
-                            kind = "field",
-                            object = { kind = "identifier", name = used_module:match("^[^.]+") or used_module },
-                            field = func_name
-                        }
-                        -- Transform to static_method_call
-                        expr.kind = "static_method_call"
-                        expr.type_name = used_module
-                        expr.method = func_name
-                        -- Recursively call to handle as static method call
-                        return Calls.infer_static_method_call_type(typechecker, expr)
-                    end
-                end
-            end
-        end
-
         if func_def then
             -- Store the resolved overload in the expression for codegen
             expr.resolved_function = func_def

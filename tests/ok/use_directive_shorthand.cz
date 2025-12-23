@@ -1,9 +1,10 @@
-// Test shorthand #import module #use syntax
-#import cz.fmt #use
+// Test that importing gives automatic scoping to last component
+// #import cz.fmt gives access via fmt.*
+#import cz.fmt
 
 fn main() i32 {
-    // Can call functions without cz. prefix using shorthand
-    print("Testing shorthand syntax!\n")
-    println("No module name needed after #use")
+    // Imports automatically scope to the last component of the path
+    fmt.print("Automatic scoping!\n")
+    fmt.println("Import path determines namespace")
     return 0
 }
