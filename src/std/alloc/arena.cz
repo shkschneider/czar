@@ -1,0 +1,47 @@
+// Arena allocator module - fast linear allocator for temporary allocations
+// Usage: #import cz.alloc.arena
+
+#module cz.alloc.arena
+
+// Arena allocator struct - fixed-size buffer with bump allocation
+struct Arena {
+    u64 size
+    void? buffer
+    u64 offset
+}
+
+// Initialize arena with given size
+fn Arena:init(u64 size) {
+    #unsafe {
+        self.size = size;
+        cz_alloc_arena_init(self);
+    }
+}
+
+// Free arena memory
+fn Arena:fini() {
+    #unsafe {
+        cz_alloc_arena_fini(self);
+    }
+}
+
+// Allocate memory from arena
+fn Arena:alloc(u64 size) -> void? {
+    #unsafe {
+        return cz_alloc_arena_alloc(self, size);
+    }
+}
+
+// Reset arena offset to reuse buffer
+fn Arena:reset() {
+    #unsafe {
+        cz_alloc_arena_reset(self);
+    }
+}
+
+// Get remaining capacity
+fn Arena:remaining() -> u64 {
+    #unsafe {
+        return cz_alloc_arena_remaining(self);
+    }
+}

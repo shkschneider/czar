@@ -101,6 +101,8 @@ local function get_stdlib_file_path(import_path)
         ["cz.fmt"] = "src/std/fmt.cz",
         -- os module provides OS interface functions
         ["cz.os"] = "src/std/os.cz",
+        -- arena allocator module
+        ["cz.alloc.arena"] = "src/std/alloc/arena.cz",
     }
 
     return module_to_file[import_path]

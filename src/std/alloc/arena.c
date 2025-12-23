@@ -1,16 +1,16 @@
-// cz_alloc_arena.c - Arena allocator implementation
-// Functions prefixed with _ to be called from generated arena methods
+// arena.c - Arena allocator implementation
+// C functions for cz.alloc.arena module
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 
-// Forward declare the arena struct (will be defined by user code)
-typedef struct cz_alloc_arena cz_alloc_arena;
+// Forward declare the arena struct (defined in arena.cz)
+typedef struct czar_Arena czar_Arena;
 
-// Constructor for any arena struct
-void _cz_alloc_arena_init(cz_alloc_arena* self) {
+// Constructor - initialize arena with given size
+void cz_alloc_arena_init(czar_Arena* self) {
     // Arena struct layout: uint64_t size, void* buffer, uint64_t offset
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
@@ -24,8 +24,8 @@ void _cz_alloc_arena_init(cz_alloc_arena* self) {
     *offset_ptr = 0;
 }
 
-// Destructor for any arena struct
-void _cz_alloc_arena_fini(cz_alloc_arena* self) {
+// Destructor - free arena memory
+void cz_alloc_arena_fini(czar_Arena* self) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
@@ -38,8 +38,8 @@ void _cz_alloc_arena_fini(cz_alloc_arena* self) {
     }
 }
 
-// Arena alloc implementation
-void* _alloc(cz_alloc_arena* self, uint64_t size) {
+// Allocate memory from arena
+void* cz_alloc_arena_alloc(czar_Arena* self, uint64_t size) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
@@ -57,43 +57,15 @@ void* _alloc(cz_alloc_arena* self, uint64_t size) {
     return ptr;
 }
 
-// Arena ralloc implementation
-void* _ralloc(cz_alloc_arena* self, const void* ptr, uint64_t new_size) {
-    if (!ptr) {
-        return _alloc(self, new_size);
-    }
-    
-    uint64_t* size_ptr = (uint64_t*)self;
-    void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
-    uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
-    
-    uint64_t aligned_new_size = (new_size + 7) & ~7;
-    
-    char* last_alloc = (char*)*buffer_ptr + *offset_ptr;
-    char* ptr_char = (char*)ptr;
-    
-    if (ptr_char < last_alloc && last_alloc - ptr_char < 1024) {
-        uint64_t current_size = last_alloc - ptr_char;
-        
-        if (aligned_new_size <= current_size) {
-            *offset_ptr = (ptr_char - (char*)*buffer_ptr) + aligned_new_size;
-            return (void*)ptr;
-        } else {
-            uint64_t additional = aligned_new_size - current_size;
-            if (*offset_ptr + additional <= *size_ptr) {
-                *offset_ptr += additional;
-                return (void*)ptr;
-            }
-        }
-    }
-    
-    void* new_ptr = _alloc(self, new_size);
-    memcpy(new_ptr, ptr, new_size);
-    return new_ptr;
-}
-
-// Arena clear implementation
-void _clear(cz_alloc_arena* self) {
+// Reset arena offset to reuse buffer
+void cz_alloc_arena_reset(czar_Arena* self) {
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
     *offset_ptr = 0;
+}
+
+// Get remaining capacity
+uint64_t cz_alloc_arena_remaining(czar_Arena* self) {
+    uint64_t* size_ptr = (uint64_t*)self;
+    uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
+    return *size_ptr - *offset_ptr;
 }
