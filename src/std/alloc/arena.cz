@@ -1,6 +1,6 @@
 // arena.cz - Arena allocator for fast bump allocation
 // Part of the Czar standard library
-#module cz.alloc
+#module cz
 
 #import iAlloc
 
