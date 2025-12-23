@@ -3,7 +3,6 @@
 _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
-- `#alias` for types and functions
 - `#alloc` interface with alloc() ralloc() free(): `cz.alloc.default` `cz.alloc.debug`
 - anonymous functions and structs
 - arena allocator `cz.alloc.arena`
@@ -14,11 +13,11 @@ _un-ordered_
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
-- `cz.os` struct
-- `cz.print*` functions
+- `cz` stdlib: `os`, `fmt`, ...
 - `#DEBUG` to get or set global debug flag
 - `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
+- floats `f32/64`
 - `fn function_name(parameters...) return_type`
 - `for idx, item in iterable {}`
 - `#FUNCTION` injects current function name
@@ -40,7 +39,6 @@ _un-ordered_
 - named and default parameters
 - `new` allocates on heap (pointer)
 - `null` _(void*)0_, `void` (nothing), `any` (_void*_)
-- number: floats `f32/64`
 - operator compounds: `+= -= *= /= %=`
 - package "main" is mandatory for multiple files
 - pointers: implicit (no `*` nor `&`)
@@ -57,7 +55,7 @@ _un-ordered_
 - `Type?` unsafe (nullable) pointer
 - `<Type> x` to cast (with optional fallback)
 - unified logging as "TYPE file:line ..."
-- `#unsafe {}` to embed raw C code
+- `#unsafe {...}` to embed raw C code
 - unsigned integers `u8/16/32/64`
 - unused `_` anything
 - variables: `type name`
