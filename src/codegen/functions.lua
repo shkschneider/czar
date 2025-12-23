@@ -487,55 +487,42 @@ function Functions.gen_enum(item)
     ctx():emit("")
 end
 
+-- Helper function to generate init calls from stdlib imports
+-- For each imported stdlib module, emit code for any #init blocks it contains
+local function gen_stdlib_init_calls()
+    -- Generate stdlib init calls based on parsed #init blocks from imports
+    for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
+        for _, init_block in ipairs(init_blocks) do
+            -- Generate code for each statement in the init block
+            for _, stmt in ipairs(init_block.statements) do
+                local stmt_code = ctx():gen_statement(stmt)
+                if stmt_code and stmt_code ~= "" then
+                    -- For unsafe blocks, the code already includes its own formatting
+                    -- (extracted as raw C from the source file between #unsafe { })
+                    if stmt.kind == "unsafe_block" then
+                        ctx():emit(stmt_code)
+                    else
+                        ctx():emit("    " .. stmt_code)
+                    end
+                end
+            end
+        end
+    end
+end
+
 function Functions.gen_wrapper(has_main)
     if has_main then
         if ctx().custom_allocator_interface == "cz.alloc.debug" then
             -- With debug allocator, capture return value and print stats
             ctx():emit("int main(void) {")
-            
-            -- Generate stdlib init calls based on parsed #init blocks from imports
-            for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
-                for _, init_block in ipairs(init_blocks) do
-                    -- Generate code for each statement in the init block
-                    for _, stmt in ipairs(init_block.statements) do
-                        local stmt_code = ctx():gen_statement(stmt)
-                        if stmt_code and stmt_code ~= "" then
-                            -- For unsafe blocks, the code already includes its own formatting
-                            if stmt.kind == "unsafe_block" then
-                                ctx():emit(stmt_code)
-                            else
-                                ctx():emit("    " .. stmt_code)
-                            end
-                        end
-                    end
-                end
-            end
-            
+            gen_stdlib_init_calls()
             ctx():emit("    int _ret = main_main();")
             ctx():emit("    _czar_print_memory_stats();")
             ctx():emit("    return _ret;")
             ctx():emit("}")
         else
             ctx():emit("int main(void) {")
-            
-            -- Generate stdlib init calls based on parsed #init blocks from imports
-            for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
-                for _, init_block in ipairs(init_blocks) do
-                    -- Generate code for each statement in the init block
-                    for _, stmt in ipairs(init_block.statements) do
-                        local stmt_code = ctx():gen_statement(stmt)
-                        if stmt_code and stmt_code ~= "" then
-                            -- For unsafe blocks, the code already includes its own formatting
-                            if stmt.kind == "unsafe_block" then
-                                ctx():emit(stmt_code)
-                            else
-                                ctx():emit("    " .. stmt_code)
-                            end
-                        end
-                    end
-                end
-            end
-            
+            gen_stdlib_init_calls()
             ctx():emit("    return main_main();")
             ctx():emit("}")
         end
