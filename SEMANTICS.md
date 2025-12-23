@@ -34,7 +34,7 @@ _case insensitive_
 - inline / noinline
 - is
 - log
-- main
+- main / _cz_main_
 - map
 - module / _package_
 - mut / _mutable_
