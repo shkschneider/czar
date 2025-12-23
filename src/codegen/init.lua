@@ -87,6 +87,7 @@ function Codegen.new(ast, options)
         loop_stack = {},  -- Stack of loop info for multi-level break/continue
         c_imports = {},  -- C header files imported via import C : header.h
         init_macros = {},  -- #init macros to run during initialization,
+        stdlib_init_blocks = {},  -- #init blocks from imported stdlib modules
     }
     return setmetatable(self, Codegen)
 end
@@ -271,6 +272,7 @@ function Codegen:generate()
 
     -- Collect C imports and stdlib imports from AST
     self.stdlib_imports = {}  -- Track stdlib imports like "cz.os", "cz.alloc", etc.
+    self.stdlib_init_blocks = {}  -- Track #init blocks from imported stdlib modules
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
             for _, header in ipairs(import.headers) do
@@ -284,6 +286,15 @@ function Codegen:generate()
             -- Only handle specific cz.* imports (not just "cz")
             if import_path:match("^cz%.") then
                 self.stdlib_imports[import_path] = true
+                
+                -- Parse the stdlib file to extract #init blocks
+                local file_path = get_stdlib_file_path(import_path)
+                if file_path then
+                    local init_blocks = parse_stdlib_file(file_path)
+                    if #init_blocks > 0 then
+                        self.stdlib_init_blocks[import_path] = init_blocks
+                    end
+                end
             end
         end
     end

@@ -493,9 +493,17 @@ function Functions.gen_wrapper(has_main)
             -- With debug allocator, capture return value and print stats
             ctx():emit("int main(void) {")
             
-            -- Generate stdlib init calls based on imports
-            if ctx().stdlib_imports["cz.os"] then
-                ctx():emit("    _cz_os_init();")
+            -- Generate stdlib init calls based on parsed #init blocks from imports
+            for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
+                for _, init_block in ipairs(init_blocks) do
+                    -- Generate code for each statement in the init block
+                    for _, stmt in ipairs(init_block.statements) do
+                        local stmt_code = ctx():gen_statement(stmt)
+                        if stmt_code and stmt_code ~= "" then
+                            ctx():emit("    " .. stmt_code)
+                        end
+                    end
+                end
             end
             
             ctx():emit("    int _ret = main_main();")
@@ -505,9 +513,17 @@ function Functions.gen_wrapper(has_main)
         else
             ctx():emit("int main(void) {")
             
-            -- Generate stdlib init calls based on imports
-            if ctx().stdlib_imports["cz.os"] then
-                ctx():emit("    _cz_os_init();")
+            -- Generate stdlib init calls based on parsed #init blocks from imports
+            for import_path, init_blocks in pairs(ctx().stdlib_init_blocks or {}) do
+                for _, init_block in ipairs(init_blocks) do
+                    -- Generate code for each statement in the init block
+                    for _, stmt in ipairs(init_block.statements) do
+                        local stmt_code = ctx():gen_statement(stmt)
+                        if stmt_code and stmt_code ~= "" then
+                            ctx():emit("    " .. stmt_code)
+                        end
+                    end
+                end
             end
             
             ctx():emit("    return main_main();")
