@@ -3,7 +3,8 @@
 _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
-- `#alloc` interface with alloc() ralloc() free(): `cz.alloc.default` `cz.alloc.debug`
+- `#alias` for types
+- `#alloc` interface with alloc() ralloc() free(): `cz.alloc.heap` `cz.alloc.debug`
 - anonymous functions and structs
 - arena allocator `cz.alloc.arena`
 - `array<T>` and slices`[]`, `pair<T:T>`, `map<T:T>`
@@ -18,7 +19,7 @@ _un-ordered_
 - `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
 - floats `f32/64`
-- `fn function_name(parameters...) return_type`
+- `fn function_name(parameters...) return_type {}`
 - `for idx, item in iterable {}`
 - `#FUNCTION` injects current function name
 - identifiers length must be less than 256 long
@@ -27,13 +28,13 @@ _un-ordered_
 - `if this and that {}` logical and
 - `if this or that {}` logical or
 - immutable by default
-- `import path.to.module [as name]`
+- `import path.to.module [as mymodule]` to use `[my]module.xxx`
 - in-code `#TODO` and `#FIXME`
 - increment`++` and decrement`--` as prefix and suffix
 - integers `i8/16/32/64`
 - `#LINE` injects current line number of current file
-- `#log` to log to stderr
-- `module module_name` defaults to "main"
+- `#log(...)` to log to stderr
+- `#module name` defaults to "main"
 - more compiler warnings
 - `mut` T allows to change its value or members
 - named and default parameters
