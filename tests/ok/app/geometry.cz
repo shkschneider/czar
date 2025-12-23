@@ -1,42 +1,9 @@
 // Geometry module with shapes and calculations
 #module app
 
-// Public struct for Point
-pub struct Point {
-    i32 x
-    i32 y
-}
-
-// Public struct for Rectangle
-pub struct Rectangle {
-    Point top_left
-    i32 width
-    i32 height
-}
+#import app.geometry
 
 // Private struct (internal only)
 struct InternalBuffer {
     i32 size
-}
-
-// Public function to create a Point
-pub fn create_point(i32 x, i32 y) Point {
-    Point p = Point { x: x, y: y }
-    return p
-}
-
-// Public function to calculate rectangle area
-// Calls private helper defined later
-pub fn calculate_area(Rectangle rect) i32 {
-    return get_width(rect) * rect.height
-}
-
-// Public function to calculate perimeter
-pub fn calculate_perimeter(Rectangle rect) i32 {
-    return 2 * (rect.width + rect.height)
-}
-
-// Private helper function - defined after use
-fn get_width(Rectangle rect) i32 {
-    return rect.width
 }
