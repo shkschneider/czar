@@ -1,5 +1,6 @@
 // Test cz.os struct with OS detection
 #import cz.os
+#import cz.fmt
 
 fn main() i32 {
     // Access OS information
@@ -9,14 +10,17 @@ fn main() i32 {
 
     // Check boolean flags
     if os.linux {
+        fmt.println("linux")
         return 0  // Success on Linux
     }
 
     if os.windows {
+        fmt.println("windows")
         return 0  // Success on Windows
     }
 
     if os.macos {
+        fmt.println("macos")
         return 0  // Success on macOS
     }
 
