@@ -1,0 +1,25 @@
+// Default allocator module - simple malloc/free wrapper
+// Usage: #alloc cz.alloc.default (or omit #alloc to use this by default)
+
+#module cz.alloc.default
+
+// Allocate memory
+fn alloc(u64 size) -> void? {
+    #unsafe {
+        return cz_alloc_default_alloc(size);
+    }
+}
+
+// Reallocate memory
+fn ralloc(void? ptr, u64 new_size) -> void? {
+    #unsafe {
+        return cz_alloc_default_ralloc(ptr, new_size);
+    }
+}
+
+// Free memory
+fn free(void? ptr) {
+    #unsafe {
+        cz_alloc_default_free(ptr);
+    }
+}

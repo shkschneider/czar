@@ -1,0 +1,32 @@
+// Debug allocator module - tracks allocations and memory usage
+// Usage: #alloc cz.alloc.debug
+
+#module cz.alloc.debug
+
+// Allocate memory with tracking (explicit = user requested, implicit = compiler generated)
+fn alloc(u64 size, i32 is_explicit) -> void? {
+    #unsafe {
+        return cz_alloc_debug_alloc(size, is_explicit);
+    }
+}
+
+// Reallocate memory
+fn ralloc(void? ptr, u64 new_size) -> void? {
+    #unsafe {
+        return cz_alloc_debug_ralloc(ptr, new_size);
+    }
+}
+
+// Free memory with tracking
+fn free(void? ptr, i32 is_explicit) {
+    #unsafe {
+        cz_alloc_debug_free(ptr, is_explicit);
+    }
+}
+
+// Print allocation statistics
+fn print_stats() {
+    #unsafe {
+        cz_alloc_debug_print_stats();
+    }
+}

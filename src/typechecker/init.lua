@@ -27,6 +27,10 @@ local function get_stdlib_file_path(import_path)
         ["cz.os"] = "src/std/os.cz",
         -- arena allocator module
         ["cz.alloc.arena"] = "src/std/alloc/arena.cz",
+        -- default allocator module
+        ["cz.alloc.default"] = "src/std/alloc/default.cz",
+        -- debug allocator module
+        ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
     }
 
     return module_to_file[import_path]
