@@ -91,7 +91,7 @@ end
 -- Validate that explicit #module declaration is valid
 -- Rules: 
 -- 1. Module names must be single words (no dots)
--- 2. #module must match the immediate parent directory name (except "main")
+-- 2. #module can only be declared as an ancestor directory name
 function Validation.validate_module_declaration(typechecker)
     if not typechecker.module_name or not typechecker.source_path then
         return
@@ -100,7 +100,7 @@ function Validation.validate_module_declaration(typechecker)
     -- Module names must be single words (no dots allowed)
     if typechecker.module_name:find("%.") then
         local msg = string.format(
-            "Module name '%s' is invalid. Module names must be single words (no dots). Use #module to specify the immediate parent directory name.",
+            "Module name '%s' is invalid. Module names must be single words (no dots). Use #module to specify an ancestor directory name.",
             typechecker.module_name
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
@@ -136,15 +136,21 @@ function Validation.validate_module_declaration(typechecker)
         return
     end
     
-    -- Validate that #module matches the immediate parent directory name
-    -- e.g., for file "src/std/alloc/ialloc.cz", only "alloc" is valid (not "std" or "src")
-    local immediate_parent = path_parts[#path_parts]
+    -- Validate that #module is one of the ancestor directory names
+    -- e.g., for file "mod2/submod1/test1.cz", valid modules are: "mod2"
+    -- The module must match one of the directories in the path
+    local is_ancestor = false
+    for _, dir in ipairs(path_parts) do
+        if dir == typechecker.module_name then
+            is_ancestor = true
+            break
+        end
+    end
     
-    if immediate_parent ~= typechecker.module_name then
+    if not is_ancestor then
         local msg = string.format(
-            "Module '%s' does not match immediate parent directory '%s' in path '%s'. Module name must match the immediate parent directory.",
+            "Module '%s' cannot be declared in '%s'. Files can only declare modules that match ancestor directory names.",
             typechecker.module_name, 
-            immediate_parent,
             table.concat(path_parts, "/")
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
