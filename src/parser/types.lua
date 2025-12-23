@@ -36,7 +36,7 @@ function Types.is_type_start(parser)
     local tok = parser:current()
     if not tok then return false end
     -- Check for container type keywords
-    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair" or tok.value == "string") then
+    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair") then
         return true
     end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
@@ -110,15 +110,7 @@ function Types.parse_type(parser)
         return base_type
     end
     
-    if parser:check("KEYWORD", "string") then
-        parser:advance()
-        local base_type = { kind = "string" }
-        -- Check if this is a nullable type (string?)
-        if parser:match("QUESTION") then
-            return { kind = "nullable", to = base_type }
-        end
-        return base_type
-    end
+    -- string is now a regular struct type, not a keyword
     
     if Types.is_type_token(tok) then
         parser:advance()
@@ -157,7 +149,7 @@ function Types.parse_type_with_map_shorthand(parser)
     local tok = parser:current()
     
     -- Check for explicit container types: array<T>, slice<T>, map<K:V>, pair<T:T>
-    if parser:check("KEYWORD", "array") or parser:check("KEYWORD", "slice") or parser:check("KEYWORD", "map") or parser:check("KEYWORD", "pair") or parser:check("KEYWORD", "string") then
+    if parser:check("KEYWORD", "array") or parser:check("KEYWORD", "slice") or parser:check("KEYWORD", "map") or parser:check("KEYWORD", "pair") then
         return Types.parse_type(parser)
     end
     

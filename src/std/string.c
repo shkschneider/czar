@@ -33,6 +33,83 @@ typedef struct czar_string {
     int32_t capacity;   // Allocated capacity in BYTES
 } czar_string;
 
+// Public API: Create a new empty string
+static inline czar_string* _cz_string_new() {
+    czar_string* s = (czar_string*)malloc(sizeof(czar_string));
+    if (!s) {
+        fprintf(stderr, "ERROR: String malloc failed\n");
+        exit(1);
+    }
+    s->capacity = 16;
+    s->data = (char*)malloc(s->capacity);
+    if (!s->data) {
+        fprintf(stderr, "ERROR: String data malloc failed\n");
+        exit(1);
+    }
+    s->length = 0;
+    s->data[0] = '\0';
+    return s;
+}
+
+// Public API: Create a string from a C string literal
+static inline czar_string* _cz_string_from_cstr(const char* cstr) {
+    int32_t len = (int32_t)strlen(cstr);
+    int32_t capacity = 16;
+    while (capacity < len + 1) {
+        capacity *= 2;
+    }
+    
+    czar_string* s = (czar_string*)malloc(sizeof(czar_string));
+    if (!s) {
+        fprintf(stderr, "ERROR: String malloc failed\n");
+        exit(1);
+    }
+    s->data = (char*)malloc(capacity);
+    if (!s->data) {
+        fprintf(stderr, "ERROR: String data malloc failed\n");
+        exit(1);
+    }
+    s->capacity = capacity;
+    s->length = len;
+    memcpy(s->data, cstr, len);
+    s->data[len] = '\0';
+    return s;
+}
+
+// Public API: Free a string's memory
+static inline void _cz_string_free(czar_string* s) {
+    if (s) {
+        if (s->data) {
+            free(s->data);
+        }
+        free(s);
+    }
+}
+
+// Public API wrappers with _cz_string_ prefix for all functions
+#define _cz_string_cstr czar_string_cstr
+#define _cz_string_append_cstr czar_string_append_cstr
+#define _cz_string_append_string czar_string_append_string
+#define _cz_string_concat_static czar_string_concat_static
+#define _cz_string_copy czar_string_copy
+#define _cz_string_substring czar_string_substring
+#define _cz_string_index czar_string_index
+#define _cz_string_find czar_string_find
+#define _cz_string_find_cstr czar_string_find_cstr
+#define _cz_string_contains czar_string_contains
+#define _cz_string_cut czar_string_cut
+#define _cz_string_prefix czar_string_prefix
+#define _cz_string_suffix czar_string_suffix
+#define _cz_string_upper czar_string_upper
+#define _cz_string_lower czar_string_lower
+#define _cz_string_words czar_string_words
+#define _cz_string_join_array czar_string_join_array
+#define _cz_string_ltrim czar_string_ltrim
+#define _cz_string_rtrim czar_string_rtrim
+#define _cz_string_trim czar_string_trim
+#define _cz_string_split czar_string_split
+
+
 // String helper function: get C-style null-terminated string
 static inline char* czar_string_cstr(czar_string* s) {
     return s->data;

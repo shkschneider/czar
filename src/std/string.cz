@@ -1,0 +1,161 @@
+// string.cz - String type definition and methods
+// Part of the Czar standard library
+//
+// The string type is a struct that handles dynamic arrays of bytes for UTF-8 text.
+// It provides memory-safe string operations with automatic capacity management.
+//
+// This replaces the old `string` keyword (which was just an alias for char*)
+// with a proper struct type that includes length and capacity.
+#module cz
+
+// string struct - represents a dynamic byte array suitable for UTF-8 text
+// Fields:
+//   data: i8? - pointer to byte array (can contain UTF-8 encoded text)
+//   length: i32 - number of bytes (not characters)
+//   capacity: i32 - allocated capacity in bytes
+struct string {
+    i8? data
+    i32 length
+    i32 capacity
+}
+
+// Static method: Create a new empty string
+// Returns: string? - pointer to new heap-allocated string
+fn string.create() string? {
+    #unsafe {
+        return _cz_string_new();
+    }
+}
+
+// Static method: Create a string from a C string literal
+// Args:
+//   cstr: i8? - pointer to null-terminated C string
+// Returns: string? - pointer to new heap-allocated string
+fn string.from(i8? cstr) string? {
+    #unsafe {
+        return _cz_string_from_cstr(cstr);
+    }
+}
+
+// Instance method: Get C-style null-terminated string pointer
+// Returns: i8? - pointer to internal null-terminated byte array
+fn string:cstr() i8? {
+    #unsafe {
+        return _cz_string_cstr(self);
+    }
+}
+
+// Instance method: Append a C string to this string
+// Args:
+//   cstr: i8? - pointer to null-terminated C string
+//   len: i32 - length of the C string in bytes
+fn string:append_cstr(i8? cstr, i32 len) void {
+    #unsafe {
+        _cz_string_append_cstr(self, cstr, len);
+    }
+}
+
+// Instance method: Append another string to this string
+// Args:
+//   other: string? - pointer to string to append
+fn string:append(string? other) void {
+    #unsafe {
+        _cz_string_append_string(self, other);
+    }
+}
+
+// Static method: Concatenate two strings into a new string
+// Args:
+//   s1: string? - first string
+//   s2: string? - second string
+// Returns: string? - new heap-allocated concatenated string
+fn string:concat(string? s1, string? s2) string? {
+    #unsafe {
+        return _cz_string_concat_static(s1, s2);
+    }
+}
+
+// Instance method: Copy a C string into this string
+// Args:
+//   cstr: i8? - pointer to null-terminated C string
+//   len: i32 - length of the C string in bytes
+fn string:copy(i8? cstr, i32 len) void {
+    #unsafe {
+        _cz_string_copy(self, cstr, len);
+    }
+}
+
+// Instance method: Extract a substring (byte range)
+// Args:
+//   start: i32 - start byte offset (inclusive)
+//   end: i32 - end byte offset (exclusive)
+// Returns: string? - new heap-allocated substring
+// Note: Works on byte offsets. For UTF-8, ensure offsets are on character boundaries.
+fn string:substring(i32 start, i32 end) string? {
+    #unsafe {
+        return _cz_string_substring(self, start, end);
+    }
+}
+
+// Instance method: Find index of substring (returns byte offset)
+// Args:
+//   needle: string? - substring to find
+// Returns: i32 - byte offset of first occurrence, or -1 if not found
+fn string:find(string? needle) i32 {
+    #unsafe {
+        return _cz_string_find(self, needle);
+    }
+}
+
+// Instance method: Alias for find()
+fn string:index(string? needle) i32 {
+    #unsafe {
+        return _cz_string_index(self, needle);
+    }
+}
+
+// Instance method: Check if string contains substring
+// Args:
+//   needle: string? - substring to search for
+// Returns: i32 - 1 if found, 0 if not found (treated as boolean)
+fn string:contains(string? needle) i32 {
+    #unsafe {
+        return _cz_string_contains(self, needle);
+    }
+}
+
+// Instance method: Convert to uppercase (ASCII only)
+// Returns: string? - new heap-allocated uppercase string
+// Note: Only ASCII characters are converted. UTF-8 multi-byte sequences are preserved.
+fn string:upper() string? {
+    #unsafe {
+        return _cz_string_upper(self);
+    }
+}
+
+// Instance method: Convert to lowercase (ASCII only)
+// Returns: string? - new heap-allocated lowercase string
+// Note: Only ASCII characters are converted. UTF-8 multi-byte sequences are preserved.
+fn string:lower() string? {
+    #unsafe {
+        return _cz_string_lower(self);
+    }
+}
+
+// Instance method: Split string by separator
+// Args:
+//   separator: string? - separator string
+// Returns: string? - first part before separator (or full string if not found)
+// Note: This is a simplified version. A full implementation would return an array.
+fn string:cut(string? separator) string? {
+    #unsafe {
+        return _cz_string_cut(self, separator);
+    }
+}
+
+// Instance method: Free the string's memory
+fn string:free() void {
+    #unsafe {
+        _cz_string_free(self);
+    }
+}

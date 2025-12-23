@@ -51,7 +51,7 @@ local keywords = {
     ["slice"] = true,
     ["map"] = true,
     ["pair"] = true,
-    ["string"] = true,
+    -- "string" removed - now a proper struct type from stdlib
     ["pub"] = true,
     ["prv"] = true,
 }

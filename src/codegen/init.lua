@@ -95,7 +95,8 @@ end
 -- Map module imports to their .cz file paths
 local function get_stdlib_file_path(import_path)
     local module_to_file = {
-        -- .cz stdlib files have been removed - modules are handled directly in C
+        -- string module defines the string struct type
+        ["cz.string"] = "src/std/string.cz",
     }
 
     return module_to_file[import_path]
