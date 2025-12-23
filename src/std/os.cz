@@ -26,7 +26,7 @@ struct os {
 //   code: i32 - exit status code (0 = success, non-zero = error)
 fn exit(i32 code) void {
     #unsafe {
-        czar_os_exit(code);
+        cz_os_exit(code);
     }
 }
 
@@ -37,6 +37,6 @@ fn exit(i32 code) void {
 //   i8? - null-terminated value of variable, or null if not found
 fn getenv(i8? name) i8? {
     #unsafe {
-        return czar_os_getenv(name);
+        return cz_os_getenv(name);
     }
 }

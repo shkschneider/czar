@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 // Print formatted string without newline
-static inline void czar_fmt_print(const char* fmt, ...) {
+static inline void cz_fmt_print(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -13,7 +13,7 @@ static inline void czar_fmt_print(const char* fmt, ...) {
 }
 
 // Print formatted string with newline
-static inline void czar_fmt_println(const char* fmt, ...) {
+static inline void cz_fmt_println(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -22,7 +22,7 @@ static inline void czar_fmt_println(const char* fmt, ...) {
 }
 
 // Print formatted string (alias for print)
-static inline void czar_fmt_printf(const char* fmt, ...) {
+static inline void cz_fmt_printf(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
