@@ -24,30 +24,30 @@ end
 -- This function is kept for potential future use when we want to parse #init macros
 local function parse_stdlib_file(file_path)
     local init_macros = {}
-    
+
     -- Read the file
     local file = io.open(file_path, "r")
     if not file then
         return init_macros
     end
-    
+
     local source = file:read("*all")
     file:close()
-    
+
     -- Parse using the already-loaded lexer and parser
     local lexer = require("lexer")
     local parser = require("parser")
-    
+
     local tokens = lexer(source, file_path)
     local ast = parser(tokens, source)  -- Pass source as second parameter
-    
+
     -- Collect #init macros from this file
     for _, item in ipairs(ast.items) do
         if item.kind == "init_macro" then
             table.insert(init_macros, item)
         end
     end
-    
+
     return init_macros
 end
 
@@ -61,7 +61,7 @@ local function get_stdlib_file_path(import_path)
         ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
         ["cz.alloc.arena"] = "src/std/alloc/arena.cz",
     }
-    
+
     return module_to_file[import_path]
 end
 
@@ -255,11 +255,11 @@ end
 
 function Codegen:generate()
     self:collect_structs_and_functions()
-    
-    -- Process allocator macros (#alloc) and type aliases (#alias)
+
+    -- Process allocator macros (#alloc)
     -- Delegate to Macros module
     Macros.process_top_level(self, self.ast)
-    
+
     -- Set default allocator based on debug mode if not already overridden
     if not self.custom_allocator_interface then
         if self.debug then
@@ -268,7 +268,7 @@ function Codegen:generate()
             self.custom_allocator_interface = "cz.alloc.default"
         end
     end
-    
+
     -- Collect C imports and stdlib imports from AST
     self.stdlib_imports = {}  -- Track stdlib imports like "cz.os", "cz.alloc", etc.
     for _, import in ipairs(self.ast.imports or {}) do
@@ -280,27 +280,27 @@ function Codegen:generate()
             -- Track stdlib imports
             -- import.path is a table of parts, e.g., {"cz", "os"} or {"cz", "alloc"}
             local import_path = table.concat(import.path, ".")
-            
+
             -- Only handle specific cz.* imports (not just "cz")
             if import_path:match("^cz%.") then
                 self.stdlib_imports[import_path] = true
             end
         end
     end
-    
+
     self:emit("#include <stdint.h>")
     self:emit("#include <stdbool.h>")
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
     self:emit("#include <string.h>")
-    
+
     -- Emit C imports from import C : header.h
     for _, header in ipairs(self.c_imports) do
         self:emit(string.format("#include <%s>", header))
     end
-    
+
     self:emit("")
-    
+
     -- Global flag for runtime #DEBUG() support
     self:emit(string.format("static bool czar_debug_flag = %s;", self.debug and "true" or "false"))
     self:emit("")
@@ -319,7 +319,7 @@ function Codegen:generate()
     end
 
     local has_main = false
-    
+
     -- Mark functions in AST as overloaded based on self.functions
     for _, item in ipairs(self.ast.items) do
         if item.kind == "function" then
@@ -327,7 +327,7 @@ function Codegen:generate()
             if item.receiver_type then
                 type_name = item.receiver_type
             end
-            
+
             if self.functions[type_name] and self.functions[type_name][item.name] then
                 local overloads = self.functions[type_name][item.name]
                 if type(overloads) == "table" and #overloads > 1 then
@@ -338,7 +338,7 @@ function Codegen:generate()
             end
         end
     end
-    
+
     -- First pass: collect all map types by generating functions into a temporary buffer
     local saved_out = self.out
     self.out = {}
@@ -350,7 +350,7 @@ function Codegen:generate()
     end
     local function_code = self.out
     self.out = saved_out
-    
+
     -- Generate map struct definitions if any maps were discovered
     if self.map_types then
         for _, map_info in pairs(self.map_types) do
@@ -363,7 +363,7 @@ function Codegen:generate()
             self:emit("")
         end
     end
-    
+
     -- Generate pair struct definitions if any pairs were discovered
     if self.pair_types then
         for _, pair_info in pairs(self.pair_types) do
@@ -376,7 +376,7 @@ function Codegen:generate()
             self:emit("")
         end
     end
-    
+
     -- Always include raw C implementations from src/raw/ directory
     -- These are internal C library files that the generated code relies on
     local raw_c_files = {
@@ -385,7 +385,7 @@ function Codegen:generate()
         "src/raw/cz_os.c",
         "src/raw/cz_alloc_arena.c",
     }
-    
+
     for _, raw_file_path in ipairs(raw_c_files) do
         local file = io.open(raw_file_path, "r")
         if file then
@@ -402,7 +402,7 @@ function Codegen:generate()
             error("Failed to open raw C file: " .. raw_file_path)
         end
     end
-    
+
     -- Generate forward declarations for all functions to avoid C ordering issues
     self:emit("// Forward declarations")
     for _, item in ipairs(self.ast.items) do
@@ -411,7 +411,7 @@ function Codegen:generate()
         end
     end
     self:emit("")
-    
+
     -- Now emit the function code
     for _, line in ipairs(function_code) do
         self:emit(line)
@@ -420,25 +420,25 @@ function Codegen:generate()
     self:gen_wrapper(has_main)
 
     local result = join(self.out, "\n") .. "\n"
-    
+
     -- Safety check: warn about unsafe C functions in generated code
     local unsafe_functions = {
         -- Unsafe string operations (no bounds checking)
         "strcpy", "strcat", "strncpy", "strncat",
         "gets", "sprintf", "vsprintf",
-        
+
         -- Unsafe string conversion functions (no error handling, undefined behavior on overflow)
         "atoi", "atof", "atol", "atoll",
-        
+
         -- Unsafe formatted I/O (buffer overflow risks)
         "scanf", "sscanf", "vscanf", "vsscanf",
-        
+
         -- Other commonly unsafe functions
         "strtok",   -- Not thread-safe, modifies input
         "tmpnam",   -- Race condition vulnerability
         "getenv",   -- Returns pointer to internal data
     }
-    
+
     local safer_alternatives = {
         strcpy = "snprintf, memcpy with length check",
         strcat = "snprintf, strncat with proper length calculation",
@@ -457,7 +457,7 @@ function Codegen:generate()
         tmpnam = "mkstemp",
         getenv = "secure_getenv or careful handling",
     }
-    
+
     for _, unsafe_func in ipairs(unsafe_functions) do
         -- Match function calls: funcname( with possible whitespace
         if result:match(unsafe_func .. "%s*%(") then
@@ -469,7 +469,7 @@ function Codegen:generate()
                     unsafe_func, alternative), self.source_path))
         end
     end
-    
+
     return result
 end
 

@@ -7,17 +7,17 @@ local Macros = {}
 -- PARSER MACROS
 -- ============================================================================
 
--- Parse top-level macros (#alloc, #alias)
+-- Parse top-level macros (#alloc)
 -- These appear at module scope and configure the compiler
 function Macros.parse_top_level(parser, macro_tok)
     local macro_name = macro_tok.value:upper()
-    
+
     -- #alloc macro takes an interface name
     if macro_name == "ALLOC" then
         -- Accept IDENT tokens for interface name (e.g., cz.alloc)
         local interface_tokens = {}
-        while parser:current() and 
-              not parser:check("EOF") and 
+        while parser:current() and
+              not parser:check("EOF") and
               not parser:check("DIRECTIVE") and
               not (parser:check("KEYWORD", "struct") or parser:check("KEYWORD", "fn") or parser:check("KEYWORD", "iface")) do
             local tok = parser:current()
@@ -28,56 +28,17 @@ function Macros.parse_top_level(parser, macro_tok)
                 break
             end
         end
-        
+
         if #interface_tokens == 0 then
-            error(string.format("expected interface name after #alloc at %d:%d", 
+            error(string.format("expected interface name after #alloc at %d:%d",
                 macro_tok.line, macro_tok.col))
         end
-        
+
         local interface_name = table.concat(interface_tokens, "")
-        
-        return { 
-            kind = "allocator_macro", 
-            interface_name = interface_name,
-            line = macro_tok.line,
-            col = macro_tok.col
-        }
-    elseif macro_name == "ALIAS" then
-        -- #alias name=target
-        -- Aliases can target any public item (functions, structs, globals)
-        -- Two forbidden targets: entire modules and other aliases
-        -- Module aliases are not allowed (use import...as instead)
-        local alias_name_tok = parser:expect("IDENT")
-        local alias_name = alias_name_tok.value
-        
-        -- Expect '=' token
-        if not parser:match("EQUAL") then
-            error(string.format("#alias syntax error: expected '=' after '%s'. Use: #alias name=target", alias_name))
-        end
-        
-        -- Collect all remaining tokens until end of line/statement as the target
-        local target_tokens = {}
-        
-        -- Keep reading tokens until we hit EOF, a directive, struct, or fn keyword
-        while parser:current() and 
-              not parser:check("EOF") and 
-              not parser:check("DIRECTIVE") and
-              not (parser:check("KEYWORD", "struct") or parser:check("KEYWORD", "fn")) do
-            local tok = parser:current()
-            table.insert(target_tokens, tok.value)
-            parser:advance()
-        end
-        
-        if #target_tokens == 0 then
-            error(string.format("#alias requires a target after '%s='", alias_name))
-        end
-        
-        local target_str = table.concat(target_tokens, " ")
-        
+
         return {
-            kind = "alias_macro",
-            alias_name = alias_name,
-            target_type_str = target_str,
+            kind = "allocator_macro",
+            interface_name = interface_name,
             line = macro_tok.line,
             col = macro_tok.col
         }
@@ -91,7 +52,7 @@ function Macros.parse_top_level(parser, macro_tok)
             table.insert(statements, Statements.parse_statement(parser))
         end
         parser:expect("RBRACE")
-        
+
         return {
             kind = "init_macro",
             statements = statements,
@@ -99,7 +60,7 @@ function Macros.parse_top_level(parser, macro_tok)
             col = macro_tok.col
         }
     else
-        error(string.format("unknown top-level macro: #%s at %d:%d", 
+        error(string.format("unknown top-level macro: #%s at %d:%d",
             macro_tok.value, macro_tok.line, macro_tok.col))
     end
 end
@@ -108,13 +69,13 @@ end
 -- These appear as statements and execute actions
 function Macros.parse_statement(parser, macro_tok)
     local macro_name = macro_tok.value:upper()
-    
+
     if macro_name == "ASSERT" then
         -- #assert(condition)
         parser:expect("LPAREN")
         local condition = parser:parse_expression()
         parser:expect("RPAREN")
-        
+
         return {
             kind = "assert_stmt",
             condition = condition,
@@ -126,7 +87,7 @@ function Macros.parse_statement(parser, macro_tok)
         parser:expect("LPAREN")
         local message = parser:parse_expression()
         parser:expect("RPAREN")
-        
+
         return {
             kind = "log_stmt",
             message = message,
@@ -144,7 +105,7 @@ function Macros.parse_statement(parser, macro_tok)
             end
             parser:expect("RPAREN")
         end
-        
+
         return {
             kind = macro_name:lower() .. "_stmt",
             message = message,
@@ -152,7 +113,7 @@ function Macros.parse_statement(parser, macro_tok)
             col = macro_tok.col
         }
     else
-        error(string.format("unknown statement macro: #%s at %d:%d", 
+        error(string.format("unknown statement macro: #%s at %d:%d",
             macro_tok.value, macro_tok.line, macro_tok.col))
     end
 end
@@ -162,20 +123,20 @@ end
 -- #DEBUG can also be a function call: #DEBUG() or #DEBUG(true/false)
 function Macros.parse_expression(parser, macro_tok)
     local macro_name = macro_tok.value:upper()
-    
+
     -- Check if #DEBUG is followed by parentheses (function call)
     if macro_name == "DEBUG" and parser:check("LPAREN") then
         parser:advance()  -- consume (
-        
+
         -- Check if there's an argument
         local arg = nil
         if not parser:check("RPAREN") then
             -- Parse the boolean argument expression
             arg = parser:parse_expression()
         end
-        
+
         parser:expect("RPAREN")
-        
+
         return {
             kind = "macro_call",
             name = macro_tok.value,
@@ -184,13 +145,13 @@ function Macros.parse_expression(parser, macro_tok)
             col = macro_tok.col
         }
     end
-    
+
     -- Simple macros like #FILE, #FUNCTION, #DEBUG (without parens)
-    return { 
-        kind = "macro", 
-        name = macro_tok.value, 
-        line = macro_tok.line, 
-        col = macro_tok.col 
+    return {
+        kind = "macro",
+        name = macro_tok.value,
+        line = macro_tok.line,
+        col = macro_tok.col
     }
 end
 
@@ -198,20 +159,20 @@ end
 -- CODEGEN MACROS
 -- ============================================================================
 
--- Process allocator macros (#alloc), alias macros, and init macros (#init)
+-- Process allocator macros (#alloc), and init macros (#init)
 -- Called during codegen initialization
 function Macros.process_top_level(codegen, ast)
     local alloc_macro_count = 0
     local alloc_macro_line = nil
-    
+
     for _, item in ipairs(ast.items) do
         if item.kind == "allocator_macro" then
             alloc_macro_count = alloc_macro_count + 1
             if alloc_macro_count > 1 then
-                error(string.format("duplicate #alloc macro at %d:%d (previous at %d:%d)", 
+                error(string.format("duplicate #alloc macro at %d:%d (previous at %d:%d)",
                     item.line, item.col, alloc_macro_line.line, alloc_macro_line.col))
             end
-            
+
             -- Check for useless #alloc cz.alloc directive (unspecified)
             if item.interface_name == "cz.alloc" then
                 local Warnings = require("src.warnings")
@@ -230,13 +191,6 @@ function Macros.process_top_level(codegen, ast)
                 codegen.custom_allocator_interface = item.interface_name
             end
             alloc_macro_line = item
-        elseif item.kind == "alias_macro" then
-            -- Store type alias for replacement
-            if codegen.type_aliases[item.alias_name] then
-                error(string.format("duplicate #alias for '%s' at %d:%d", 
-                    item.alias_name, item.line, item.col))
-            end
-            codegen.type_aliases[item.alias_name] = item.target_type_str
         elseif item.kind == "init_macro" then
             -- Collect init macro for execution during program initialization
             table.insert(codegen.init_macros, item)
@@ -248,7 +202,7 @@ end
 -- Also handles #DEBUG() function calls
 function Macros.generate_expression(expr, ctx)
     local macro_name = expr.name:upper()
-    
+
     if macro_name == "FILE" then
         return string.format("\"%s\"", ctx.source_file)
     elseif macro_name == "FUNCTION" then
@@ -265,7 +219,7 @@ end
 -- Generate code for macro calls (#DEBUG(true/false))
 function Macros.generate_call(expr, ctx)
     local macro_name = expr.name:upper()
-    
+
     if macro_name == "DEBUG" then
         if expr.arg then
             -- #DEBUG(bool) - set debug state and return the new state
@@ -299,14 +253,14 @@ function Macros.generate_statement(stmt, ctx)
         -- Escape % characters in filename to avoid format string issues
         local filename = ctx.source_file:gsub("%%", "%%%%")
         local line = stmt.line
-        
+
         -- Build standard format: "LOG in function_name() at filename:linenumber "
         local prefix = "LOG "
         if ctx.current_function then
             prefix = string.format("LOG in %s() ", ctx.current_function)
         end
         prefix = prefix .. string.format("at %s:%d ", filename, line)
-        
+
         return string.format("fprintf(stderr, \"%s\" %s \"\\n\")", prefix, message_code)
     elseif stmt.kind == "todo_stmt" or stmt.kind == "fixme_stmt" then
         -- #TODO(message) or #FIXME(message)
@@ -316,7 +270,7 @@ function Macros.generate_statement(stmt, ctx)
         local filename = ctx.source_file:gsub("%%", "%%%%")
         local line = stmt.line
         local col = stmt.col
-        
+
         -- Determine message to display
         local display_message = macro_type  -- default message
         if stmt.message then
@@ -328,17 +282,17 @@ function Macros.generate_statement(stmt, ctx)
                 display_message = macro_type
             end
         end
-        
+
         -- Build standard format for compile-time: "TYPE in function_name() at filename:linenumber message"
         local compile_prefix = macro_type .. " "
         if ctx.current_function then
             compile_prefix = string.format("%s in %s() ", macro_type, ctx.current_function)
         end
         compile_prefix = compile_prefix .. string.format("at %s:%d ", filename, line)
-        
+
         -- Print to stderr during compilation
         io.stderr:write(compile_prefix .. display_message .. "\n")
-        
+
         -- Generate runtime code that prints if #DEBUG is enabled
         local runtime_message
         if stmt.message then
@@ -346,16 +300,16 @@ function Macros.generate_statement(stmt, ctx)
         else
             runtime_message = string.format("\"%s\"", macro_type)
         end
-        
+
         -- Build standard format for runtime: "TYPE in function_name() at filename:linenumber "
         local runtime_prefix = macro_type .. " "
         if ctx.current_function then
             runtime_prefix = string.format("%s in %s() ", macro_type, ctx.current_function)
         end
         runtime_prefix = runtime_prefix .. string.format("at %s:%d ", filename, line)
-        
+
         -- Generate code that prints at runtime only if czar_debug_flag is true
-        return string.format("if (czar_debug_flag) { fprintf(stderr, \"%s\" %s \"\\n\"); }", 
+        return string.format("if (czar_debug_flag) { fprintf(stderr, \"%s\" %s \"\\n\"); }",
                            runtime_prefix, runtime_message)
     else
         error(string.format("Unknown statement macro: %s at %d:%d", stmt.kind, stmt.line, stmt.col))
