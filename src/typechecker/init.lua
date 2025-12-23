@@ -99,26 +99,6 @@ function Typechecker:register_builtins()
     if not self.functions["__global__"] then
         self.functions["__global__"] = {}
     end
-
-    -- Note: print, println, and printf have been moved to the cz module
-    -- Users must: import cz, then use cz.print(), cz.println(), cz.printf()
-    -- They are NOT available as global functions
-
-    -- Register print_i32 for compatibility (legacy builtin)
-    self.functions["__global__"]["print_i32"] = {
-        {
-            name = "print_i32",
-            params = {
-                {
-                    name = "value",
-                    type = { kind = "named_type", name = "i32" },
-                    mutable = false
-                }
-            },
-            return_type = { kind = "named_type", name = "void" },
-            is_builtin = true
-        }
-    }
 end
 
 -- Main entry point: type check the entire AST
@@ -133,7 +113,7 @@ function Typechecker:check()
         -- Infer module name from directory structure
         self.module_name = Validation.infer_module_name(self)
     end
-    
+
     -- Process imports
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
@@ -158,10 +138,10 @@ function Typechecker:check()
             })
         end
     end
-    
+
     -- Pass 1: Collect all top-level declarations (structs, functions)
     Declarations.collect_declarations(self)
-    
+
     -- ALWAYS load string.cz since string is a global built-in type
     local string_ast = parse_stdlib_ast("src/std/string.cz")
     if not string_ast then
@@ -169,27 +149,26 @@ function Typechecker:check()
     end
     -- Register string struct and methods globally
     for _, item in ipairs(string_ast.items or {}) do
-            if item.kind == "struct" then
-                self.structs[item.name] = item
-            elseif item.kind == "enum" then
-                self.enums[item.name] = item
-            elseif item.kind == "function" then
-                -- Register string methods globally (not under a module)
-                -- They can be accessed as string:method() or s:method()
-                if item.name:match("^string:") then
-                    local method_name = item.name:match("^string:(.+)")
-                    if not self.functions["string"] then
-                        self.functions["string"] = {}
-                    end
-                    if not self.functions["string"][method_name] then
-                        self.functions["string"][method_name] = {}
-                    end
-                    -- Set c_name if not already set
-                    if not item.c_name then
-                        item.c_name = "cz_string_" .. method_name
-                    end
-                    table.insert(self.functions["string"][method_name], item)
+        if item.kind == "struct" then
+            self.structs[item.name] = item
+        elseif item.kind == "enum" then
+            self.enums[item.name] = item
+        elseif item.kind == "function" then
+            -- Register string methods globally (not under a module)
+            -- They can be accessed as string:method() or s:method()
+            if item.name:match("^string:") then
+                local method_name = item.name:match("^string:(.+)")
+                if not self.functions["string"] then
+                    self.functions["string"] = {}
                 end
+                if not self.functions["string"][method_name] then
+                    self.functions["string"][method_name] = {}
+                end
+                -- Set c_name if not already set
+                if not item.c_name then
+                    item.c_name = "cz_string_" .. method_name
+                end
+                table.insert(self.functions["string"][method_name], item)
             end
         end
     end
@@ -217,14 +196,14 @@ function Typechecker:check()
                             if not self.functions[import.path][item.name] then
                                 self.functions[import.path][item.name] = {}
                             end
-                            
+
                             -- Set c_name for stdlib functions (cz_module_function format)
                             -- e.g., cz.fmt.printf -> cz_fmt_printf (use only last part of module)
                             if not item.c_name then
                                 local module_last = import.path:match("[^.]+$")  -- cz.fmt -> fmt
                                 item.c_name = "cz_" .. module_last .. "_" .. item.name
                             end
-                            
+
                             table.insert(self.functions[import.path][item.name], item)
                         end
                     end
@@ -240,7 +219,7 @@ function Typechecker:check()
     if self.require_main then
         Validation.validate_main_function(self)
     end
-    
+
     -- Pass 4: Check for unused imports
     Validation.check_unused_imports(self)
 
