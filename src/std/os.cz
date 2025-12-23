@@ -1,8 +1,25 @@
-// os.cz - Operating system interface functions
+// os.cz - Operating system interface
 // Part of the Czar standard library
 //
-// This module provides OS-level operations like process exit and environment access.
+// This module provides OS-level operations and OS detection information.
 #module cz.os
+
+// Initialize OS detection on module load
+#init {
+    #unsafe {
+        _cz_os_init();
+    }
+}
+
+// OS information struct with runtime detection
+struct os {
+    i8? name        // "linux", "windows", "macos", or "unknown"
+    i8? version     // Kernel version string
+    i8? kernel      // Kernel name: "linux", "darwin", "windows", or "unknown"
+    bool linux      // true if running on Linux
+    bool windows    // true if running on Windows
+    bool macos      // true if running on macOS
+}
 
 // Exit the program with a status code
 // Args:
