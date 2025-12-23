@@ -182,8 +182,10 @@ function Typechecker:check()
                     -- Collect functions from stdlib and register under module name
                     for _, item in ipairs(stdlib_ast.items or {}) do
                         if item.kind == "struct" then
-                            -- Could register structs if needed
-                            self.structs[item.name] = item
+                            -- Skip re-registering string struct (already registered as global built-in)
+                            if item.name ~= "string" and not self.structs[item.name] then
+                                self.structs[item.name] = item
+                            end
                         elseif item.kind == "enum" then
                             self.enums[item.name] = item
                         elseif item.kind == "iface" then

@@ -382,8 +382,11 @@ end
 -- Infer the type of a string literal (string "text")
 function Collections.infer_string_literal_type(typechecker, expr)
     -- String literal value is stored in expr.value
-    -- Return a string type (stack allocated)
-    local inferred = { kind = "string" }
+    -- Return a string type (stack allocated) - use named_type to match parser
+    local inferred = {
+        kind = "named_type",
+        name = "string"
+    }
     expr.inferred_type = inferred
     return inferred
 end
