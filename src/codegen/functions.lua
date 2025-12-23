@@ -500,7 +500,12 @@ function Functions.gen_wrapper(has_main)
                     for _, stmt in ipairs(init_block.statements) do
                         local stmt_code = ctx():gen_statement(stmt)
                         if stmt_code and stmt_code ~= "" then
-                            ctx():emit("    " .. stmt_code)
+                            -- For unsafe blocks, the code already includes its own formatting
+                            if stmt.kind == "unsafe_block" then
+                                ctx():emit(stmt_code)
+                            else
+                                ctx():emit("    " .. stmt_code)
+                            end
                         end
                     end
                 end
@@ -520,7 +525,12 @@ function Functions.gen_wrapper(has_main)
                     for _, stmt in ipairs(init_block.statements) do
                         local stmt_code = ctx():gen_statement(stmt)
                         if stmt_code and stmt_code ~= "" then
-                            ctx():emit("    " .. stmt_code)
+                            -- For unsafe blocks, the code already includes its own formatting
+                            if stmt.kind == "unsafe_block" then
+                                ctx():emit(stmt_code)
+                            else
+                                ctx():emit("    " .. stmt_code)
+                            end
                         end
                     end
                 end
