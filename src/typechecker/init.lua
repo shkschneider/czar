@@ -156,6 +156,35 @@ function Typechecker:check()
     -- Pass 1: Collect all top-level declarations (structs, functions)
     Declarations.collect_declarations(self)
     
+    -- ALWAYS load string.cz since string is a global built-in type
+    local string_ast = parse_stdlib_ast("src/std/string.cz")
+    if string_ast then
+        for _, item in ipairs(string_ast.items or {}) do
+            if item.kind == "struct" then
+                self.structs[item.name] = item
+            elseif item.kind == "enum" then
+                self.enums[item.name] = item
+            elseif item.kind == "function" then
+                -- Register string methods globally (not under a module)
+                -- They can be accessed as string:method() or s:method()
+                if item.name:match("^string:") then
+                    local method_name = item.name:match("^string:(.+)")
+                    if not self.functions["string"] then
+                        self.functions["string"] = {}
+                    end
+                    if not self.functions["string"][method_name] then
+                        self.functions["string"][method_name] = {}
+                    end
+                    -- Set c_name if not already set
+                    if not item.c_name then
+                        item.c_name = "cz_string_" .. method_name
+                    end
+                    table.insert(self.functions["string"][method_name], item)
+                end
+            end
+        end
+    end
+    
     -- Also collect declarations from imported stdlib modules
     for _, import in ipairs(self.imports) do
         -- Only process cz.* stdlib imports
