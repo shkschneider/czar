@@ -83,13 +83,19 @@ function Resolver.resolve_function(typechecker, type_name, func_name, arg_types)
         end
     end
     
-    -- No exact match found - if there's only one overload, return it anyway
-    -- (for non-overloaded functions, type checking will catch mismatches)
-    if #overloads == 1 then
-        return overloads[1]
+    -- No exact match found - try to find the best match by parameter count
+    local best_match = nil
+    local best_param_diff = math.huge
+    
+    for _, overload in ipairs(overloads) do
+        local param_diff = math.abs(#overload.params - #arg_types)
+        if param_diff < best_param_diff then
+            best_param_diff = param_diff
+            best_match = overload
+        end
     end
     
-    return nil
+    return best_match
 end
 
 return Resolver

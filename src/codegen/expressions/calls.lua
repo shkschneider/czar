@@ -27,6 +27,17 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         return string.format('%s(%s)', method_name, join(args, ", "))
     end
 
+    -- Special handling for cz.fmt module (varargs functions)
+    -- These functions accept varargs in C, so we pass all arguments directly
+    if type_name == "cz.fmt" and (method_name == "print" or method_name == "printf" or method_name == "println") then
+        local args = {}
+        for i, a in ipairs(expr.args) do
+            table.insert(args, gen_expr_fn(a))
+        end
+        -- Call the wrapper function with cz_ prefix to avoid name collision with C stdio
+        return string.format('cz_%s(%s)', method_name, join(args, ", "))
+    end
+
     -- Look up the method in the module's function table
     -- For cz.* modules, functions should be registered in the functions table under the module name
     local method = nil

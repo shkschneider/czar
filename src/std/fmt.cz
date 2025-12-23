@@ -1,55 +1,33 @@
 // fmt.cz - Print functions for formatted output
 // Part of the Czar standard library
 //
-// These are wrapper functions that call raw C print functions via #unsafe blocks
-// When users import cz.fmt and call fmt.printf(), it goes through these functions
+// Note: These are declaration stubs. The actual code generation happens in the compiler.
+// When you call fmt.printf(), the compiler generates code that:
+// 1. Calls the Czar wrapper function defined here
+// 2. The wrapper uses #unsafe to call the raw C _cz_printf with all arguments
+// 
+// The compiler handles varargs specially for these functions.
 #module cz
 
-// Single argument versions
-fn print(string fmt) {
+// These functions are compiled by the compiler with special varargs handling
+// The #unsafe blocks will have all call-site arguments inserted by codegen
+
+fn print(i8? fmt) {
     #unsafe {
         printf("print called\n");
-        _cz_printf(fmt.data);
+        _cz_printf(fmt);
     }
 }
 
-fn printf(string fmt) {
+fn printf(i8? fmt) {
     #unsafe {
-        _cz_printf(fmt.data);
+        _cz_printf(fmt);
     }
 }
 
-fn println(string fmt) {
+fn println(i8? fmt) {
     #unsafe {
-        _cz_printf(fmt.data);
-        printf("\n");
-    }
-}
-
-// Two argument overloads
-fn printf(string fmt, i32 arg1) {
-    #unsafe {
-        _cz_printf(fmt.data, arg1);
-    }
-}
-
-fn println(string fmt, i32 arg1) {
-    #unsafe {
-        _cz_printf(fmt.data, arg1);
-        printf("\n");
-    }
-}
-
-// Three argument overloads
-fn printf(string fmt, i32 arg1, i32 arg2) {
-    #unsafe {
-        _cz_printf(fmt.data, arg1, arg2);
-    }
-}
-
-fn println(string fmt, i32 arg1, i32 arg2) {
-    #unsafe {
-        _cz_printf(fmt.data, arg1, arg2);
+        _cz_printf(fmt);
         printf("\n");
     }
 }
