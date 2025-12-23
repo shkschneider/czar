@@ -19,12 +19,7 @@ Typechecker.__index = Typechecker
 -- Map module imports to their .cz file paths (same as in codegen)
 local function get_stdlib_file_path(import_path)
     local module_to_file = {
-        ["cz.os"] = "src/std/os.cz",
-        ["cz.fmt"] = "src/std/fmt.cz",
-        ["cz.alloc"] = "src/std/alloc/ialloc.cz",
-        ["cz.alloc.heap"] = "src/std/alloc/heap.cz",
-        ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
-        ["cz.alloc.arena"] = "src/std/alloc/arena.cz",
+        -- .cz stdlib files have been removed - modules are handled directly in C
     }
 
     return module_to_file[import_path]

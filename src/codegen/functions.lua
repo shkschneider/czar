@@ -329,11 +329,6 @@ function Functions.gen_function_declaration(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for stdlib fmt functions to avoid C name conflicts
-    if not fn.receiver_type and (name == "print" or name == "printf" or name == "println") then
-        c_name = "cz_" .. name
-    end
-
     -- Special handling for constructor/destructor methods to avoid C name conflicts
     if fn.receiver_type then
         if name == "init" then
@@ -375,11 +370,6 @@ function Functions.gen_function(fn)
     local is_overloaded = false
     if fn.is_overloaded ~= nil then
         is_overloaded = fn.is_overloaded
-    end
-
-    -- Special handling for stdlib fmt functions to avoid C name conflicts
-    if not fn.receiver_type and (name == "print" or name == "printf" or name == "println") then
-        c_name = "cz_" .. name
     end
 
     -- Special handling for constructor/destructor methods to avoid C name conflicts

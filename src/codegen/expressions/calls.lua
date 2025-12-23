@@ -34,8 +34,8 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         for i, a in ipairs(expr.args) do
             table.insert(args, gen_expr_fn(a))
         end
-        -- Call the wrapper function with cz_ prefix to avoid name collision with C stdio
-        return string.format('cz_%s(%s)', method_name, join(args, ", "))
+        -- Call the raw C function directly (with _ prefix)
+        return string.format('_cz_%s(%s)', method_name, join(args, ", "))
     end
 
     -- Look up the method in the module's function table
