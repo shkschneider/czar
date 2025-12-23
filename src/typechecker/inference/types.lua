@@ -1,44 +1,12 @@
 -- Type utility functions for type checking
--- Handles type compatibility checking, type aliases, and type-to-string conversions
+-- Handles type compatibility checking and type-to-string conversions
 
 local Types = {}
-
--- Resolve type aliases
-function Types.resolve_type_alias(typechecker, type_node)
-    if not type_node or type_node.kind ~= "named_type" then
-        return type_node
-    end
-
-    local alias_target = typechecker.type_aliases[type_node.name]
-    if not alias_target then
-        return type_node
-    end
-
-    -- Parse the alias target string
-    -- Handle pointer types like "char*" or "char *" (with optional spaces)
-    local base_type_match = alias_target:match("^(%w+)%s*%*$")
-    if base_type_match then
-        -- It's a pointer type like "char*"
-        return {
-            kind = "nullable",
-            to = { kind = "named_type", name = base_type_match }
-        }
-    else
-        -- It's a simple named type
-        return { kind = "named_type", name = alias_target }
-    end
-end
 
 -- Check if two types are compatible
 function Types.types_compatible(type1, type2, typechecker)
     if not type1 or not type2 then
         return false
-    end
-
-    -- Resolve type aliases if typechecker is available
-    if typechecker then
-        type1 = Types.resolve_type_alias(typechecker, type1)
-        type2 = Types.resolve_type_alias(typechecker, type2)
     end
 
     -- Allow void? (null) to be compatible with any unsafe pointer type

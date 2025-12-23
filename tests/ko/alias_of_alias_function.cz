@@ -1,9 +1,0 @@
-// Test that alias-of-alias is prevented for function aliases
-#import cz
-
-#alias print=cz.print
-#alias output=print  // Should error: alias-of-alias
-
-fn main() i32 {
-    return 0
-}

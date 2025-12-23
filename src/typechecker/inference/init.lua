@@ -12,7 +12,6 @@ local Types = require("typechecker.inference.types")
 local Inference = {}
 
 -- Re-export type utility functions from Types module
-Inference.resolve_type_alias = Types.resolve_type_alias
 Inference.types_compatible = Types.types_compatible
 Inference.is_bool_type = Types.is_bool_type
 Inference.get_base_type_name = Types.get_base_type_name

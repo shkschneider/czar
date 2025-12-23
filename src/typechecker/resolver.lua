@@ -33,9 +33,7 @@ end
 
 -- Resolve a struct type
 function Resolver.resolve_struct(typechecker, type_name)
-    -- Check if type_name is an alias first
-    local actual_name = typechecker.type_aliases[type_name] or type_name
-    return typechecker.structs[actual_name]
+    return typechecker.structs[type_name]
 end
 
 -- Resolve a function or method
