@@ -357,10 +357,10 @@ function Codegen:generate()
                 end
                 
                 -- Set c_name for stdlib functions (czar_module_function format)
-                -- e.g., fmt.printf -> czar_fmt_printf
+                -- e.g., cz.fmt.printf -> czar_fmt_printf (use only last part of module)
                 if not item.c_name then
-                    local module_flat = import_path:gsub("%.", "_")  -- cz.fmt -> cz_fmt
-                    item.c_name = "czar_" .. module_flat .. "_" .. item.name
+                    local module_last = import_path:match("[^.]+$")  -- cz.fmt -> fmt
+                    item.c_name = "czar_" .. module_last .. "_" .. item.name
                 end
                 
                 table.insert(self.functions[import_path][item.name], item)
