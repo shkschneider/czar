@@ -443,11 +443,27 @@ function Calls.infer_static_method_call_type(typechecker, expr)
             return nil
         end
 
-        -- For other cz.* modules, we can add handling here as needed
-        -- For now, return void as a default
-        local void_type = { kind = "named_type", name = "void" }
-        expr.inferred_type = void_type
-        return void_type
+        -- Infer argument types for overload resolution
+        local arg_types = {}
+        for _, arg in ipairs(expr.args) do
+            local arg_type = Calls.infer_type(typechecker, arg)
+            table.insert(arg_types, arg_type)
+        end
+
+        -- Try to resolve the function with overloading support
+        local method_def = Resolver.resolve_function(typechecker, expr.type_name, expr.method, arg_types)
+        
+        if method_def then
+            -- Store the resolved overload for codegen
+            expr.resolved_function = method_def
+            expr.inferred_type = method_def.return_type
+            return method_def.return_type
+        else
+            -- If no function found, return void as fallback (for compatibility)
+            local void_type = { kind = "named_type", name = "void" }
+            expr.inferred_type = void_type
+            return void_type
+        end
     end
 
     local method_def = Resolver.resolve_function(typechecker, expr.type_name, expr.method)

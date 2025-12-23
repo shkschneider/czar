@@ -423,6 +423,23 @@ function Codegen:generate()
             end
         end
     end
+    
+    -- Also mark stdlib functions as overloaded
+    for import_path, stdlib_ast in pairs(self.stdlib_asts) do
+        for _, item in ipairs(stdlib_ast.items) do
+            if item.kind == "function" then
+                -- For stdlib functions, they're registered under the module name
+                if self.functions[import_path] and self.functions[import_path][item.name] then
+                    local overloads = self.functions[import_path][item.name]
+                    if type(overloads) == "table" and #overloads > 1 then
+                        item.is_overloaded = true
+                    else
+                        item.is_overloaded = false
+                    end
+                end
+            end
+        end
+    end
 
     -- First pass: collect all map types by generating functions into a temporary buffer
     local saved_out = self.out

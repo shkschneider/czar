@@ -40,17 +40,12 @@ local function generate_c_function_name(func_name, params, is_overloaded)
         return func_name
     end
     
-    -- For overloaded functions, append the first non-matching type to the name
-    -- Since we enforce single-type variance, we just need to identify which type differs
-    local type_suffix = ""
-    for _, param in ipairs(params) do
-        local type_name = type_to_c_name(param.type)
-        if type_suffix == "" then
-            type_suffix = type_name
-        end
-    end
+    -- For overloaded functions, generate a suffix based on parameter count and types
+    -- Use parameter count first, then append key type info if needed
+    local param_count = #params
     
-    return func_name .. "_" .. type_suffix
+    -- Simple approach: use parameter count as suffix
+    return func_name .. "_" .. param_count
 end
 
 -- Resolve function arguments, handling named arguments and default parameters

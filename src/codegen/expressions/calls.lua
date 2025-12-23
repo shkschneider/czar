@@ -29,18 +29,25 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
 
     -- Look up the method in the module's function table
     -- For cz.* modules, functions should be registered in the functions table under the module name
-    local method_overloads = nil
-    if ctx().functions[type_name] then
-        method_overloads = ctx().functions[type_name][method_name]
-    end
-
     local method = nil
-    if method_overloads then
-        -- Get the first overload (methods typically aren't overloaded, but support it)
-        if type(method_overloads) == "table" and #method_overloads > 0 then
-            method = method_overloads[1]
-        else
-            method = method_overloads
+    
+    -- First check if typechecker resolved the function (handles overloading)
+    if expr.resolved_function then
+        method = expr.resolved_function
+    else
+        -- Fallback: lookup manually
+        local method_overloads = nil
+        if ctx().functions[type_name] then
+            method_overloads = ctx().functions[type_name][method_name]
+        end
+
+        if method_overloads then
+            -- Get the first overload (methods typically aren't overloaded, but support it)
+            if type(method_overloads) == "table" and #method_overloads > 0 then
+                method = method_overloads[1]
+            else
+                method = method_overloads
+            end
         end
     end
 
@@ -53,7 +60,15 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         for i, a in ipairs(resolved_args) do
             table.insert(args, gen_expr_fn(a))
         end
-        return string.format("%s(%s)", method_name, join(args, ", "))
+        
+        -- Generate the C function name (handles overloading)
+        local c_func_name = method_name
+        if method.is_overloaded then
+            -- For overloaded functions, append parameter count
+            c_func_name = method_name .. "_" .. #method.params
+        end
+        
+        return string.format("%s(%s)", c_func_name, join(args, ", "))
     else
         error(string.format("Unknown method %s on type %s", method_name, type_name))
     end

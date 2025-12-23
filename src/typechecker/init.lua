@@ -16,6 +16,51 @@ local Validation = require("typechecker.validation")
 local Typechecker = {}
 Typechecker.__index = Typechecker
 
+-- Map module imports to their .cz file paths (same as in codegen)
+local function get_stdlib_file_path(import_path)
+    local module_to_file = {
+        ["cz.os"] = "src/cz/os.cz",
+        ["cz.fmt"] = "src/cz/fmt.cz",
+        ["cz.alloc"] = "src/cz/alloc/ialloc.cz",
+        ["cz.alloc.heap"] = "src/cz/alloc/heap.cz",
+        ["cz.alloc.debug"] = "src/cz/alloc/debug.cz",
+        ["cz.alloc.arena"] = "src/cz/alloc/arena.cz",
+    }
+
+    return module_to_file[import_path]
+end
+
+-- Cache for parsed stdlib ASTs
+local stdlib_ast_cache = {}
+
+-- Parse stdlib .cz file to get its full AST (same as in codegen)
+local function parse_stdlib_ast(file_path)
+    -- Check cache first
+    if stdlib_ast_cache[file_path] then
+        return stdlib_ast_cache[file_path]
+    end
+
+    -- Read the file
+    local file = io.open(file_path, "r")
+    if not file then
+        return nil
+    end
+
+    local source = file:read("*all")
+    file:close()
+
+    -- Parse using the lexer and parser
+    local lexer = require("lexer")
+    local parser = require("parser")
+
+    local tokens = lexer(source, file_path)
+    local ast = parser(tokens, source)
+
+    -- Cache the result
+    stdlib_ast_cache[file_path] = ast
+    return ast
+end
+
 function Typechecker.new(ast, options)
     options = options or {}
     local self = {
@@ -110,6 +155,39 @@ function Typechecker:check()
     
     -- Pass 1: Collect all top-level declarations (structs, functions)
     Declarations.collect_declarations(self)
+    
+    -- Also collect declarations from imported stdlib modules
+    for _, import in ipairs(self.imports) do
+        -- Only process cz.* stdlib imports
+        if import.path:match("^cz%.") then
+            local file_path = get_stdlib_file_path(import.path)
+            if file_path then
+                local stdlib_ast = parse_stdlib_ast(file_path)
+                if stdlib_ast then
+                    -- Collect functions from stdlib and register under module name
+                    for _, item in ipairs(stdlib_ast.items or {}) do
+                        if item.kind == "struct" then
+                            -- Could register structs if needed
+                            self.structs[item.name] = item
+                        elseif item.kind == "enum" then
+                            self.enums[item.name] = item
+                        elseif item.kind == "iface" then
+                            self.ifaces[item.name] = item
+                        elseif item.kind == "function" then
+                            -- Register function under the module name (e.g., "cz.fmt")
+                            if not self.functions[import.path] then
+                                self.functions[import.path] = {}
+                            end
+                            if not self.functions[import.path][item.name] then
+                                self.functions[import.path][item.name] = {}
+                            end
+                            table.insert(self.functions[import.path][item.name], item)
+                        end
+                    end
+                end
+            end
+        end
+    end
 
     -- Pass 2: Type check all functions
     Functions.check_all_functions(self)
