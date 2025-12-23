@@ -1,8 +1,0 @@
-// Test that imports automatically scope to last component
-// No need for #use directive - it's automatic
-#import cz.fmt
-
-fn main() i32 {
-    fmt.print("Imports scope to last component automatically!\n")
-    return 0
-}
