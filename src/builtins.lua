@@ -7,12 +7,8 @@ local Builtins = {}
 -- Builtin function calls
 -- These are functions that get special code generation treatment
 Builtins.calls = {
-    print_i32 = function(args)
-        return string.format('printf("%%d\\n", %s)', args[1])
-    end,
-    
-    -- Note: print, println, and printf have been moved to the cz module
-    -- Users must now: import cz, then use cz.print(), cz.println(), cz.printf()
+    -- All print functions have been moved to the cz.fmt module
+    -- Users must now: #import cz.fmt, then use fmt.print(), fmt.println(), fmt.printf()
 }
 
 -- Builtin features/keywords
