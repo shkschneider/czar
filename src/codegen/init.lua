@@ -65,12 +65,12 @@ end
 -- Map module imports to their .cz file paths
 local function get_stdlib_file_path(import_path)
     local module_to_file = {
-        ["cz.os"] = "src/std/os.cz",
-        ["cz.fmt"] = "src/std/fmt.cz",
-        ["cz.alloc"] = "src/std/alloc/ialloc.cz",
-        ["cz.alloc.heap"] = "src/std/alloc/heap.cz",
-        ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
-        ["cz.alloc.arena"] = "src/std/alloc/arena.cz",
+        ["cz.os"] = "src/cz/os.cz",
+        ["cz.fmt"] = "src/cz/fmt.cz",
+        ["cz.alloc"] = "src/cz/alloc/ialloc.cz",
+        ["cz.alloc.heap"] = "src/cz/alloc/heap.cz",
+        ["cz.alloc.debug"] = "src/cz/alloc/debug.cz",
+        ["cz.alloc.arena"] = "src/cz/alloc/arena.cz",
     }
 
     return module_to_file[import_path]
@@ -399,13 +399,13 @@ function Codegen:generate()
         end
     end
 
-    -- Always include raw C implementations from src/raw/ directory
+    -- Always include raw C implementations from src/c/ directory
     -- These are internal C library files that the generated code relies on
     local raw_c_files = {
-        "src/raw/cz_string.c",
-        "src/raw/cz_fmt.c",
-        "src/raw/cz_os.c",
-        "src/raw/cz_alloc_arena.c",
+        "src/c/cz_string.c",
+        "src/c/cz_fmt.c",
+        "src/c/cz_os.c",
+        "src/c/cz_alloc_arena.c",
     }
 
     for _, raw_file_path in ipairs(raw_c_files) do
