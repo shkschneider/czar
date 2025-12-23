@@ -27,17 +27,6 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         return string.format('%s(%s)', method_name, join(args, ", "))
     end
 
-    -- Special handling for cz.fmt module (varargs functions)
-    -- These functions accept varargs in C, so we pass all arguments directly
-    if type_name == "cz.fmt" and (method_name == "print" or method_name == "printf" or method_name == "println") then
-        local args = {}
-        for i, a in ipairs(expr.args) do
-            table.insert(args, gen_expr_fn(a))
-        end
-        -- Call the raw C function: czar_fmt_printf()
-        return string.format('czar_fmt_%s(%s)', method_name, join(args, ", "))
-    end
-
     -- Look up the method in the module's function table
     -- For cz.* modules, functions should be registered in the functions table under the module name
     local method = nil
@@ -63,6 +52,22 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
     end
 
     if method then
+        -- Check if this is a varargs-style function (has #unsafe and fewer params than args)
+        -- For these functions, pass all call-site arguments directly to the C function
+        local is_varargs = method.has_unsafe_block and #expr.args > #method.params
+        
+        if is_varargs then
+            -- For varargs functions, pass all call-site arguments directly
+            local args = {}
+            for i, a in ipairs(expr.args) do
+                table.insert(args, gen_expr_fn(a))
+            end
+            
+            -- Use the c_name if available (for constructors/destructors with czar_ prefix)
+            local c_func_name = method.c_name or method.name
+            return string.format("%s(%s)", c_func_name, join(args, ", "))
+        end
+        
         -- Resolve arguments with named args and defaults
         local resolved_args = ctx():resolve_arguments(method_name, expr.args, method.params)
 
@@ -73,10 +78,11 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         end
         
         -- Generate the C function name (handles overloading)
-        local c_func_name = method_name
+        local c_func_name = method.c_name or method.name
         if method.is_overloaded then
-            -- For overloaded functions, append parameter count
-            c_func_name = method_name .. "_" .. #method.params
+            -- For overloaded functions, append parameter count to the c_name base
+            local base_name = method.c_name or method_name
+            c_func_name = base_name .. "_" .. #method.params
         end
         
         return string.format("%s(%s)", c_func_name, join(args, ", "))

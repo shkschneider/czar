@@ -21,6 +21,10 @@ local function get_stdlib_file_path(import_path)
     local module_to_file = {
         -- string module defines the string struct type
         ["cz.string"] = "src/std/string.cz",
+        -- fmt module provides formatted print functions
+        ["cz.fmt"] = "src/std/fmt.cz",
+        -- os module provides OS interface functions
+        ["cz.os"] = "src/std/os.cz",
     }
 
     return module_to_file[import_path]

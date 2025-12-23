@@ -154,6 +154,17 @@ function Functions.collect_structs_and_functions()
             -- Store function info for method call resolution
             local func_name = item.name
             if item.receiver_type then
+                -- Set the C name for methods now (needed for calls to #unsafe functions)
+                local c_name = item.name
+                if item.name == "init" then
+                    c_name = "czar_" .. item.receiver_type .. "_init"
+                elseif item.name == "fini" then
+                    c_name = "czar_" .. item.receiver_type .. "_fini"
+                else
+                    c_name = "czar_" .. item.receiver_type .. "_" .. item.name
+                end
+                item.c_name = c_name
+                
                 -- This is a method, store it by receiver type and method name
                 if not ctx().functions[item.receiver_type] then
                     ctx().functions[item.receiver_type] = {}
@@ -320,6 +331,11 @@ end
 
 -- Generate forward declaration for a function
 function Functions.gen_function_declaration(fn)
+    -- Skip declaration for functions with #unsafe blocks - they're implemented in C
+    if fn.has_unsafe_block then
+        return ""
+    end
+    
     local name = fn.name
     local c_name = name
 
@@ -368,6 +384,11 @@ function Functions.gen_function_declaration(fn)
 end
 
 function Functions.gen_function(fn)
+    -- Skip generation for functions with #unsafe blocks - they're implemented in C
+    if fn.has_unsafe_block then
+        return ""
+    end
+    
     local name = fn.name
     local c_name = name
 

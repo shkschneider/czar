@@ -68,6 +68,10 @@ local function format_warning_id(warning_id)
     if not warning_id then
         return "unknown-warning"
     end
+    -- Handle numeric warning IDs by converting to string first
+    if type(warning_id) == "number" then
+        warning_id = tostring(warning_id)
+    end
     -- Convert SCREAMING_SNAKE_CASE to lowercase-hyphenated
     return warning_id:lower():gsub("_", "-")
 end

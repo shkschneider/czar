@@ -1,0 +1,40 @@
+// fmt.cz - Format and print functions
+// Part of the Czar standard library
+//
+// This module provides formatted printing functions that wrap the C stdio functions.
+// These functions accept variable arguments in the C layer.
+#module cz
+
+// Define a dummy struct to hold static methods
+struct fmt {
+}
+
+// Print formatted string without newline
+// Args:
+//   format: i8? - format string with printf-style placeholders
+// Note: Additional arguments are passed through to the C function
+fn fmt.print(i8? format) void {
+    #unsafe {
+        czar_fmt_print(format);
+    }
+}
+
+// Print formatted string with newline
+// Args:
+//   format: i8? - format string with printf-style placeholders
+// Note: Additional arguments are passed through to the C function
+fn fmt.println(i8? format) void {
+    #unsafe {
+        czar_fmt_println(format);
+    }
+}
+
+// Print formatted string (alias for print)
+// Args:
+//   format: i8? - format string with printf-style placeholders
+// Note: Additional arguments are passed through to the C function
+fn fmt.printf(i8? format) void {
+    #unsafe {
+        czar_fmt_printf(format);
+    }
+}

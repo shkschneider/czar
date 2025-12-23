@@ -123,4 +123,16 @@ static inline _cz_os_t* _cz_os_get() {
     return &__cz_os;
 }
 
+// Exit the program with given status code
+// Wrapper for stdlib exit() function
+static inline void czar_os_exit(int code) {
+    exit(code);
+}
+
+// Get environment variable value
+// Wrapper for stdlib getenv() function
+static inline const char* czar_os_getenv(const char* name) {
+    return getenv(name);
+}
+
 #endif // CZ_OS_H

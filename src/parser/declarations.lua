@@ -402,6 +402,18 @@ function Declarations.parse_function(parser)
         return_type = Types.parse_type(parser)
     end
     local body = Statements.parse_block(parser)
+    
+    -- Check if function body contains #unsafe blocks (for varargs detection)
+    local has_unsafe_block = false
+    if body and body.statements then
+        for _, stmt in ipairs(body.statements) do
+            if stmt.kind == "unsafe_block" then
+                has_unsafe_block = true
+                break
+            end
+        end
+    end
+    
     return { 
         kind = "function", 
         name = name, 
@@ -411,6 +423,7 @@ function Declarations.parse_function(parser)
         body = body, 
         inline_directive = inline_directive, 
         generic_types = generic_types,
+        has_unsafe_block = has_unsafe_block,
         line = fn_tok.line, 
         col = fn_tok.col 
     }
