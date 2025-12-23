@@ -446,6 +446,12 @@ function Codegen:generate()
                     item.is_overloaded = false
                 end
             end
+            
+            -- Now set c_name for overloaded/generic functions (after is_overloaded is set)
+            if not item.receiver_type and (item.is_overloaded or item.is_generic_instance) then
+                local Functions = require("codegen.functions")
+                item.c_name = Functions.generate_c_name(item.name, item.params, item.is_overloaded, item.generic_concrete_type)
+            end
         end
     end
     
@@ -461,6 +467,12 @@ function Codegen:generate()
                     else
                         item.is_overloaded = false
                     end
+                end
+                
+                -- Now set c_name for overloaded/generic functions (after is_overloaded is set)
+                if not item.receiver_type and (item.is_overloaded or item.is_generic_instance) then
+                    local Functions = require("codegen.functions")
+                    item.c_name = Functions.generate_c_name(item.name, item.params, item.is_overloaded, item.generic_concrete_type)
                 end
             end
         end

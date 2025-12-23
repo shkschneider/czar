@@ -78,13 +78,8 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
             table.insert(args, gen_expr_fn(a))
         end
         
-        -- Generate the C function name (handles overloading)
+        -- Generate the C function name (handles overloading and generics)
         local c_func_name = method.c_name or method.name
-        if method.is_overloaded then
-            -- For overloaded functions, append parameter count to the c_name base
-            local base_name = method.c_name or method_name
-            c_func_name = base_name .. "_" .. #method.params
-        end
         
         return string.format("%s(%s)", c_func_name, join(args, ", "))
     else
@@ -352,39 +347,10 @@ function Calls.gen_call(expr, gen_expr_fn)
         end
 
         if func_def then
-            -- Generate the C name for the function
-            -- Check if this function is overloaded
-            local func_name = expr.callee.name
-            local type_name = "__global__"
-            local overloads = ctx().functions[type_name] and ctx().functions[type_name][func_name]
-            local is_overloaded = overloads and type(overloads) == "table" and #overloads > 1
-
-            if is_overloaded then
-                -- Generate unique C name for overloaded functions
-                local function type_to_c_name(type_node)
-                    if not type_node then return "unknown" end
-                    if type_node.kind == "named_type" then
-                        return type_node.name
-                    elseif type_node.kind == "nullable" then
-                        return type_to_c_name(type_node.to) .. "_ptr"
-                    elseif type_node.kind == "string" then
-                        return "string"
-                    end
-                    return "unknown"
-                end
-
-                local type_suffix = ""
-                for _, param in ipairs(func_def.params) do
-                    local type_name = type_to_c_name(param.type)
-                    if type_suffix == "" then
-                        type_suffix = type_name
-                    end
-                end
-                callee = func_name .. "_" .. type_suffix
-            else
-                -- Use regular name (already set by gen_expr_fn)
-                callee = func_name
-            end
+            -- Use the C name that was already generated during function declaration
+            -- This properly handles overloading, generics, and other naming conventions
+            local func_name = func_def.c_name or expr.callee.name
+            callee = func_name
 
             -- Resolve arguments (handle named args and defaults)
             local resolved_args = ctx():resolve_arguments(expr.callee.name, expr.args, func_def.params)

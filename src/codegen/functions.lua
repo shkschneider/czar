@@ -35,17 +35,25 @@ end
 
 -- Helper: Generate unique C name for overloaded function
 -- For overloaded functions, append type signature to name
-local function generate_c_function_name(func_name, params, is_overloaded)
-    if not is_overloaded then
+local function generate_c_function_name(func_name, params, is_overloaded, generic_concrete_type)
+    if not is_overloaded and not generic_concrete_type then
         return func_name
     end
     
-    -- For overloaded functions, generate a suffix based on parameter count and types
-    -- Use parameter count first, then append key type info if needed
-    local param_count = #params
+    -- For generic functions, use the concrete type in the name (e.g., add_u8, add_u32)
+    if generic_concrete_type then
+        return func_name .. "_" .. generic_concrete_type
+    end
     
-    -- Simple approach: use parameter count as suffix
-    return func_name .. "_" .. param_count
+    -- For overloaded functions, generate a suffix based on parameter types
+    local type_parts = {}
+    for _, param in ipairs(params) do
+        local type_str = type_to_c_name(param.type)
+        table.insert(type_parts, type_str)
+    end
+    
+    -- Join types with underscore (e.g., add_u8_u8, add_i32_i32, add_f32_f32)
+    return func_name .. "_" .. table.concat(type_parts, "_")
 end
 
 -- Resolve function arguments, handling named arguments and default parameters
@@ -357,9 +365,9 @@ function Functions.gen_function_declaration(fn)
             -- Regular instance/static methods use czar_ prefix too
             c_name = "czar_" .. receiver .. "_" .. name
         end
-    elseif is_overloaded then
-        -- Generate unique C name for overloaded functions
-        c_name = generate_c_function_name(name, fn.params, true)
+    elseif is_overloaded or fn.is_generic_instance then
+        -- Generate unique C name for overloaded or generic functions
+        c_name = generate_c_function_name(name, fn.params, is_overloaded, fn.generic_concrete_type)
     end
     
     -- Store the C name in the function for later use
@@ -410,9 +418,9 @@ function Functions.gen_function(fn)
             -- Regular instance/static methods use czar_ prefix too
             c_name = "czar_" .. receiver .. "_" .. name
         end
-    elseif is_overloaded then
-        -- Generate unique C name for overloaded functions
-        c_name = generate_c_function_name(name, fn.params, true)
+    elseif is_overloaded or fn.is_generic_instance then
+        -- Generate unique C name for overloaded or generic functions
+        c_name = generate_c_function_name(name, fn.params, is_overloaded, fn.generic_concrete_type)
     end
 
     -- Track current function for #FUNCTION directive
@@ -544,6 +552,11 @@ end
 function Functions.gen_wrapper(has_main)
     -- No longer needed - main function is generated directly with init calls inline
     -- This function is kept for backward compatibility but does nothing
+end
+
+-- Export helper for c_name generation (used by init.lua)
+function Functions.generate_c_name(func_name, params, is_overloaded, generic_concrete_type)
+    return generate_c_function_name(func_name, params, is_overloaded, generic_concrete_type)
 end
 
 return Functions
