@@ -22,7 +22,7 @@ end
 -- Cache for parsed stdlib files to avoid redundant parsing
 local stdlib_file_cache = {}
 
--- Parse a specific stdlib .cz file to collect #init macros
+-- Parse a specific stdlib .cz file to collect #init blocks
 -- This function is used during code generation to extract #init blocks
 -- from imported stdlib modules, enabling automatic initialization
 local function parse_stdlib_file(file_path)
