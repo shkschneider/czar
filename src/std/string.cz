@@ -6,7 +6,9 @@
 //
 // This replaces the old `string` keyword (which was just an alias for char*)
 // with a proper struct type that includes length and capacity.
-#module cz
+// 
+// Note: string is a global built-in type, not module-scoped, so it's available
+// everywhere without needing to import cz.string
 
 // string struct - represents a dynamic byte array suitable for UTF-8 text
 // Fields:
