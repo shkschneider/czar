@@ -7,7 +7,7 @@ fn test_unsafe() i32 {
 
     #unsafe {
         x = 42;
-        fmt.printf("Raw C code: %d\n", x);
+        printf("Raw C code: %d\n", x);
     }
 
     return 0

@@ -52,22 +52,7 @@ function Types.c_type(type_node)
         return "czar_string"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
-        
-        -- Check for type aliases first and resolve them
-        if ctx().type_aliases and ctx().type_aliases[name] then
-            local alias_target = ctx().type_aliases[name]
-            -- Parse the alias target string and recursively resolve it
-            -- Handle pointer types like "char*" or "char *" (with optional spaces)
-            local base_type_match = alias_target:match("^(%w+)%s*%*$")
-            if base_type_match then
-                -- It's a pointer type like "char*"
-                return Types.c_type({ kind = "named_type", name = base_type_match }) .. "*"
-            else
-                -- It's a simple named type, recursively resolve it
-                return Types.c_type({ kind = "named_type", name = alias_target })
-            end
-        end
-        
+                
         if name == "i8" then
             return "int8_t"
         elseif name == "i16" then

@@ -82,15 +82,11 @@ function Codegen.new(ast, options)
         source_path = options.source_path or options.source_file or "unknown",
         current_function = nil,
         custom_allocator_interface = nil,  -- Interface for custom allocator (#alloc)
-        type_aliases = {
-            -- Built-in alias for String -> char*
-            ["String"] = "char*"
-        },
         repeat_counter = 0,  -- Counter for generating unique repeat loop variables
         loop_label_counter = 0,  -- Counter for generating unique loop labels
         loop_stack = {},  -- Stack of loop info for multi-level break/continue
         c_imports = {},  -- C header files imported via import C : header.h
-        init_macros = {},  -- #init macros to run during initialization
+        init_macros = {},  -- #init macros to run during initialization,
     }
     return setmetatable(self, Codegen)
 end
