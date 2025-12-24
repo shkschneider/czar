@@ -365,22 +365,39 @@ function Codegen:generate()
             elseif item.kind == "iface" then
                 self.ifaces[item.name] = item
             elseif item.kind == "function" then
-                -- Register function under the module name (e.g., "cz.fmt")
-                if not self.functions[import_path] then
-                    self.functions[import_path] = {}
+                -- Special handling for string methods (global built-in type)
+                if import_path == "__builtin__string" and item.receiver_type == "string" then
+                    -- Register string methods under "string" receiver type
+                    if not self.functions["string"] then
+                        self.functions["string"] = {}
+                    end
+                    if not self.functions["string"][item.name] then
+                        self.functions["string"][item.name] = {}
+                    end
+                    -- Set c_name if not already set
+                    -- String methods call cz_string_* C functions (defined elsewhere)
+                    if not item.c_name then
+                        item.c_name = "cz_string_" .. item.name
+                    end
+                    table.insert(self.functions["string"][item.name], item)
+                else
+                    -- Register function under the module name (e.g., "cz.fmt")
+                    if not self.functions[import_path] then
+                        self.functions[import_path] = {}
+                    end
+                    if not self.functions[import_path][item.name] then
+                        self.functions[import_path][item.name] = {}
+                    end
+                    
+                    -- Set c_name for stdlib functions (cz_module_function format)
+                    -- e.g., cz.fmt.printf -> cz_fmt_printf (use only last part of module)
+                    if not item.c_name then
+                        local module_last = import_path:match("[^.]+$")  -- cz.fmt -> fmt
+                        item.c_name = "cz_" .. module_last .. "_" .. item.name
+                    end
+                    
+                    table.insert(self.functions[import_path][item.name], item)
                 end
-                if not self.functions[import_path][item.name] then
-                    self.functions[import_path][item.name] = {}
-                end
-                
-                -- Set c_name for stdlib functions (cz_module_function format)
-                -- e.g., cz.fmt.printf -> cz_fmt_printf (use only last part of module)
-                if not item.c_name then
-                    local module_last = import_path:match("[^.]+$")  -- cz.fmt -> fmt
-                    item.c_name = "cz_" .. module_last .. "_" .. item.name
-                end
-                
-                table.insert(self.functions[import_path][item.name], item)
             end
         end
     end
@@ -432,10 +449,8 @@ function Codegen:generate()
     for import_path, stdlib_ast in pairs(self.stdlib_asts) do
         for _, item in ipairs(stdlib_ast.items) do
             if item.kind == "struct" then
-                -- Skip string struct (already handled as global built-in)
-                if item.name ~= "string" then
-                    self:gen_struct(item)
-                end
+                -- Emit all structs including string (it's a global built-in type)
+                self:gen_struct(item)
             elseif item.kind == "enum" then
                 self:gen_enum(item)
             end

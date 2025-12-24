@@ -49,13 +49,13 @@ function Types.c_type(type_node)
         -- Strings are represented as a struct with capacity, length, and data fields
         -- Return the struct type itself, not a pointer
         -- Pointers are handled by the nullable wrapper
-        return "cz_string"
+        return "string"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         
-        -- Special case: string is now a proper struct, map to cz_string
+        -- Special case: string is now a proper struct, use the struct name directly
         if name == "string" then
-            return "cz_string"
+            return "string"
         end
                 
         if name == "i8" then

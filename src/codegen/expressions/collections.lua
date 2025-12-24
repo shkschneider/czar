@@ -291,7 +291,7 @@ function Collections.gen_string_literal(expr)
         ctx():alloc_call(tostring(capacity), false)))
     table.insert(statements, string.format("memcpy(_data, \"%s\", %d)", str_value, str_len))
     table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
-    table.insert(statements, string.format("(cz_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
+    table.insert(statements, string.format("(string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
     
     return string.format("({ %s; })", join(statements, "; "))
 end

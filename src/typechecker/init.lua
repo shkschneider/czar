@@ -156,19 +156,19 @@ function Typechecker:check()
         elseif item.kind == "function" then
             -- Register string methods globally (not under a module)
             -- They can be accessed as string:method() or s:method()
-            if item.name:match("^string:") then
-                local method_name = item.name:match("^string:(.+)")
+            if item.receiver_type == "string" then
                 if not self.functions["string"] then
                     self.functions["string"] = {}
                 end
-                if not self.functions["string"][method_name] then
-                    self.functions["string"][method_name] = {}
+                if not self.functions["string"][item.name] then
+                    self.functions["string"][item.name] = {}
                 end
                 -- Set c_name if not already set
+                -- String methods call cz_string_* C functions (defined elsewhere)
                 if not item.c_name then
-                    item.c_name = "cz_string_" .. method_name
+                    item.c_name = "cz_string_" .. item.name
                 end
-                table.insert(self.functions["string"][method_name], item)
+                table.insert(self.functions["string"][item.name], item)
             end
         end
     end

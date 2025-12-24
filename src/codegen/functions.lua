@@ -354,22 +354,6 @@ end
 
 -- Generate forward declaration for a function
 function Functions.gen_function_declaration(fn)
-    -- Skip declaration for functions that are ONLY unsafe blocks (no other statements)
-    -- These are thin wrappers around C functions that don't need Czar wrappers
-    if fn.has_unsafe_block and fn.body and fn.body.statements then
-        local only_unsafe = true
-        for _, stmt in ipairs(fn.body.statements) do
-            if stmt.kind ~= "unsafe_block" then
-                only_unsafe = false
-                break
-            end
-        end
-        if only_unsafe and #fn.body.statements == 1 then
-            -- This function is ONLY an unsafe block, skip it
-            return ""
-        end
-    end
-    
     local name = fn.name
     local c_name = name
 
@@ -419,22 +403,6 @@ function Functions.gen_function_declaration(fn)
 end
 
 function Functions.gen_function(fn)
-    -- Skip generation for functions that are ONLY unsafe blocks (no other statements)
-    -- These are thin wrappers around C functions that don't need Czar wrappers
-    if fn.has_unsafe_block and fn.body and fn.body.statements then
-        local only_unsafe = true
-        for _, stmt in ipairs(fn.body.statements) do
-            if stmt.kind ~= "unsafe_block" then
-                only_unsafe = false
-                break
-            end
-        end
-        if only_unsafe and #fn.body.statements == 1 then
-            -- This function is ONLY an unsafe block, skip it
-            return ""
-        end
-    end
-    
     local name = fn.name
     local c_name = name
 
