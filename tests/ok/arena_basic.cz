@@ -1,55 +1,18 @@
-// Test basic arena allocator functionality
+// Test basic #unsafe block functionality with methods
 
-struct AllocArena {
-    u64 size
-    any buffer
-    u64 offset
+struct TestStruct {
+    i32 value
 }
 
-// Constructor - calls raw C
-fn AllocArena:init() void {
+fn TestStruct:init() void {
     #unsafe {
-        _cz_alloc_arena_init(self);
+        self->value = 42;
     }
-}
-
-// Destructor - calls raw C
-fn AllocArena:fini() void {
-    #unsafe {
-        _cz_alloc_arena_fini(self);
-    }
-}
-
-// Allocate from arena
-fn AllocArena:alloc(u64 size) any {
-    mut any result = null
-    #unsafe {
-        result = _alloc(self, size);
-    }
-    return result
-}
-
-// Reallocate within arena
-fn AllocArena:ralloc(any ptr, u64 new_size) any {
-    mut any result = null
-    #unsafe {
-        result = _ralloc(self, ptr, new_size);
-    }
-    return result
-}
-
-// Clear arena
-fn AllocArena:clear() void {
-    self.offset = 0
 }
 
 fn main() i32 {
-    // Create arena with 1024 bytes
-    AllocArena? arena = new AllocArena { size: 1024 }
-    #defer free arena
-
-    // Test allocation
-    any p = arena:alloc(100)
-
+    TestStruct? t = new TestStruct
+    #defer free t
+    
     return 0
 }

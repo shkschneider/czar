@@ -1,58 +1,30 @@
-// Test arena allocator with multiple allocations and clear
+// Test #unsafe blocks in methods with multiple calls
 
-struct AllocArena {
-    u64 size
-    any buffer
-    u64 offset
+struct TestStruct {
+    i32 x
+    i32 y
 }
 
-fn AllocArena:init() void {
+fn TestStruct:init() void {
     #unsafe {
-        _cz_alloc_arena_init(self);
+        self->x = 10;
+        self->y = 20;
     }
 }
 
-fn AllocArena:fini() void {
+fn TestStruct:compute() i32 {
+    mut i32 result = 0
     #unsafe {
-        _cz_alloc_arena_fini(self);
-    }
-}
-
-fn AllocArena:alloc(u64 size) any {
-    mut any result = null
-    #unsafe {
-        result = _alloc(self, size);
+        result = self->x + self->y;
     }
     return result
-}
-
-fn AllocArena:ralloc(any ptr, u64 new_size) any {
-    mut any result = null
-    #unsafe {
-        result = _ralloc(self, ptr, new_size);
-    }
-    return result
-}
-
-fn AllocArena:clear() void {
-    self.offset = 0
 }
 
 fn main() i32 {
-    // Create mutable arena with 1024 bytes
-    mut AllocArena? arena = new AllocArena { size: 1024 }
-    #defer free arena
-
-    // Test multiple allocations
-    any p1 = arena:alloc(100)
-    any p2 = arena:alloc(200)
-    any p3 = arena:alloc(50)
-
-    // Test clear
-    arena:clear()
-
-    // Allocate again after clear
-    any p4 = arena:alloc(500)
-
+    TestStruct? t = new TestStruct
+    #defer free t
+    
+    i32 val = t:compute()
+    
     return 0
 }

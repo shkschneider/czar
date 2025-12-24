@@ -10,10 +10,9 @@ struct Arena {
     u64 offset
 }
 
-// Initialize arena with given size
-fn Arena:init(u64 size) {
+// Initialize arena - called after construction
+fn Arena:init() {
     #unsafe {
-        self.size = size;
         cz_alloc_arena_init(self);
     }
 }
