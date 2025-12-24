@@ -232,6 +232,7 @@ function Statements.gen_statement(stmt)
             end
 
             -- Call constructor if the struct has one (dereference pointer to call)
+            -- The init() method acts as an initializer callback that's always called
             if stmt.type.to and stmt.type.to.kind == "named_type" then
                 local struct_type_name = stmt.type.to.name
                 local constructor_call = Codegen.Functions.gen_constructor_call(struct_type_name, stmt.name)
@@ -294,6 +295,7 @@ function Statements.gen_statement(stmt)
             end
 
             -- Call constructor if the type is a struct
+            -- The init() method acts as an initializer callback that's always called
             if stmt.type and stmt.type.kind == "named_type" and Codegen.Types.is_struct_type(stmt.type) then
                 local struct_type_name = stmt.type.name
                 local constructor_call = Codegen.Functions.gen_constructor_call(struct_type_name, "&" .. stmt.name)

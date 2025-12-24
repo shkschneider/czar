@@ -453,6 +453,28 @@ function Fields.infer_struct_literal_type(typechecker, expr)
             expr.type_name = actual_struct_name
         end
         
+        -- If using positional arguments, assign field names based on struct definition order
+        if expr.is_positional then
+            for i, field_init in ipairs(expr.fields) do
+                if i <= #struct_def.fields then
+                    field_init.name = struct_def.fields[i].name
+                else
+                    -- Too many positional arguments
+                    local line = expr.line or 0
+                    local msg = string.format(
+                        "Too many positional arguments for struct '%s': expected %d, got %d",
+                        actual_struct_name,
+                        #struct_def.fields,
+                        #expr.fields
+                    )
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                    return nil
+                end
+            end
+        end
+        
         -- Type check each field
         for _, field_init in ipairs(expr.fields) do
             local field_type = nil
@@ -509,6 +531,28 @@ function Fields.infer_new_type(typechecker, expr)
     local struct_def = Resolver.resolve_struct(typechecker, expr.type_name)
 
     if struct_def then
+        -- If using positional arguments, assign field names based on struct definition order
+        if expr.is_positional then
+            for i, field_init in ipairs(expr.fields) do
+                if i <= #struct_def.fields then
+                    field_init.name = struct_def.fields[i].name
+                else
+                    -- Too many positional arguments
+                    local line = expr.line or 0
+                    local msg = string.format(
+                        "Too many positional arguments for struct '%s': expected %d, got %d",
+                        expr.type_name,
+                        #struct_def.fields,
+                        #expr.fields
+                    )
+                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                        Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                    typechecker:add_error(formatted_error)
+                    return nil
+                end
+            end
+        end
+        
         -- Type check each field (similar to struct literal)
         for _, field_init in ipairs(expr.fields) do
             local field_type = nil
