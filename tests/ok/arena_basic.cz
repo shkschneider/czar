@@ -1,18 +1,8 @@
-// Test basic #unsafe block functionality with methods
-
-struct TestStruct {
-    i32 value
-}
-
-fn TestStruct:init() void {
-    #unsafe {
-        self->value = 42;
-    }
-}
+#import cz.alloc.arena
 
 fn main() i32 {
-    TestStruct? t = new TestStruct
-    #defer free t
-    
+    any p = new arena.Arena { 1024 } #defer
+    any p = new arena.Arena { 2048 } #defer
+    any p = new arena.Arena { 4096 } #defer
     return 0
 }
