@@ -14,6 +14,7 @@ _un-ordered_
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
+- `cz` standard library
 - `cz` stdlib: `os`, `fmt`, ...
 - `#DEBUG` to get or set global debug flag
 - `#defer` defers execution of a statement until scope exit
@@ -34,6 +35,7 @@ _un-ordered_
 - integers `i8/16/32/64`
 - `#LINE` injects current line number of current file
 - `#log(...)` to log to stderr
+- module `#init {}` executes at import
 - `#module name` defaults to "main"
 - more compiler warnings
 - `mut` T allows to change its value or members
