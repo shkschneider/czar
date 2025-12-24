@@ -70,7 +70,7 @@ function Collections.gen_new_map(expr, gen_expr_fn)
     local value_type_str = ctx():c_type(value_type)
     
     -- Generate map struct type name
-    local map_type_name = "czar_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
+    local map_type_name = "cz_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
     
     -- Register map type for later struct generation
     if not ctx().map_types then
@@ -142,7 +142,7 @@ function Collections.gen_new_pair(expr, gen_expr_fn)
     local right_type_str = ctx():c_type(right_type)
     
     -- Generate pair struct type name
-    local pair_type_name = "czar_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
+    local pair_type_name = "cz_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
     
     -- Register pair type for later struct generation
     if not ctx().pair_types then
@@ -181,7 +181,7 @@ function Collections.gen_pair_literal(expr, gen_expr_fn)
     local right_type_str = ctx():c_type(right_type)
     
     -- Generate pair struct type name
-    local pair_type_name = "czar_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
+    local pair_type_name = "cz_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
     
     -- Register pair type for later struct generation
     if not ctx().pair_types then
@@ -212,7 +212,7 @@ function Collections.gen_map_literal(expr, gen_expr_fn)
     local value_type_str = ctx():c_type(value_type)
     
     -- Generate map struct type name
-    local map_type_name = "czar_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
+    local map_type_name = "cz_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
     
     -- Register map type for later struct generation
     if not ctx().map_types then
@@ -246,11 +246,11 @@ function Collections.gen_new_string(expr)
     local str_value = expr.value
     
     -- Allocate the string struct
-    local alloc_expr = string.format("%s", ctx():alloc_call("sizeof(czar_string)", true))
+    local alloc_expr = string.format("%s", ctx():alloc_call("sizeof(cz_string)", true))
     
-    -- Call the constructor: czar_string_init(ptr, "text")
+    -- Call the constructor: cz_string_init(ptr, "text")
     local escaped_value = str_value:gsub("\\", "\\\\"):gsub('"', '\\"')
-    local init_call = string.format("czar_string_init(%s, \"%s\")", alloc_expr, escaped_value)
+    local init_call = string.format("cz_string_init(%s, \"%s\")", alloc_expr, escaped_value)
     
     return string.format("(%s, %s)", init_call, alloc_expr)
 end
@@ -271,7 +271,7 @@ function Collections.gen_string_literal(expr)
         ctx():alloc_call(tostring(capacity), false)))
     table.insert(statements, string.format("memcpy(_data, \"%s\", %d)", str_value, str_len))
     table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
-    table.insert(statements, string.format("(czar_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
+    table.insert(statements, string.format("(cz_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
     
     return string.format("({ %s; })", join(statements, "; "))
 end

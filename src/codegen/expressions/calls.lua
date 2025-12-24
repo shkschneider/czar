@@ -64,7 +64,7 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
             
-            -- Use the c_name if available (for constructors/destructors with czar_ prefix)
+            -- Use the c_name if available (for constructors/destructors with cz_ prefix)
             local c_func_name = method.c_name or method.name
             return string.format("%s(%s)", c_func_name, join(args, ", "))
         end
@@ -96,62 +96,62 @@ local function gen_string_method(obj, obj_type, method_name, args, gen_expr_fn)
         if #args ~= 1 then error("append() requires exactly 1 argument") end
         local arg_expr = gen_expr_fn(args[1])
         return is_ptr
-            and string.format("czar_string_append_string(%s, &%s)", obj_expr, arg_expr)
-            or string.format("czar_string_append_string(&%s, &%s)", obj_expr, arg_expr)
+            and string.format("cz_string_append_string(%s, &%s)", obj_expr, arg_expr)
+            or string.format("cz_string_append_string(&%s, &%s)", obj_expr, arg_expr)
     elseif method_name == "substring" then
         if #args ~= 2 then error("substring() requires exactly 2 arguments") end
         local start_expr = gen_expr_fn(args[1])
         local end_expr = gen_expr_fn(args[2])
         return is_ptr
-            and string.format("czar_string_substring(%s, %s, %s)", obj_expr, start_expr, end_expr)
-            or string.format("czar_string_substring(&%s, %s, %s)", obj_expr, start_expr, end_expr)
+            and string.format("cz_string_substring(%s, %s, %s)", obj_expr, start_expr, end_expr)
+            or string.format("cz_string_substring(&%s, %s, %s)", obj_expr, start_expr, end_expr)
     elseif method_name == "find" or method_name == "index" then
         if #args ~= 1 then error(method_name .. "() requires exactly 1 argument") end
         local needle_expr = gen_expr_fn(args[1])
         return is_ptr
-            and string.format("czar_string_index(%s, &%s)", obj_expr, needle_expr)
-            or string.format("czar_string_index(&%s, &%s)", obj_expr, needle_expr)
+            and string.format("cz_string_index(%s, &%s)", obj_expr, needle_expr)
+            or string.format("cz_string_index(&%s, &%s)", obj_expr, needle_expr)
     elseif method_name == "contains" then
         if #args ~= 1 then error("contains() requires exactly 1 argument") end
         local needle_expr = gen_expr_fn(args[1])
         return is_ptr
-            and string.format("czar_string_contains(%s, &%s)", obj_expr, needle_expr)
-            or string.format("czar_string_contains(&%s, &%s)", obj_expr, needle_expr)
+            and string.format("cz_string_contains(%s, &%s)", obj_expr, needle_expr)
+            or string.format("cz_string_contains(&%s, &%s)", obj_expr, needle_expr)
     elseif method_name == "cut" then
         if #args ~= 1 then error("cut() requires exactly 1 argument") end
         local sep_expr = gen_expr_fn(args[1])
         return is_ptr
-            and string.format("czar_string_cut(%s, &%s)", obj_expr, sep_expr)
-            or string.format("czar_string_cut(&%s, &%s)", obj_expr, sep_expr)
+            and string.format("cz_string_cut(%s, &%s)", obj_expr, sep_expr)
+            or string.format("cz_string_cut(&%s, &%s)", obj_expr, sep_expr)
     elseif method_name == "prefix" then
         if #args ~= 1 then error("prefix() requires exactly 1 argument") end
         local prefix_expr = gen_expr_fn(args[1])
         return is_ptr
-            and string.format("czar_string_prefix(%s, &%s)", obj_expr, prefix_expr)
-            or string.format("czar_string_prefix(&%s, &%s)", obj_expr, prefix_expr)
+            and string.format("cz_string_prefix(%s, &%s)", obj_expr, prefix_expr)
+            or string.format("cz_string_prefix(&%s, &%s)", obj_expr, prefix_expr)
     elseif method_name == "suffix" then
         if #args ~= 1 then error("suffix() requires exactly 1 argument") end
         local suffix_expr = gen_expr_fn(args[1])
         return is_ptr
-            and string.format("czar_string_suffix(%s, &%s)", obj_expr, suffix_expr)
-            or string.format("czar_string_suffix(&%s, &%s)", obj_expr, suffix_expr)
+            and string.format("cz_string_suffix(%s, &%s)", obj_expr, suffix_expr)
+            or string.format("cz_string_suffix(&%s, &%s)", obj_expr, suffix_expr)
     elseif method_name == "upper" or method_name == "lower" then
         if #args ~= 0 then error(method_name .. "() takes no arguments") end
         return is_ptr
-            and string.format("czar_string_%s(%s)", method_name, obj_expr)
-            or string.format("czar_string_%s(&%s)", method_name, obj_expr)
+            and string.format("cz_string_%s(%s)", method_name, obj_expr)
+            or string.format("cz_string_%s(&%s)", method_name, obj_expr)
     elseif method_name == "words" then
         if #args ~= 0 then error("words() takes no arguments") end
         error("words() is not yet fully implemented")
     elseif method_name == "trim" or method_name == "ltrim" or method_name == "rtrim" then
         if #args ~= 0 then error(method_name .. "() takes no arguments") end
         return is_ptr
-            and string.format("czar_string_%s(%s)", method_name, obj_expr)
-            or string.format("czar_string_%s(&%s)", method_name, obj_expr)
+            and string.format("cz_string_%s(%s)", method_name, obj_expr)
+            or string.format("cz_string_%s(&%s)", method_name, obj_expr)
     elseif method_name == "cstr" then
         return is_ptr
-            and string.format("czar_string_cstr(%s)", obj_expr)
-            or string.format("czar_string_cstr(&%s)", obj_expr)
+            and string.format("cz_string_cstr(%s)", obj_expr)
+            or string.format("cz_string_cstr(&%s)", obj_expr)
     end
 
     return nil
@@ -239,7 +239,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
 
-            -- Use the c_name if available (handles czar_ prefix for methods)
+            -- Use the c_name if available (handles cz_ prefix for methods)
             local c_func_name = method.c_name or method_name
             return string.format("%s(%s)", c_func_name, join(args, ", "))
         else
@@ -318,7 +318,7 @@ function Calls.gen_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
 
-            -- Use the c_name if available (handles czar_ prefix for methods)
+            -- Use the c_name if available (handles cz_ prefix for methods)
             local c_func_name = method.c_name or method_name
             return string.format("%s(%s)", c_func_name, join(args, ", "))
         end

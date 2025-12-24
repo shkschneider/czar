@@ -516,7 +516,7 @@ function Functions.gen_function(fn)
         
         -- If this is main function with debug allocator, print memory stats before implicit return
         if name == "main" and ctx().custom_allocator_interface == "cz.alloc.debug" then
-            ctx():emit("    _czar_print_memory_stats();")
+            ctx():emit("    _cz_print_memory_stats();")
         end
     end
 

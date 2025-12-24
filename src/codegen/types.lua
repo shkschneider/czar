@@ -39,23 +39,23 @@ function Types.c_type(type_node)
         -- We'll generate a generic map structure
         local key_type_str = Types.c_type(type_node.key_type):gsub("%*", "ptr")
         local value_type_str = Types.c_type(type_node.value_type):gsub("%*", "ptr")
-        return "czar_map_" .. key_type_str .. "_" .. value_type_str .. "*"
+        return "cz_map_" .. key_type_str .. "_" .. value_type_str .. "*"
     elseif type_node.kind == "pair" then
         -- Pairs are represented as a struct with left and right fields
         local left_type_str = Types.c_type(type_node.left_type):gsub("%*", "ptr")
         local right_type_str = Types.c_type(type_node.right_type):gsub("%*", "ptr")
-        return "czar_pair_" .. left_type_str .. "_" .. right_type_str
+        return "cz_pair_" .. left_type_str .. "_" .. right_type_str
     elseif type_node.kind == "string" then
         -- Strings are represented as a struct with capacity, length, and data fields
         -- Return the struct type itself, not a pointer
         -- Pointers are handled by the nullable wrapper
-        return "czar_string"
+        return "cz_string"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
         
-        -- Special case: string is now a proper struct, map to czar_string
+        -- Special case: string is now a proper struct, map to cz_string
         if name == "string" then
-            return "czar_string"
+            return "cz_string"
         end
                 
         if name == "i8" then

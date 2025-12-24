@@ -94,7 +94,7 @@ function Literals.gen_interpolated_string(expr, gen_expr_fn)
         -- For very long strings, consider using dynamic allocation
         local arg_list = table.concat(args, ", ")
         -- Use unique variable name to avoid conflicts
-        local buf_name = string.format("_czar_interp_%d", expr.line or 0)
+        local buf_name = string.format("_cz_interp_%d", expr.line or 0)
         local code = string.format(
             "({ char %s[512]; snprintf(%s, 512, \"%s\", %s); %s; })",
             buf_name, buf_name, format_str, arg_list, buf_name
