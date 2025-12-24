@@ -35,9 +35,7 @@ fn cz_alloc_arena:ralloc(any ptr, u64 new_size) any {
 }
 
 fn cz_alloc_arena:clear() void {
-    #unsafe {
-        _clear(self);
-    }
+    self.offset = 0
 }
 
 fn main() i32 {
