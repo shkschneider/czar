@@ -37,11 +37,11 @@ struct string {
 //   cstr: i8? - pointer to null-terminated C string (can be null for empty string)
 fn string:init(i8? cstr) void {
     #unsafe {
-        if (cstr == null) {
+        if (cstr == NULL) {
             // Empty string
             self->capacity = 16;
-            self->data = (i8?)malloc(self->capacity);
-            if (self->data == null) {
+            self->data = (int8_t*)malloc(self->capacity);
+            if (self->data == NULL) {
                 printf("ERROR: String malloc failed\n");
                 exit(1);
             }
@@ -49,14 +49,14 @@ fn string:init(i8? cstr) void {
             self->data[0] = '\0';
         } else {
             // Initialize from C string
-            i32 len = (i32)strlen(cstr);
-            i32 capacity = 16;
+            int32_t len = (int32_t)strlen(cstr);
+            int32_t capacity = 16;
             while (capacity < len + 1) {
                 capacity = capacity * 2;
             }
             self->capacity = capacity;
-            self->data = (i8?)malloc(capacity);
-            if (self->data == null) {
+            self->data = (int8_t*)malloc(capacity);
+            if (self->data == NULL) {
                 printf("ERROR: String malloc failed\n");
                 exit(1);
             }
@@ -70,9 +70,9 @@ fn string:init(i8? cstr) void {
 // Destructor: Free the string's memory
 fn string:fini() void {
     #unsafe {
-        if (self->data != null) {
+        if (self->data != NULL) {
             free(self->data);
-            self->data = null;
+            self->data = NULL;
         }
     }
 }
