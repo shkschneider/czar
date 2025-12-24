@@ -265,14 +265,10 @@ function Collections.gen_new_string(expr)
     -- new "text" - heap-allocated string using constructor
     local str_value = expr.value
     
-    -- Allocate the string struct
-    local alloc_expr = string.format("%s", ctx():alloc_call("sizeof(cz_string)", true))
-    
-    -- Call the constructor: cz_string_init(ptr, "text")
+    -- Generate: ({ string* _ptr = malloc(sizeof(string)); cz_string_init(_ptr, "text"); _ptr; })
     local escaped_value = str_value:gsub("\\", "\\\\"):gsub('"', '\\"')
-    local init_call = string.format("cz_string_init(%s, \"%s\")", alloc_expr, escaped_value)
-    
-    return string.format("(%s, %s)", init_call, alloc_expr)
+    return string.format("({ string* _ptr = %s; cz_string_init(_ptr, \"%s\"); _ptr; })",
+        ctx():alloc_call("sizeof(string)", true), escaped_value)
 end
 
 -- Generate stack-allocated string literal
