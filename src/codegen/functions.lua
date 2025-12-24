@@ -167,11 +167,11 @@ function Functions.collect_structs_and_functions()
                 if not item.c_name then
                     local c_name = item.name
                     if item.name == "init" then
-                        c_name = "czar_" .. item.receiver_type .. "_init"
+                        c_name = item.receiver_type .. "_init"
                     elseif item.name == "fini" then
-                        c_name = "czar_" .. item.receiver_type .. "_fini"
+                        c_name = item.receiver_type .. "_fini"
                     else
-                        c_name = "czar_" .. item.receiver_type .. "_" .. item.name
+                        c_name = item.receiver_type .. "_" .. item.name
                     end
                     item.c_name = c_name
                 end
@@ -246,7 +246,7 @@ function Functions.gen_constructor_call(struct_name, var_name)
             return string.format("%s(%s);", overloads[1].c_name, var_name)
         end
         -- Fallback for non-module structs
-        return string.format("czar_%s_init(%s);", struct_name, var_name)
+        return string.format("%s_init(%s);", struct_name, var_name)
     end
     return nil
 end
@@ -260,7 +260,7 @@ function Functions.gen_destructor_call(struct_name, var_name)
             return string.format("%s(%s);", overloads[1].c_name, var_name)
         end
         -- Fallback for non-module structs
-        return string.format("czar_%s_fini(%s);", struct_name, var_name)
+        return string.format("%s_fini(%s);", struct_name, var_name)
     end
     return nil
 end
@@ -374,14 +374,13 @@ function Functions.gen_function_declaration(fn)
     -- Special handling for constructor/destructor methods
     elseif fn.receiver_type then
         local receiver = fn.receiver_type
-        -- Use czar_ prefix for non-module structs
         if name == "init" then
-            c_name = "czar_" .. receiver .. "_init"
+            c_name = receiver .. "_init"
         elseif name == "fini" then
-            c_name = "czar_" .. receiver .. "_fini"
+            c_name = receiver .. "_fini"
         else
-            -- Regular instance/static methods use czar_ prefix too
-            c_name = "czar_" .. receiver .. "_" .. name
+            -- Regular instance/static methods
+            c_name = receiver .. "_" .. name
         end
         fn.c_name = c_name
     elseif is_overloaded or fn.is_generic_instance then
@@ -429,14 +428,13 @@ function Functions.gen_function(fn)
     -- Special handling for constructor/destructor methods
     elseif fn.receiver_type then
         local receiver = fn.receiver_type
-        -- Use czar_ prefix for non-module structs
         if name == "init" then
-            c_name = "czar_" .. receiver .. "_init"
+            c_name = receiver .. "_init"
         elseif name == "fini" then
-            c_name = "czar_" .. receiver .. "_fini"
+            c_name = receiver .. "_fini"
         else
-            -- Regular instance/static methods use czar_ prefix too
-            c_name = "czar_" .. receiver .. "_" .. name
+            -- Regular instance/static methods
+            c_name = receiver .. "_" .. name
         end
     elseif is_overloaded or fn.is_generic_instance then
         -- Generate unique C name for overloaded or generic functions
