@@ -373,7 +373,8 @@ end
 function Collections.infer_new_string_type(typechecker, expr)
     -- String literal value is stored in expr.value
     -- Return a pointer to string type (heap allocated)
-    local string_type = { kind = "string" }
+    -- Use named_type to match the struct definition and parser expectations
+    local string_type = { kind = "named_type", name = "string" }
     local inferred = { kind = "nullable", to = string_type }
     expr.inferred_type = inferred
     return inferred
