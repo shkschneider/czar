@@ -1,0 +1,38 @@
+// Test that positional arguments with partial initialization zero-initialize remaining fields
+struct Point3D {
+    i32 x
+    i32 y
+    i32 z
+}
+
+fn main() i32 {
+    // Partial initialization with positional args - remaining fields should be zero
+    Point3D p1 = Point3D { 10 }
+    
+    // p1.x = 10, p1.y = 0 (zero-initialized), p1.z = 0 (zero-initialized)
+    if p1.x != 10 {
+        return 1
+    }
+    if p1.y != 0 {
+        return 2
+    }
+    if p1.z != 0 {
+        return 3
+    }
+    
+    // Partial initialization with 2 positional args
+    Point3D p2 = Point3D { 20, 30 }
+    
+    // p2.x = 20, p2.y = 30, p2.z = 0 (zero-initialized)
+    if p2.x != 20 {
+        return 4
+    }
+    if p2.y != 30 {
+        return 5
+    }
+    if p2.z != 0 {
+        return 6
+    }
+    
+    return 0
+}

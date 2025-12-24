@@ -3,6 +3,17 @@
 
 local Expressions = {}
 
+-- Helper function to check if next token looks like a named field (IDENT followed by COLON)
+local function is_named_field_syntax(parser)
+    if parser:check("IDENT") then
+        local next_pos = parser.pos + 1
+        if parser.tokens[next_pos] and parser.tokens[next_pos].type == "COLON" then
+            return true
+        end
+    end
+    return false
+end
+
 function Expressions.parse_expression(parser)
     return Expressions.parse_assignment(parser)
 end
@@ -547,26 +558,17 @@ function Expressions.parse_primary(parser)
         local type_name = type_name_tok.value
         parser:expect("LBRACE")
         local fields = {}
-        local is_positional = nil  -- nil = unknown, true = positional, false = named
+        local positional_mode = nil  -- nil = unknown, true = positional, false = named
         
         if not parser:check("RBRACE") then
             repeat
-                -- Check if this is a named field (IDENT followed by COLON) or positional
-                local is_named_field = false
-                if parser:check("IDENT") then
-                    local next_pos = parser.pos + 1
-                    if parser.tokens[next_pos] and parser.tokens[next_pos].type == "COLON" then
-                        is_named_field = true
-                    end
-                end
-                
                 -- Determine if we're using named or positional syntax
-                if is_positional == nil then
-                    is_positional = not is_named_field
+                if positional_mode == nil then
+                    positional_mode = not is_named_field_syntax(parser)
                 end
                 
                 -- Parse based on syntax mode
-                if is_positional then
+                if positional_mode then
                     -- Positional argument: just the value
                     local value = Expressions.parse_expression(parser)
                     table.insert(fields, { value = value, positional = true })
@@ -588,7 +590,7 @@ function Expressions.parse_primary(parser)
             until false
         end
         parser:expect("RBRACE")
-        return { kind = "new_heap", type_name = type_name, fields = fields, is_positional = is_positional or false }
+        return { kind = "new_heap", type_name = type_name, fields = fields, is_positional = positional_mode or false }
     elseif tok.type == "KEYWORD" and tok.value == "array" then
         -- Stack array literal: array [ expr, expr, ... ]
         parser:advance()
@@ -793,26 +795,17 @@ end
 function Expressions.parse_struct_literal(parser, type_ident)
     parser:expect("LBRACE")
     local fields = {}
-    local is_positional = nil  -- nil = unknown, true = positional, false = named
+    local positional_mode = nil  -- nil = unknown, true = positional, false = named
     
     if not parser:check("RBRACE") then
         repeat
-            -- Check if this is a named field (IDENT followed by COLON) or positional
-            local is_named_field = false
-            if parser:check("IDENT") then
-                local next_pos = parser.pos + 1
-                if parser.tokens[next_pos] and parser.tokens[next_pos].type == "COLON" then
-                    is_named_field = true
-                end
-            end
-            
             -- Determine if we're using named or positional syntax
-            if is_positional == nil then
-                is_positional = not is_named_field
+            if positional_mode == nil then
+                positional_mode = not is_named_field_syntax(parser)
             end
             
             -- Parse based on syntax mode
-            if is_positional then
+            if positional_mode then
                 -- Positional argument: just the value
                 local value = Expressions.parse_expression(parser)
                 table.insert(fields, { value = value, positional = true })
@@ -834,7 +827,7 @@ function Expressions.parse_struct_literal(parser, type_ident)
         until false
     end
     parser:expect("RBRACE")
-    return { kind = "struct_literal", type_name = type_ident.name, fields = fields, is_positional = is_positional or false }
+    return { kind = "struct_literal", type_name = type_ident.name, fields = fields, is_positional = positional_mode or false }
 end
 
 return Expressions

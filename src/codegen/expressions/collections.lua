@@ -21,7 +21,19 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     for _, f in ipairs(expr.fields) do
         table.insert(parts, string.format(".%s = %s", f.name, gen_expr_fn(f.value)))
     end
-    local initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+    
+    local initializer
+    if #parts == 0 then
+        -- No fields: zero-initialize
+        initializer = string.format("(%s){ 0 }", expr.type_name)
+    elseif expr.is_positional then
+        -- Positional arguments: zero-initialize first, then set provided fields
+        initializer = string.format("(%s){ 0, %s }", expr.type_name, join(parts, ", "))
+    else
+        -- Named arguments: just set the fields
+        initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+    end
+    
     -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
     -- Explicit allocation with 'new' keyword
     return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
