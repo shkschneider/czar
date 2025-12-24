@@ -1,0 +1,13 @@
+struct Data {
+    i32 x
+    i32 y
+    i32 z
+}
+
+fn main() i32 {
+    Data? data = new Data { 1 }
+    #assert(data.x == 1)
+    #assert(data.y == 0)
+    #assert(data.z == 0)
+    return 0
+}
