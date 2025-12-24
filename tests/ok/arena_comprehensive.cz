@@ -1,24 +1,24 @@
 // Test arena allocator with multiple allocations and clear
 
-struct cz_alloc_arena {
+struct AllocArena {
     u64 size
     any buffer
     u64 offset
 }
 
-fn cz_alloc_arena:init() void {
+fn AllocArena:init() void {
     #unsafe {
         _cz_alloc_arena_init(self);
     }
 }
 
-fn cz_alloc_arena:fini() void {
+fn AllocArena:fini() void {
     #unsafe {
         _cz_alloc_arena_fini(self);
     }
 }
 
-fn cz_alloc_arena:alloc(u64 size) any {
+fn AllocArena:alloc(u64 size) any {
     mut any result = null
     #unsafe {
         result = _alloc(self, size);
@@ -26,7 +26,7 @@ fn cz_alloc_arena:alloc(u64 size) any {
     return result
 }
 
-fn cz_alloc_arena:ralloc(any ptr, u64 new_size) any {
+fn AllocArena:ralloc(any ptr, u64 new_size) any {
     mut any result = null
     #unsafe {
         result = _ralloc(self, ptr, new_size);
@@ -34,25 +34,25 @@ fn cz_alloc_arena:ralloc(any ptr, u64 new_size) any {
     return result
 }
 
-fn cz_alloc_arena:clear() void {
+fn AllocArena:clear() void {
     self.offset = 0
 }
 
 fn main() i32 {
     // Create mutable arena with 1024 bytes
-    mut cz_alloc_arena? arena = new cz_alloc_arena { size: 1024 }
+    mut AllocArena? arena = new AllocArena { size: 1024 }
     #defer free arena
-    
+
     // Test multiple allocations
     any p1 = arena:alloc(100)
     any p2 = arena:alloc(200)
     any p3 = arena:alloc(50)
-    
+
     // Test clear
     arena:clear()
-    
+
     // Allocate again after clear
     any p4 = arena:alloc(500)
-    
+
     return 0
 }
