@@ -591,9 +591,17 @@ function Expressions.parse_primary(parser)
             return { kind = "new_string", value = str_tok.value }
         end
         
-        -- Otherwise, it's a struct allocation: new Type { ... }
+        -- Otherwise, it's a struct allocation: new Type { ... } or new module.Type { ... }
         local type_name_tok = parser:expect("IDENT")
         local type_name = type_name_tok.value
+        
+        -- Check for module-qualified type name: module.Type
+        if parser:check("DOT") then
+            parser:advance()  -- consume DOT
+            local nested_name_tok = parser:expect("IDENT")
+            type_name = type_name .. "." .. nested_name_tok.value
+        end
+        
         parser:expect("LBRACE")
         local fields, is_positional = parse_struct_fields(parser)
         parser:expect("RBRACE")

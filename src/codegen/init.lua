@@ -427,6 +427,20 @@ function Codegen:generate()
             self:gen_enum(item)
         end
     end
+    
+    -- Generate structs and enums from imported modules
+    for import_path, stdlib_ast in pairs(self.stdlib_asts) do
+        for _, item in ipairs(stdlib_ast.items) do
+            if item.kind == "struct" then
+                -- Skip string struct (already handled as global built-in)
+                if item.name ~= "string" then
+                    self:gen_struct(item)
+                end
+            elseif item.kind == "enum" then
+                self:gen_enum(item)
+            end
+        end
+    end
 
     local has_main = false
 

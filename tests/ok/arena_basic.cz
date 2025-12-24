@@ -1,8 +1,8 @@
 #import cz.alloc.arena
 
 fn main() i32 {
-    any p = new arena.Arena { 1024 } #defer
-    any p = new arena.Arena { 2048 } #defer
-    any p = new arena.Arena { 4096 } #defer
+    any p1 = new arena.Arena { size: 1024 } #defer
+    any p2 = new arena.Arena { size: 2048 } #defer
+    any p3 = new arena.Arena { size: 4096 } #defer
     return 0
 }

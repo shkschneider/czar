@@ -25,7 +25,7 @@ fn Arena:fini() {
 }
 
 // Allocate memory from arena
-fn Arena:alloc(u64 size) -> void? {
+fn Arena:alloc(u64 size) void? {
     #unsafe {
         return cz_alloc_arena_alloc(self, size);
     }
@@ -39,7 +39,7 @@ fn Arena:reset() {
 }
 
 // Get remaining capacity
-fn Arena:remaining() -> u64 {
+fn Arena:remaining() u64 {
     #unsafe {
         return cz_alloc_arena_remaining(self);
     }

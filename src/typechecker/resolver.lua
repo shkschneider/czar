@@ -33,7 +33,25 @@ end
 
 -- Resolve a struct type
 function Resolver.resolve_struct(typechecker, type_name)
-    return typechecker.structs[type_name]
+    -- First try direct lookup
+    local struct_def = typechecker.structs[type_name]
+    if struct_def then
+        return struct_def
+    end
+    
+    -- Check if this is a module-qualified name (e.g., "arena.Arena")
+    local module_prefix, base_name = type_name:match("^([^.]+)%.([^.]+)$")
+    if module_prefix and base_name then
+        -- Check if module_prefix is an import alias
+        for _, import in ipairs(typechecker.imports or {}) do
+            if import.alias == module_prefix then
+                -- Found the import, try to get the struct by base name
+                return typechecker.structs[base_name]
+            end
+        end
+    end
+    
+    return nil
 end
 
 -- Resolve a function or method

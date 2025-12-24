@@ -17,6 +17,14 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     -- new Type { fields... }
     -- Allocate on heap and initialize fields
     -- Note: Automatic scope-based cleanup implemented - freed at scope exit
+    
+    -- Convert module-qualified type names (e.g., "arena.Arena") to base type name ("Arena")
+    local c_type_name = expr.type_name
+    if c_type_name:match("%.") then
+        -- Extract base name after the last dot
+        c_type_name = c_type_name:match("([^.]+)$")
+    end
+    
     local parts = {}
     for _, f in ipairs(expr.fields) do
         table.insert(parts, string.format(".%s = %s", f.name, gen_expr_fn(f.value)))
@@ -25,19 +33,19 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     local initializer
     if #parts == 0 then
         -- No fields: zero-initialize
-        initializer = string.format("(%s){ 0 }", expr.type_name)
+        initializer = string.format("(%s){ 0 }", c_type_name)
     elseif expr.is_positional then
         -- Positional arguments: zero-initialize first, then set provided fields
-        initializer = string.format("(%s){ 0, %s }", expr.type_name, join(parts, ", "))
+        initializer = string.format("(%s){ 0, %s }", c_type_name, join(parts, ", "))
     else
         -- Named arguments: just set the fields
-        initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+        initializer = string.format("(%s){ %s }", c_type_name, join(parts, ", "))
     end
     
     -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
     -- Explicit allocation with 'new' keyword
     return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
-        expr.type_name, ctx():alloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
+        c_type_name, ctx():alloc_call("sizeof(" .. c_type_name .. ")", true), initializer)
 end
 
 -- Generate new heap-allocated array
