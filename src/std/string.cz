@@ -39,14 +39,14 @@ fn string:init(i8? cstr) void {
     #unsafe {
         if (cstr == null) {
             // Empty string
-            self.capacity = 16;
-            self.data = (i8?)malloc(self.capacity);
-            if (self.data == null) {
+            self->capacity = 16;
+            self->data = (i8?)malloc(self->capacity);
+            if (self->data == null) {
                 printf("ERROR: String malloc failed\n");
                 exit(1);
             }
-            self.length = 0;
-            self.data[0] = '\0';
+            self->length = 0;
+            self->data[0] = '\0';
         } else {
             // Initialize from C string
             i32 len = (i32)strlen(cstr);
@@ -54,15 +54,15 @@ fn string:init(i8? cstr) void {
             while (capacity < len + 1) {
                 capacity = capacity * 2;
             }
-            self.capacity = capacity;
-            self.data = (i8?)malloc(capacity);
-            if (self.data == null) {
+            self->capacity = capacity;
+            self->data = (i8?)malloc(capacity);
+            if (self->data == null) {
                 printf("ERROR: String malloc failed\n");
                 exit(1);
             }
-            self.length = len;
-            memcpy(self.data, cstr, len);
-            self.data[len] = '\0';
+            self->length = len;
+            memcpy(self->data, cstr, len);
+            self->data[len] = '\0';
         }
     }
 }
@@ -70,9 +70,9 @@ fn string:init(i8? cstr) void {
 // Destructor: Free the string's memory
 fn string:fini() void {
     #unsafe {
-        if (self.data != null) {
-            free(self.data);
-            self.data = null;
+        if (self->data != null) {
+            free(self->data);
+            self->data = null;
         }
     }
 }
@@ -82,7 +82,7 @@ fn string:fini() void {
 // This returns the internal data pointer which is always kept null-terminated
 fn string:cstr() i8? {
     #unsafe {
-        return self.data;
+        return self->data;
     }
 }
 
