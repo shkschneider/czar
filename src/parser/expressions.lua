@@ -14,6 +14,44 @@ local function is_named_field_syntax(parser)
     return false
 end
 
+-- Helper function to parse struct fields (supports both named and positional syntax)
+local function parse_struct_fields(parser)
+    local fields = {}
+    local positional_mode = nil  -- nil = unknown, true = positional, false = named
+    
+    if not parser:check("RBRACE") then
+        repeat
+            -- Determine if we're using named or positional syntax
+            if positional_mode == nil then
+                positional_mode = not is_named_field_syntax(parser)
+            end
+            
+            -- Parse based on syntax mode
+            if positional_mode then
+                -- Positional argument: just the value
+                local value = Expressions.parse_expression(parser)
+                table.insert(fields, { value = value, positional = true })
+            else
+                -- Named argument: name: value
+                local name = parser:expect("IDENT").value
+                parser:expect("COLON")
+                local value = Expressions.parse_expression(parser)
+                table.insert(fields, { name = name, value = value, positional = false })
+            end
+            
+            if not parser:match("COMMA") then
+                break
+            end
+            -- Allow trailing comma: if next token is RBRACE, we're done
+            if parser:check("RBRACE") then
+                break
+            end
+        until false
+    end
+    
+    return fields, positional_mode or false
+end
+
 function Expressions.parse_expression(parser)
     return Expressions.parse_assignment(parser)
 end
@@ -557,40 +595,9 @@ function Expressions.parse_primary(parser)
         local type_name_tok = parser:expect("IDENT")
         local type_name = type_name_tok.value
         parser:expect("LBRACE")
-        local fields = {}
-        local positional_mode = nil  -- nil = unknown, true = positional, false = named
-        
-        if not parser:check("RBRACE") then
-            repeat
-                -- Determine if we're using named or positional syntax
-                if positional_mode == nil then
-                    positional_mode = not is_named_field_syntax(parser)
-                end
-                
-                -- Parse based on syntax mode
-                if positional_mode then
-                    -- Positional argument: just the value
-                    local value = Expressions.parse_expression(parser)
-                    table.insert(fields, { value = value, positional = true })
-                else
-                    -- Named argument: name: value
-                    local name = parser:expect("IDENT").value
-                    parser:expect("COLON")
-                    local value = Expressions.parse_expression(parser)
-                    table.insert(fields, { name = name, value = value, positional = false })
-                end
-                
-                if not parser:match("COMMA") then
-                    break
-                end
-                -- Allow trailing comma: if next token is RBRACE, we're done
-                if parser:check("RBRACE") then
-                    break
-                end
-            until false
-        end
+        local fields, is_positional = parse_struct_fields(parser)
         parser:expect("RBRACE")
-        return { kind = "new_heap", type_name = type_name, fields = fields, is_positional = positional_mode or false }
+        return { kind = "new_heap", type_name = type_name, fields = fields, is_positional = is_positional }
     elseif tok.type == "KEYWORD" and tok.value == "array" then
         -- Stack array literal: array [ expr, expr, ... ]
         parser:advance()
@@ -794,40 +801,9 @@ end
 
 function Expressions.parse_struct_literal(parser, type_ident)
     parser:expect("LBRACE")
-    local fields = {}
-    local positional_mode = nil  -- nil = unknown, true = positional, false = named
-    
-    if not parser:check("RBRACE") then
-        repeat
-            -- Determine if we're using named or positional syntax
-            if positional_mode == nil then
-                positional_mode = not is_named_field_syntax(parser)
-            end
-            
-            -- Parse based on syntax mode
-            if positional_mode then
-                -- Positional argument: just the value
-                local value = Expressions.parse_expression(parser)
-                table.insert(fields, { value = value, positional = true })
-            else
-                -- Named argument: name: value
-                local name = parser:expect("IDENT").value
-                parser:expect("COLON")
-                local value = Expressions.parse_expression(parser)
-                table.insert(fields, { name = name, value = value, positional = false })
-            end
-            
-            if not parser:match("COMMA") then
-                break
-            end
-            -- Allow trailing comma: if next token is RBRACE, we're done
-            if parser:check("RBRACE") then
-                break
-            end
-        until false
-    end
+    local fields, is_positional = parse_struct_fields(parser)
     parser:expect("RBRACE")
-    return { kind = "struct_literal", type_name = type_ident.name, fields = fields, is_positional = positional_mode or false }
+    return { kind = "struct_literal", type_name = type_ident.name, fields = fields, is_positional = is_positional }
 end
 
 return Expressions

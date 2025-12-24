@@ -12,6 +12,33 @@ Fields.get_base_type_name = nil
 Fields.type_to_string = nil
 Fields.types_compatible = nil
 
+-- Helper: Assign field names for positional arguments based on struct definition order
+local function assign_positional_field_names(expr, struct_def, struct_name, typechecker)
+    if not expr.is_positional then
+        return true
+    end
+    
+    for i, field_init in ipairs(expr.fields) do
+        if i <= #struct_def.fields then
+            field_init.name = struct_def.fields[i].name
+        else
+            -- Too many positional arguments
+            local line = expr.line or 0
+            local msg = string.format(
+                "Too many positional arguments for struct '%s': expected %d, got %d",
+                struct_name,
+                #struct_def.fields,
+                #expr.fields
+            )
+            local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+            typechecker:add_error(formatted_error)
+            return false
+        end
+    end
+    return true
+end
+
 -- Helper: Check if implicit cast is safe and wrap if needed
 local function try_implicit_cast(expected_type, value_type, value_expr, context_msg, line, typechecker)
     if Fields.types_compatible(expected_type, value_type, typechecker) then
@@ -454,25 +481,8 @@ function Fields.infer_struct_literal_type(typechecker, expr)
         end
         
         -- If using positional arguments, assign field names based on struct definition order
-        if expr.is_positional then
-            for i, field_init in ipairs(expr.fields) do
-                if i <= #struct_def.fields then
-                    field_init.name = struct_def.fields[i].name
-                else
-                    -- Too many positional arguments
-                    local line = expr.line or 0
-                    local msg = string.format(
-                        "Too many positional arguments for struct '%s': expected %d, got %d",
-                        actual_struct_name,
-                        #struct_def.fields,
-                        #expr.fields
-                    )
-                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                        Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
-                    typechecker:add_error(formatted_error)
-                    return nil
-                end
-            end
+        if not assign_positional_field_names(expr, struct_def, actual_struct_name, typechecker) then
+            return nil
         end
         
         -- Type check each field
@@ -532,25 +542,8 @@ function Fields.infer_new_type(typechecker, expr)
 
     if struct_def then
         -- If using positional arguments, assign field names based on struct definition order
-        if expr.is_positional then
-            for i, field_init in ipairs(expr.fields) do
-                if i <= #struct_def.fields then
-                    field_init.name = struct_def.fields[i].name
-                else
-                    -- Too many positional arguments
-                    local line = expr.line or 0
-                    local msg = string.format(
-                        "Too many positional arguments for struct '%s': expected %d, got %d",
-                        expr.type_name,
-                        #struct_def.fields,
-                        #expr.fields
-                    )
-                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                        Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
-                    typechecker:add_error(formatted_error)
-                    return nil
-                end
-            end
+        if not assign_positional_field_names(expr, struct_def, expr.type_name, typechecker) then
+            return nil
         end
         
         -- Type check each field (similar to struct literal)
