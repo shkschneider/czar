@@ -3,28 +3,29 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 // Print formatted string without newline
-static inline void cz_fmt_print(const char* fmt, ...) {
+static inline void _cz_fmt_print(const int8_t* fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    vprintf(fmt, args);
+    vprintf((const char*)fmt, args);
     va_end(args);
 }
 
 // Print formatted string with newline
-static inline void cz_fmt_println(const char* fmt, ...) {
+static inline void _cz_fmt_println(const int8_t* fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    vprintf(fmt, args);
+    vprintf((const char*)fmt, args);
     va_end(args);
     printf("\n");
 }
 
 // Print formatted string (alias for print)
-static inline void cz_fmt_printf(const char* fmt, ...) {
+static inline void _cz_fmt_printf(const int8_t* fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    vprintf(fmt, args);
+    vprintf((const char*)fmt, args);
     va_end(args);
 }
