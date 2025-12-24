@@ -163,15 +163,18 @@ function Functions.collect_structs_and_functions()
             local func_name = item.name
             if item.receiver_type then
                 -- Set the C name for methods now (needed for calls to #unsafe functions)
-                local c_name = item.name
-                if item.name == "init" then
-                    c_name = "czar_" .. item.receiver_type .. "_init"
-                elseif item.name == "fini" then
-                    c_name = "czar_" .. item.receiver_type .. "_fini"
-                else
-                    c_name = "czar_" .. item.receiver_type .. "_" .. item.name
+                -- Only set if not already set (module functions get c_name from import processing)
+                if not item.c_name then
+                    local c_name = item.name
+                    if item.name == "init" then
+                        c_name = "czar_" .. item.receiver_type .. "_init"
+                    elseif item.name == "fini" then
+                        c_name = "czar_" .. item.receiver_type .. "_fini"
+                    else
+                        c_name = "czar_" .. item.receiver_type .. "_" .. item.name
+                    end
+                    item.c_name = c_name
                 end
-                item.c_name = c_name
                 
                 -- This is a method, store it by receiver type and method name
                 if not ctx().functions[item.receiver_type] then
@@ -237,6 +240,12 @@ end
 -- Generate constructor call for a struct variable
 function Functions.gen_constructor_call(struct_name, var_name)
     if Functions.has_constructor(struct_name) then
+        -- Get the actual c_name from the stored function
+        local overloads = ctx().functions[struct_name]["init"]
+        if overloads and #overloads > 0 and overloads[1].c_name then
+            return string.format("%s(%s);", overloads[1].c_name, var_name)
+        end
+        -- Fallback for non-module structs
         return string.format("czar_%s_init(%s);", struct_name, var_name)
     end
     return nil
@@ -245,6 +254,12 @@ end
 -- Generate destructor call for a struct variable
 function Functions.gen_destructor_call(struct_name, var_name)
     if Functions.has_destructor(struct_name) then
+        -- Get the actual c_name from the stored function
+        local overloads = ctx().functions[struct_name]["fini"]
+        if overloads and #overloads > 0 and overloads[1].c_name then
+            return string.format("%s(%s);", overloads[1].c_name, var_name)
+        end
+        -- Fallback for non-module structs
         return string.format("czar_%s_fini(%s);", struct_name, var_name)
     end
     return nil
@@ -353,10 +368,13 @@ function Functions.gen_function_declaration(fn)
         is_overloaded = fn.is_overloaded
     end
 
+    -- Use pre-computed c_name if available (set during function collection or module import)
+    if fn.c_name then
+        c_name = fn.c_name
     -- Special handling for constructor/destructor methods
-    if fn.receiver_type then
+    elseif fn.receiver_type then
         local receiver = fn.receiver_type
-        -- Use czar_ prefix for consistency
+        -- Use czar_ prefix for non-module structs
         if name == "init" then
             c_name = "czar_" .. receiver .. "_init"
         elseif name == "fini" then
@@ -365,13 +383,12 @@ function Functions.gen_function_declaration(fn)
             -- Regular instance/static methods use czar_ prefix too
             c_name = "czar_" .. receiver .. "_" .. name
         end
+        fn.c_name = c_name
     elseif is_overloaded or fn.is_generic_instance then
         -- Generate unique C name for overloaded or generic functions
         c_name = generate_c_function_name(name, fn.params, is_overloaded, fn.generic_concrete_type)
+        fn.c_name = c_name
     end
-    
-    -- Store the C name in the function for later use
-    fn.c_name = c_name
 
     -- In explicit pointer model, return types are as declared
     local return_type_str = Codegen.Types.c_type(fn.return_type)
@@ -406,10 +423,13 @@ function Functions.gen_function(fn)
         is_overloaded = fn.is_overloaded
     end
 
+    -- Use pre-computed c_name if available (set during function collection or module import)
+    if fn.c_name then
+        c_name = fn.c_name
     -- Special handling for constructor/destructor methods
-    if fn.receiver_type then
+    elseif fn.receiver_type then
         local receiver = fn.receiver_type
-        -- Use czar_ prefix for consistency
+        -- Use czar_ prefix for non-module structs
         if name == "init" then
             c_name = "czar_" .. receiver .. "_init"
         elseif name == "fini" then
