@@ -94,9 +94,9 @@ function Expressions.infer_binary_type(typechecker, expr)
                 
                 -- Check if types are user-defined structs (not built-in types or enums)
                 local left_is_struct = not left_is_numeric and not left_is_bool and not left_is_enum and
-                                      left_type.name ~= "void" and left_type.name ~= "any"
+                                      left_type.name ~= "void" and left_type.name ~= "any" and left_type.name ~= "cstr"
                 local right_is_struct = not right_is_numeric and not right_is_bool and not right_is_enum and
-                                       right_type.name ~= "void" and right_type.name ~= "any"
+                                       right_type.name ~= "void" and right_type.name ~= "any" and right_type.name ~= "cstr"
                 
                 -- For ordering operators, require both to be numeric or both to be enums
                 if ordering_op and not (left_is_numeric and right_is_numeric) and not (left_is_enum and right_is_enum) then
