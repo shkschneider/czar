@@ -21,8 +21,7 @@ fn TestStruct:compute() i32 {
 }
 
 fn main() i32 {
-    TestStruct t = new TestStruct
-    #defer free t
+    TestStruct t = TestStruct { }
 
     i32 val = t:compute()
 
