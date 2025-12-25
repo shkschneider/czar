@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Forward declare the arena struct (defined in arena.cz)
-typedef struct cz_Arena cz_Arena;
+// Forward declare the arena struct (defined in arena.cz as Arena)
+typedef struct Arena Arena;
 
 // Constructor - initialize arena with given size
-void cz_alloc_arena_init(cz_Arena* self) {
+void cz_alloc_arena_init(Arena* self) {
     // Arena struct layout: uint64_t size, void* buffer, uint64_t offset
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
@@ -25,7 +25,7 @@ void cz_alloc_arena_init(cz_Arena* self) {
 }
 
 // Destructor - free arena memory
-void cz_alloc_arena_fini(cz_Arena* self) {
+void cz_alloc_arena_fini(Arena* self) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
@@ -39,7 +39,7 @@ void cz_alloc_arena_fini(cz_Arena* self) {
 }
 
 // Allocate memory from arena
-void* cz_alloc_arena_alloc(cz_Arena* self, uint64_t size) {
+void* cz_alloc_arena_alloc(Arena* self, uint64_t size) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
@@ -58,13 +58,13 @@ void* cz_alloc_arena_alloc(cz_Arena* self, uint64_t size) {
 }
 
 // Reset arena offset to reuse buffer
-void cz_alloc_arena_reset(cz_Arena* self) {
+void cz_alloc_arena_reset(Arena* self) {
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
     *offset_ptr = 0;
 }
 
 // Get remaining capacity
-uint64_t cz_alloc_arena_remaining(cz_Arena* self) {
+uint64_t cz_alloc_arena_remaining(Arena* self) {
     uint64_t* size_ptr = (uint64_t*)self;
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
     return *size_ptr - *offset_ptr;

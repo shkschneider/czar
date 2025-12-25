@@ -453,11 +453,18 @@ function Functions.gen_function(fn)
     ctx():push_scope()
     ctx():emit("{")
 
-    -- Add unused parameter suppressions for underscore parameters
+    -- Add unused parameter suppressions for underscore parameters and implicit self
     for i, param in ipairs(fn.params) do
         if param.name == "_" then
             local param_name = "_unused_" .. i
             ctx():emit("    (void)" .. param_name .. ";")
+        elseif param.name == "self" and fn.receiver_type then
+            -- Suppress unused warning for implicit self parameter in methods
+            ctx():emit("    (void)self;")
+            -- Add self to scope
+            local param_type = param.type
+            local is_mutable = param.mutable or false
+            ctx():add_var(param.name, param_type, is_mutable)
         else
             -- Add regular parameters to scope
             -- In explicit pointer model, parameters track mutability via param.mutable field
