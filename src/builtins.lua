@@ -7,10 +7,6 @@ local Builtins = {}
 -- Builtin function calls
 -- These are functions that get special code generation treatment
 Builtins.calls = {
-    print_i32 = function(args)
-        return string.format('printf("%%d\\n", %s)', args[1])
-    end,
-    
     -- Note: print, println, and printf have been moved to the cz module
     -- Users must now: import cz, then use cz.print(), cz.println(), cz.printf()
 }
@@ -26,14 +22,14 @@ Builtins.features = {
         example = 'type x  // Returns "i32" if x is i32',
         kind = "type_of"
     },
-    
+
     sizeof = {
         description = "Returns the size in bytes of an expression's type",
         syntax = "sizeof expr",
         example = "sizeof x  // Returns 4 for i32",
         kind = "sizeof"
     },
-    
+
     -- Type checking and casting
     is = {
         description = "Compile-time type checking",
@@ -41,21 +37,21 @@ Builtins.features = {
         example = "x is i32  // Returns true/false at compile time",
         kind = "is_check"
     },
-    
+
     as = {
         description = "Unsafe type cast",
         syntax = "expr as<Type>",
         example = "x as<i64>",
         kind = "unsafe_cast"
     },
-    
+
     ["as?"] = {
         description = "Safe type cast with fallback",
         syntax = "expr as?<Type>(fallback)",
         example = "x as?<i64>(0)",
         kind = "safe_cast"
     },
-    
+
     -- Memory operations
     clone = {
         description = "Clone an expression to heap",
@@ -63,14 +59,14 @@ Builtins.features = {
         example = "clone mystruct",
         kind = "clone"
     },
-    
+
     new = {
         description = "Allocate on heap",
         syntax = "new Type { fields... } or new [elements...]",
         example = "new Point { x: 10, y: 20 }",
         kind = "new_heap"
     },
-    
+
     free = {
         description = "Explicitly free heap memory",
         syntax = "free ptr",
