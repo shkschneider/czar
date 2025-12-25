@@ -788,7 +788,7 @@ function Expressions.parse_struct_literal(parser, type_ident)
             -- Parse positional arguments
             repeat
                 local value = Expressions.parse_expression(parser)
-                table.insert(fields, { value = value, is_positional = true })
+                table.insert(fields, { value = value })
                 if not parser:match("COMMA") then
                     break
                 end
