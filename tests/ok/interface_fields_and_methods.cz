@@ -1,12 +1,12 @@
 // Test interface with both fields and methods
 
-iface Shape {
+iface iShape {
     i32 width
     i32 height
     fn area() i32
 }
 
-struct Rectangle : Shape {
+struct Rectangle : iShape {
     i32 width
     i32 height
 }
@@ -17,23 +17,23 @@ fn Rectangle:area() i32 {
 
 fn main() i32 {
     Rectangle r = Rectangle { width: 5, height: 3 }
-    
-    if not (r is Shape) {
+
+    if not (r is iShape) {
         return 1
     }
-    
+
     i32 a = r:area()
     if a != 15 {
         return 2
     }
-    
+
     if r.width != 5 {
         return 3
     }
-    
+
     if r.height != 3 {
         return 4
     }
-    
+
     return 0
 }

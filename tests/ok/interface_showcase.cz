@@ -1,14 +1,14 @@
 // Comprehensive interface test showcasing all features
 // Tests: fields, methods, polymorphism, type checking
 
-iface Drawable {
+iface iDrawable {
     i32 x
     i32 y
     fn render() void
     fn translate(i32 dx, i32 dy) void
 }
 
-struct Circle : Drawable {
+struct Circle : iDrawable {
     i32 x
     i32 y
     i32 radius
@@ -25,36 +25,36 @@ fn Circle:translate(i32 dx, i32 dy) void {
 
 fn main() i32 {
     Circle c = Circle { x: 10, y: 20, radius: 5 }
-    
+
     // Test polymorphic type checking
-    if not (c is Drawable) {
+    if not (c is iDrawable) {
         return 1
     }
-    
+
     // Test type operator returns "struct"
     if type c != "struct" {
         return 2
     }
-    
+
     // Test field access
     if c.x != 10 {
         return 3
     }
-    
+
     if c.y != 20 {
         return 4
     }
-    
+
     // Test method calls
     c:translate(5, 10)
-    
+
     if c.x != 15 {
         return 5
     }
-    
+
     if c.y != 30 {
         return 6
     }
-    
+
     return 0
 }

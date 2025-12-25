@@ -1,6 +1,6 @@
 // Test that empty interfaces generate a warning
 
-iface EmptyInterface {
+iface iEmptyInterface {
     // Empty - should warn
 }
 

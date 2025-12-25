@@ -1,23 +1,23 @@
 // Test interface with fields
 
-iface HasValue {
+iface iHasValue {
     i32 value
 }
 
-struct Container : HasValue {
+struct Container : iHasValue {
     i32 value
 }
 
 fn main() i32 {
     Container c = Container { value: 42 }
-    
-    if not (c is HasValue) {
+
+    if not (c is iHasValue) {
         return 1
     }
-    
+
     if c.value != 42 {
         return 2
     }
-    
+
     return 0
 }

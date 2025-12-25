@@ -1,14 +1,14 @@
 // Comprehensive test for interfaces as described in the problem statement
 
-iface MyInterface {
+iface iMyInterface {
     fn tostring() char?
 }
 
-iface MyOtherIface {
+iface iMyOtherIface {
     fn toint() i32
 }
 
-struct MyStruct : MyInterface {
+struct MyStruct : iMyInterface {
     i32 value
 }
 
@@ -18,26 +18,26 @@ fn MyStruct:tostring() char? {
 
 fn main() i32 {
     MyStruct mystruct = MyStruct { value: 42 }
-    
+
     // Test: type mystruct returns "struct" for struct types
     if type mystruct != "struct" {
         return 1
     }
-    
+
     // Test: mystruct is MyStruct == true
     if not (mystruct is MyStruct) {
         return 2
     }
-    
+
     // Test: mystruct is MyInterface == true (polymorphism)
-    if not (mystruct is MyInterface) {
+    if not (mystruct is iMyInterface) {
         return 3
     }
-    
+
     // Test: mystruct is MyOtherIface == false
-    if mystruct is MyOtherIface {
+    if mystruct is iMyOtherIface {
         return 4
     }
-    
+
     return 0
 }
