@@ -48,26 +48,6 @@ function Typechecker:register_builtins()
     if not self.functions["__global__"] then
         self.functions["__global__"] = {}
     end
-
-    -- Note: print, println, and printf have been moved to the cz module
-    -- Users must: import cz, then use cz.print(), cz.println(), cz.printf()
-    -- They are NOT available as global functions
-
-    -- Register print_i32 for compatibility (legacy builtin)
-    self.functions["__global__"]["print_i32"] = {
-        {
-            name = "print_i32",
-            params = {
-                {
-                    name = "value",
-                    type = { kind = "named_type", name = "i32" },
-                    mutable = false
-                }
-            },
-            return_type = { kind = "named_type", name = "void" },
-            is_builtin = true
-        }
-    }
 end
 
 -- Main entry point: type check the entire AST
@@ -82,7 +62,7 @@ function Typechecker:check()
         -- Infer module name from directory structure
         self.module_name = Validation.infer_module_name(self)
     end
-    
+
     -- Process imports
     for _, import in ipairs(self.ast.imports or {}) do
         if import.kind == "c_import" then
@@ -107,7 +87,7 @@ function Typechecker:check()
             })
         end
     end
-    
+
     -- Pass 1: Collect all top-level declarations (structs, functions)
     Declarations.collect_declarations(self)
 
@@ -118,7 +98,7 @@ function Typechecker:check()
     if self.require_main then
         Validation.validate_main_function(self)
     end
-    
+
     -- Pass 4: Check for unused imports
     Validation.check_unused_imports(self)
 
