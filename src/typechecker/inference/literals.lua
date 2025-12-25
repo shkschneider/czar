@@ -58,14 +58,14 @@ function Literals.infer_char_type(expr)
     return inferred
 end
 
--- Infer string literal type (C-style char*)
+-- Infer string literal type (C-style cstr)
 function Literals.infer_string_type(expr)
-    local inferred = { kind = "nullable", to = { kind = "named_type", name = "char" } }
+    local inferred = { kind = "named_type", name = "cstr" }
     expr.inferred_type = inferred
     return inferred
 end
 
--- Infer interpolated string type (also char*)
+-- Infer interpolated string type (also cstr)
 function Literals.infer_interpolated_string_type(typechecker, expr, infer_expr_fn)
     -- Parse the interpolation expressions using the lexer and parser
     local lex = require("lexer")
@@ -145,8 +145,8 @@ function Literals.infer_interpolated_string_type(typechecker, expr, infer_expr_f
         infer_expr_fn(typechecker, sub_expr)
     end
     
-    -- The result is a char* string
-    local inferred = { kind = "nullable", to = { kind = "named_type", name = "char" } }
+    -- The result is a cstr string
+    local inferred = { kind = "named_type", name = "cstr" }
     expr.inferred_type = inferred
     return inferred
 end
@@ -196,7 +196,7 @@ end
 -- Infer the type of a macro
 function Literals.infer_macro_type(expr)
     if expr.name == "FILE" or expr.name == "FUNCTION" then
-        return { kind = "nullable", to = { kind = "named_type", name = "char" } }
+        return { kind = "named_type", name = "cstr" }
     elseif expr.name == "DEBUG" then
         -- #DEBUG, #DEBUG(), and #DEBUG(bool) all return bool
         return { kind = "named_type", name = "bool" }

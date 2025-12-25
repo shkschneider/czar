@@ -1,0 +1,17 @@
+// Test basic cstr type usage
+#import cz.fmt
+
+fn main() i32 {
+    // String literals are now cstr type (C char*)
+    cstr greeting = "Hello, World!"
+    
+    // Can use cstr directly with print
+    fmt.println(greeting)
+    
+    // String struct has cstr data internally
+    string s = string "test"
+    cstr c = s.cstr()
+    fmt.println(c)
+    
+    return 0
+}

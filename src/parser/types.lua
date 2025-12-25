@@ -18,6 +18,7 @@ local TYPE_KEYWORDS = {
     ["bool"] = true,
     ["void"] = true,
     ["any"] = true,
+    ["cstr"] = true,
 }
 
 Types.TYPE_KEYWORDS = TYPE_KEYWORDS

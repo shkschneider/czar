@@ -199,16 +199,16 @@ function Calls.infer_call_type(typechecker, expr)
 
         -- Special handling for string.cstr() method
         if obj_type.kind == "string" and expr.callee.field == "cstr" then
-            -- cstr() returns char* (pointer to i8)
-            local return_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
+            -- cstr() returns cstr (C char*)
+            local return_type = { kind = "named_type", name = "cstr" }
             expr.inferred_type = return_type
             return return_type
         end
 
         -- Special handling for string*.cstr() method
         if obj_type.kind == "nullable" and obj_type.to.kind == "string" and expr.callee.field == "cstr" then
-            -- cstr() returns char* (pointer to i8)
-            local return_type = { kind = "nullable", to = { kind = "named_type", name = "i8" } }
+            -- cstr() returns cstr (C char*)
+            local return_type = { kind = "named_type", name = "cstr" }
             expr.inferred_type = return_type
             return return_type
         end
