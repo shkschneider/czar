@@ -453,32 +453,43 @@ function Fields.infer_struct_literal_type(typechecker, expr)
             expr.type_name = actual_struct_name
         end
         
-        -- Type check each field
-        for _, field_init in ipairs(expr.fields) do
-            local field_type = nil
-            for _, field_def in ipairs(struct_def.fields) do
-                if field_def.name == field_init.name then
-                    field_type = field_def.type
-                    break
-                end
+        -- Handle positional initialization
+        if expr.is_positional and #expr.fields > 0 then
+            -- Positional arguments must provide ALL fields
+            if #expr.fields ~= #struct_def.fields then
+                local line = expr.line or 0
+                local msg = string.format(
+                    "Positional initialization requires all %d fields, but only %d provided",
+                    #struct_def.fields, #expr.fields
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
             end
-
-            if field_type then
+            
+            -- Map positional fields to struct fields in order
+            for i, field_init in ipairs(expr.fields) do
+                local field_def = struct_def.fields[i]
+                -- Assign the field name
+                field_init.name = field_def.name
+                
                 local value_type = Fields.infer_type(typechecker, field_init.value)
                 
                 -- Store field type for codegen
-                field_init.expected_type = field_type
+                field_init.expected_type = field_def.type
                 field_init.value_type = value_type
                 
                 local result_type, cast_node = try_implicit_cast(
-                    field_type,
+                    field_def.type,
                     value_type,
                     field_init.value,
                     string.format(
-                        "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
-                        field_init.name,
+                        "Type mismatch for field '%s' (position %d) in struct '%s': expected %s, got %s",
+                        field_def.name,
+                        i,
                         actual_struct_name,
-                        Fields.type_to_string(field_type),
+                        Fields.type_to_string(field_def.type),
                         Fields.type_to_string(value_type)
                     ),
                     expr.line or 0,
@@ -487,6 +498,44 @@ function Fields.infer_struct_literal_type(typechecker, expr)
                 if cast_node then
                     -- Replace the value with the implicit cast
                     field_init.value = cast_node
+                end
+            end
+        else
+            -- Named initialization (existing logic)
+            for _, field_init in ipairs(expr.fields) do
+                local field_type = nil
+                for _, field_def in ipairs(struct_def.fields) do
+                    if field_def.name == field_init.name then
+                        field_type = field_def.type
+                        break
+                    end
+                end
+
+                if field_type then
+                    local value_type = Fields.infer_type(typechecker, field_init.value)
+                    
+                    -- Store field type for codegen
+                    field_init.expected_type = field_type
+                    field_init.value_type = value_type
+                    
+                    local result_type, cast_node = try_implicit_cast(
+                        field_type,
+                        value_type,
+                        field_init.value,
+                        string.format(
+                            "Type mismatch for field '%s' in struct '%s': expected %s, got %s",
+                            field_init.name,
+                            actual_struct_name,
+                            Fields.type_to_string(field_type),
+                            Fields.type_to_string(value_type)
+                        ),
+                        expr.line or 0,
+                        typechecker
+                    )
+                    if cast_node then
+                        -- Replace the value with the implicit cast
+                        field_init.value = cast_node
+                    end
                 end
             end
         end

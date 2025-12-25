@@ -52,6 +52,14 @@ function Parser:expect(type_, value)
     return tok
 end
 
+function Parser:save()
+    return self.pos
+end
+
+function Parser:restore(checkpoint)
+    self.pos = checkpoint
+end
+
 -- Extract raw source text from (start_line, start_col) to (end_line, end_col)
 function Parser:extract_source_range(start_line, start_col, end_line, end_col)
     if not self.source then

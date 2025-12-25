@@ -761,23 +761,66 @@ end
 function Expressions.parse_struct_literal(parser, type_ident)
     parser:expect("LBRACE")
     local fields = {}
+    local is_positional = false
+    
     if not parser:check("RBRACE") then
-        repeat
-            local name = parser:expect("IDENT").value
-            parser:expect("COLON")
-            local value = Expressions.parse_expression(parser)
-            table.insert(fields, { name = name, value = value })
-            if not parser:match("COMMA") then
-                break
+        -- Check if this is positional or named initialization
+        -- Positional: first element is not followed by colon
+        -- Named: first element is an identifier followed by colon
+        local checkpoint = parser:save()
+        local first_is_positional = false
+        
+        if not parser:check("IDENT") then
+            -- First element is not an identifier, so must be positional
+            first_is_positional = true
+        else
+            local ident_tok = parser:advance()
+            if not parser:check("COLON") then
+                -- No colon after identifier, so positional
+                first_is_positional = true
             end
-            -- Allow trailing comma: if next token is RBRACE, we're done
-            if parser:check("RBRACE") then
-                break
-            end
-        until false
+        end
+        
+        parser:restore(checkpoint)
+        is_positional = first_is_positional
+        
+        if is_positional then
+            -- Parse positional arguments
+            repeat
+                local value = Expressions.parse_expression(parser)
+                table.insert(fields, { value = value, is_positional = true })
+                if not parser:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma: if next token is RBRACE, we're done
+                if parser:check("RBRACE") then
+                    break
+                end
+            until false
+        else
+            -- Parse named arguments
+            repeat
+                local name = parser:expect("IDENT").value
+                parser:expect("COLON")
+                local value = Expressions.parse_expression(parser)
+                table.insert(fields, { name = name, value = value })
+                if not parser:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma: if next token is RBRACE, we're done
+                if parser:check("RBRACE") then
+                    break
+                end
+            until false
+        end
     end
     parser:expect("RBRACE")
-    return { kind = "struct_literal", type_name = type_ident.name, fields = fields }
+    return { 
+        kind = "struct_literal", 
+        type_name = type_ident.name, 
+        fields = fields,
+        is_positional = is_positional
+    }
 end
 
 return Expressions
