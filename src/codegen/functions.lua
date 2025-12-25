@@ -305,9 +305,19 @@ function Functions.function_returns_null(fn)
     return check_block(fn.body)
 end
 
-function Functions.gen_params(params)
+function Functions.gen_params(params, is_c_varargs)
     local parts = {}
+    local has_c_varargs_param = false
+    
     for i, p in ipairs(params) do
+        -- Check if this is a C varargs parameter
+        if p.type.kind == "c_varargs" then
+            has_c_varargs_param = true
+            -- C varargs are represented as ... in C (no name needed in signature)
+            table.insert(parts, "...")
+            break  -- C varargs must be last
+        end
+        
         local param_name = p.name
         -- Generate unique name for underscore parameters
         if param_name == "_" then
@@ -316,7 +326,7 @@ function Functions.gen_params(params)
 
         local type_str = Codegen.Types.c_type(p.type)
         
-        -- Handle varargs: generate pointer and count parameters (like slices)
+        -- Handle Czar-style varargs: generate pointer and count parameters (like slices)
         if p.type.kind == "varargs" then
             local element_type = Codegen.Types.c_type(p.type.element_type)
             -- Varargs are read-only (const), generate pointer and count
@@ -349,6 +359,7 @@ function Functions.gen_params(params)
             table.insert(parts, string.format("%s %s", type_str, param_name))
         end
     end
+    
     return join(parts, ", ")
 end
 
@@ -456,6 +467,13 @@ function Functions.gen_function(fn)
 
     -- Add unused parameter suppressions for underscore parameters and implicit self
     for i, param in ipairs(fn.params) do
+        -- Skip C varargs parameters - they're not real variables in C
+        if param.type.kind == "c_varargs" then
+            -- C varargs don't need to be added to scope
+            -- The 'args' name is just a placeholder and will be replaced with va_list in #unsafe blocks
+            goto continue
+        end
+        
         if param.name == "_" then
             local param_name = "_unused_" .. i
             ctx():emit("    (void)" .. param_name .. ";")
@@ -474,6 +492,7 @@ function Functions.gen_function(fn)
 
             ctx():add_var(param.name, param_type, is_mutable)
         end
+        ::continue::
     end
 
     -- If this is main function, add stdlib init calls and debug allocator setup

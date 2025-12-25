@@ -9,29 +9,42 @@
 // Print formatted string without newline
 // Args:
 //   format: i8? - format string with printf-style placeholders
-// Additional arguments are passed through to the C varargs function
-fn print(i8? format, any... args) void {
+//   ... args - C-style variadic arguments
+// NOTE: This uses C varargs (...) - arguments are not type-checked by Czar
+fn print(i8? format, ... args) void {
     #unsafe {
-        _cz_fmt_print(format, args);
+        va_list args;
+        va_start(args, format);
+        vprintf((const char*)format, args);
+        va_end(args);
     }
 }
 
 // Print formatted string with newline
 // Args:
 //   format: i8? - format string with printf-style placeholders
-// Additional arguments are passed through to the C varargs function
-fn println(i8? format, any... args) void {
+//   ... args - C-style variadic arguments
+// NOTE: This uses C varargs (...) - arguments are not type-checked by Czar
+fn println(i8? format, ... args) void {
     #unsafe {
-        _cz_fmt_println(format, args);
+        va_list args;
+        va_start(args, format);
+        vprintf((const char*)format, args);
+        va_end(args);
+        printf("\n");
     }
 }
 
 // Print formatted string (alias for print)
 // Args:
 //   format: i8? - format string with printf-style placeholders
-// Additional arguments are passed through to the C varargs function
-fn printf(i8? format, any... args) void {
+//   ... args - C-style variadic arguments
+// NOTE: This uses C varargs (...) - arguments are not type-checked by Czar
+fn printf(i8? format, ... args) void {
     #unsafe {
-        _cz_fmt_printf(format, args);
+        va_list args;
+        va_start(args, format);
+        vprintf((const char*)format, args);
+        va_end(args);
     }
 }

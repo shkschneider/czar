@@ -359,11 +359,26 @@ function Declarations.parse_function(parser)
     if not parser:check("RPAREN") then
         repeat
             local is_mut = parser:match("KEYWORD", "mut") ~= nil
+            
+            -- Check for C-style varargs (... args) - ellipsis before type
+            local is_c_varargs = parser:match("ELLIPSIS") ~= nil
+            if is_c_varargs then
+                -- C-style varargs: ... args
+                local param_name = parser:expect("IDENT").value
+                local param_type = { kind = "c_varargs" }  -- Special marker for C varargs
+                table.insert(params, { name = param_name, type = param_type, mutable = false })
+                -- C varargs must be the last parameter
+                if not parser:check("RPAREN") then
+                    error(string.format("C varargs parameter '%s' must be the last parameter", param_name))
+                end
+                break
+            end
+            
             local param_type = Types.parse_type_with_map_shorthand(parser)
-            -- Check for varargs syntax (Type...)
+            -- Check for Czar-style varargs syntax (Type... args)
             local is_varargs = parser:match("ELLIPSIS") ~= nil
             if is_varargs then
-                -- Convert type to varargs type
+                -- Convert type to Czar varargs type (becomes array + count in C)
                 param_type = { kind = "varargs", element_type = param_type }
             end
             -- In explicit pointer model, mut is just a mutability flag, not an implicit pointer
