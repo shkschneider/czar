@@ -1,0 +1,64 @@
+// Comprehensive test of refined struct initialization semantics
+// This tests all the requirements from the problem statement
+
+struct Vec2 {
+    u8 x
+    u8 y
+}
+
+struct Vec3 {
+    u8 x
+    u8 y
+    u8 z
+}
+
+fn Vec2:init() void {
+    // Constructor can initialize or modify fields
+    // By the time this is called, fields are already zeroed
+    // and any provided values are set
+    self.x = self.x + 10  // Modify x by adding 10
+}
+
+fn main() i32 {
+    mut i32 result = 0
+    
+    // Test 1: Zero-initialization (empty braces)
+    Vec2 v1 = Vec2 {}
+    #assert(v1.x == 10)  // Constructor added 10 to zero
+    #assert(v1.y == 0)   // Uninitialized field is zero
+    result = result + 1
+    
+    // Test 2: Named field initialization
+    Vec2 v2 = Vec2 { x: 1, y: 2 }
+    #assert(v2.x == 11)  // 1 + 10 from constructor
+    #assert(v2.y == 2)
+    result = result + 1
+    
+    // Test 3: Positional initialization (all fields required)
+    Vec2 v3 = Vec2 { 3, 4 }
+    #assert(v3.x == 13)  // 3 + 10 from constructor
+    #assert(v3.y == 4)
+    result = result + 1
+    
+    // Test 4: Partial named initialization (unspecified fields are zero)
+    Vec2 v4 = Vec2 { y: 5 }
+    #assert(v4.x == 10)  // 0 + 10 from constructor
+    #assert(v4.y == 5)
+    result = result + 1
+    
+    // Test 5: Multiple fields with positional
+    Vec3 v5 = Vec3 { 1, 2, 3 }
+    #assert(v5.x == 1)
+    #assert(v5.y == 2)
+    #assert(v5.z == 3)
+    result = result + 1
+    
+    // Test 6: Heap allocation with constructor
+    Vec2? v6 = new Vec2 { x: 7, y: 8 }
+    #assert(v6.x == 17)  // 7 + 10 from constructor
+    #assert(v6.y == 8)
+    result = result + 1
+    
+    // Should return 0 if all 6 tests pass
+    return result - 6
+}
