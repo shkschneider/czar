@@ -8,7 +8,6 @@
 #import C : stdio.h
 
 fn print(string fmt, any... args) {
-    #unsafe { printf("print called") }
     _cz_print(fmt:cstr(), args)
 }
 
