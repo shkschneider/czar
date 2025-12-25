@@ -10,9 +10,9 @@
 // Args:
 //   format: i8? - format string with printf-style placeholders
 // Additional arguments are passed through to the C varargs function
-fn print(i8? format) void {
+fn print(i8? format, any... args) void {
     #unsafe {
-        _cz_fmt_print(format);
+        _cz_fmt_print(format, args);
     }
 }
 
@@ -20,9 +20,9 @@ fn print(i8? format) void {
 // Args:
 //   format: i8? - format string with printf-style placeholders
 // Additional arguments are passed through to the C varargs function
-fn println(i8? format) void {
+fn println(i8? format, any... args) void {
     #unsafe {
-        _cz_fmt_println(format);
+        _cz_fmt_println(format, args);
     }
 }
 
@@ -30,8 +30,8 @@ fn println(i8? format) void {
 // Args:
 //   format: i8? - format string with printf-style placeholders
 // Additional arguments are passed through to the C varargs function
-fn printf(i8? format) void {
+fn printf(i8? format, any... args) void {
     #unsafe {
-        _cz_fmt_printf(format);
+        _cz_fmt_printf(format, args);
     }
 }
