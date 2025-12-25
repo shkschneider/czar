@@ -51,7 +51,7 @@ function Statements.gen_statement(stmt)
                 table.insert(parts, cleanup_code .. " ")
             end
             if need_memory_stats then
-                table.insert(parts, "_czar_print_memory_stats(); ")
+                table.insert(parts, "_cz_print_memory_stats(); ")
             end
             table.insert(parts, "return _ret_val; }")
             return table.concat(parts, "")

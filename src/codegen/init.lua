@@ -324,7 +324,7 @@ function Codegen:generate()
     self:emit("")
 
     -- Global flag for runtime #DEBUG() support
-    self:emit(string.format("static bool czar_debug_flag = %s;", self.debug and "true" or "false"))
+    self:emit(string.format("static bool cz_debug_flag = %s;", self.debug and "true" or "false"))
     self:emit("")
 
     -- Generate memory tracking helpers only for cz.alloc.debug

@@ -210,7 +210,7 @@ function Macros.generate_expression(expr, ctx)
         return string.format("\"%s\"", func_name)
     elseif macro_name == "DEBUG" then
         -- #DEBUG without parens - read current state
-        return "czar_debug_flag"
+        return "cz_debug_flag"
     else
         error(string.format("Unknown macro: #%s at %d:%d", expr.name, expr.line, expr.col))
     end
@@ -229,10 +229,10 @@ function Macros.generate_call(expr, ctx)
             local Expressions = require("codegen.expressions")
             local arg_value = Expressions.gen_expr(expr.arg)
             -- Generate code that sets a runtime flag and returns the new value
-            return string.format("({ czar_debug_flag = %s; czar_debug_flag; })", arg_value)
+            return string.format("({ cz_debug_flag = %s; cz_debug_flag; })", arg_value)
         else
             -- #DEBUG() - read debug state (same as #DEBUG without parens)
-            return "czar_debug_flag"
+            return "cz_debug_flag"
         end
     else
         error(string.format("Unknown macro call: #%s() at %d:%d", expr.name, expr.line, expr.col))
@@ -308,8 +308,8 @@ function Macros.generate_statement(stmt, ctx)
         end
         runtime_prefix = runtime_prefix .. string.format("at %s:%d ", filename, line)
 
-        -- Generate code that prints at runtime only if czar_debug_flag is true
-        return string.format("if (czar_debug_flag) { fprintf(stderr, \"%s\" %s \"\\n\"); }",
+        -- Generate code that prints at runtime only if cz_debug_flag is true
+        return string.format("if (cz_debug_flag) { fprintf(stderr, \"%s\" %s \"\\n\"); }",
                            runtime_prefix, runtime_message)
     else
         error(string.format("Unknown statement macro: %s at %d:%d", stmt.kind, stmt.line, stmt.col))

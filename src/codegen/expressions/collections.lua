@@ -70,7 +70,7 @@ function Collections.gen_new_map(expr, gen_expr_fn)
     local value_type_str = ctx():c_type(value_type)
     
     -- Generate map struct type name
-    local map_type_name = "czar_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
+    local map_type_name = "cz_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
     
     -- Register map type for later struct generation
     if not ctx().map_types then
@@ -142,7 +142,7 @@ function Collections.gen_new_pair(expr, gen_expr_fn)
     local right_type_str = ctx():c_type(right_type)
     
     -- Generate pair struct type name
-    local pair_type_name = "czar_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
+    local pair_type_name = "cz_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
     
     -- Register pair type for later struct generation
     if not ctx().pair_types then
@@ -181,7 +181,7 @@ function Collections.gen_pair_literal(expr, gen_expr_fn)
     local right_type_str = ctx():c_type(right_type)
     
     -- Generate pair struct type name
-    local pair_type_name = "czar_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
+    local pair_type_name = "cz_pair_" .. left_type_str:gsub("%*", "ptr") .. "_" .. right_type_str:gsub("%*", "ptr")
     
     -- Register pair type for later struct generation
     if not ctx().pair_types then
@@ -212,7 +212,7 @@ function Collections.gen_map_literal(expr, gen_expr_fn)
     local value_type_str = ctx():c_type(value_type)
     
     -- Generate map struct type name
-    local map_type_name = "czar_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
+    local map_type_name = "cz_map_" .. key_type_str:gsub("%*", "ptr") .. "_" .. value_type_str:gsub("%*", "ptr")
     
     -- Register map type for later struct generation
     if not ctx().map_types then
@@ -248,8 +248,8 @@ function Collections.gen_new_string(expr)
     
     -- Generate code: malloc + initialize
     local statements = {}
-    table.insert(statements, string.format("czar_string* _str = %s", 
-        ctx():alloc_call("sizeof(czar_string)", true)))
+    table.insert(statements, string.format("cz_string* _str = %s", 
+        ctx():alloc_call("sizeof(cz_string)", true)))
     -- Allocate capacity with room to grow (next power of 2, minimum 16)
     local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
     table.insert(statements, string.format("_str->data = %s",
@@ -280,7 +280,7 @@ function Collections.gen_string_literal(expr)
         ctx():alloc_call(tostring(capacity), false)))
     table.insert(statements, string.format("memcpy(_data, \"%s\", %d)", str_value, str_len))
     table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
-    table.insert(statements, string.format("(czar_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
+    table.insert(statements, string.format("(cz_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
     
     return string.format("({ %s; })", join(statements, "; "))
 end

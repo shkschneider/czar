@@ -15,8 +15,8 @@ fn main() i32 {
     i32 cap2 = s2.capacity
 
     // Get C-style string
-    fmt.print(s1.cstr())
-    fmt.print(s2.cstr())
+    fmt.println(s1.cstr())
+    fmt.println(s2.cstr())
 
     // Verify lengths
     if len1 != 13 {
