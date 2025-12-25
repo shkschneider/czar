@@ -6,7 +6,7 @@
 //
 // This replaces the old `string` keyword (which was just an alias for char*)
 // with a proper struct type that includes length and capacity.
-// 
+//
 // NOTE: string is a GLOBAL BUILT-IN TYPE, not module-scoped
 // ============================================================
 // Unlike other stdlib modules (cz.fmt, cz.os), string does NOT use #module.
@@ -26,7 +26,7 @@
 //   length: i32 - number of bytes (not characters)
 //   capacity: i32 - allocated capacity in bytes
 struct string {
-    i8? data
+    prv i8? data
     i32 length
     i32 capacity
 }
