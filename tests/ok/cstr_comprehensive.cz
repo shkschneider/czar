@@ -1,0 +1,45 @@
+// Comprehensive test for cstr type (C char*)
+#import cz.fmt
+
+// Function that accepts cstr parameter
+fn print_cstr(cstr message) {
+    fmt.println(message)
+}
+
+// Function that returns cstr
+fn get_greeting() cstr {
+    return "Greetings from cstr function!"
+}
+
+fn main() i32 {
+    // 1. String literals are now cstr type (C char*)
+    cstr literal = "Hello, cstr!"
+    fmt.println(literal)
+    
+    // 2. Pass cstr to function
+    print_cstr("Function parameter test")
+    
+    // 3. Get cstr from function
+    cstr greeting = get_greeting()
+    fmt.println(greeting)
+    
+    // 4. String struct has cstr data internally
+    string s = string "test string"
+    cstr c = s.cstr()
+    fmt.println(c)
+    
+    // 5. String interpolation produces cstr
+    i32 num = 42
+    cstr interpolated = "The answer is {num}"
+    fmt.println(interpolated)
+    
+    // 6. Macros return cstr
+    cstr file = #FILE
+    cstr func = #FUNCTION
+    fmt.print("File: ")
+    fmt.println(file)
+    fmt.print("Function: ")
+    fmt.println(func)
+    
+    return 0
+}
