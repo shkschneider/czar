@@ -433,6 +433,7 @@ function Functions.gen_function(fn)
 
     -- Track current function for #FUNCTION directive
     ctx().current_function = name
+    ctx().current_receiver = fn.receiver_type  -- Track if this is a method
 
     -- In explicit pointer model, return types are as declared
     local return_type_str = Codegen.Types.c_type(fn.return_type)
@@ -520,6 +521,7 @@ function Functions.gen_function(fn)
     ctx():emit("}")
     ctx():pop_scope()
     ctx().current_function = nil  -- Clear current function tracking
+    ctx().current_receiver = nil  -- Clear current receiver tracking
     ctx():emit("")
 end
 

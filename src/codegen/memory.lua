@@ -168,7 +168,9 @@ function Memory.check_unused_vars()
         local scope = ctx().scope_stack[#ctx().scope_stack]
         for var_name, var_info in pairs(scope) do
             -- Skip underscore variables (intentionally unused)
-            if not var_info.used and var_name ~= "_" and not var_name:match("^_unused_") then
+            -- Skip self parameter in methods (implicit parameter that may not be used)
+            local is_self_in_method = (var_name == "self" and ctx().current_receiver ~= nil)
+            if not var_info.used and var_name ~= "_" and not var_name:match("^_unused_") and not is_self_in_method then
                 Warnings.emit(
                     ctx().source_file,
                     nil,  -- We don't have line info stored yet
