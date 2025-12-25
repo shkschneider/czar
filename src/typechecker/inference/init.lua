@@ -199,7 +199,7 @@ function infer_type(typechecker, expr)
         if expr.kind == "sizeof" then
             result_type = { kind = "named_type", name = "i32" }
         else
-            result_type = { kind = "nullable", to = { kind = "named_type", name = "char" } }
+            result_type = { kind = "named_type", name = "cstr" }
         end
         expr.inferred_type = result_type
         return result_type

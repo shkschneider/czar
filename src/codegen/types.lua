@@ -79,6 +79,8 @@ function Types.c_type(type_node)
             return "void"
         elseif name == "any" then
             return "void*"
+        elseif name == "cstr" then
+            return "char*"
         else
             return name
         end
@@ -190,7 +192,7 @@ function Types.infer_type(expr)
     elseif expr.kind == "bool" then
         return { kind = "named_type", name = "bool" }
     elseif expr.kind == "string" then
-        return { kind = "nullable", to = { kind = "named_type", name = "char" } }
+        return { kind = "named_type", name = "cstr" }
     elseif expr.kind == "null" then
         return { kind = "nullable", to = { kind = "named_type", name = "void" } }
     elseif expr.kind == "identifier" then

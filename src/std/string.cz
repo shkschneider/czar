@@ -1,12 +1,12 @@
 #module cz
 
 struct string {
-    prv u8? data
+    prv cstr data
     u32 length
     u32 capacity
 }
 
-fn string:cstr() u8? {
+fn string:cstr() cstr {
     #unsafe {
         return _string_cstr(self);
     }
