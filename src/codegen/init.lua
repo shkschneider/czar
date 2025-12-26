@@ -65,6 +65,7 @@ end
 -- Map module imports to their .cz file paths
 local function get_stdlib_file_path(import_path)
     local module_to_file = {
+        ["cz"] = "src/std/cz.cz",
         ["cz.os"] = "src/std/os.cz",
         ["cz.fmt"] = "src/std/fmt.cz",
         ["cz.alloc"] = "src/std/alloc/ialloc.cz",
