@@ -1,13 +1,13 @@
 #module cz
 
-struct string {
+pub struct String {
     prv cstr data
     u32 length
     u32 capacity
 }
 
-fn string:cstr() cstr {
+pub fn String:cstr() cstr {
     #unsafe {
-        return _string_cstr(self);
+        return cz_string_cstr(self);
     }
 }

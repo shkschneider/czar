@@ -1,25 +1,25 @@
-// Test string:lower() method
+// Test String:lower() method
 fn main() i32 {
-    string? s = new string { "Hello World" }
-    
+    String? s = new String { "Hello World" }
+
     // Convert to lowercase
     s:lower()
-    
+
     // Check length is unchanged
     if s.length != 11 {
         free s
         return 1
     }
-    
+
     // Verify content is "hello world"
-    string expected = string { "hello world" }
-    i32 match = s.prefix(expected)
-    
+    String expected = String { "hello world" }
+    i32 match = s:prefix(expected)
+
     free s
-    
+
     if match != 1 {
         return 2
     }
-    
+
     return 0
 }

@@ -1,4 +1,4 @@
-// Test string interpolation with mustache-like syntax
+// Test String interpolation with mustache-like syntax
 #import cz.fmt
 
 fn main() i32 {

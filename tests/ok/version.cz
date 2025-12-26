@@ -1,11 +1,5 @@
 #import cz.fmt
 
-struct Version {
-    u32 major
-    u32 minor
-    u32 patch
-}
-
 fn main() i32 {
     Version v = Version { 1, 2, 3 }
     u32 maj = v.major

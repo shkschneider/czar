@@ -15,24 +15,24 @@ fn main() i32 {
     // 1. String literals are now cstr type (C char*)
     cstr literal = "Hello, cstr!"
     fmt.println(literal)
-    
+
     // 2. Pass cstr to function
     print_cstr("Function parameter test")
-    
+
     // 3. Get cstr from function
     cstr greeting = get_greeting()
     fmt.println(greeting)
-    
+
     // 4. String struct has cstr data internally
-    string s = string { "test string" }
-    cstr c = s.cstr()
+    String s = String { "test String" }
+    cstr c = s:cstr()
     fmt.println(c)
-    
+
     // 5. String interpolation produces cstr
     i32 num = 42
     cstr interpolated = "The answer is {num}"
     fmt.println(interpolated)
-    
+
     // 6. Macros return cstr
     cstr file = #FILE
     cstr func = #FUNCTION
@@ -40,6 +40,6 @@ fn main() i32 {
     fmt.println(file)
     fmt.print("Function: ")
     fmt.println(func)
-    
+
     return 0
 }

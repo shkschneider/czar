@@ -10,7 +10,7 @@ local function type_to_signature_string(type_node)
     if not type_node then
         return "unknown"
     end
-    
+
     if type_node.kind == "named_type" then
         return type_node.name
     elseif type_node.kind == "nullable" then
@@ -24,7 +24,7 @@ local function type_to_signature_string(type_node)
     elseif type_node.kind == "string" then
         return "string"
     end
-    
+
     return "unknown"
 end
 
@@ -46,10 +46,10 @@ local function validate_overload_single_type_variance(existing_overloads, new_fu
     if #existing_overloads == 0 then
         return true, nil
     end
-    
+
     -- Check against first existing overload
     local first_existing = existing_overloads[1]
-    
+
     -- Must have same number of parameters
     if #first_existing.params ~= #new_func.params then
         return false, string.format(
@@ -57,11 +57,11 @@ local function validate_overload_single_type_variance(existing_overloads, new_fu
             func_name, first_existing.line or 0
         )
     end
-    
+
     -- Find which parameter positions differ and what type changes occur
     local type_changes = {}  -- Maps old_type -> new_type for each change
     local all_same = true
-    
+
     for i = 1, #first_existing.params do
         local old_type_str = type_to_signature_string(first_existing.params[i].type)
         local new_type_str = type_to_signature_string(new_func.params[i].type)
@@ -72,7 +72,7 @@ local function validate_overload_single_type_variance(existing_overloads, new_fu
             table.insert(type_changes, change_sig)
         end
     end
-    
+
     -- Check if signature is identical (duplicate)
     if all_same then
         return false, string.format(
@@ -80,7 +80,7 @@ local function validate_overload_single_type_variance(existing_overloads, new_fu
             func_name, first_existing.line or 0
         )
     end
-    
+
     -- Validate single type variance: all type changes must be the same
     -- This means if we have (u8,u8)->(f32,f32), both params change u8->f32
     if #type_changes > 1 then
@@ -94,7 +94,7 @@ local function validate_overload_single_type_variance(existing_overloads, new_fu
             end
         end
     end
-    
+
     return true, nil
 end
 
@@ -103,7 +103,7 @@ local function replace_generic_type(type_node, concrete_type)
     if not type_node then
         return nil
     end
-    
+
     if type_node.kind == "named_type" then
         if type_node.name == "T" then
             -- Replace T with concrete type
@@ -114,14 +114,14 @@ local function replace_generic_type(type_node, concrete_type)
     elseif type_node.kind == "nullable" then
         return { kind = "nullable", to = replace_generic_type(type_node.to, concrete_type) }
     elseif type_node.kind == "array" then
-        return { 
-            kind = "array", 
+        return {
+            kind = "array",
             element_type = replace_generic_type(type_node.element_type, concrete_type),
             size = type_node.size
         }
     elseif type_node.kind == "slice" then
-        return { 
-            kind = "slice", 
+        return {
+            kind = "slice",
             element_type = replace_generic_type(type_node.element_type, concrete_type)
         }
     elseif type_node.kind == "varargs" then
@@ -139,9 +139,9 @@ local function expand_generic_function(item, typechecker)
     if not item.generic_types or #item.generic_types == 0 then
         return {item}  -- Not generic, return as-is
     end
-    
+
     local expanded = {}
-    
+
     for _, concrete_type in ipairs(item.generic_types) do
         -- Deep copy the function item
         local expanded_func = {
@@ -157,7 +157,7 @@ local function expand_generic_function(item, typechecker)
             is_generic_instance = true,
             generic_concrete_type = concrete_type
         }
-        
+
         -- Replace T with concrete type in parameters
         for _, param in ipairs(item.params) do
             local new_param = {
@@ -168,13 +168,13 @@ local function expand_generic_function(item, typechecker)
             }
             table.insert(expanded_func.params, new_param)
         end
-        
+
         -- Replace T with concrete type in return type
         expanded_func.return_type = replace_generic_type(item.return_type, concrete_type)
-        
+
         table.insert(expanded, expanded_func)
     end
-    
+
     return expanded
 end
 
@@ -182,35 +182,35 @@ end
 function Declarations.collect_declarations(typechecker)
     local Warnings = require("warnings")
     local new_items = {}  -- Build new items list with expanded generics
-    
+
     -- Helper function to check if a name is TitleCase (starts with uppercase)
     local function is_titlecase(name)
         return name:match("^%u")
     end
-    
+
     -- Helper function to check if a name has underscores
     local function has_underscore(name)
         return name:match("_")
     end
-    
+
     -- Helper function to check if interface name follows iInterfaceName format
     local function is_valid_interface_name(name)
         -- Should start with lowercase 'i' followed by an uppercase letter
         return name:match("^i%u")
     end
-    
+
     -- Helper function to check if a name is snake_case (lowercase with underscores)
     local function is_snake_case(name)
         -- Should be all lowercase, can have underscores, no uppercase letters
         return not name:match("%u")
     end
-    
+
     for _, item in ipairs(typechecker.ast.items) do
         if item.kind == "struct" then
             -- Check naming convention: structs MUST be TitleCase (now enforced as error)
             if not is_titlecase(item.name) then
                 local msg = string.format(
-                    "Struct '%s' must be TitleCase (e.g., '%s'). This is required to avoid parser ambiguity with statement blocks.",
+                    "Struct '%s' must be TitleCase (e.g., '%s').",
                     item.name,
                     item.name:sub(1,1):upper() .. item.name:sub(2)
                 )
@@ -218,12 +218,12 @@ function Declarations.collect_declarations(typechecker)
                     Errors.ErrorType.INVALID_STRUCT_NAME, msg, typechecker.source_path)
                 typechecker:add_error(formatted_error)
             end
-            
+
             -- Check naming convention: structs should not have underscores (use PascalCase)
             if has_underscore(item.name) then
                 local suggested_name = item.name:gsub("_(%l)", function(c) return c:upper() end):gsub("_", "")
                 local msg = string.format(
-                    "Struct '%s' must not contain underscores. Use PascalCase instead (e.g., '%s'). This is required for consistency.",
+                    "Struct '%s' must not contain underscores. Use PascalCase instead (e.g., '%s').",
                     item.name,
                     suggested_name
                 )
@@ -231,7 +231,7 @@ function Declarations.collect_declarations(typechecker)
                     Errors.ErrorType.INVALID_STRUCT_NAME, msg, typechecker.source_path)
                 typechecker:add_error(formatted_error)
             end
-            
+
             -- Check for duplicate struct definition
             if typechecker.structs[item.name] then
                 local line = item.line or 0
@@ -281,7 +281,7 @@ function Declarations.collect_declarations(typechecker)
                     nil
                 )
             end
-            
+
             -- Check naming convention: interfaces should not have underscores (use iPascalCase)
             if has_underscore(item.name) then
                 -- Remove underscores and convert to PascalCase, keeping the 'i' prefix if present
@@ -301,7 +301,7 @@ function Declarations.collect_declarations(typechecker)
                     nil
                 )
             end
-            
+
             -- Check for duplicate interface definition
             if typechecker.ifaces[item.name] then
                 local line = item.line or 0
@@ -330,7 +330,7 @@ function Declarations.collect_declarations(typechecker)
                         method_names[method.name] = true
                     end
                 end
-                
+
                 -- Check for duplicate field names within the interface
                 local field_names = {}
                 for _, field in ipairs(item.fields or {}) do
@@ -347,7 +347,7 @@ function Declarations.collect_declarations(typechecker)
                         field_names[field.name] = true
                     end
                 end
-                
+
                 -- Check for name conflicts between fields and methods
                 for _, field in ipairs(item.fields or {}) do
                     if method_names[field.name] then
@@ -361,7 +361,7 @@ function Declarations.collect_declarations(typechecker)
                         typechecker:add_error(formatted_error)
                     end
                 end
-                
+
                 -- Warn if interface is empty (useless interface)
                 local has_fields = item.fields and #item.fields > 0
                 local has_methods = item.methods and #item.methods > 0
@@ -376,7 +376,7 @@ function Declarations.collect_declarations(typechecker)
                         nil
                     )
                 end
-                
+
                 typechecker.ifaces[item.name] = item
             end
             table.insert(new_items, item)  -- Keep interface in new items
@@ -446,15 +446,15 @@ function Declarations.collect_declarations(typechecker)
 
             -- Expand generic functions into concrete overloads
             local functions_to_add = expand_generic_function(item, typechecker)
-            
+
             for _, func in ipairs(functions_to_add) do
                 -- Support function overloading: store as array of overloads
                 if not typechecker.functions[type_name][func.name] then
                     typechecker.functions[type_name][func.name] = {}
                 end
-                
+
                 local existing_overloads = typechecker.functions[type_name][func.name]
-                
+
                 -- Validate overload (single type variance check)
                 local valid, err_msg = validate_overload_single_type_variance(existing_overloads, func, func.name)
                 if not valid then
@@ -474,10 +474,10 @@ function Declarations.collect_declarations(typechecker)
             table.insert(new_items, item)  -- Keep macro in new items
         end
     end
-    
+
     -- Replace AST items with expanded items
     typechecker.ast.items = new_items
-    
+
     -- Validate interface implementations
     Declarations.validate_interface_implementations(typechecker)
 end
@@ -497,7 +497,7 @@ function Declarations.validate_interface_implementations(typechecker)
         if struct_def.implements then
             local iface_name = struct_def.implements
             local iface_def = typechecker.ifaces[iface_name]
-            
+
             if not iface_def then
                 local msg = string.format(
                     "Struct '%s' implements undefined interface '%s'",
@@ -511,13 +511,13 @@ function Declarations.validate_interface_implementations(typechecker)
                 for _, iface_field in ipairs(iface_def.fields or {}) do
                     local field_name = iface_field.name
                     local found = false
-                    
+
                     for _, struct_field in ipairs(struct_def.fields) do
                         if struct_field.name == field_name then
                             -- Check that field types match
                             local struct_field_type_str = type_to_signature_string(struct_field.type)
                             local iface_field_type_str = type_to_signature_string(iface_field.type)
-                            
+
                             if struct_field_type_str == iface_field_type_str then
                                 found = true
                                 break
@@ -534,7 +534,7 @@ function Declarations.validate_interface_implementations(typechecker)
                             end
                         end
                     end
-                    
+
                     if not found then
                         local msg = string.format(
                             "Struct '%s' does not have field '%s' required by interface '%s'",
@@ -545,14 +545,14 @@ function Declarations.validate_interface_implementations(typechecker)
                         typechecker:add_error(formatted_error)
                     end
                 end
-                
+
                 -- Check that all interface methods are implemented by the struct
                 local struct_methods = typechecker.functions[struct_name] or {}
-                
+
                 for _, iface_method in ipairs(iface_def.methods) do
                     local method_name = iface_method.name
                     local impl_overloads = struct_methods[method_name]
-                    
+
                     if not impl_overloads or #impl_overloads == 0 then
                         local msg = string.format(
                             "Struct '%s' does not implement method '%s' required by interface '%s'",
@@ -568,10 +568,10 @@ function Declarations.validate_interface_implementations(typechecker)
                             -- Compare signatures (skip 'self' parameter for instance methods)
                             local impl_params = impl_func.params
                             local iface_params = iface_method.params
-                            
+
                             -- Get parameter count, skipping 'self' if present
                             local impl_param_count, impl_start_idx = get_method_param_count(impl_params, true)
-                            
+
                             -- Check parameter count
                             if impl_param_count == #iface_params then
                                 -- Check each parameter type
@@ -586,18 +586,18 @@ function Declarations.validate_interface_implementations(typechecker)
                                         break
                                     end
                                 end
-                                
+
                                 -- Check return type
                                 local impl_ret_str = type_to_signature_string(impl_func.return_type)
                                 local iface_ret_str = type_to_signature_string(iface_method.return_type)
-                                
+
                                 if params_match and impl_ret_str == iface_ret_str then
                                     found_match = true
                                     break
                                 end
                             end
                         end
-                        
+
                         if not found_match then
                             -- Build expected signature string
                             local param_strs = {}
@@ -608,7 +608,7 @@ function Declarations.validate_interface_implementations(typechecker)
                                 method_name,
                                 table.concat(param_strs, ", "),
                                 type_to_signature_string(iface_method.return_type))
-                            
+
                             local msg = string.format(
                                 "Struct '%s' method '%s' does not match interface '%s' signature: expected '%s'",
                                 struct_name, method_name, iface_name, expected_sig

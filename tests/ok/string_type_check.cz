@@ -1,25 +1,25 @@
-// Test string type checking with type keyword
+// Test String type checking with type keyword
 fn main() i32 {
-    // Test 1: type of string variable
-    string s1 = string { "hello" }
-    
-    // Verify it's a string type
-    // Note: type returns a string literal like "string"
+    // Test 1: type of String variable
+    String s1 = String { "hello" }
+
+    // Verify it's a String type
+    // Note: type returns a String literal like "String"
     // We can't directly compare at runtime in current implementation
     // but typechecker ensures this is correct
-    
-    // Test 2: type of heap string
-    string? s2 = new string { "world" }
-    
+
+    // Test 2: type of heap String
+    String? s2 = new String { "world" }
+
     // Test 3: Basic operations work
     if s1.length != 5 {
         return 1
     }
-    
+
     if s2.length != 5 {
         return 2
     }
-    
+
     free s2
     return 0
 }

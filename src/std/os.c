@@ -51,44 +51,44 @@ typedef struct {
     bool linux;            // true if running on Linux
     bool windows;          // true if running on Windows
     bool macos;            // true if running on macOS
-} _cz_os_t;
+} cz_os;
 
 // Global OS instance
-static _cz_os_t __cz_os;
-static bool __cz_os_initialized = false;
+static cz_os _cz_os;
+static bool _cz_os_initialized = false;
 
 // Initialize OS detection - called once on first access
 // Internal function with _cz_ prefix
-static void _cz_os_init() {
-    if (__cz_os_initialized) {
+static void cz_os_init() {
+    if (_cz_os_initialized) {
         return;
     }
-    __cz_os_initialized = true;
-    
+    _cz_os_initialized = true;
+
     #if CZ_OS_WINDOWS
-        __cz_os.name = "windows";
-        __cz_os.linux = false;
-        __cz_os.windows = true;
-        __cz_os.macos = false;
-        __cz_os.kernel = "windows";
+        _cz_os.name = "windows";
+        _cz_os.linux = false;
+        _cz_os.windows = true;
+        _cz_os.macos = false;
+        _cz_os.kernel = "windows";
         // On Windows, we could use GetVersionEx but it's deprecated
         // For simplicity, we'll just use a generic version string
-        __cz_os.version = "unknown";
+        _cz_os.version = "unknown";
     #elif CZ_OS_MACOS
-        __cz_os.name = "macos";
-        __cz_os.linux = false;
-        __cz_os.windows = false;
-        __cz_os.macos = true;
-        __cz_os.kernel = "darwin";
+        _cz_os.name = "macos";
+        _cz_os.linux = false;
+        _cz_os.windows = false;
+        _cz_os.macos = true;
+        _cz_os.kernel = "darwin";
         // On macOS, we could use uname or sysctl
-        __cz_os.version = "unknown";
+        _cz_os.version = "unknown";
     #elif CZ_OS_LINUX
-        __cz_os.name = "linux";
-        __cz_os.linux = true;
-        __cz_os.windows = false;
-        __cz_os.macos = false;
-        __cz_os.kernel = "linux";
-        
+        _cz_os.name = "linux";
+        _cz_os.linux = true;
+        _cz_os.windows = false;
+        _cz_os.macos = false;
+        _cz_os.kernel = "linux";
+
         // Try to get kernel version using uname
         struct utsname buffer;
         if (uname(&buffer) == 0) {
@@ -101,26 +101,26 @@ static void _cz_os_init() {
             }
             memcpy(version_buf, buffer.release, release_len);
             version_buf[release_len] = '\0';
-            
-            __cz_os.version = version_buf;
+
+            _cz_os.version = version_buf;
         } else {
-            __cz_os.version = "unknown";
+            _cz_os.version = "unknown";
         }
     #else
-        __cz_os.name = "unknown";
-        __cz_os.linux = false;
-        __cz_os.windows = false;
-        __cz_os.macos = false;
-        __cz_os.kernel = "unknown";
-        __cz_os.version = "unknown";
+        _cz_os.name = "unknown";
+        _cz_os.linux = false;
+        _cz_os.windows = false;
+        _cz_os.macos = false;
+        _cz_os.kernel = "unknown";
+        _cz_os.version = "unknown";
     #endif
 }
 
 // Get OS struct - returns pointer to OS data
 // Raw C function with _cz_ prefix, called from generated code
-// NOTE: _cz_os_init() must be called via #init macro before accessing this
-static inline _cz_os_t* _cz_os_get() {
-    return &__cz_os;
+// NOTE: cz_os_init() must be called via #init macro before accessing this
+static inline cz_os* cz_os_get() {
+    return &_cz_os;
 }
 
 #endif // CZ_OS_H

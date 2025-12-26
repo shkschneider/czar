@@ -1,22 +1,22 @@
-// Test string:find() method
+// Test String:find() method
 fn main() i32 {
-    string s = string { "Hello World" }
-    string needle = string { "World" }
-    
+    String s = String { "Hello World" }
+    String needle = String { "World" }
+
     // Find substring
-    i32 index = s.find(needle)
-    
+    i32 index = s:find(needle)
+
     if index != 6 {
         return 1
     }
-    
+
     // Test not found
-    string missing = string { "xyz" }
-    i32 not_found = s.find(missing)
-    
+    String missing = String { "xyz" }
+    i32 not_found = s:find(missing)
+
     if not_found != -1 {
         return 2
     }
-    
+
     return 0
 }

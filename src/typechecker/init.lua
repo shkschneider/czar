@@ -48,6 +48,49 @@ function Typechecker:register_builtins()
     if not self.functions["__global__"] then
         self.functions["__global__"] = {}
     end
+    
+    -- Register builtin structs from stdlib
+    -- String struct (from cz.string)
+    self.structs["String"] = {
+        kind = "struct",
+        name = "String",
+        fields = {
+            { name = "data", type = { kind = "named_type", name = "cstr" }, is_private = true },
+            { name = "length", type = { kind = "named_type", name = "u32" } },
+            { name = "capacity", type = { kind = "named_type", name = "u32" } }
+        },
+        is_public = true,
+        builtin = true
+    }
+    
+    -- Os struct (from cz.os)
+    self.structs["Os"] = {
+        kind = "struct",
+        name = "Os",
+        fields = {
+            { name = "name", type = { kind = "named_type", name = "String" } },
+            { name = "version", type = { kind = "named_type", name = "String" } },
+            { name = "kernel", type = { kind = "named_type", name = "String" } },
+            { name = "linux", type = { kind = "named_type", name = "bool" } },
+            { name = "windows", type = { kind = "named_type", name = "bool" } },
+            { name = "macos", type = { kind = "named_type", name = "bool" } }
+        },
+        is_public = true,
+        builtin = true
+    }
+    
+    -- Version struct (from cz.version)
+    self.structs["Version"] = {
+        kind = "struct",
+        name = "Version",
+        fields = {
+            { name = "major", type = { kind = "named_type", name = "u32" } },
+            { name = "minor", type = { kind = "named_type", name = "u32" } },
+            { name = "patch", type = { kind = "named_type", name = "u32" } }
+        },
+        is_public = true,
+        builtin = true
+    }
 end
 
 -- Main entry point: type check the entire AST

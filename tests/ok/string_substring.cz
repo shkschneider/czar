@@ -1,18 +1,18 @@
-// Test string:substring() method
+// Test String:substring() method
 #import cz.fmt
 
 fn main() i32 {
-    string s = string { "Hello World" }
+    String s = String { "Hello World" }
 
     // Extract substring
-    string? sub = s.substring(0, 5)
+    String? sub = s:substring(0, 5)
 
     if sub.length != 5 {
         return 1
     }
 
     // Verify content
-    fmt.print(sub.cstr())
+    fmt.print(sub:cstr())
 
     free sub
     return 0

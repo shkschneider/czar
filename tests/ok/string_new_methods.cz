@@ -1,101 +1,101 @@
-// Comprehensive test of new string methods
+// Comprehensive test of new String methods
 fn main() i32 {
     // Test index (renamed from find)
-    string s1 = string { "Hello World" }
-    string needle = string { "World" }
-    i32 idx = s1.index(needle)
+    String s1 = String { "Hello World" }
+    String needle = String { "World" }
+    i32 idx = s1:index(needle)
     if idx != 6 {
         return 1
     }
-    
+
     // Test contains
-    i32 has_world = s1.contains(needle)
+    i32 has_world = s1:contains(needle)
     if has_world != 1 {
         return 2
     }
-    
-    string missing = string { "xyz" }
-    i32 has_xyz = s1.contains(missing)
+
+    String missing = String { "xyz" }
+    i32 has_xyz = s1:contains(missing)
     if has_xyz != 0 {
         return 3
     }
-    
+
     // Test prefix
-    string hello = string { "Hello" }
-    i32 starts_hello = s1.prefix(hello)
+    String hello = String { "Hello" }
+    i32 starts_hello = s1:prefix(hello)
     if starts_hello != 1 {
         return 4
     }
-    
-    string world = string { "World" }
-    i32 starts_world = s1.prefix(world)
+
+    String world = String { "World" }
+    i32 starts_world = s1:prefix(world)
     if starts_world != 0 {
         return 5
     }
-    
+
     // Test suffix
-    i32 ends_world = s1.suffix(world)
+    i32 ends_world = s1:suffix(world)
     if ends_world != 1 {
         return 6
     }
-    
-    i32 ends_hello = s1.suffix(hello)
+
+    i32 ends_hello = s1:suffix(hello)
     if ends_hello != 0 {
         return 7
     }
-    
+
     // Test cut
-    string s2 = string { "one,two,three" }
-    string comma = string { "," }
-    string? first = s2.cut(comma)
-    
+    String s2 = String { "one,two,three" }
+    String comma = String { "," }
+    String? first = s2:cut(comma)
+
     if first.length != 3 {
         free first
         return 8
     }
-    
-    string one = string { "one" }
-    i32 is_one = first.prefix(one)
+
+    String one = String { "one" }
+    i32 is_one = first:prefix(one)
     free first
-    
+
     if is_one != 1 {
         return 9
     }
-    
+
     // Test upper
-    string? s3 = new string { "hello" }
+    String? s3 = new String { "hello" }
     s3:upper()
-    
-    string upper_hello = string { "HELLO" }
-    i32 is_upper = s3.prefix(upper_hello)
+
+    String upper_hello = String { "HELLO" }
+    i32 is_upper = s3:prefix(upper_hello)
     free s3
-    
+
     if is_upper != 1 {
         return 10
     }
-    
+
     // Test lower
-    string? s4 = new string { "WORLD" }
+    String? s4 = new String { "WORLD" }
     s4:lower()
-    
-    string lower_world = string { "world" }
-    i32 is_lower = s4.prefix(lower_world)
+
+    String lower_world = String { "world" }
+    i32 is_lower = s4:prefix(lower_world)
     free s4
-    
+
     if is_lower != 1 {
         return 11
     }
-    
-    // Test chaining (upper returns string? for chaining)
-    string? s5 = new string { "test" }
-    string? result = s5:upper()
-    
+
+    // Test chaining (upper returns String? for chaining)
+    String? s5 = new String { "test" }
+    String? result = s5:upper()
+
     if result.length != 4 {
         free s5
         return 12
     }
-    
+
     free s5
-    
+
     return 0
 }

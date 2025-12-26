@@ -1,11 +1,11 @@
-// Test string:append() method
+// Test String:append() method
 #import cz.fmt
 
 fn main() i32 {
-    string? s = new string { "Hello" }
-    string s2 = string { " World" }
+    String? s = new String { "Hello" }
+    String s2 = String { " World" }
 
-    // Append to the string
+    // Append to the String
     s:append(s2)
 
     // Check new length
@@ -14,7 +14,7 @@ fn main() i32 {
     }
 
     // Verify content
-    fmt.print(s.cstr())
+    fmt.print(s:cstr())
 
     free s
     return 0

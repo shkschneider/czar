@@ -52,8 +52,16 @@ function Types.c_type(type_node)
         return "cz_string"
     elseif type_node.kind == "named_type" then
         local name = type_node.name
-                
-        if name == "i8" then
+        
+        -- Builtin stdlib structs
+        if name == "String" then
+            return "cz_string"
+        elseif name == "Version" then
+            return "cz_version"
+        elseif name == "Os" then
+            return "cz_os"
+        -- Primitive types
+        elseif name == "i8" then
             return "int8_t"
         elseif name == "i16" then
             return "int16_t"

@@ -1,30 +1,30 @@
-// Test string:index() method (renamed from find)
+// Test String:index() method (renamed from find)
 fn main() i32 {
-    string s = string { "Hello World" }
-    string needle = string { "World" }
-    
+    String s = String { "Hello World" }
+    String needle = String { "World" }
+
     // Find substring using index
-    i32 idx = s.index(needle)
-    
+    i32 idx = s:index(needle)
+
     if idx != 6 {
         return 1
     }
-    
+
     // Test not found
-    string missing = string { "xyz" }
-    i32 not_found = s.index(missing)
-    
+    String missing = String { "xyz" }
+    i32 not_found = s:index(missing)
+
     if not_found != -1 {
         return 2
     }
-    
+
     // Test empty needle (should return 0)
-    string empty = string { "" }
-    i32 empty_idx = s.index(empty)
-    
+    String empty = String { "" }
+    i32 empty_idx = s:index(empty)
+
     if empty_idx != 0 {
         return 3
     }
-    
+
     return 0
 }

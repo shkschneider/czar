@@ -4,12 +4,12 @@
 
 #init {
     #unsafe {
-        _cz_os_init();
+        cz_os_init();
     }
 }
 
 // OS information struct with fields
-struct Os {
+pub struct Os {
     String name      // "linux", "windows", "macos", or "unknown"
     String version   // Kernel version string
     String kernel    // Kernel name: "linux", "darwin", "windows", or "unknown"

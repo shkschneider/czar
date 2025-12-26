@@ -36,15 +36,15 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
 
         if method_name == "print" then
             if #args == 1 then
-                return string.format('_cz_print(%s)', args[1])
+                return string.format('cz_print(%s)', args[1])
             else
                 -- Multiple arguments: treat like printf
-                return string.format('_cz_printf(%s)', join(args, ", "))
+                return string.format('cz_printf(%s)', join(args, ", "))
             end
         elseif method_name == "println" then
-            return string.format('_cz_println(%s)', join(args, ", "))
+            return string.format('cz_println(%s)', join(args, ", "))
         elseif method_name == "printf" then
-            return string.format('_cz_printf(%s)', join(args, ", "))
+            return string.format('cz_printf(%s)', join(args, ", "))
         else
             error(string.format("Unknown method %s on %s module", method_name, type_name))
         end
@@ -471,7 +471,7 @@ function Calls.gen_field(expr, gen_expr_fn)
                     -- Generate module-specific code based on the module
                     if module_path == "cz.os" then
                         -- OS module uses a special C function
-                        return string.format("_cz_os_get()->%s", expr.field)
+                        return string.format("cz_os_get()->%s", expr.field)
                     end
                     -- For other modules, we'd need to know their structure
                     -- This would require metadata about how modules expose their fields
@@ -485,13 +485,13 @@ function Calls.gen_field(expr, gen_expr_fn)
             -- Check if object is the Os struct (from cz.os module)
             if expr.object.inferred_type.kind == "named_type" and expr.object.inferred_type.name == "Os" then
                 -- Return pointer to the OS struct and access the field
-                return string.format("_cz_os_get()->%s", expr.field)
+                return string.format("cz_os_get()->%s", expr.field)
             end
-            -- Legacy: Check if object has inferred type of _cz_os_t*
+            -- Legacy: Check if object has inferred type of cz_os*
             if expr.object.inferred_type.kind == "nullable" and
-               expr.object.inferred_type.to and expr.object.inferred_type.to.name == "_cz_os_t" then
+               expr.object.inferred_type.to and expr.object.inferred_type.to.name == "cz_os" then
                 -- Return pointer to the OS struct and access the field
-                return string.format("_cz_os_get()->%s", expr.field)
+                return string.format("cz_os_get()->%s", expr.field)
             end
         end
     end
@@ -499,7 +499,7 @@ function Calls.gen_field(expr, gen_expr_fn)
     -- Check if this is cz.os access (legacy)
     if expr.object.kind == "identifier" and expr.object.name == "cz" and expr.field == "os" then
         -- Return pointer to the OS struct from raw C
-        return "_cz_os_get()"
+        return "cz_os_get()"
     end
 
     -- Check if this is enum member access (e.g., Status.SUCCESS)
@@ -534,8 +534,8 @@ function Calls.gen_field(expr, gen_expr_fn)
         end
     end
 
-    -- Special case: if object expression is _cz_os_get(), always use arrow
-    if not use_arrow and obj_expr == "_cz_os_get()" then
+    -- Special case: if object expression is cz_os_get(), always use arrow
+    if not use_arrow and obj_expr == "cz_os_get()" then
         use_arrow = true
     end
 
@@ -545,15 +545,15 @@ end
 
 -- Generate struct literal
 function Calls.gen_struct_literal(expr, gen_expr_fn)
-    -- Special handling for string struct with string literal
-    if expr.type_name == "string" and expr.is_string_literal then
+    -- Special handling for String struct with string literal
+    if expr.type_name == "String" and expr.is_string_literal then
         local str_value = expr.string_value or ""
         local str_len = #str_value
-        
+
         -- For stack allocation, we need to create a compound literal with inline data
         -- We'll allocate capacity with room to grow (next power of 2, minimum 16)
         local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
-        
+
         -- Generate code: compound literal with malloc for data
         local statements = {}
         table.insert(statements, string.format("char* _data = %s",
@@ -563,10 +563,10 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
         end
         table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
         table.insert(statements, string.format("(cz_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
-        
+
         return string.format("({ %s; })", join(statements, "; "))
     end
-    
+
     local parts = {}
     for _, f in ipairs(expr.fields) do
         local field_expr = gen_expr_fn(f.value)
@@ -587,13 +587,23 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
     -- In explicit pointer model, struct literals are just values
     -- Use compound literal syntax: (Type){ fields... }
     -- C compound literals automatically zero-initialize all unspecified fields
+    -- Map Czar type name to C type name
+    local c_type_name = expr.type_name
+    if c_type_name == "String" then
+        c_type_name = "cz_string"
+    elseif c_type_name == "Version" then
+        c_type_name = "cz_version"
+    elseif c_type_name == "Os" then
+        c_type_name = "cz_os"
+    end
+
     -- If no fields provided, generate { 0 } to explicitly zero-initialize all fields
     if #parts == 0 then
-        return string.format("(%s){ 0 }", expr.type_name)
+        return string.format("(%s){ 0 }", c_type_name)
     else
         -- Always zero-initialize by using designated initializers
         -- C guarantees that uninitialized fields in designated initializers are zero-initialized
-        return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+        return string.format("(%s){ %s }", c_type_name, join(parts, ", "))
     end
 end
 

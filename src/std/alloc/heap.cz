@@ -6,10 +6,10 @@
 #import iAlloc
 
 // Heap allocator struct that implements the alloc interface
-struct heap : iAlloc {}
+struct Heap : iAlloc {}
 
 // Allocate memory using C malloc
-fn heap:alloc(u64 size) any {
+fn Heap:alloc(u64 size) any {
     mut any result = null
     #unsafe {
         result = malloc(size);
@@ -18,7 +18,7 @@ fn heap:alloc(u64 size) any {
 }
 
 // Reallocate memory using C realloc
-fn heap:ralloc(any ptr, u64 new_size) any {
+fn Heap:ralloc(any ptr, u64 new_size) any {
     mut any result = null
     #unsafe {
         result = realloc(ptr, new_size);
@@ -27,7 +27,7 @@ fn heap:ralloc(any ptr, u64 new_size) any {
 }
 
 // Free memory using C free
-fn heap:free(any ptr) void {
+fn Heap:free(any ptr) void {
     #unsafe {
         free(ptr);
     }

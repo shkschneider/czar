@@ -3,12 +3,12 @@
 
 fn main() i32 {
     C.printf("Testing multiple headers\n")
-    
-    // Test strlen from string.h
+
+    // Test strlen from String.h
     // Note: C functions return void by default in our type system
     // To capture return values, you'd need explicit type annotations
     C.strlen("hello")
     C.printf("Test passed!\n")
-    
+
     return 0
 }
