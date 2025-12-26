@@ -1,0 +1,50 @@
+// Comprehensive generics test for primitive types
+// Tests: signed integers only (per language constraints)
+
+// Generic function for adding two values of same type
+fn <i8:i16:i32:i64> add(T a, T b) T {
+    return a + b
+}
+
+// Generic function for maximum of two values
+fn <i32:i64> max(T a, T b) T {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+// Generic function for minimum
+fn <i32:i64> min(T a, T b) T {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+fn main() i32 {
+    // Test with different integer types
+    i32 r1 = add(10, 20)
+    if r1 != 30 {
+        return 1
+    }
+    
+    i64 r2 = add(<i64> 100 !!, <i64> 200 !!)
+    if r2 != <i64> 300 !! {
+        return 2
+    }
+    
+    // Test max function
+    i32 m1 = max(50, 30)
+    if m1 != 50 {
+        return 3
+    }
+    
+    // Test min function
+    i32 m2 = min(50, 30)
+    if m2 != 30 {
+        return 4
+    }
+    
+    return 0
+}

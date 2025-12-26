@@ -1,0 +1,61 @@
+// Test enum with methods (if supported) and struct integration
+
+enum Priority {
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
+}
+
+struct Task {
+    cstr name
+    Priority priority
+}
+
+fn get_priority_level(Priority p) i32 {
+    if p == Priority.LOW {
+        return 1
+    }
+    if p == Priority.MEDIUM {
+        return 2
+    }
+    if p == Priority.HIGH {
+        return 3
+    }
+    if p == Priority.CRITICAL {
+        return 4
+    }
+    return 0
+}
+
+fn main() i32 {
+    Task t1 = Task {
+        name: "Fix bug",
+        priority: Priority.HIGH
+    }
+    
+    Task t2 = Task {
+        name: "Write docs",
+        priority: Priority.LOW
+    }
+    
+    // Compare priorities
+    i32 level1 = get_priority_level(t1.priority)
+    i32 level2 = get_priority_level(t2.priority)
+    
+    if level1 <= level2 {
+        return 1  // HIGH should be higher than LOW
+    }
+    
+    // Test critical priority
+    Task urgent = Task {
+        name: "Security fix",
+        priority: Priority.CRITICAL
+    }
+    
+    if get_priority_level(urgent.priority) != 4 {
+        return 2
+    }
+    
+    return 0
+}

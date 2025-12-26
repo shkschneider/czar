@@ -1,0 +1,74 @@
+// Test generics with multiple parameters (signed integers only)
+
+// Generic comparison
+fn <i8:i16:i32:i64> compare(T a, T b) i32 {
+    if a > b {
+        return 1
+    }
+    if a < b {
+        return -1
+    }
+    return 0
+}
+
+// Generic absolute value
+fn <i32:i64> abs(T n) T {
+    if n < 0 {
+        return -n
+    }
+    return n
+}
+
+// Generic clamp function
+fn <i32:i64> clamp(T value, T min_val, T max_val) T {
+    if value < min_val {
+        return min_val
+    }
+    if value > max_val {
+        return max_val
+    }
+    return value
+}
+
+fn main() i32 {
+    // Test comparison
+    i32 cmp1 = compare(10, 5)
+    if cmp1 != 1 {
+        return 1
+    }
+    
+    i32 cmp2 = compare(5, 10)
+    if cmp2 != -1 {
+        return 2
+    }
+    
+    i32 cmp3 = compare(10, 10)
+    if cmp3 != 0 {
+        return 3
+    }
+    
+    // Test with different types
+    i64 cmp4 = compare(<i64> 100 !!, <i64> 50 !!)
+    if cmp4 != 1 {
+        return 4
+    }
+    
+    // Test absolute value
+    i32 abs1 = abs(-42)
+    if abs1 != 42 {
+        return 5
+    }
+    
+    i32 abs2 = abs(42)
+    if abs2 != 42 {
+        return 6
+    }
+    
+    // Test clamp
+    i32 clamped = clamp(150, 0, 100)
+    if clamped != 100 {
+        return 7
+    }
+    
+    return 0
+}
