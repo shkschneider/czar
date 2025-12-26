@@ -1,0 +1,60 @@
+// Test pairs with structs and iteration
+
+struct Point {
+    i32 x
+    i32 y
+}
+
+fn distance_squared(Point p1, Point p2) i32 {
+    i32 dx = p2.x - p1.x
+    i32 dy = p2.y - p1.y
+    return dx * dx + dy * dy
+}
+
+fn main() i32 {
+    // Test multiple pairs for coordinates
+    pair<i32:i32> coord1 = pair [ 0: 0 ]
+    pair<i32:i32> coord2 = pair [ 3: 4 ]
+    pair<i32:i32> coord3 = pair [ 6: 8 ]
+    
+    // Calculate distance from coord1 to coord2: 3^2 + 4^2 = 9 + 16 = 25
+    i32 dx1 = coord2.left - coord1.left
+    i32 dy1 = coord2.right - coord1.right
+    i32 dist_sq1 = dx1 * dx1 + dy1 * dy1
+    
+    if dist_sq1 != 25 {
+        return 1
+    }
+    
+    // Calculate distance from coord1 to coord3: 6^2 + 8^2 = 36 + 64 = 100
+    i32 dx2 = coord3.left - coord1.left
+    i32 dy2 = coord3.right - coord1.right
+    i32 dist_sq2 = dx2 * dx2 + dy2 * dy2
+    
+    if dist_sq2 != 100 {
+        return 2
+    }
+    
+    // Test sum of all coordinates
+    i32 total_x = coord1.left + coord2.left + coord3.left  // 0 + 3 + 6 = 9
+    i32 total_y = coord1.right + coord2.right + coord3.right  // 0 + 4 + 8 = 12
+    
+    if total_x != 9 {
+        return 3
+    }
+    
+    if total_y != 12 {
+        return 4
+    }
+    
+    // Test using Point struct
+    Point pt1 = Point { x: 0, y: 0 }
+    Point pt2 = Point { x: 3, y: 4 }
+    
+    i32 dist = distance_squared(pt1, pt2)
+    if dist != 25 {
+        return 5
+    }
+    
+    return 0
+}
