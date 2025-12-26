@@ -1,0 +1,9 @@
+struct version {
+    u32 major
+    u32 minor
+    u32 patch
+}
+
+fn version:tostring() cstr {
+    return "{self.major}.{self.minor}.{self.patch}"
+}
