@@ -1,0 +1,46 @@
+// Test new string syntax: string { "text" } and string {}
+#import cz.fmt
+
+fn main() i32 {
+    // Test heap-allocated string with new syntax
+    string? s1 = new string { "Hello, World!" }
+
+    // Test stack-allocated string with new syntax
+    string s2 = string { "Stack String" }
+    
+    // Test empty string
+    string s3 = string {}
+
+    // Access string fields
+    i32 len1 = s1.length
+    i32 cap1 = s1.capacity
+    i32 len2 = s2.length
+    i32 cap2 = s2.capacity
+    i32 len3 = s3.length
+
+    // Get C-style string
+    fmt.println(s1.cstr())
+    fmt.println(s2.cstr())
+
+    // Verify lengths
+    if len1 != 13 {
+        return 1
+    }
+    if len2 != 12 {
+        return 2
+    }
+    if len3 != 0 {
+        return 3
+    }
+
+    // Verify capacities are reasonable
+    if cap1 < len1 {
+        return 4
+    }
+    if cap2 < len2 {
+        return 5
+    }
+
+    free s1
+    return 0
+}

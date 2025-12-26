@@ -31,7 +31,15 @@ function Declarations.parse_import(parser, directive_tok)
     -- directive_tok is the DIRECTIVE token with value "import"
     local start_tok = directive_tok or parser:expect("DIRECTIVE", "import")
     local parts = {}
-    table.insert(parts, parser:expect("IDENT").value)
+    
+    -- First part can be IDENT or 'string' keyword
+    local first_tok = parser:current()
+    if first_tok.type == "IDENT" or (first_tok.type == "KEYWORD" and first_tok.value == "string") then
+        table.insert(parts, first_tok.value)
+        parser:advance()
+    else
+        parser:expect("IDENT")  -- This will error with proper message
+    end
     
     -- Check if this is a C import: #import C : header.h ...
     if parts[1] == "C" and parser:match("COLON") then
@@ -91,7 +99,13 @@ function Declarations.parse_import(parser, directive_tok)
     
     -- Regular module import: #import foo.bar [as baz]
     while parser:match("DOT") do
-        table.insert(parts, parser:expect("IDENT").value)
+        local part_tok = parser:current()
+        if part_tok.type == "IDENT" or (part_tok.type == "KEYWORD" and part_tok.value == "string") then
+            table.insert(parts, part_tok.value)
+            parser:advance()
+        else
+            parser:expect("IDENT")  -- This will error with proper message
+        end
     end
     
     local alias = nil

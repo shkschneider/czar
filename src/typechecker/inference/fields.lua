@@ -441,6 +441,29 @@ function Fields.infer_struct_literal_type(typechecker, expr)
     end
 
     local struct_name = expr.struct_name or expr.type_name
+    
+    -- Special handling for string struct (both with and without string literal)
+    if struct_name == "string" then
+        if expr.is_string_literal or #expr.fields == 0 then
+            -- string { "text" } or string {} (empty)
+            local inferred = { kind = "string" }
+            expr.inferred_type = inferred
+            -- Mark as string literal for codegen if not already marked
+            if not expr.is_string_literal and #expr.fields == 0 then
+                expr.is_string_literal = true
+                expr.string_value = ""
+            end
+            return inferred
+        end
+        -- If it has fields but not a string literal, it's an error
+        local line = expr.line or 0
+        local msg = "String initialization requires either empty braces {} or a string literal { \"text\" }"
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return nil
+    end
+    
     local struct_def = Resolver.resolve_struct(typechecker, struct_name)
 
     if struct_def then
@@ -555,6 +578,29 @@ end
 
 -- Infer the type of a new expression (heap or stack allocation)
 function Fields.infer_new_type(typechecker, expr)
+    -- Special handling for string (both with and without string literal)
+    if expr.type_name == "string" then
+        if expr.is_string_literal or #expr.fields == 0 then
+            -- new string { "text" } or new string {} (empty)
+            local string_type = { kind = "string" }
+            local inferred = { kind = "nullable", to = string_type }
+            expr.inferred_type = inferred
+            -- Mark as string literal for codegen if not already marked
+            if not expr.is_string_literal and #expr.fields == 0 then
+                expr.is_string_literal = true
+                expr.string_value = ""
+            end
+            return inferred
+        end
+        -- If it has fields but not a string literal, it's an error
+        local line = expr.line or 0
+        local msg = "String initialization requires either empty braces {} or a string literal { \"text\" }"
+        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+            Errors.ErrorType.TYPE_MISMATCH, msg, typechecker.source_path)
+        typechecker:add_error(formatted_error)
+        return nil
+    end
+    
     local struct_def = Resolver.resolve_struct(typechecker, expr.type_name)
 
     if struct_def then
