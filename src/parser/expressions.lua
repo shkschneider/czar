@@ -1,6 +1,8 @@
 -- Parser module for expression parsing
 -- Handles parsing of expressions (binary, unary, primary, etc.)
 
+local Utils = require("parser.utils")
+
 local Expressions = {}
 
 function Expressions.parse_expression(parser)
@@ -750,7 +752,6 @@ function Expressions.parse_primary(parser)
             col = struct_tok.col
         }
     else
-        local Utils = require("parser.utils")
         error(string.format("unexpected token: %s", Utils.token_label(tok)))
     end
 end

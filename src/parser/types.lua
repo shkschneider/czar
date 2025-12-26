@@ -1,6 +1,8 @@
 -- Parser module for type parsing
 -- Handles parsing of type annotations and type expressions
 
+local Utils = require("parser.utils")
+
 local Types = {}
 
 -- Shared type keywords table
@@ -149,7 +151,6 @@ function Types.parse_type(parser)
         return base_type
     end
 
-    local Utils = require("parser.utils")
     error(string.format("expected type but found %s", Utils.token_label(tok)))
 end
 
@@ -190,7 +191,6 @@ function Types.parse_type_with_map_shorthand(parser)
         return base_type
     end
 
-    local Utils = require("parser.utils")
     error(string.format("expected type but found %s", Utils.token_label(tok)))
 end
 
