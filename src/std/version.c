@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 // Semantic version struct
-typedef struct Version {
+typedef struct version {
     uint32_t major;
     uint32_t minor;
     uint32_t patch;
-} Version;
+} version;

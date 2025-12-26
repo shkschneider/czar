@@ -1,8 +1,17 @@
-#import cz.version
 #import cz.fmt
 
+struct version {
+    u32 major
+    u32 minor
+    u32 patch
+}
+
 fn main() i32 {
-    Version v = Version { 1, 2, 3 }
-    fmt.println(v:tostring())
+    version v = version { 1, 2, 3 }
+    u32 maj = v.major
+    u32 min = v.minor
+    u32 pat = v.patch
+    cstr output = "{maj}.{min}.{pat}"
+    fmt.println(output)
     return 0
 }

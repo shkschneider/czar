@@ -237,12 +237,8 @@ function Expressions.parse_postfix_no_bang(parser)
                 expr = { kind = "field", object = expr, field = field }
             end
         elseif expr.kind == "identifier" and parser:check("LBRACE") then
-            local name = expr.name
-            if name:match("^[A-Z]") then
-                expr = Expressions.parse_struct_literal(parser, expr)
-            else
-                break
-            end
+            -- Struct literal: parse for any identifier, let typechecker validate if it's actually a struct
+            expr = Expressions.parse_struct_literal(parser, expr)
         else
             break
         end
@@ -365,10 +361,8 @@ function Expressions.parse_postfix(parser)
                 expr = { kind = "field", object = expr, field = field }
             end
         elseif expr.kind == "identifier" and parser:check("LBRACE") then
-            -- Struct literal: only parse if we're not in a context where { starts a block
-            -- We can check if the previous tokens/context suggests this is a struct literal
-            -- For v0, let's be conservative: only parse as struct literal if identifier looks like a type
-            -- (starts with uppercase) or if we're sure it's not a block context
+            -- Struct literal: parse for PascalCase identifiers to avoid ambiguity with blocks
+            -- Lowercase identifiers followed by { are assumed to be statement blocks
             local name = expr.name
             if name:match("^[A-Z]") then
                 expr = Expressions.parse_struct_literal(parser, expr)
