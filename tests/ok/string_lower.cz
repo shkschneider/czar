@@ -1,4 +1,6 @@
 // Test string:lower() method
+#import cz
+
 fn main() i32 {
     String? s = new String { "Hello World" }
     

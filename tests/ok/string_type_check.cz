@@ -1,4 +1,6 @@
 // Test String type checking with type keyword
+#import cz
+
 fn main() i32 {
     // Test 1: type of String variable
     String s1 = String { "hello" }
