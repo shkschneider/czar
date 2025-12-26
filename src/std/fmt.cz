@@ -7,14 +7,14 @@
 
 #import C : stdio.h
 
-fn print(string fmt, any... args) {
+fn print(string fmt, ...any args) {
     _cz_print(fmt:cstr(), args)
 }
 
-fn printf(string fmt, any... args) {
+fn printf(string fmt, ...any args) {
     _cz_printf(fmt:cstr(), args)
 }
 
-fn println(string fmt, any... args) {
+fn println(string fmt, ...any args) {
     _cz_printf(fmt:cstr(), args)
 }
