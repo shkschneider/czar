@@ -39,7 +39,7 @@ function Types.is_type_start(parser)
     local tok = parser:current()
     if not tok then return false end
     -- Check for container type keywords
-    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair" or tok.value == "string") then
+    if tok.type == "KEYWORD" and (tok.value == "array" or tok.value == "slice" or tok.value == "map" or tok.value == "pair") then
         return true
     end
     -- Check for type keywords or user-defined types (identifiers - could be aliases or structs)
@@ -107,16 +107,6 @@ function Types.parse_type(parser)
         parser:expect("GT")
         local base_type = { kind = "pair", left_type = left_type, right_type = right_type }
         -- Check if this is a nullable type (pair<T:T>?)
-        if parser:match("QUESTION") then
-            return { kind = "nullable", to = base_type }
-        end
-        return base_type
-    end
-
-    if parser:check("KEYWORD", "string") then
-        parser:advance()
-        local base_type = { kind = "string" }
-        -- Check if this is a nullable type (string?)
         if parser:match("QUESTION") then
             return { kind = "nullable", to = base_type }
         end

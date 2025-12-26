@@ -43,7 +43,7 @@
 #undef windows
 #endif
 
-// OS struct definition - internal type with _cz_ prefix
+// OS struct definition - C type with cz_ prefix
 typedef struct {
     const char* name;      // "linux", "windows", "macos", etc.
     const char* version;   // kernel version string only
@@ -51,10 +51,10 @@ typedef struct {
     bool linux;            // true if running on Linux
     bool windows;          // true if running on Windows
     bool macos;            // true if running on macOS
-} _cz_os_t;
+} cz_os;
 
 // Global OS instance
-static _cz_os_t __cz_os;
+static cz_os __cz_os;
 static bool __cz_os_initialized = false;
 
 // Initialize OS detection - called once on first access
@@ -119,7 +119,7 @@ static void _cz_os_init() {
 // Get OS struct - returns pointer to OS data
 // Raw C function with _cz_ prefix, called from generated code
 // NOTE: _cz_os_init() must be called via #init macro before accessing this
-static inline _cz_os_t* _cz_os_get() {
+static inline cz_os* _cz_os_get() {
     return &__cz_os;
 }
 

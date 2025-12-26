@@ -151,9 +151,18 @@ local function gen_string_method(obj, obj_type, method_name, args, gen_expr_fn)
     return nil
 end
 
--- Helper to check if type is a string type
+-- Helper to check if type is a String type
 local function is_string_type(obj_type)
-    return obj_type and (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string"))
+    if not obj_type then return false end
+    if obj_type.kind == "named_type" and obj_type.name == "String" then
+        return true
+    end
+    if obj_type.kind == "nullable" and obj_type.to then
+        if obj_type.to.kind == "named_type" and obj_type.to.name == "String" then
+            return true
+        end
+    end
+    return false
 end
 
 -- Generate function call expression
@@ -352,8 +361,6 @@ function Calls.gen_call(expr, gen_expr_fn)
                         return type_node.name
                     elseif type_node.kind == "nullable" then
                         return type_to_c_name(type_node.to) .. "_ptr"
-                    elseif type_node.kind == "string" then
-                        return "string"
                     end
                     return "unknown"
                 end

@@ -238,18 +238,18 @@ function Fields.infer_field_type(typechecker, expr)
         end
     end
     
-    -- Handle string type fields (memory-safe: no direct data access)
-    if base_type.kind == "string" then
+    -- Handle String type fields (memory-safe: no direct data access)
+    if base_type.kind == "named_type" and base_type.name == "String" then
         if expr.field == "length" then
-            expr.inferred_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = { kind = "named_type", name = "u32" }
             return expr.inferred_type
         elseif expr.field == "capacity" then
-            expr.inferred_type = { kind = "named_type", name = "i32" }
+            expr.inferred_type = { kind = "named_type", name = "u32" }
             return expr.inferred_type
         else
             local line = expr.line or (expr.object and expr.object.line) or 0
             local msg = string.format(
-                "Field '%s' not found in string type (available: length, capacity). Use .cstr() method for C-string access.",
+                "Field '%s' not found in String type (available: length, capacity). Use .cstr() method for C-string access.",
                 expr.field
             )
             local formatted_error = Errors.format("ERROR", typechecker.source_file, line,

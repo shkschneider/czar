@@ -63,9 +63,6 @@ function Types.types_compatible(type1, type2, typechecker)
         -- Pairs are compatible if left and right types match
         return Types.types_compatible(type1.left_type, type2.left_type, typechecker) and
                Types.types_compatible(type1.right_type, type2.right_type, typechecker)
-    elseif type1.kind == "string" and type2.kind == "string" then
-        -- Strings are always compatible
-        return true
     end
 
     return false
@@ -117,8 +114,6 @@ function Types.type_to_string(type_node)
         return "map[" .. Types.type_to_string(type_node.key_type) .. "]" .. Types.type_to_string(type_node.value_type)
     elseif type_node.kind == "pair" then
         return "pair<" .. Types.type_to_string(type_node.left_type) .. ":" .. Types.type_to_string(type_node.right_type) .. ">"
-    elseif type_node.kind == "string" then
-        return "string"
     end
 
     return "unknown"

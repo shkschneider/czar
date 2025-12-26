@@ -51,7 +51,6 @@ local keywords = {
     ["slice"] = true,
     ["map"] = true,
     ["pair"] = true,
-    ["string"] = true,
     ["pub"] = true,
     ["prv"] = true,
 }

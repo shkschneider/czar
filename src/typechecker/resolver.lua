@@ -19,8 +19,6 @@ local function type_to_signature_string(type_node)
         return type_to_signature_string(type_node.element_type) .. "[:]"
     elseif type_node.kind == "varargs" then
         return type_to_signature_string(type_node.element_type) .. "..."
-    elseif type_node.kind == "string" then
-        return "string"
     end
     
     return "unknown"
