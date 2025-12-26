@@ -1,9 +1,9 @@
 // Test string:contains() method
 fn main() i32 {
-    string s = string { "Hello World" }
-    string needle = string { "World" }
+    String s = String { "Hello World" }
+    String needle = String { "World" }
     
-    // Check if substring exists
+    // Check if subString exists
     i32 found = s.contains(needle)
     
     if found != 1 {
@@ -11,7 +11,7 @@ fn main() i32 {
     }
     
     // Test not found
-    string missing = string { "xyz" }
+    String missing = String { "xyz" }
     i32 not_found = s.contains(missing)
     
     if not_found != 0 {
@@ -19,7 +19,7 @@ fn main() i32 {
     }
     
     // Test empty needle (should be found)
-    string empty = string { "" }
+    String empty = String { "" }
     i32 empty_found = s.contains(empty)
     
     if empty_found != 1 {
@@ -27,7 +27,7 @@ fn main() i32 {
     }
     
     // Test partial match
-    string partial = string { "Hel" }
+    String partial = String { "Hel" }
     i32 partial_found = s.contains(partial)
     
     if partial_found != 1 {

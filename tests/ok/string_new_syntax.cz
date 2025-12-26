@@ -1,17 +1,17 @@
-// Test new string syntax: string { "text" } and string {}
+// Test new String syntax: String { "text" } and String {}
 #import cz.fmt
 
 fn main() i32 {
-    // Test heap-allocated string with new syntax
-    string? s1 = new string { "Hello, World!" }
+    // Test heap-allocated String with new syntax
+    String? s1 = new String { "Hello, World!" }
 
-    // Test stack-allocated string with new syntax
-    string s2 = string { "Stack String" }
+    // Test stack-allocated String with new syntax
+    String s2 = String { "Stack String" }
     
     // Test empty string
-    string s3 = string {}
+    String s3 = String {}
 
-    // Access string fields
+    // Access String fields
     i32 len1 = s1.length
     i32 cap1 = s1.capacity
     i32 len2 = s2.length

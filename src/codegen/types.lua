@@ -76,6 +76,12 @@ function Types.c_type(type_node)
             return "void*"
         elseif name == "cstr" then
             return "char*"
+        elseif name == "String" then
+            -- Built-in String type maps to cz_string
+            return "cz_string"
+        elseif name == "Os" then
+            -- Built-in Os type maps to cz_os
+            return "cz_os"
         else
             return name
         end

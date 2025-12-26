@@ -1,9 +1,9 @@
-// Test string dynamic resizing and memory safety
+// Test String dynamic resizing and memory safety
 #import cz.fmt
 
 fn main() i32 {
     // Test heap-allocated string
-    string? s = new string { "Hello" }
+    String? s = new String { "Hello" }
 
     // Access fields
     i32 initial_len = s.length
@@ -18,7 +18,7 @@ fn main() i32 {
         return 2
     }
 
-    // Test C-string conversion
+    // Test C-String conversion
     fmt.print(s.cstr())
 
     free s

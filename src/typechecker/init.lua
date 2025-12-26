@@ -48,6 +48,36 @@ function Typechecker:register_builtins()
     if not self.functions["__global__"] then
         self.functions["__global__"] = {}
     end
+    
+    -- Register built-in structs from cz module (String, Os)
+    -- These are always available without explicit import
+    -- They map to cz_string and cz_os in generated C code
+    self.structs["String"] = {
+        kind = "struct",
+        name = "String",
+        fields = {
+            { name = "data", type = { kind = "named_type", name = "cstr" }, visibility = "prv" },
+            { name = "length", type = { kind = "named_type", name = "i32" } },
+            { name = "capacity", type = { kind = "named_type", name = "i32" } },
+        },
+        line = 0,
+        builtin = true
+    }
+    
+    self.structs["Os"] = {
+        kind = "struct",
+        name = "Os",
+        fields = {
+            { name = "name", type = { kind = "named_type", name = "String" } },
+            { name = "version", type = { kind = "named_type", name = "String" } },
+            { name = "kernel", type = { kind = "named_type", name = "String" } },
+            { name = "linux", type = { kind = "named_type", name = "bool" } },
+            { name = "windows", type = { kind = "named_type", name = "bool" } },
+            { name = "macos", type = { kind = "named_type", name = "bool" } },
+        },
+        line = 0,
+        builtin = true
+    }
 end
 
 -- Main entry point: type check the entire AST

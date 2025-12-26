@@ -1,17 +1,17 @@
 // Test string:suffix() method
 fn main() i32 {
-    string s = string { "Hello World" }
-    string suffix1 = string { "World" }
-    string suffix2 = string { "Hello" }
+    String s = String { "Hello World" }
+    String suffix1 = String { "World" }
+    String suffix2 = String { "Hello" }
     
-    // Check if string ends with "World"
+    // Check if String ends with "World"
     i32 has_suffix = s.suffix(suffix1)
     
     if has_suffix != 1 {
         return 1
     }
     
-    // Check if string ends with "Hello" (should not)
+    // Check if String ends with "Hello" (should not)
     i32 no_suffix = s.suffix(suffix2)
     
     if no_suffix != 0 {
@@ -19,7 +19,7 @@ fn main() i32 {
     }
     
     // Test empty suffix (should always match)
-    string empty = string { "" }
+    String empty = String { "" }
     i32 empty_suffix = s.suffix(empty)
     
     if empty_suffix != 1 {
@@ -27,7 +27,7 @@ fn main() i32 {
     }
     
     // Test suffix longer than string
-    string long_suffix = string { "Extended Hello World" }
+    String long_suffix = String { "Extended Hello World" }
     i32 long_no_match = s.suffix(long_suffix)
     
     if long_no_match != 0 {

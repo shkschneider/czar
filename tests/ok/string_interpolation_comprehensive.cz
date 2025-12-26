@@ -1,4 +1,4 @@
-// Comprehensive test of string interpolation features
+// Comprehensive test of String interpolation features
 #import cz.fmt
 
 fn main() i32 {

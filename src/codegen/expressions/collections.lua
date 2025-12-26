@@ -18,8 +18,8 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     -- Allocate on heap and initialize fields
     -- Note: Automatic scope-based cleanup implemented - freed at scope exit
     
-    -- Special handling for string struct with string literal
-    if expr.type_name == "string" and expr.is_string_literal then
+    -- Special handling for String struct with string literal
+    if expr.type_name == "String" and expr.is_string_literal then
         local str_value = expr.string_value or ""
         local str_len = #str_value
         
@@ -43,6 +43,14 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
         return string.format("({ %s; })", join(statements, "; "))
     end
     
+    -- Map Czar type name to C type name
+    local c_type_name = expr.type_name
+    if expr.type_name == "String" then
+        c_type_name = "cz_string"
+    elseif expr.type_name == "Os" then
+        c_type_name = "cz_os"
+    end
+    
     local parts = {}
     for _, f in ipairs(expr.fields) do
         table.insert(parts, string.format(".%s = %s", f.name, gen_expr_fn(f.value)))
@@ -51,16 +59,16 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     -- Zero-initialize first, then set fields
     local initializer
     if #parts == 0 then
-        initializer = string.format("(%s){ 0 }", expr.type_name)
+        initializer = string.format("(%s){ 0 }", c_type_name)
     else
         -- Use designated initializers which automatically zero-initialize unspecified fields
-        initializer = string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+        initializer = string.format("(%s){ %s }", c_type_name, join(parts, ", "))
     end
     
     -- Generate: ({ Type* _ptr = malloc(sizeof(Type)); *_ptr = (Type){ fields... }; _ptr; })
     -- Explicit allocation with 'new' keyword
     return string.format("({ %s* _ptr = %s; *_ptr = %s; _ptr; })",
-        expr.type_name, ctx():alloc_call("sizeof(" .. expr.type_name .. ")", true), initializer)
+        c_type_name, ctx():alloc_call("sizeof(" .. c_type_name .. ")", true), initializer)
 end
 
 -- Generate new heap-allocated array
