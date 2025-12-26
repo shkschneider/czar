@@ -1,0 +1,57 @@
+// Test pairs as function parameters and return values
+
+fn swap_pair(pair<i32:i32> p) pair<i32:i32> {
+    return pair [ p.right: p.left ]
+}
+
+fn add_to_pair(pair<i32:i32> p, i32 value) pair<i32:i32> {
+    return pair [ p.left + value: p.right + value ]
+}
+
+fn multiply_pair(pair<i32:i32> p) pair<i32:i32> {
+    return pair [ p.left * 2: p.right * 2 ]
+}
+
+fn are_equal(pair<i32:i32> p1, pair<i32:i32> p2) bool {
+    if p1.left == p2.left and p1.right == p2.right {
+        return true
+    }
+    return false
+}
+
+fn main() i32 {
+    pair<i32:i32> original = pair [ 10: 20 ]
+    
+    // Test swap
+    pair<i32:i32> swapped = swap_pair(original)
+    if swapped.left != 20 or swapped.right != 10 {
+        return 1
+    }
+    
+    // Test add
+    pair<i32:i32> added = add_to_pair(original, 5)
+    if added.left != 15 or added.right != 25 {
+        return 2
+    }
+    
+    // Test multiply
+    pair<i32:i32> multiplied = multiply_pair(original)
+    if multiplied.left != 20 or multiplied.right != 40 {
+        return 3
+    }
+    
+    // Test equality
+    pair<i32:i32> p1 = pair [ 100: 200 ]
+    pair<i32:i32> p2 = pair [ 100: 200 ]
+    pair<i32:i32> p3 = pair [ 100: 201 ]
+    
+    if not are_equal(p1, p2) {
+        return 4
+    }
+    
+    if are_equal(p1, p3) {
+        return 5
+    }
+    
+    return 0
+}

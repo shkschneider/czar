@@ -1,0 +1,57 @@
+// Test nested conditionals with multiple levels
+
+fn classify_temperature(i32 temp) i32 {
+    if temp < 0 {
+        if temp < -20 {
+            return 1  // extremely cold
+        } else {
+            return 2  // cold
+        }
+    } else {
+        if temp < 20 {
+            return 3  // cool
+        } elseif temp < 30 {
+            return 4  // comfortable
+        } else {
+            if temp < 40 {
+                return 5  // hot
+            } else {
+                return 6  // extremely hot
+            }
+        }
+    }
+}
+
+fn main() i32 {
+    // Test extreme cold
+    if classify_temperature(-25) != 1 {
+        return 1
+    }
+    
+    // Test cold
+    if classify_temperature(-10) != 2 {
+        return 2
+    }
+    
+    // Test cool
+    if classify_temperature(15) != 3 {
+        return 3
+    }
+    
+    // Test comfortable
+    if classify_temperature(25) != 4 {
+        return 4
+    }
+    
+    // Test hot
+    if classify_temperature(35) != 5 {
+        return 5
+    }
+    
+    // Test extremely hot
+    if classify_temperature(45) != 6 {
+        return 6
+    }
+    
+    return 0
+}
