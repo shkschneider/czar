@@ -1,0 +1,9 @@
+// Comprehensive test of selective imports
+#import cz.fmt { println }
+
+fn main() i32 {
+    fmt.println("Testing selective imports")
+    fmt.println("Multiple calls are OK")
+    
+    return 0
+}

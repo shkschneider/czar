@@ -24,9 +24,10 @@ function Declarations.parse_module_declaration(parser, directive_tok)
 end
 
 -- Parse #import directive
--- Handles two types of imports:
+-- Handles three types of imports:
 -- 1. Regular module import: #import foo.bar [as baz]
--- 2. C interop import: #import C : header1.h header2.h ...
+-- 2. Selective import: #import foo.bar { symbol1, symbol2 }
+-- 3. C interop import: #import C : header1.h header2.h ...
 function Declarations.parse_import(parser, directive_tok)
     -- directive_tok is the DIRECTIVE token with value "import"
     local start_tok = directive_tok or parser:expect("DIRECTIVE", "import")
@@ -89,6 +90,11 @@ function Declarations.parse_import(parser, directive_tok)
             error("Expected header file name (identifier, keyword, or string) after '#import C :', but found " .. tok_label)
         end
         
+        -- C imports don't support selective imports
+        if parser:check("LBRACE") then
+            error("Selective imports are not supported for C imports. Use '#import C : header.h' without braces.")
+        end
+        
         return {
             kind = "c_import",
             headers = headers,
@@ -97,7 +103,7 @@ function Declarations.parse_import(parser, directive_tok)
         }
     end
     
-    -- Regular module import: #import foo.bar [as baz]
+    -- Regular module import: #import foo.bar [as baz] or #import foo.bar { symbol1, symbol2 }
     while parser:match("DOT") do
         local part_tok = parser:current()
         if part_tok.type == "IDENT" or (part_tok.type == "KEYWORD" and part_tok.value == "string") then
@@ -105,6 +111,31 @@ function Declarations.parse_import(parser, directive_tok)
             parser:advance()
         else
             parser:expect("IDENT")  -- This will error with proper message
+        end
+    end
+    
+    -- Check for selective imports: { symbol1, symbol2, ... }
+    local symbols = nil
+    if parser:match("LBRACE") then
+        symbols = {}
+        if not parser:check("RBRACE") then
+            repeat
+                local symbol_tok = parser:expect("IDENT")
+                table.insert(symbols, symbol_tok.value)
+                if not parser:match("COMMA") then
+                    break
+                end
+                -- Allow trailing comma
+                if parser:check("RBRACE") then
+                    break
+                end
+            until false
+        end
+        parser:expect("RBRACE")
+        
+        -- Selective imports cannot be combined with 'as' alias
+        if parser:check("KEYWORD", "as") then
+            error("Selective imports cannot be combined with 'as' alias. Use '#import module { symbols }' without 'as'.")
         end
     end
     
@@ -117,6 +148,7 @@ function Declarations.parse_import(parser, directive_tok)
         kind = "import",
         path = parts,
         alias = alias,
+        symbols = symbols,  -- nil for full import, list of symbol names for selective import
         line = start_tok.line,
         col = start_tok.col
     }

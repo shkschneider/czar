@@ -1,0 +1,10 @@
+// Test selective imports: only import specific symbols from a module
+#import cz.fmt { printf, println }
+
+fn main() i32 {
+    // These should work - they were imported
+    fmt.println("Hello from println")
+    fmt.printf("Hello from printf\n")
+    
+    return 0
+}

@@ -1,0 +1,6 @@
+// Test that C imports don't support selective imports
+#import C : stdio.h { printf }
+
+fn main() i32 {
+    return 0
+}

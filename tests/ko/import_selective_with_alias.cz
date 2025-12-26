@@ -1,0 +1,6 @@
+// Test that selective imports can't be combined with 'as' alias
+#import cz.fmt { printf, println } as myfmt
+
+fn main() i32 {
+    return 0
+}

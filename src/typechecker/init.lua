@@ -75,13 +75,24 @@ function Typechecker:check()
                 })
             end
         else
-            -- Regular module import
+            -- Regular module import (with or without selective symbols)
             local module_path = table.concat(import.path, ".")
             local alias = import.alias or import.path[#import.path]
+            
+            -- For selective imports, track which symbols are allowed
+            local allowed_symbols = nil
+            if import.symbols then
+                allowed_symbols = {}
+                for _, sym in ipairs(import.symbols) do
+                    allowed_symbols[sym] = true
+                end
+            end
+            
             table.insert(self.imports, {
                 path = module_path,
                 alias = alias,
                 used = false,
+                symbols = allowed_symbols,  -- nil for full import, table for selective import
                 line = import.line,
                 col = import.col
             })

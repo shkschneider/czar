@@ -423,10 +423,12 @@ function Calls.infer_static_method_call_type(typechecker, expr)
         -- Check if this specific module is imported
         local module_imported = false
         local module_alias = nil
+        local import_info = nil
         for _, import in ipairs(typechecker.imports) do
             if import.path == expr.type_name then
                 module_imported = true
                 module_alias = import.alias
+                import_info = import
                 import.used = true
                 break
             end
@@ -441,6 +443,27 @@ function Calls.infer_static_method_call_type(typechecker, expr)
                 Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
             typechecker:add_error(formatted_error)
             return nil
+        end
+
+        -- Check selective import restrictions
+        if import_info.symbols then
+            -- This is a selective import - check if the method is in the allowed list
+            if not import_info.symbols[expr.method] then
+                local Errors = require("errors")
+                local symbols_list = {}
+                for sym, _ in pairs(import_info.symbols) do
+                    table.insert(symbols_list, sym)
+                end
+                table.sort(symbols_list)
+                local msg = string.format(
+                    "Symbol '%s' was not imported from module '%s'. Only these symbols are imported: %s",
+                    expr.method, expr.type_name, table.concat(symbols_list, ", ")
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, expr.line or 0,
+                    Errors.ErrorType.UNDECLARED_IDENTIFIER, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
         end
 
         -- For other cz.* modules, we can add handling here as needed
