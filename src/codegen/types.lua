@@ -82,6 +82,9 @@ function Types.c_type(type_node)
         elseif name == "Os" then
             -- Built-in Os type maps to cz_os
             return "cz_os"
+        elseif name == "CzAllocArena" then
+            -- Arena allocator type maps to cz_alloc_arena
+            return "cz_alloc_arena"
         else
             return name
         end
