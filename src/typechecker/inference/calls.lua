@@ -10,6 +10,18 @@ local Calls = {}
 Calls.infer_type = nil
 Calls.get_base_type_name = nil
 
+-- Helper: Check if type is String (struct)
+local function is_string_type(type_node)
+    if not type_node then return false end
+    if type_node.kind == "named_type" and type_node.name == "String" then
+        return true
+    end
+    if type_node.kind == "nullable" and type_node.to then
+        return is_string_type(type_node.to)
+    end
+    return false
+end
+
 -- Helper: Convert a field access expression to a dotted path string
 -- Example: cz.fmt becomes "cz.fmt"
 local function field_access_to_path(expr)
@@ -98,15 +110,15 @@ function Calls.infer_call_type(typechecker, expr)
             return nil
         end
 
-        -- Special handling for string methods with : syntax
-        if obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string") then
+        -- Special handling for String methods with : syntax
+        if is_string_type(obj_type) then
             local method = expr.callee.method
             if method == "append" then
                 local return_type = { kind = "named_type", name = "void" }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "substring" then
-                local return_type = { kind = "nullable", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "find" or method == "index" then
@@ -118,7 +130,7 @@ function Calls.infer_call_type(typechecker, expr)
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "cut" then
-                local return_type = { kind = "nullable", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "prefix" or method == "suffix" then
@@ -126,11 +138,11 @@ function Calls.infer_call_type(typechecker, expr)
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "upper" or method == "lower" then
-                local return_type = { kind = "nullable", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "trim" or method == "ltrim" or method == "rtrim" then
-                local return_type = { kind = "nullable", to = { kind = "string" } }
+                local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
                 expr.inferred_type = return_type
                 return return_type
             elseif method == "cstr" then
@@ -197,83 +209,75 @@ function Calls.infer_call_type(typechecker, expr)
             return Calls.infer_static_method_call_type(typechecker, expr)
         end
 
-        -- Special handling for string.cstr() method
-        if obj_type.kind == "string" and expr.callee.field == "cstr" then
+        -- Special handling for String.cstr() method
+        if is_string_type(obj_type) and expr.callee.field == "cstr" then
             -- cstr() returns cstr (C char*)
             local return_type = { kind = "named_type", name = "cstr" }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string*.cstr() method
-        if obj_type.kind == "nullable" and obj_type.to.kind == "string" and expr.callee.field == "cstr" then
-            -- cstr() returns cstr (C char*)
-            local return_type = { kind = "named_type", name = "cstr" }
-            expr.inferred_type = return_type
-            return return_type
-        end
-
-        -- Special handling for string:append(str) method
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "append" then
+        -- Special handling for String:append(str) method
+        if is_string_type(obj_type) and expr.callee.field == "append" then
             -- append() modifies in place, returns void (but we'll return the string pointer for chaining)
             local return_type = { kind = "named_type", name = "void" }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:substring(start, end) method
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "substring" then
-            -- substring() returns a new heap-allocated string*
-            local return_type = { kind = "nullable", to = { kind = "string" } }
+        -- Special handling for String:substring(start, end) method
+        if is_string_type(obj_type) and expr.callee.field == "substring" then
+            -- substring() returns a new heap-allocated String*
+            local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:find(needle) or string:index(needle) method
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and (expr.callee.field == "find" or expr.callee.field == "index") then
+        -- Special handling for String:find(needle) or String:index(needle) method
+        if is_string_type(obj_type) and (expr.callee.field == "find" or expr.callee.field == "index") then
             -- find/index() returns i32 (index or -1)
             local return_type = { kind = "named_type", name = "i32" }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:contains(needle) method
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "contains" then
+        -- Special handling for String:contains(needle) method
+        if is_string_type(obj_type) and expr.callee.field == "contains" then
             -- contains() returns i32 (bool: 1 or 0)
             local return_type = { kind = "named_type", name = "i32" }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:cut(separator) method
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and expr.callee.field == "cut" then
-            -- cut() returns a new heap-allocated string*
-            local return_type = { kind = "nullable", to = { kind = "string" } }
+        -- Special handling for String:cut(separator) method
+        if is_string_type(obj_type) and expr.callee.field == "cut" then
+            -- cut() returns a new heap-allocated String*
+            local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:prefix(str) and string:suffix(str) methods
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and (expr.callee.field == "prefix" or expr.callee.field == "suffix") then
+        -- Special handling for String:prefix(str) and String:suffix(str) methods
+        if is_string_type(obj_type) and (expr.callee.field == "prefix" or expr.callee.field == "suffix") then
             -- prefix/suffix() returns i32 (bool: 1 or 0)
             local return_type = { kind = "named_type", name = "i32" }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:upper() and string:lower() methods
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and (expr.callee.field == "upper" or expr.callee.field == "lower") then
-            -- upper/lower() modifies in place, returns string* (for chaining)
-            local return_type = { kind = "nullable", to = { kind = "string" } }
+        -- Special handling for String:upper() and String:lower() methods
+        if is_string_type(obj_type) and (expr.callee.field == "upper" or expr.callee.field == "lower") then
+            -- upper/lower() modifies in place, returns String* (for chaining)
+            local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
             expr.inferred_type = return_type
             return return_type
         end
 
-        -- Special handling for string:trim/ltrim/rtrim() methods
-        if (obj_type.kind == "string" or (obj_type.kind == "nullable" and obj_type.to.kind == "string")) and
+        -- Special handling for String:trim/ltrim/rtrim() methods
+        if is_string_type(obj_type) and
            (expr.callee.field == "trim" or expr.callee.field == "ltrim" or expr.callee.field == "rtrim") then
-            -- trim() modifies in place, returns string* (for chaining)
-            local return_type = { kind = "nullable", to = { kind = "string" } }
+            -- trim() modifies in place, returns String* (for chaining)
+            local return_type = { kind = "nullable", to = { kind = "named_type", name = "String" } }
             expr.inferred_type = return_type
             return return_type
         end

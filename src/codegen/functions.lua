@@ -26,8 +26,6 @@ local function type_to_c_name(type_node)
         return type_to_c_name(type_node.element_type) .. "_arr"
     elseif type_node.kind == "slice" then
         return type_to_c_name(type_node.element_type) .. "_slice"
-    elseif type_node.kind == "string" then
-        return "string"
     end
     
     return "unknown"
