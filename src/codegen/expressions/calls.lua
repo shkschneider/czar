@@ -580,6 +580,8 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
         c_type_name = "cz_string"
     elseif expr.type_name == "Os" then
         c_type_name = "cz_os"
+    elseif expr.type_name == "CzAllocArena" then
+        c_type_name = "cz_alloc_arena"
     end
     
     local parts = {}
