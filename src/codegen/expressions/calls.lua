@@ -482,8 +482,8 @@ function Calls.gen_field(expr, gen_expr_fn)
 
         -- Fallback: Check using inferred_type if available
         if expr.object.inferred_type then
-            -- Check if object is the os struct (from cz.os module)
-            if expr.object.inferred_type.kind == "named_type" and expr.object.inferred_type.name == "os" then
+            -- Check if object is the Os struct (from cz.os module)
+            if expr.object.inferred_type.kind == "named_type" and expr.object.inferred_type.name == "Os" then
                 -- Return pointer to the OS struct and access the field
                 return string.format("_cz_os_get()->%s", expr.field)
             end

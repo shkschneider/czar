@@ -9,7 +9,7 @@
 }
 
 // OS information struct with fields
-struct os {
+struct Os {
     String name      // "linux", "windows", "macos", or "unknown"
     String version   // Kernel version string
     String kernel    // Kernel name: "linux", "darwin", "windows", or "unknown"

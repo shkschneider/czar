@@ -207,39 +207,29 @@ function Declarations.collect_declarations(typechecker)
     
     for _, item in ipairs(typechecker.ast.items) do
         if item.kind == "struct" then
-            -- Check naming convention: structs should be TitleCase
+            -- Check naming convention: structs MUST be TitleCase (now enforced as error)
             if not is_titlecase(item.name) then
                 local msg = string.format(
-                    "Struct '%s' should be TitleCase (e.g., '%s')",
+                    "Struct '%s' must be TitleCase (e.g., '%s'). This is required to avoid parser ambiguity with statement blocks.",
                     item.name,
                     item.name:sub(1,1):upper() .. item.name:sub(2)
                 )
-                Warnings.emit(
-                    typechecker.source_file,
-                    item.line,
-                    Warnings.WarningType.STRUCT_NOT_TITLECASE,
-                    msg,
-                    typechecker.source_path,
-                    nil
-                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, item.line,
+                    Errors.ErrorType.INVALID_STRUCT_NAME, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
             end
             
             -- Check naming convention: structs should not have underscores (use PascalCase)
             if has_underscore(item.name) then
                 local suggested_name = item.name:gsub("_(%l)", function(c) return c:upper() end):gsub("_", "")
                 local msg = string.format(
-                    "Struct '%s' should not contain underscores. Use PascalCase instead (e.g., '%s')",
+                    "Struct '%s' must not contain underscores. Use PascalCase instead (e.g., '%s'). This is required for consistency.",
                     item.name,
                     suggested_name
                 )
-                Warnings.emit(
-                    typechecker.source_file,
-                    item.line,
-                    Warnings.WarningType.STRUCT_HAS_UNDERSCORE,
-                    msg,
-                    typechecker.source_path,
-                    nil
-                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, item.line,
+                    Errors.ErrorType.INVALID_STRUCT_NAME, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
             end
             
             -- Check for duplicate struct definition

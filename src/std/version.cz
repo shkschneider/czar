@@ -1,4 +1,4 @@
-pub struct version {
+pub struct Version {
     u32 major
     u32 minor
     u32 patch
