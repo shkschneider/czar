@@ -2,7 +2,7 @@
 #import cz.fmt
 
 fn main() i32 {
-    version v = version { 1, 2, 3 }
+    Version v = Version { 1, 2, 3 }
     fmt.println(v:tostring())
     return 0
 }
