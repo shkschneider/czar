@@ -1,0 +1,9 @@
+// Test that imported symbols still require namespace
+#import cz.fmt { printf, println }
+
+fn main() i32 {
+    // This should fail - must use fmt.printf() not printf()
+    printf("This should fail\n")
+    
+    return 0
+}

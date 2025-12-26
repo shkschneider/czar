@@ -1,0 +1,9 @@
+// Test that non-imported symbols are rejected
+#import cz.fmt { printf, println }
+
+fn main() i32 {
+    // This should fail - print was not imported
+    fmt.print("This should fail")
+    
+    return 0
+}
