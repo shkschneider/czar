@@ -750,8 +750,8 @@ function Expressions.parse_primary(parser)
             col = struct_tok.col
         }
     else
-        local token_label = require("parser.utils").token_label
-        error(string.format("unexpected token: %s", token_label(tok)))
+        local Utils = require("parser.utils")
+        error(string.format("unexpected token: %s", Utils.token_label(tok)))
     end
 end
 

@@ -52,7 +52,7 @@ end
 
 function Types.parse_type(parser)
     local tok = parser:current()
-    
+
     -- Check for explicit container types: array<T>, slice<T>, map<K:V>
     if parser:check("KEYWORD", "array") then
         parser:advance()
@@ -67,7 +67,7 @@ function Types.parse_type(parser)
         end
         return base_type
     end
-    
+
     if parser:check("KEYWORD", "slice") then
         parser:advance()
         parser:expect("LT")
@@ -80,7 +80,7 @@ function Types.parse_type(parser)
         end
         return base_type
     end
-    
+
     if parser:check("KEYWORD", "map") then
         parser:advance()
         parser:expect("LT")
@@ -95,7 +95,7 @@ function Types.parse_type(parser)
         end
         return base_type
     end
-    
+
     if parser:check("KEYWORD", "pair") then
         parser:advance()
         parser:expect("LT")
@@ -110,7 +110,7 @@ function Types.parse_type(parser)
         end
         return base_type
     end
-    
+
     if parser:check("KEYWORD", "string") then
         parser:advance()
         local base_type = { kind = "string" }
@@ -120,7 +120,7 @@ function Types.parse_type(parser)
         end
         return base_type
     end
-    
+
     if Types.is_type_token(tok) then
         parser:advance()
         local base_type = { kind = "named_type", name = tok.value }
@@ -148,20 +148,20 @@ function Types.parse_type(parser)
         end
         return base_type
     end
-    
-    local token_label = require("parser.utils").token_label
-    error(string.format("expected type but found %s", token_label(tok)))
+
+    local Utils = require("parser.utils")
+    error(string.format("expected type but found %s", Utils.token_label(tok)))
 end
 
 -- Parse type (no shortcuts, explicit keywords required)
 function Types.parse_type_with_map_shorthand(parser)
     local tok = parser:current()
-    
+
     -- Check for explicit container types: array<T>, slice<T>, map<K:V>, pair<T:T>
     if parser:check("KEYWORD", "array") or parser:check("KEYWORD", "slice") or parser:check("KEYWORD", "map") or parser:check("KEYWORD", "pair") or parser:check("KEYWORD", "string") then
         return Types.parse_type(parser)
     end
-    
+
     if Types.is_type_token(tok) then
         parser:advance()
         local base_type = { kind = "named_type", name = tok.value }
@@ -189,9 +189,9 @@ function Types.parse_type_with_map_shorthand(parser)
         end
         return base_type
     end
-    
-    local token_label = require("parser.utils").token_label
-    error(string.format("expected type but found %s", token_label(tok)))
+
+    local Utils = require("parser.utils")
+    error(string.format("expected type but found %s", Utils.token_label(tok)))
 end
 
 return Types
