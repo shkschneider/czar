@@ -1,0 +1,28 @@
+// Test that private (non-pub) items from modules cannot be accessed
+// This test should ERROR because PrivateStruct is not marked pub
+#module test
+
+struct PrivateStruct {
+    i32 value
+}
+
+pub struct PublicStruct {
+    i32 value
+}
+
+fn private_function() i32 {
+    return 42
+}
+
+pub fn public_function() i32 {
+    return private_function()
+}
+
+fn main() i32 {
+    // This should work - accessing public items within the same module
+    PublicStruct ps = PublicStruct { value: 10 }
+    PrivateStruct prv = PrivateStruct { value: 20 }
+    
+    i32 result = public_function() + private_function()
+    return result + ps.value + prv.value - 72
+}
