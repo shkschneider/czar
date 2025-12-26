@@ -17,6 +17,32 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
     -- new Type { fields... }
     -- Allocate on heap and initialize fields
     -- Note: Automatic scope-based cleanup implemented - freed at scope exit
+    
+    -- Special handling for string struct with string literal
+    if expr.type_name == "string" and expr.is_string_literal then
+        local str_value = expr.string_value or ""
+        local str_len = #str_value
+        
+        -- Generate code: malloc + initialize
+        local statements = {}
+        table.insert(statements, string.format("cz_string* _str = %s", 
+            ctx():alloc_call("sizeof(cz_string)", true)))
+        -- Allocate capacity with room to grow (next power of 2, minimum 16)
+        local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
+        table.insert(statements, string.format("_str->data = %s",
+            ctx():alloc_call(tostring(capacity), false)))
+        table.insert(statements, string.format("_str->length = %d", str_len))
+        table.insert(statements, string.format("_str->capacity = %d", capacity))
+        -- Copy the string data
+        if str_len > 0 then
+            table.insert(statements, string.format("memcpy(_str->data, \"%s\", %d)", str_value, str_len))
+        end
+        table.insert(statements, "_str->data[_str->length] = '\\0'")
+        table.insert(statements, "_str")
+        
+        return string.format("({ %s; })", join(statements, "; "))
+    end
+    
     local parts = {}
     for _, f in ipairs(expr.fields) do
         table.insert(parts, string.format(".%s = %s", f.name, gen_expr_fn(f.value)))

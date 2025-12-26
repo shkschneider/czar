@@ -529,34 +529,27 @@ function Expressions.parse_primary(parser)
             return { kind = "new_pair", left = left, right = right }
         end
         
-        if parser:check("KEYWORD", "string") then
-            parser:advance()
-            local str_tok = parser:expect("STRING")
-            return { kind = "new_string", value = str_tok.value }
-        end
-        
         -- Otherwise, it's a struct allocation: new Type { ... }
-        local type_name_tok = parser:expect("IDENT")
-        local type_name = type_name_tok.value
-        parser:expect("LBRACE")
-        local fields = {}
-        if not parser:check("RBRACE") then
-            repeat
-                local name = parser:expect("IDENT").value
-                parser:expect("COLON")
-                local value = Expressions.parse_expression(parser)
-                table.insert(fields, { name = name, value = value })
-                if not parser:match("COMMA") then
-                    break
-                end
-                -- Allow trailing comma: if next token is RBRACE, we're done
-                if parser:check("RBRACE") then
-                    break
-                end
-            until false
+        -- Special handling for 'string' keyword
+        local type_name_tok
+        if parser:check("KEYWORD", "string") then
+            type_name_tok = parser:advance()
+        else
+            type_name_tok = parser:expect("IDENT")
         end
-        parser:expect("RBRACE")
-        return { kind = "new_heap", type_name = type_name, fields = fields }
+        local type_name = type_name_tok.value
+        
+        -- Parse struct initialization using parse_struct_literal
+        local struct_lit = Expressions.parse_struct_literal(parser, { name = type_name })
+        
+        -- Convert struct_literal to new_heap
+        return {
+            kind = "new_heap",
+            type_name = type_name,
+            fields = struct_lit.fields,
+            string_value = struct_lit.string_value,
+            is_string_literal = struct_lit.is_string_literal
+        }
     elseif tok.type == "KEYWORD" and tok.value == "array" then
         -- Stack array literal: array [ expr, expr, ... ]
         parser:advance()
@@ -598,6 +591,16 @@ function Expressions.parse_primary(parser)
         end
         parser:expect("RBRACE")
         return { kind = "map_literal", entries = entries }
+    elseif tok.type == "KEYWORD" and tok.value == "string" then
+        -- Handle string keyword as struct type for string { } syntax
+        parser:advance()
+        if parser:check("LBRACE") then
+            -- This is string struct initialization
+            return Expressions.parse_struct_literal(parser, { name = "string" })
+        else
+            -- This should not happen - string keyword without braces
+            error("Unexpected 'string' keyword without braces at line " .. tok.line)
+        end
     elseif tok.type == "KEYWORD" and tok.value == "pair" then
         -- Stack pair literal: pair [ left: right ]
         parser:advance()
@@ -608,12 +611,6 @@ function Expressions.parse_primary(parser)
         parser:match("COMMA")  -- Optional trailing comma
         parser:expect("RBRACKET")
         return { kind = "pair_literal", left = left, right = right }
-    elseif (tok.type == "KEYWORD" and tok.value == "string") or (tok.type == "IDENT" and tok.value == "string") then
-        -- Stack string literal: string "text"
-        -- string can be either a keyword (old behavior) or identifier (new behavior as struct type)
-        parser:advance()
-        local str_tok = parser:expect("STRING")
-        return { kind = "string_literal", value = str_tok.value }
     elseif tok.type == "LT" then
         -- Cast operator: <Type> expr with optional !! or ?? fallback
         -- <Type> expr !! - unsafe cast (with warning, runtime abort on failure)
@@ -762,6 +759,25 @@ function Expressions.parse_struct_literal(parser, type_ident)
     parser:expect("LBRACE")
     local fields = {}
     local is_positional = false
+    
+    -- Special handling for string struct: string { "text" } or string {}
+    if type_ident.name == "string" and not parser:check("RBRACE") then
+        local checkpoint = parser:save()
+        -- Check if it's a string literal (STRING token)
+        if parser:check("STRING") then
+            local str_tok = parser:advance()
+            parser:match("COMMA")  -- Optional trailing comma
+            parser:expect("RBRACE")
+            return {
+                kind = "struct_literal",
+                type_name = "string",
+                fields = {},
+                string_value = str_tok.value,  -- Store the string content
+                is_string_literal = true
+            }
+        end
+        parser:restore(checkpoint)
+    end
     
     if not parser:check("RBRACE") then
         -- Check if this is positional or named initialization

@@ -545,6 +545,28 @@ end
 
 -- Generate struct literal
 function Calls.gen_struct_literal(expr, gen_expr_fn)
+    -- Special handling for string struct with string literal
+    if expr.type_name == "string" and expr.is_string_literal then
+        local str_value = expr.string_value or ""
+        local str_len = #str_value
+        
+        -- For stack allocation, we need to create a compound literal with inline data
+        -- We'll allocate capacity with room to grow (next power of 2, minimum 16)
+        local capacity = math.max(16, math.ceil((str_len + 1) / 16) * 16)
+        
+        -- Generate code: compound literal with malloc for data
+        local statements = {}
+        table.insert(statements, string.format("char* _data = %s",
+            ctx():alloc_call(tostring(capacity), false)))
+        if str_len > 0 then
+            table.insert(statements, string.format("memcpy(_data, \"%s\", %d)", str_value, str_len))
+        end
+        table.insert(statements, "_data[" .. str_len .. "] = '\\0'")
+        table.insert(statements, string.format("(cz_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
+        
+        return string.format("({ %s; })", join(statements, "; "))
+    end
+    
     local parts = {}
     for _, f in ipairs(expr.fields) do
         local field_expr = gen_expr_fn(f.value)
