@@ -3,7 +3,6 @@
 _un-ordered_
 
 - `!!` abort() if _null_ (or cast failed)
-- `#alias` for types
 - `#alloc` interface with alloc() ralloc() free(): `cz.alloc.heap` `cz.alloc.debug`
 - anonymous functions and structs
 - arena allocator `cz.alloc.arena`
@@ -14,6 +13,7 @@ _un-ordered_
 - built-in formatter
 - built-in inspector
 - callee can only receive a parameter as `mut` if the caller gave it `mut`
+- `cstr` aliased to `char *`
 - `cz` stdlib: `os`, `fmt`, ...
 - `#DEBUG` to get or set global debug flag
 - `#defer` defers execution of a statement until scope exit

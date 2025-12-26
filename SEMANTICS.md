@@ -3,7 +3,7 @@
 _case insensitive_
 
 - _
-- alloc / _malloc_
+- alloc / _malloc_ / arena
 - and
 - _anonymous_
 - any
@@ -37,7 +37,7 @@ _case insensitive_
 - main / _cz_main_
 - map
 - module / _package_
-- mut / _mutable_
+- mut / _mutable_ / _const_
 - new
 - null / _nil_ / void
 - or
