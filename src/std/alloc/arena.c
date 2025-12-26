@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Forward declare the arena struct (will be defined by user code)
-typedef struct cz_alloc_arena cz_alloc_arena;
+// The CzAllocArena struct will be defined by generated code
+// This typedef creates an alias cz_alloc_arena for compatibility
+typedef struct CzAllocArena cz_alloc_arena;
 
 // Constructor for any arena struct
 void _cz_alloc_arena_init(cz_alloc_arena* self) {
