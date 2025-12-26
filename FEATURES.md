@@ -19,7 +19,7 @@ _un-ordered_
 - `#defer` defers execution of a statement until scope exit
 - `#FILE` injects current file
 - floats `f32/64`
-- `fn function_name(parameters...) return_type {}` with varargs support (`...Type name` or `Type... name`)
+- `fn function_name(parameters...) return_type {}`
 - `for idx, item in iterable {}`
 - `#FUNCTION` injects current function name
 - identifiers length must be less than 256 long

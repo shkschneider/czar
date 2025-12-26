@@ -215,8 +215,18 @@ function Declarations.parse_iface(parser)
                 repeat
                     local is_mut = parser:match("KEYWORD", "mut") ~= nil
                     local param_type = Types.parse_type_with_map_shorthand(parser)
+                    -- Check for varargs syntax (Type...)
+                    local is_varargs = parser:match("ELLIPSIS") ~= nil
+                    if is_varargs then
+                        -- Convert type to varargs type
+                        param_type = { kind = "varargs", element_type = param_type }
+                    end
                     local param_name = parser:expect("IDENT").value
                     table.insert(params, { name = param_name, type = param_type, mutable = is_mut })
+                    -- Varargs must be the last parameter
+                    if is_varargs and not parser:check("RPAREN") then
+                        error(string.format("varargs parameter '%s' must be the last parameter", param_name))
+                    end
                     if not parser:match("COMMA") then
                         break
                     end
@@ -373,13 +383,9 @@ function Declarations.parse_function(parser)
     if not parser:check("RPAREN") then
         repeat
             local is_mut = parser:match("KEYWORD", "mut") ~= nil
-            -- Check for Go-style varargs syntax (...Type)
-            local is_varargs = parser:match("ELLIPSIS") ~= nil
             local param_type = Types.parse_type_with_map_shorthand(parser)
-            -- Also check for postfix varargs syntax (Type...) for backward compatibility
-            if not is_varargs then
-                is_varargs = parser:match("ELLIPSIS") ~= nil
-            end
+            -- Check for varargs syntax (Type...)
+            local is_varargs = parser:match("ELLIPSIS") ~= nil
             if is_varargs then
                 -- Convert type to varargs type
                 param_type = { kind = "varargs", element_type = param_type }
