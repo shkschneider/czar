@@ -1,5 +1,6 @@
 // Test #unsafe block
 #import cz.fmt
+#import C : stdio.h
 // Verifies that raw C code can be embedded and passed through
 
 fn test_unsafe() i32 {
