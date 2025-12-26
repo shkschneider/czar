@@ -1,0 +1,53 @@
+// Test interface methods calling other interface methods
+
+iface iCalculator {
+    fn add(i32 a, i32 b) i32
+    fn multiply(i32 a, i32 b) i32
+    fn square(i32 n) i32
+}
+
+struct SimpleCalc : iCalculator {
+    i32 dummy
+}
+
+fn SimpleCalc:add(i32 a, i32 b) i32 {
+    return a + b
+}
+
+fn SimpleCalc:multiply(i32 a, i32 b) i32 {
+    return a * b
+}
+
+fn SimpleCalc:square(i32 n) i32 {
+    // Call another method of the same interface
+    return self:multiply(n, n)
+}
+
+fn main() i32 {
+    SimpleCalc calc = SimpleCalc { dummy: 0 }
+    
+    // Test basic operations
+    if calc:add(5, 3) != 8 {
+        return 1
+    }
+    
+    if calc:multiply(4, 7) != 28 {
+        return 2
+    }
+    
+    // Test method calling another method
+    if calc:square(5) != 25 {
+        return 3
+    }
+    
+    if calc:square(10) != 100 {
+        return 4
+    }
+    
+    // Check interface conformance
+    if not (calc is iCalculator) {
+        return 5
+    }
+    
+    return 0
+}

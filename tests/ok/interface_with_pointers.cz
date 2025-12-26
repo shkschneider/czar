@@ -1,0 +1,47 @@
+// Test interface with pointer types
+
+iface iNode {
+    fn get_value() i32
+    fn set_value(i32 val) void
+}
+
+struct IntNode : iNode {
+    i32 value
+}
+
+fn IntNode:get_value() i32 {
+    return self.value
+}
+
+fn IntNode:set_value(i32 val) void {
+    self.value = val
+}
+
+fn main() i32 {
+    // Test with heap allocation
+    IntNode? node = new IntNode { value: 42 }
+    #defer free node
+    
+    // Test interface methods with pointer
+    if node:get_value() != 42 {
+        return 1
+    }
+    
+    node:set_value(100)
+    if node:get_value() != 100 {
+        return 2
+    }
+    
+    // Test multiple updates
+    node:set_value(200)
+    if node:get_value() != 200 {
+        return 3
+    }
+    
+    node:set_value(-50)
+    if node:get_value() != -50 {
+        return 4
+    }
+    
+    return 0
+}

@@ -1,0 +1,66 @@
+// Test enum with nested struct and enum combination
+
+enum Color {
+    RED,
+    GREEN,
+    BLUE
+}
+
+struct Pixel {
+    i32 x
+    i32 y
+    Color color
+}
+
+fn get_color_value(Color c) i32 {
+    if c == Color.RED {
+        return 1
+    }
+    if c == Color.GREEN {
+        return 2
+    }
+    if c == Color.BLUE {
+        return 3
+    }
+    return 0
+}
+
+fn main() i32 {
+    // Create pixels with different colors
+    Pixel p1 = Pixel { x: 10, y: 20, color: Color.RED }
+    Pixel p2 = Pixel { x: 30, y: 40, color: Color.GREEN }
+    Pixel p3 = Pixel { x: 50, y: 60, color: Color.BLUE }
+    
+    // Test struct with enum member
+    if p1.color != Color.RED {
+        return 1
+    }
+    
+    if p2.color != Color.GREEN {
+        return 2
+    }
+    
+    if p3.color != Color.BLUE {
+        return 3
+    }
+    
+    // Test color value function
+    if get_color_value(p1.color) != 1 {
+        return 4
+    }
+    
+    if get_color_value(p2.color) != 2 {
+        return 5
+    }
+    
+    if get_color_value(p3.color) != 3 {
+        return 6
+    }
+    
+    // Test coordinates still work
+    if p1.x != 10 or p1.y != 20 {
+        return 7
+    }
+    
+    return 0
+}
