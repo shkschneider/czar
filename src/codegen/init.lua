@@ -328,8 +328,13 @@ function Codegen:generate()
     self:emit("")
 
     -- Generate memory tracking helpers only for cz.alloc.debug
+    -- NOTE: Memory tracking functions are now defined in src/std/cz.c
+    -- No need to generate them here anymore
     if self.custom_allocator_interface == "cz.alloc.debug" then
-        Codegen.Memory.gen_memory_tracking_helpers()
+        -- Memory tracking helpers are already included in cz.c
+        -- Just emit a comment for clarity
+        self:emit("// Memory tracking enabled (functions defined in cz.c)")
+        self:emit("")
     end
 
     for _, item in ipairs(self.ast.items) do
@@ -399,30 +404,20 @@ function Codegen:generate()
         end
     end
 
-    -- Always include raw C implementations from src/c/ directory
-    -- These are internal C library files that the generated code relies on
-    local raw_c_files = {
-        "src/std/string.c",
-        "src/std/fmt.c",
-        "src/std/os.c",
-        "src/std/alloc/arena.c",
-    }
-
-    for _, raw_file_path in ipairs(raw_c_files) do
-        local file = io.open(raw_file_path, "r")
-        if file then
-            local content = file:read("*all")
-            file:close()
-            -- Extract just the filename for the comment
-            local filename = raw_file_path:match("([^/]+)$")
-            self:emit("// Raw C implementation from " .. filename)
-            for line in content:gmatch("[^\r\n]+") do
-                self:emit(line)
-            end
-            self:emit("")
-        else
-            error("Failed to open raw C file: " .. raw_file_path)
+    -- Always include consolidated raw C implementation from cz.c
+    -- This contains all core C builtins: print, string, os, arena allocator
+    local raw_c_file = "src/std/cz.c"
+    local file = io.open(raw_c_file, "r")
+    if file then
+        local content = file:read("*all")
+        file:close()
+        self:emit("// Raw C builtins and standard library from cz.c")
+        for line in content:gmatch("[^\r\n]+") do
+            self:emit(line)
         end
+        self:emit("")
+    else
+        error("Failed to open raw C file: " .. raw_c_file)
     end
 
     -- Generate forward declarations for all functions to avoid C ordering issues

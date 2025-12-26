@@ -1,0 +1,26 @@
+// cz.cz - Consolidated CZ builtins and standard library code
+// This file contains all core CZ builtin wrappers and standard library functions
+// that are written in CZ language itself.
+
+#module cz
+
+#import C : stdio.h
+
+// ============================================================================
+// PRINT FUNCTIONS
+// ============================================================================
+
+// Print with format string and arguments (no newline)
+fn print(string fmt, any... args) {
+    _cz_print(fmt:cstr(), args)
+}
+
+// Print with format string and arguments (with newline)
+fn println(string fmt, any... args) {
+    _cz_println(fmt:cstr(), args)
+}
+
+// Printf with format string and arguments
+fn printf(string fmt, any... args) {
+    _cz_printf(fmt:cstr(), args)
+}
