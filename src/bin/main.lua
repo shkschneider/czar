@@ -59,7 +59,7 @@ end
 local function expand_file_args(args)
     local files = {}
     local options = {}
-    
+
     local i = 1
     while i <= #args do
         if args[i] == "--debug" then
@@ -87,7 +87,7 @@ local function expand_file_args(args)
         end
         i = i + 1
     end
-    
+
     return files, options
 end
 
@@ -228,7 +228,7 @@ local function cmd_build(args)
                 end
             end
         end
-        
+
         if not main_file then
             io.stderr:write("Error: no file with main function found in provided files\n")
             os.exit(1)
@@ -285,7 +285,7 @@ local function cmd_run(args)
                 end
             end
         end
-        
+
         if not main_file then
             io.stderr:write("Error: no file with main function found in provided files\n")
             os.exit(1)
@@ -330,7 +330,7 @@ local function cmd_asm(args)
             io.stderr:write(string.format("%s: %s\n", source_path, result))
             fail_count = fail_count + 1
         else
-            io.stderr:write(string.format("Generated: %s\n", result))
+            io.stdout:write(string.format("Generated: %s\n", result))
             success_count = success_count + 1
         end
     end
@@ -375,7 +375,7 @@ local function cmd_compile(args)
                 os.exit(1)  -- Default error code
             end
         else
-            io.stderr:write(string.format("Generated: %s\n", result))
+            io.stdout:write(string.format("Generated: %s\n", result))
             success_count = success_count + 1
         end
     end
@@ -414,7 +414,7 @@ local function cmd_test(args)
             io.stderr:write(string.format("%s: %s\n", source_path, err))
             fail_count = fail_count + 1
         else
-            io.stderr:write(string.format("Test passed: %s\n", source_path))
+            io.stdout:write(string.format("Test passed: %s\n", source_path))
             success_count = success_count + 1
         end
     end
@@ -450,7 +450,7 @@ local function cmd_format(args)
             io.stderr:write(string.format("%s: %s\n", source_path, err))
             os.exit(1)
         end
-        io.stderr:write(string.format("Formatted: %s\n", source_path))
+        io.stdout:write(string.format("Formatted: %s\n", source_path))
     end
 
     return 0
@@ -464,7 +464,7 @@ local function cmd_clean(args)
     if #result.removed > 0 then
         io.stderr:write("Removed files:\n")
         for _, file in ipairs(result.removed) do
-            io.stderr:write(string.format("  %s\n", file))
+            io.stdout:write(string.format("  %s\n", file))
         end
     end
 
