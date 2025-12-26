@@ -718,10 +718,11 @@ int32_t fibonacci_iterative(int32_t n)
 int32_t main()
 {
     _cz_println("Fibonacci sequence (first 10 numbers):");
+    const int32_t max = 99999;
     int32_t i = 0;
-    while ((i < 10)) {
+    while ((i < max)) {
         const int32_t fib = fibonacci_iterative(i);
-        _cz_printf("fib(%d) = %d\n", i, fib);
+        _cz_printf("fib(%d/%d) = %d\n", i, max, fib);
         (i = (i + 1));
     _loop_continue_2: ;
     }
