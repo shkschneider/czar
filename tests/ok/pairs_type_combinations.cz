@@ -1,0 +1,35 @@
+// Test pairs with different type combinations
+
+fn main() i32 {
+    // Test pair with two integers
+    pair<i32:i32> p1 = pair [ 10: 20 ]
+    if p1.left != 10 or p1.right != 20 {
+        return 1
+    }
+    
+    // Test pair with integer and boolean
+    pair<i32:bool> p2 = pair [ 42: true ]
+    if p2.left != 42 or p2.right != true {
+        return 2
+    }
+    
+    // Test pair with boolean and integer
+    pair<bool:i32> p3 = pair [ false: 100 ]
+    if p3.left != false or p3.right != 100 {
+        return 3
+    }
+    
+    // Test pair with two booleans
+    pair<bool:bool> p4 = pair [ true: false ]
+    if p4.left != true or p4.right != false {
+        return 4
+    }
+    
+    // Test pair with negative numbers
+    pair<i32:i32> p5 = pair [ -50: -25 ]
+    if p5.left != -50 or p5.right != -25 {
+        return 5
+    }
+    
+    return 0
+}
