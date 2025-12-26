@@ -16,5 +16,5 @@ pub fn printf(string fmt, any... args) {
 }
 
 pub fn println(string fmt, any... args) {
-    _cz_printf(fmt:cstr(), args)
+    _cz_println(fmt:cstr(), args)
 }
