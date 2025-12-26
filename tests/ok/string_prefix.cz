@@ -1,8 +1,8 @@
 // Test string:prefix() method
 fn main() i32 {
-    string s = string "Hello World"
-    string prefix1 = string "Hello"
-    string prefix2 = string "World"
+    string s = string { "Hello World" }
+    string prefix1 = string { "Hello" }
+    string prefix2 = string { "World" }
     
     // Check if string starts with "Hello"
     i32 has_prefix = s.prefix(prefix1)
@@ -19,7 +19,7 @@ fn main() i32 {
     }
     
     // Test empty prefix (should always match)
-    string empty = string ""
+    string empty = string { "" }
     i32 empty_prefix = s.prefix(empty)
     
     if empty_prefix != 1 {
@@ -27,7 +27,7 @@ fn main() i32 {
     }
     
     // Test prefix longer than string
-    string long_prefix = string "Hello World Extended"
+    string long_prefix = string { "Hello World Extended" }
     i32 long_no_match = s.prefix(long_prefix)
     
     if long_no_match != 0 {

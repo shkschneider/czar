@@ -2,7 +2,7 @@
 #import cz.fmt
 
 fn main() i32 {
-    string s = string "Hello World"
+    string s = string { "Hello World" }
 
     // Extract substring
     string? sub = s.substring(0, 5)

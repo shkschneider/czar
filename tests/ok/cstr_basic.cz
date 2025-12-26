@@ -9,7 +9,7 @@ fn main() i32 {
     fmt.println(greeting)
     
     // String struct has cstr data internally
-    string s = string "test"
+    string s = string { "test" }
     cstr c = s.cstr()
     fmt.println(c)
     

@@ -2,8 +2,8 @@
 #import cz.fmt
 
 fn main() i32 {
-    string? s = new string "Hello"
-    string s2 = string " World"
+    string? s = new string { "Hello" }
+    string s2 = string { " World" }
 
     // Append to the string
     s:append(s2)
