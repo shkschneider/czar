@@ -8,7 +8,6 @@ This directory contains the test suite for the Czar language compiler.
 
 - `ok/` - Tests expected to compile and run successfully (exit code 0)
 - `ko/` - Tests expected to fail compilation or exit with non-zero code
-- `fail/` - Tests for features not yet implemented or edge cases
 
 ### Test Categories in `ok/`
 
@@ -132,14 +131,6 @@ fn main() i32 {
 - Should compile but fail at runtime with non-zero exit
 - Include comments explaining what error should be caught
 - Test specific error conditions
-
-## Test Coverage
-
-Current statistics:
-- Total tests: 305
-- OK tests: 227
-- KO tests: 77
-- Fail tests: 12 (features not yet implemented)
 
 ## Generated Artifacts
 

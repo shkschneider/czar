@@ -1,14 +1,14 @@
 // Test that casting to unimplemented interface fails
 
-iface MyInterface {
+iface iMyInterface {
     fn tostring() char?
 }
 
-iface MyOtherIface {
+iface iMyOtherIface {
     fn toint() i32
 }
 
-struct MyStruct : MyInterface {
+struct MyStruct : iMyInterface {
     i32 value
 }
 
@@ -18,9 +18,9 @@ fn MyStruct:tostring() char? {
 
 fn main() i32 {
     MyStruct s = MyStruct { value: 42 }
-    
+
     // This should ERROR: s does not implement MyOtherIface
-    MyOtherIface i = <MyOtherIface> s !!
-    
+    iMyOtherIface i = <iMyOtherIface> s !!
+
     return 0
 }
