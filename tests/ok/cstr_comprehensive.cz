@@ -24,7 +24,7 @@ fn main() i32 {
     fmt.println(greeting)
     
     // 4. String struct has cstr data internally
-    string s = string { "test string" }
+    String s = String { "test string" }
     cstr c = s.cstr()
     fmt.println(c)
     

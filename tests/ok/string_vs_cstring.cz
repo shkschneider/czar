@@ -1,20 +1,20 @@
-// Test that "string literals" are different from string type
+// Test that "String literals" are different from String type
 #import cz.fmt
 
 // String literals "..." are char? in C, not czar_string
 fn main() i32 {
-    // This is a czar string (internal type)
-    string s = string { "test" }
+    // This is a czar String (internal type)
+    String s = String { "test" }
 
-    // This would be a C string literal (char?)
+    // This would be a C String literal (char?)
     // They are NOT the same type
 
-    // Test that czar string works
+    // Test that czar String works
     if s.length != 4 {
         return 1
     }
 
-    // Test C-string conversion
+    // Test C-String conversion
     fmt.print(s.cstr())
 
     return 0

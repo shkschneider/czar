@@ -241,10 +241,10 @@ function Fields.infer_field_type(typechecker, expr)
     -- Handle String type fields (memory-safe: no direct data access)
     if base_type.kind == "named_type" and base_type.name == "String" then
         if expr.field == "length" then
-            expr.inferred_type = { kind = "named_type", name = "u32" }
+            expr.inferred_type = { kind = "named_type", name = "i32" }
             return expr.inferred_type
         elseif expr.field == "capacity" then
-            expr.inferred_type = { kind = "named_type", name = "u32" }
+            expr.inferred_type = { kind = "named_type", name = "i32" }
             return expr.inferred_type
         else
             local line = expr.line or (expr.object and expr.object.line) or 0

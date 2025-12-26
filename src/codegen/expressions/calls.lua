@@ -552,8 +552,8 @@ end
 
 -- Generate struct literal
 function Calls.gen_struct_literal(expr, gen_expr_fn)
-    -- Special handling for string struct with string literal
-    if expr.type_name == "string" and expr.is_string_literal then
+    -- Special handling for String struct with string literal
+    if expr.type_name == "String" and expr.is_string_literal then
         local str_value = expr.string_value or ""
         local str_len = #str_value
         
@@ -572,6 +572,14 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
         table.insert(statements, string.format("(cz_string){ .data = _data, .length = %d, .capacity = %d }", str_len, capacity))
         
         return string.format("({ %s; })", join(statements, "; "))
+    end
+    
+    -- Map Czar type name to C type name
+    local c_type_name = expr.type_name
+    if expr.type_name == "String" then
+        c_type_name = "cz_string"
+    elseif expr.type_name == "Os" then
+        c_type_name = "cz_os"
     end
     
     local parts = {}
@@ -596,11 +604,11 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
     -- C compound literals automatically zero-initialize all unspecified fields
     -- If no fields provided, generate { 0 } to explicitly zero-initialize all fields
     if #parts == 0 then
-        return string.format("(%s){ 0 }", expr.type_name)
+        return string.format("(%s){ 0 }", c_type_name)
     else
         -- Always zero-initialize by using designated initializers
         -- C guarantees that uninitialized fields in designated initializers are zero-initialized
-        return string.format("(%s){ %s }", expr.type_name, join(parts, ", "))
+        return string.format("(%s){ %s }", c_type_name, join(parts, ", "))
     end
 end
 

@@ -593,16 +593,6 @@ function Expressions.parse_primary(parser)
         end
         parser:expect("RBRACE")
         return { kind = "map_literal", entries = entries }
-    elseif tok.type == "KEYWORD" and tok.value == "string" then
-        -- Handle string keyword as struct type for string { } syntax
-        parser:advance()
-        if parser:check("LBRACE") then
-            -- This is string struct initialization
-            return Expressions.parse_struct_literal(parser, { name = "string" })
-        else
-            -- This should not happen - string keyword without braces
-            error("Unexpected 'string' keyword without braces at line " .. tok.line)
-        end
     elseif tok.type == "KEYWORD" and tok.value == "pair" then
         -- Stack pair literal: pair [ left: right ]
         parser:advance()
@@ -761,8 +751,8 @@ function Expressions.parse_struct_literal(parser, type_ident)
     local fields = {}
     local is_positional = false
     
-    -- Special handling for string struct: string { "text" } or string {}
-    if type_ident.name == "string" and not parser:check("RBRACE") then
+    -- Special handling for String struct: String { "text" } or String {}
+    if type_ident.name == "String" and not parser:check("RBRACE") then
         local checkpoint = parser:save()
         -- Check if it's a string literal (STRING token)
         if parser:check("STRING") then
@@ -771,7 +761,7 @@ function Expressions.parse_struct_literal(parser, type_ident)
             parser:expect("RBRACE")
             return {
                 kind = "struct_literal",
-                type_name = "string",
+                type_name = "String",
                 fields = {},
                 string_value = str_tok.value,  -- Store the string content
                 is_string_literal = true

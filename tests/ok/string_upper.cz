@@ -1,6 +1,6 @@
 // Test string:upper() method
 fn main() i32 {
-    string? s = new string { "Hello World" }
+    String? s = new String { "Hello World" }
     
     // Convert to uppercase
     s:upper()
@@ -12,7 +12,7 @@ fn main() i32 {
     }
     
     // Verify content is "HELLO WORLD"
-    string expected = string { "HELLO WORLD" }
+    String expected = String { "HELLO WORLD" }
     i32 match = s.prefix(expected)
     
     free s
