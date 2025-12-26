@@ -1,5 +1,5 @@
 // Comprehensive varargs test demonstrating all features
-// Varargs syntax: Type... name
+// Varargs syntax: ...Type name (Go-style) or Type... name (traditional)
 
 // Function with only varargs
 fn max(i32... values) i32 {

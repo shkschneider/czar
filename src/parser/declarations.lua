@@ -373,9 +373,13 @@ function Declarations.parse_function(parser)
     if not parser:check("RPAREN") then
         repeat
             local is_mut = parser:match("KEYWORD", "mut") ~= nil
-            local param_type = Types.parse_type_with_map_shorthand(parser)
-            -- Check for varargs syntax (Type...)
+            -- Check for Go-style varargs syntax (...Type)
             local is_varargs = parser:match("ELLIPSIS") ~= nil
+            local param_type = Types.parse_type_with_map_shorthand(parser)
+            -- Also check for postfix varargs syntax (Type...) for backward compatibility
+            if not is_varargs then
+                is_varargs = parser:match("ELLIPSIS") ~= nil
+            end
             if is_varargs then
                 -- Convert type to varargs type
                 param_type = { kind = "varargs", element_type = param_type }

@@ -1,0 +1,53 @@
+// Test Go-style varargs syntax: ...Type name
+// This syntax is more similar to Go's varargs notation
+
+// Function with Go-style varargs only
+fn sum(...i32 nums) i32 {
+    mut i32 total = 0
+    mut i32 i = 0
+    while i < 3 {
+        total = total + nums[i]
+        i = i + 1
+    }
+    return total
+}
+
+// Function with fixed params and Go-style varargs
+fn compute(i32 base, ...i32 values) i32 {
+    mut i32 total = base
+    mut i32 i = 0
+    while i < 2 {
+        total = total + values[i]
+        i = i + 1
+    }
+    return total
+}
+
+// Different type with Go-style varargs
+fn sum_u8(...u8 nums) u8 {
+    return nums[0] + nums[1]
+}
+
+fn main() i32 {
+    // Test basic varargs
+    i32 result1 = sum(10, 20, 30)
+    
+    // Test fixed params + varargs
+    i32 result2 = compute(100, 20, 30)
+    
+    // Test different type
+    u8 result3 = sum_u8(5, 10)
+    
+    // Verify results
+    if result1 != 60 {
+        return 1
+    }
+    if result2 != 150 {
+        return 2
+    }
+    if result3 != 15 {
+        return 3
+    }
+    
+    return 0
+}
