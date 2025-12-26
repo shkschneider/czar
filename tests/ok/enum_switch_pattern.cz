@@ -1,0 +1,72 @@
+// Test enum with switch-like pattern using multiple if statements
+
+enum Status {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAILED
+}
+
+fn status_to_code(Status s) i32 {
+    if s == Status.PENDING {
+        return 0
+    }
+    if s == Status.RUNNING {
+        return 1
+    }
+    if s == Status.COMPLETED {
+        return 2
+    }
+    if s == Status.FAILED {
+        return -1
+    }
+    return -99  // Should never reach
+}
+
+fn is_finished(Status s) bool {
+    if s == Status.COMPLETED {
+        return true
+    }
+    if s == Status.FAILED {
+        return true
+    }
+    return false
+}
+
+fn main() i32 {
+    // Test all status codes
+    if status_to_code(Status.PENDING) != 0 {
+        return 1
+    }
+    
+    if status_to_code(Status.RUNNING) != 1 {
+        return 2
+    }
+    
+    if status_to_code(Status.COMPLETED) != 2 {
+        return 3
+    }
+    
+    if status_to_code(Status.FAILED) != -1 {
+        return 4
+    }
+    
+    // Test is_finished helper
+    if is_finished(Status.PENDING) {
+        return 5
+    }
+    
+    if is_finished(Status.RUNNING) {
+        return 6
+    }
+    
+    if not is_finished(Status.COMPLETED) {
+        return 7
+    }
+    
+    if not is_finished(Status.FAILED) {
+        return 8
+    }
+    
+    return 0
+}

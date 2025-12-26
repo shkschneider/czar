@@ -1,0 +1,62 @@
+// Test enum as function return type with multiple branches
+
+enum Result {
+    SUCCESS,
+    ERROR_NOT_FOUND,
+    ERROR_INVALID,
+    ERROR_TIMEOUT
+}
+
+fn validate_number(i32 n) Result {
+    if n < 0 {
+        return Result.ERROR_INVALID
+    }
+    if n == 0 {
+        return Result.ERROR_NOT_FOUND
+    }
+    if n > 1000 {
+        return Result.ERROR_TIMEOUT
+    }
+    return Result.SUCCESS
+}
+
+fn is_error(Result r) bool {
+    if r == Result.SUCCESS {
+        return false
+    }
+    return true
+}
+
+fn main() i32 {
+    // Test success case
+    Result r1 = validate_number(50)
+    if r1 != Result.SUCCESS {
+        return 1
+    }
+    
+    if is_error(r1) {
+        return 2
+    }
+    
+    // Test error cases
+    Result r2 = validate_number(-5)
+    if r2 != Result.ERROR_INVALID {
+        return 3
+    }
+    
+    if not is_error(r2) {
+        return 4
+    }
+    
+    Result r3 = validate_number(0)
+    if r3 != Result.ERROR_NOT_FOUND {
+        return 5
+    }
+    
+    Result r4 = validate_number(2000)
+    if r4 != Result.ERROR_TIMEOUT {
+        return 6
+    }
+    
+    return 0
+}
