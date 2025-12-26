@@ -61,7 +61,8 @@ function Typechecker:register_builtins()
             { name = "capacity", type = { kind = "named_type", name = "i32" } },
         },
         line = 0,
-        builtin = true
+        builtin = true,
+        is_public = true
     }
     
     self.structs["Os"] = {
@@ -76,7 +77,8 @@ function Typechecker:register_builtins()
             { name = "macos", type = { kind = "named_type", name = "bool" } },
         },
         line = 0,
-        builtin = true
+        builtin = true,
+        is_public = true
     }
 end
 
