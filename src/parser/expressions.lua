@@ -679,12 +679,25 @@ function Expressions.parse_primary(parser)
             repeat
                 local is_mut = parser:match("KEYWORD", "mut") ~= nil
                 local param_type = Types.parse_type_with_map_shorthand(parser)
+                -- Check for varargs syntax (Type...)
+                local is_varargs = parser:match("ELLIPSIS") ~= nil
+                if is_varargs then
+                    -- Convert type to varargs type
+                    param_type = { kind = "varargs", element_type = param_type }
+                end
                 local param_name = parser:expect("IDENT").value
                 local default_value = nil
                 if parser:match("EQUAL") then
+                    if is_varargs then
+                        error(string.format("varargs parameter '%s' cannot have a default value", param_name))
+                    end
                     default_value = Expressions.parse_expression(parser)
                 end
                 table.insert(params, { name = param_name, type = param_type, mutable = is_mut, default_value = default_value })
+                -- Varargs must be the last parameter
+                if is_varargs and not parser:check("RPAREN") then
+                    error(string.format("varargs parameter '%s' must be the last parameter", param_name))
+                end
                 if not parser:match("COMMA") then
                     break
                 end

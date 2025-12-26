@@ -3,10 +3,8 @@ main.h
 *.out
 *.h
 *.o
+*.c
 *.s
 *.a
 cz
-dist/cz
 _codeql_detected_source_root
-test_os_demo.*
-test_*.c
