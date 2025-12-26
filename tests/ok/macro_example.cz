@@ -3,28 +3,28 @@
 
 fn validate_input(i32 value) i32 {
     #log("Validating input")
-    
+
     // Use assert to check preconditions
     #assert(value >= 0)
     #log("Input is non-negative")
-    
+
     #assert(value < 100)
     #log("Input is within valid range")
-    
+
     return value * 2
 }
 
 fn main() i32 {
     #log("Program starting")
-    
+
     i32 x = 10
     #log("Variable x initialized")
-    
+
     i32 result = validate_input(x)
-    
+
     #assert(result == 20)
     #log("Result validated successfully")
-    
+
     #log("Program completed")
     return 0
 }

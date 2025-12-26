@@ -1,5 +1,3 @@
-// Test #log macro
-#import cz
 // Verifies that #log prints to stderr with filename:line prefix
 
 fn test_log() i32 {

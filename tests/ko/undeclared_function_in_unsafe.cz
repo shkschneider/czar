@@ -1,0 +1,18 @@
+// Test that using printf without proper import should ERROR
+// This imports cz.fmt but tries to use printf directly without:
+// 1. Using fmt.printf() (the proper namespaced call)
+// 2. Importing C : stdio.h (to use C printf in unsafe blocks)
+#import cz.fmt
+
+fn test_printf() i32 {
+    mut i32 x = 42
+    
+    // ERROR: printf not declared (should use fmt.printf())
+    printf("Value: %d\n", x)
+    
+    return 0
+}
+
+fn main() i32 {
+    return test_printf()
+}
