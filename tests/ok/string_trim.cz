@@ -1,4 +1,6 @@
 // Test string:trim() methods
+#import cz
+
 fn main() i32 {
     // Test ltrim
     String? s1 = new String { "   hello" }

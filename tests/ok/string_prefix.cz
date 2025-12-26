@@ -1,4 +1,6 @@
 // Test string:prefix() method
+#import cz
+
 fn main() i32 {
     String s = String { "Hello World" }
     String prefix1 = String { "Hello" }

@@ -1,4 +1,6 @@
 // Test string:cut() method
+#import cz
+
 fn main() i32 {
     String s = String { "Hello,World,Test" }
     String sep = String { "," }

@@ -1,4 +1,6 @@
 // Comprehensive test of new String methods
+#import cz
+
 fn main() i32 {
     // Test index (renamed from find)
     String s1 = String { "Hello World" }

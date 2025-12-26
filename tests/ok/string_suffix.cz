@@ -1,4 +1,6 @@
 // Test string:suffix() method
+#import cz
+
 fn main() i32 {
     String s = String { "Hello World" }
     String suffix1 = String { "World" }

@@ -1,4 +1,6 @@
 // Test various String edge cases
+#import cz
+
 fn main() i32 {
     // Empty string
     String empty = String { "" }

@@ -1,4 +1,6 @@
 // Test string:index() method (renamed from find)
+#import cz
+
 fn main() i32 {
     String s = String { "Hello World" }
     String needle = String { "World" }
