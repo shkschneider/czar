@@ -1,0 +1,7 @@
+// Test that String IS available when importing cz module
+#import cz
+
+fn main() i32 {
+    String s = String { "test" }
+    return s.length - 4
+}

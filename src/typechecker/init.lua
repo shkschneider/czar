@@ -49,37 +49,50 @@ function Typechecker:register_builtins()
         self.functions["__global__"] = {}
     end
     
+    -- Built-in structs from cz module (String, Os) are no longer automatically available
+    -- They must be explicitly imported via #import cz or #import cz.string, etc.
+    -- This function is kept for future builtin registrations if needed
+end
+
+-- Register cz module builtins when cz module is imported
+function Typechecker:register_cz_builtins()
     -- Register built-in structs from cz module (String, Os)
-    -- These are always available without explicit import
+    -- These are only available when cz module is imported
     -- They map to cz_string and cz_os in generated C code
-    self.structs["String"] = {
-        kind = "struct",
-        name = "String",
-        fields = {
-            { name = "data", type = { kind = "named_type", name = "cstr" }, visibility = "prv" },
-            { name = "length", type = { kind = "named_type", name = "i32" } },
-            { name = "capacity", type = { kind = "named_type", name = "i32" } },
-        },
-        line = 0,
-        builtin = true,
-        is_public = true
-    }
+    if not self.structs["String"] then
+        self.structs["String"] = {
+            kind = "struct",
+            name = "String",
+            fields = {
+                { name = "data", type = { kind = "named_type", name = "cstr" }, visibility = "prv" },
+                { name = "length", type = { kind = "named_type", name = "i32" } },
+                { name = "capacity", type = { kind = "named_type", name = "i32" } },
+            },
+            line = 0,
+            builtin = true,
+            is_public = true,
+            module = "cz"
+        }
+    end
     
-    self.structs["Os"] = {
-        kind = "struct",
-        name = "Os",
-        fields = {
-            { name = "name", type = { kind = "named_type", name = "String" } },
-            { name = "version", type = { kind = "named_type", name = "String" } },
-            { name = "kernel", type = { kind = "named_type", name = "String" } },
-            { name = "linux", type = { kind = "named_type", name = "bool" } },
-            { name = "windows", type = { kind = "named_type", name = "bool" } },
-            { name = "macos", type = { kind = "named_type", name = "bool" } },
-        },
-        line = 0,
-        builtin = true,
-        is_public = true
-    }
+    if not self.structs["Os"] then
+        self.structs["Os"] = {
+            kind = "struct",
+            name = "Os",
+            fields = {
+                { name = "name", type = { kind = "named_type", name = "String" } },
+                { name = "version", type = { kind = "named_type", name = "String" } },
+                { name = "kernel", type = { kind = "named_type", name = "String" } },
+                { name = "linux", type = { kind = "named_type", name = "bool" } },
+                { name = "windows", type = { kind = "named_type", name = "bool" } },
+                { name = "macos", type = { kind = "named_type", name = "bool" } },
+            },
+            line = 0,
+            builtin = true,
+            is_public = true,
+            module = "cz"
+        }
+    end
 end
 
 -- Main entry point: type check the entire AST
@@ -93,6 +106,11 @@ function Typechecker:check()
     else
         -- Infer module name from directory structure
         self.module_name = Validation.infer_module_name(self)
+    end
+
+    -- If this file is part of the cz module, register cz builtins
+    if self.module_name == "cz" then
+        self:register_cz_builtins()
     end
 
     -- Process imports
@@ -117,6 +135,11 @@ function Typechecker:check()
                 line = import.line,
                 col = import.col
             })
+            
+            -- Register cz module builtins if importing from cz
+            if import.path[1] == "cz" then
+                self:register_cz_builtins()
+            end
         end
     end
 
