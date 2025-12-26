@@ -73,7 +73,6 @@ Sample output:
 Test Files:
   Positive tests (ok/):    238
   Negative tests (ko/):    80
-  Work-in-progress (fail/): 10
   Total:                    328
 ```
 

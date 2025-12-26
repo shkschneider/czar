@@ -1,13 +1,14 @@
 # Contributing to Czar
 
-Thank you for your interest in contributing to Czar! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Czar!
+This document provides guidelines for contributing to the project.
 
 ## Getting Started
 
 ### Prerequisites
 
 - LuaJIT (2.1+)
-- C toolchain (gcc/clang, make)
+- C toolchain (gcc/clang)
 - Git
 
 ### Setup Development Environment
@@ -58,6 +59,7 @@ git checkout -b fix/my-bugfix
 
 # Test your changes manually
 ./dist/cz build examples/my_example.cz
+cat exmaples/my_example.c
 ./examples/my_example.out
 ```
 
@@ -145,18 +147,18 @@ Language features typically require changes to:
 
 1. **Lexer** (`src/lexer/init.lua`)
    - Add new tokens if needed
-   
+
 2. **Parser** (`src/parser/*.lua`)
    - Add syntax parsing
    - Build AST nodes
-   
+
 3. **Type Checker** (`src/typechecker/*.lua`)
    - Add type checking logic
    - Validate semantics
-   
+
 4. **Code Generator** (`src/codegen/*.lua`)
    - Generate C code
-   
+
 5. **Builtins/Macros** (if applicable)
    - `src/builtins.lua` or `src/macros.lua`
 
@@ -254,8 +256,7 @@ czar/
 │   └── warnings.lua    # Warning system
 ├── tests/
 │   ├── ok/             # Positive tests
-│   ├── ko/             # Negative tests
-│   └── fail/           # WIP/Known issues
+│   └── ko/             # Negative tests
 ├── .github/
 │   ├── workflows/      # CI/CD
 │   └── actions/        # Reusable actions
