@@ -2,12 +2,14 @@
 
 rm -rf ./build
 
-find ./dist -type f \( \
-    -executable -o -name '*.h' -o -name '*.a' \
-\) -exec rm -vf -- {} +
+find ./bench/c  -type f                -name '*.o' -o -name '*.s' -exec rm -vf -- {} +
+find ./bench/cz -type f -name '*.c' -o -name '*.o' -o -name '*.s' -exec rm -vf -- {} +
+find ./bench    -type f -executable                               -exec rm -vf -- {} +
 
-find ./tests -type f \( \
-    -executable -o -name '*.c' -o -name '*.s' \
-\) -exec rm -vf -- {} +
+find ./dist  -type f -executable -exec rm -vf -- {} +
+find ./dist  -type f -name '*.a' -or -name '*.c' -or -name '*.h' -or -name '*.s' -exec rm -vf -- {} +
+find ./tests -type f -executable -exec rm -vf -- {} +
+find ./tests -type f -name '*.c' -or -name '*.s' -exec rm -vf -- {} +
 
-rm -vf ./a.out ./cz
+find . -type f -name '*.out' -exec rm -vf -- {} +
+rm -rf ./dist

@@ -1,10 +1,10 @@
 // Test interface field requirement - missing field should error
 
-iface HasName {
+iface iHasName {
     char? name
 }
 
-struct Person : HasName {
+struct Person : iHasName {
     i32 age
 }
 

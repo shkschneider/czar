@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-[ -x ./dist/cz ] || ./build.sh >/dev/null || exit 1
+[ -x ./dist/cz ] || {
+    echo "build.sh ..."
+    ./build.sh >/dev/null || exit 1
+}
 
 ms() { echo $(( $(date +%s%N) / 1000 / 1000 )); }
 

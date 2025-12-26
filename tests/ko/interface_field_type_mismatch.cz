@@ -1,10 +1,10 @@
 // Test interface field type mismatch
 
-iface HasValue {
+iface iHasValue {
     i32 value
 }
 
-struct Container : HasValue {
+struct Container : iHasValue {
     char? value  // Wrong type - should be i32
 }
 
