@@ -1,7 +1,7 @@
 // Test string:index() method (renamed from find)
 fn main() i32 {
-    string s = string "Hello World"
-    string needle = string "World"
+    string s = string { "Hello World" }
+    string needle = string { "World" }
     
     // Find substring using index
     i32 idx = s.index(needle)
@@ -11,7 +11,7 @@ fn main() i32 {
     }
     
     // Test not found
-    string missing = string "xyz"
+    string missing = string { "xyz" }
     i32 not_found = s.index(missing)
     
     if not_found != -1 {
@@ -19,7 +19,7 @@ fn main() i32 {
     }
     
     // Test empty needle (should return 0)
-    string empty = string ""
+    string empty = string { "" }
     i32 empty_idx = s.index(empty)
     
     if empty_idx != 0 {

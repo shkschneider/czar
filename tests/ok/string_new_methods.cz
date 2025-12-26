@@ -1,8 +1,8 @@
 // Comprehensive test of new string methods
 fn main() i32 {
     // Test index (renamed from find)
-    string s1 = string "Hello World"
-    string needle = string "World"
+    string s1 = string { "Hello World" }
+    string needle = string { "World" }
     i32 idx = s1.index(needle)
     if idx != 6 {
         return 1
@@ -14,20 +14,20 @@ fn main() i32 {
         return 2
     }
     
-    string missing = string "xyz"
+    string missing = string { "xyz" }
     i32 has_xyz = s1.contains(missing)
     if has_xyz != 0 {
         return 3
     }
     
     // Test prefix
-    string hello = string "Hello"
+    string hello = string { "Hello" }
     i32 starts_hello = s1.prefix(hello)
     if starts_hello != 1 {
         return 4
     }
     
-    string world = string "World"
+    string world = string { "World" }
     i32 starts_world = s1.prefix(world)
     if starts_world != 0 {
         return 5
@@ -45,8 +45,8 @@ fn main() i32 {
     }
     
     // Test cut
-    string s2 = string "one,two,three"
-    string comma = string ","
+    string s2 = string { "one,two,three" }
+    string comma = string { "," }
     string? first = s2.cut(comma)
     
     if first.length != 3 {
@@ -54,7 +54,7 @@ fn main() i32 {
         return 8
     }
     
-    string one = string "one"
+    string one = string { "one" }
     i32 is_one = first.prefix(one)
     free first
     
@@ -63,10 +63,10 @@ fn main() i32 {
     }
     
     // Test upper
-    string? s3 = new string "hello"
+    string? s3 = new string { "hello" }
     s3:upper()
     
-    string upper_hello = string "HELLO"
+    string upper_hello = string { "HELLO" }
     i32 is_upper = s3.prefix(upper_hello)
     free s3
     
@@ -75,10 +75,10 @@ fn main() i32 {
     }
     
     // Test lower
-    string? s4 = new string "WORLD"
+    string? s4 = new string { "WORLD" }
     s4:lower()
     
-    string lower_world = string "world"
+    string lower_world = string { "world" }
     i32 is_lower = s4.prefix(lower_world)
     free s4
     
@@ -87,7 +87,7 @@ fn main() i32 {
     }
     
     // Test chaining (upper returns string? for chaining)
-    string? s5 = new string "test"
+    string? s5 = new string { "test" }
     string? result = s5:upper()
     
     if result.length != 4 {
