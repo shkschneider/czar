@@ -32,3 +32,9 @@ pub fn println(cstr fmt, any... args) void {
         printf("\n");
     }
 }
+
+pub fn debug(cstr msg) void {
+    #unsafe {
+        printf("[DEBUG] %s\n", msg);
+    }
+}
