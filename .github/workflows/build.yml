@@ -18,13 +18,4 @@ jobs:
     - name: Build
       run: ./build.sh
     - name: Verify
-      run: |
-        ls -lh ./dist/cz
-        file ./dist/cz
-        ./dist/cz --help || ./dist/cz 2>&1 | head -5
-    #- name: Upload cz binary as artifact
-    #  uses: actions/upload-artifact@v4
-    #  with:
-    #    name: cz-binary
-    #    path: cz
-    #    retention-days: 30
+      run: file ./cz
