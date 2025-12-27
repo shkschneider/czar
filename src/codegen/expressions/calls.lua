@@ -376,8 +376,8 @@ function Calls.gen_call(expr, gen_expr_fn)
                 end
                 callee = func_name .. "_" .. type_suffix
             else
-                -- Use regular name (already set by gen_expr_fn)
-                callee = func_name
+                -- Use C name if available (for imported functions), otherwise use regular name
+                callee = func_def.c_name or func_name
             end
 
             -- Resolve arguments (handle named args and defaults)

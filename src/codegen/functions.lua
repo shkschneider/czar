@@ -333,9 +333,13 @@ function Functions.gen_function_declaration(fn)
     end
 
     -- Special handling for methods to avoid C name conflicts
-    -- Prefix all methods with the receiver type name
+    -- Prefix methods with receiver type, and imported global functions with module path
     if fn.receiver_type then
         c_name = fn.receiver_type .. "_" .. name
+    elseif fn.is_imported and fn.module_path then
+        -- Imported global functions: prefix with module path (e.g., print from cz.fmt -> cz_fmt_print)
+        local module_prefix = fn.module_path:gsub("%.", "_")
+        c_name = module_prefix .. "_" .. name
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
         c_name = generate_c_function_name(name, fn.params, true)
@@ -373,9 +377,13 @@ function Functions.gen_function(fn)
     end
 
     -- Special handling for methods to avoid C name conflicts
-    -- Prefix all methods with the receiver type name
+    -- Prefix methods with receiver type, and imported global functions with module path
     if fn.receiver_type then
         c_name = fn.receiver_type .. "_" .. name
+    elseif fn.is_imported and fn.module_path then
+        -- Imported global functions: prefix with module path (e.g., print from cz.fmt -> cz_fmt_print)
+        local module_prefix = fn.module_path:gsub("%.", "_")
+        c_name = module_prefix .. "_" .. name
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
         c_name = generate_c_function_name(name, fn.params, true)
