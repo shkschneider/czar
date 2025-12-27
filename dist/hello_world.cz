@@ -1,0 +1,10 @@
+#import cz.fmt.*
+
+fn hello(cstr name) {
+    print("Hello %s", name)
+}
+
+fn main() i32 {
+    hello("world")
+    return 0
+}

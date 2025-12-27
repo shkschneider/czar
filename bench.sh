@@ -4,7 +4,7 @@
 
 ms() { echo $(( $(date +%s%N) / 1000 / 1000 )); }
 
-OUT="cz"
+OUT="dist/cz"
 CZ=()
 C=()
 for p in ./bench/cz/*.cz ; do

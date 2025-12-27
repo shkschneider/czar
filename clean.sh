@@ -2,14 +2,12 @@
 
 rm -rf ./build
 
-find   ./bench/cz -type f -name '*.c'   -exec rm -vf -- {} +
-find   ./bench    -type f -executable   -exec rm -vf -- {} +
+while read f ; do
+    rm -vf -- "./$f"
+done < <(
+    find bench/cz tests -type f \( -name '*.c' \) -print ;
+    find * -type f \( -name '*.s' -o -name '*.o' \) -print ;
+    find * -type f -executable ! -name '*.sh'
+)
 
-find   ./tests    -type f -name '*.c'   -exec rm -vf -- {} +
-find   ./tests    -type f -executable   -exec rm -vf -- {} +
-
-find   .          -type f -name '*.o'   -exec rm -vf -- {} +
-find   .          -type f -name '*.s'   -exec rm -vf -- {} +
-find   .          -type f -name '*.out' -exec rm -vf -- {} +
-
-rm -vf ./cz
+# EOF

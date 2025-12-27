@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set +e
-OUT="cz"
+OUT="dist/cz"
 if [[ -x ./$OUT ]] ; then
     echo "[CLEAN] ..."
     ./clean.sh >/dev/null
