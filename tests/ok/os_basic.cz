@@ -1,5 +1,5 @@
 // Test cz.os struct with OS detection
-#import cz.os
+#import cz.os.*
 
 fn main() i32 {
     // Access OS information

@@ -1,5 +1,5 @@
 // Test arena allocator with multiple allocations and clear
-#import cz.alloc.Arena
+#import cz.alloc.*
 
 fn main() i32 {
     // Create mutable arena with 1024 bytes using imported Arena from cz.alloc

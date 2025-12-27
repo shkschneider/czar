@@ -1,5 +1,5 @@
 // Test basic cstr type usage
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     // String literals are now cstr type (C char*)

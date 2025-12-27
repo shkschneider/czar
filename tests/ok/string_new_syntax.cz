@@ -1,5 +1,5 @@
 // Test new String syntax: String { "text" } and String {}
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     // Test heap-allocated String with new syntax

@@ -100,10 +100,15 @@ function Declarations.parse_import(parser, directive_tok)
         }
     end
     
-    -- Regular module import: #import foo.bar [as baz]
+    -- Regular module import: #import foo.bar [as baz] or #import foo.bar.*
     while parser:match("DOT") do
         local part_tok = parser:current()
-        if part_tok.type == "IDENT" or (part_tok.type == "KEYWORD" and part_tok.value == "string") then
+        -- Check for wildcard import: module.*
+        if part_tok.type == "STAR" then
+            table.insert(parts, "*")
+            parser:advance()
+            break  -- wildcard must be last
+        elseif part_tok.type == "IDENT" or (part_tok.type == "KEYWORD" and part_tok.value == "string") then
             table.insert(parts, part_tok.value)
             parser:advance()
         else

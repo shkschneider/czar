@@ -1,5 +1,5 @@
 // Test String interpolation with mustache-like syntax
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     i32 age = 25

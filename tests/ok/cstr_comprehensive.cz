@@ -1,5 +1,5 @@
 // Comprehensive test for cstr type (C char*)
-#import cz.fmt
+#import cz.fmt.*
 
 // Function that accepts cstr parameter
 fn print_cstr(cstr message) {

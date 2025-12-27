@@ -1,5 +1,5 @@
 // Test String dynamic resizing and memory safety
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     // Test heap-allocated string
