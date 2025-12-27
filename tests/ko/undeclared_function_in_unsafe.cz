@@ -6,10 +6,10 @@
 
 fn test_printf() i32 {
     mut i32 x = 42
-    
-    // ERROR: printf not declared (should use printf())
-    printf("Value: %d\n", x)
-    
+    #unsafe {
+        // ERROR: whatever-printf not found
+        wtf("Value: %d\n", x)
+    }
     return 0
 }
 
