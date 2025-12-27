@@ -332,13 +332,10 @@ function Functions.gen_function_declaration(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    -- Special handling for methods to avoid C name conflicts
+    -- Prefix all methods with the receiver type name
     if fn.receiver_type then
-        if name == "init" then
-            c_name = fn.receiver_type .. "_init"
-        elseif name == "fini" then
-            c_name = fn.receiver_type .. "_fini"
-        end
+        c_name = fn.receiver_type .. "_" .. name
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
         c_name = generate_c_function_name(name, fn.params, true)
@@ -375,13 +372,10 @@ function Functions.gen_function(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    -- Special handling for methods to avoid C name conflicts
+    -- Prefix all methods with the receiver type name
     if fn.receiver_type then
-        if name == "init" then
-            c_name = fn.receiver_type .. "_init"
-        elseif name == "fini" then
-            c_name = fn.receiver_type .. "_fini"
-        end
+        c_name = fn.receiver_type .. "_" .. name
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
         c_name = generate_c_function_name(name, fn.params, true)
@@ -473,11 +467,23 @@ function Functions.gen_function(fn)
 end
 
 function Functions.gen_struct(item)
-    ctx():emit("typedef struct " .. item.name .. " {")
+    -- Determine the C name for the struct
+    local c_struct_name = item.name
+    
+    -- If this struct is from an imported module, use the module-based C name
+    if item.module_path and item.module_path:match("^cz%.alloc") then
+        -- Convert to C name: Arena -> cz_alloc_arena
+        c_struct_name = "cz_alloc_" .. item.name:lower()
+    elseif item.name == "Arena" or item.name == "Heap" or item.name == "Debug" then
+        -- Fallback for alloc types
+        c_struct_name = "cz_alloc_" .. item.name:lower()
+    end
+    
+    ctx():emit("typedef struct " .. c_struct_name .. " {")
     for _, field in ipairs(item.fields) do
         ctx():emit(string.format("    %s %s;", Codegen.Types.c_type_in_struct(field.type, item.name), field.name))
     end
-    ctx():emit("} " .. item.name .. ";")
+    ctx():emit("} " .. c_struct_name .. ";")
     ctx():emit("")
 end
 
