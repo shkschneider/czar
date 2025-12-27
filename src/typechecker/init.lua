@@ -130,65 +130,80 @@ function Typechecker:load_stdlib_module(module_path)
     local parser = require("parser")
     
     for _, file_path in ipairs(files) do
-        print("[DEBUG] Attempting to load:", file_path)
         -- Read the file
         local file = io.open(file_path, "r")
         if file then
-            print("[DEBUG] File opened successfully:", file_path)
             local source = file:read("*all")
             file:close()
             
             -- Parse the file
             local ok, tokens = pcall(lexer, source, file_path)
             if ok then
-                print("[DEBUG] Lexed successfully:", file_path)
                 local ok2, module_ast = pcall(parser, tokens, source)
                 if ok2 then
-                    print("[DEBUG] Parsed file:", file_path, "items:", #module_ast.items)
                     -- Merge structs, interfaces, enums, and functions from the module
-                    -- Store them with qualified names (alias.TypeName)
+                    -- Store them directly in namespace (flat import)
+                    -- Also add them to the AST so codegen can see them
                     for _, item in ipairs(module_ast.items) do
-                        print("[DEBUG] Item kind:", item.kind, "is_public:", item.is_public)
                         if item.kind == "struct" and item.is_public then
-                            -- Store with qualified name: alloc.Arena
-                            local qualified_name = module_alias .. "." .. item.name
+                            -- Store directly with simple name: Arena (not alloc.Arena)
+                            local struct_name = item.name
                             
-                            -- Create a copy of the struct with qualified interface name
+                            -- Create a copy to avoid modifying the original
                             local struct_copy = {}
                             for k, v in pairs(item) do
                                 struct_copy[k] = v
                             end
                             
-                            -- If the struct implements an interface, qualify the interface name
-                            if struct_copy.implements then
-                                -- Check if the interface name is already qualified
-                                if not struct_copy.implements:match("%.") then
-                                    -- Not qualified, so it's in the same module
-                                    struct_copy.implements = module_alias .. "." .. struct_copy.implements
+                            -- Tag the struct with its module path for C code generation
+                            struct_copy.module_path = module_path
+                            
+                            if not self.structs[struct_name] then
+                                self.structs[struct_name] = struct_copy
+                                -- Check if already in AST before adding
+                                local already_in_ast = false
+                                for _, ast_item in ipairs(self.ast.items) do
+                                    if ast_item.kind == "struct" and ast_item.name == struct_name then
+                                        already_in_ast = true
+                                        break
+                                    end
+                                end
+                                if not already_in_ast then
+                                    struct_copy.is_imported = true  -- Mark as imported
+                                    table.insert(self.ast.items, struct_copy)
                                 end
                             end
-                            
-                            if not self.structs[qualified_name] then
-                                self.structs[qualified_name] = struct_copy
-                            end
                         elseif item.kind == "iface" and item.is_public then
-                            local qualified_name = module_alias .. "." .. item.name
-                            print("[DEBUG] Loading interface:", qualified_name)
-                            if not self.ifaces[qualified_name] then
-                                self.ifaces[qualified_name] = item
-                                print("[DEBUG] Stored interface:", qualified_name)
+                            -- Store directly with simple name: iAlloc (not alloc.iAlloc)
+                            local iface_name = item.name
+                            if not self.ifaces[iface_name] then
+                                self.ifaces[iface_name] = item
+                                -- Check if already in AST before adding
+                                local already_in_ast = false
+                                for _, ast_item in ipairs(self.ast.items) do
+                                    if ast_item.kind == "iface" and ast_item.name == iface_name then
+                                        already_in_ast = true
+                                        break
+                                    end
+                                end
+                                if not already_in_ast then
+                                    item.is_imported = true  -- Mark as imported
+                                    table.insert(self.ast.items, item)
+                                end
                             end
                         elseif item.kind == "enum" and item.is_public then
-                            local qualified_name = module_alias .. "." .. item.name
-                            if not self.enums[qualified_name] then
-                                self.enums[qualified_name] = item
+                            local enum_name = item.name
+                            if not self.enums[enum_name] then
+                                self.enums[enum_name] = item
+                                -- Also add to AST for codegen
+                                table.insert(self.ast.items, item)
                             end
                         elseif item.kind == "function" and item.is_public then
-                            -- Merge public functions and methods with qualified type names
+                            -- Merge public functions and methods
                             local type_name = "__global__"
                             if item.receiver_type then
-                                -- Method on a type: qualify the type name
-                                type_name = module_alias .. "." .. item.receiver_type
+                                -- Method on a type: use simple type name
+                                type_name = item.receiver_type
                             end
                             
                             if not self.functions[type_name] then
@@ -201,10 +216,10 @@ function Typechecker:load_stdlib_module(module_path)
                             end
                             
                             table.insert(self.functions[type_name][func_name], item)
+                            -- Also add to AST for codegen
+                            table.insert(self.ast.items, item)
                         end
                     end
-                else
-                    print("[DEBUG] Parse FAILED for:", file_path, "error:", tostring(module_ast))
                 end
             end
         end

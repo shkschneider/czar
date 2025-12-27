@@ -3,7 +3,7 @@
 
 fn main() i32 {
     // Create mutable arena with 1024 bytes using imported Arena from cz.alloc
-    mut alloc.Arena? arena = new alloc.Arena { size: 1024 }
+    mut Arena? arena = new Arena { size: 1024 }
     #defer free arena
     
     // Test multiple allocations using imported methods

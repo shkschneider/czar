@@ -25,7 +25,7 @@ pub fn Heap:ralloc(any ptr, u64 new_size) any {
 }
 
 // Free memory using C free
-pub fn Heap:free(any ptr) void {
+pub fn Heap:dealloc(any ptr) void {
     #unsafe {
         free(ptr);
     }
