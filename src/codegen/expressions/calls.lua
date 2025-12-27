@@ -389,26 +389,8 @@ function Calls.gen_call(expr, gen_expr_fn)
             local is_builtin_varargs = Builtins.calls[func_name] ~= nil and func_def.is_builtin
 
             for i, a in ipairs(resolved_args) do
-                if a.kind == "varargs_list" and not is_builtin_varargs then
-                    -- Generate varargs array (not for builtins like printf)
-                    if #a.args == 0 then
-                        -- No varargs provided, pass NULL and 0
-                        table.insert(args, "NULL")
-                        table.insert(args, "0")
-                    else
-                        -- Generate compound literal for varargs array
-                        local varargs_exprs = {}
-                        for _, varg in ipairs(a.args) do
-                            table.insert(varargs_exprs, gen_expr_fn(varg))
-                        end
-                        local Types = require("codegen.types")
-                        local element_type = Types.c_type(func_def.params[#func_def.params].type.element_type)
-                        local array_literal = string.format("(%s[]){%s}", element_type, join(varargs_exprs, ", "))
-                        table.insert(args, array_literal)
-                        table.insert(args, tostring(#a.args))
-                    end
-                elseif a.kind == "varargs_list" and is_builtin_varargs then
-                    -- For builtin varargs functions like printf, pass args directly
+                if a.kind == "varargs_list" then
+                    -- Pass varargs arguments directly (C native varargs)
                     for _, varg in ipairs(a.args) do
                         table.insert(args, gen_expr_fn(varg))
                     end

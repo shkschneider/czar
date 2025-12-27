@@ -6,18 +6,28 @@
 
 pub fn print(cstr fmt, any... args) void {
     #unsafe {
-        _cz_print(fmt, args);
+        va_list ap;
+        va_start(ap, fmt);
+        vprintf(fmt, ap);
+        va_end(ap);
     }
 }
 
 pub fn printf(cstr fmt, any... args) void {
     #unsafe {
-        _cz_printf(fmt, args);
+        va_list ap;
+        va_start(ap, fmt);
+        vprintf(fmt, ap);
+        va_end(ap);
     }
 }
 
 pub fn println(cstr fmt, any... args) void {
     #unsafe {
-        _cz_println(fmt, args);
+        va_list ap;
+        va_start(ap, fmt);
+        vprintf(fmt, ap);
+        va_end(ap);
+        printf("\n");
     }
 }
