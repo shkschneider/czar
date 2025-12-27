@@ -216,8 +216,9 @@ function Typechecker:load_stdlib_module(module_path)
                             end
                             
                             table.insert(self.functions[type_name][func_name], item)
-                            -- Mark as imported and add to AST for codegen
+                            -- Mark as imported with module path and add to AST for codegen
                             item.is_imported = true
+                            item.module_path = module_path
                             table.insert(self.ast.items, item)
                         end
                     end

@@ -1,18 +1,23 @@
 // print.cz - Print functions for formatted output
 // Part of the Czar standard library
 //
-// Note: print, println, printf are function pointers in the cz struct
-// They point to raw C functions _cz_print, _cz_println, _cz_printf
-#module cz
+// Note: print, println, printf call raw C functions _cz_print, _cz_println, _cz_printf
+#module cz.fmt
 
-pub fn print(string fmt, any... args) {
-    _cz_print(fmt:cstr(), args)
+pub fn print(cstr fmt, any... args) void {
+    #unsafe {
+        _cz_print(fmt, args);
+    }
 }
 
-pub fn printf(string fmt, any... args) {
-    _cz_printf(fmt:cstr(), args)
+pub fn printf(cstr fmt, any... args) void {
+    #unsafe {
+        _cz_printf(fmt, args);
+    }
 }
 
-pub fn println(string fmt, any... args) {
-    _cz_println(fmt:cstr(), args)
+pub fn println(cstr fmt, any... args) void {
+    #unsafe {
+        _cz_println(fmt, args);
+    }
 }
