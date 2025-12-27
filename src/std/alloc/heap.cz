@@ -1,15 +1,13 @@
 // heap.cz - Heap allocator implementation
 // Part of the Czar standard library
 // Uses standard C malloc/realloc/free under the hood
-#module alloc
-
-#import iAlloc
+#module cz.alloc
 
 // Heap allocator struct that implements the alloc interface
-struct heap : iAlloc {}
+pub struct heap : iAlloc {}
 
 // Allocate memory using C malloc
-fn heap:alloc(u64 size) any {
+pub fn heap:alloc(u64 size) any {
     mut any result = null
     #unsafe {
         result = malloc(size);
@@ -18,7 +16,7 @@ fn heap:alloc(u64 size) any {
 }
 
 // Reallocate memory using C realloc
-fn heap:ralloc(any ptr, u64 new_size) any {
+pub fn heap:ralloc(any ptr, u64 new_size) any {
     mut any result = null
     #unsafe {
         result = realloc(ptr, new_size);
@@ -27,7 +25,7 @@ fn heap:ralloc(any ptr, u64 new_size) any {
 }
 
 // Free memory using C free
-fn heap:free(any ptr) void {
+pub fn heap:free(any ptr) void {
     #unsafe {
         free(ptr);
     }

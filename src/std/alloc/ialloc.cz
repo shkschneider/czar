@@ -3,10 +3,10 @@
 //
 // This interface defines the contract for memory allocators.
 // Different allocator implementations (heap, debug, arena) must implement these methods.
-#module alloc
+#module cz.alloc
 
 // Memory allocator interface
-iface iAlloc {
+pub iface iAlloc {
     // Allocate memory of the specified size
     // Returns pointer to allocated memory, or null if allocation fails
     fn alloc(u64 size) any

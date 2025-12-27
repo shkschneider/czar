@@ -5,8 +5,6 @@
 // They point to raw C functions _cz_print, _cz_println, _cz_printf
 #module cz
 
-#import C : stdio.h
-
 pub fn print(string fmt, any... args) {
     _cz_print(fmt:cstr(), args)
 }
