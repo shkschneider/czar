@@ -13,7 +13,7 @@ end
 
 function Test.test(source_path, options)
     options = options or {}
-    
+
     -- Validate that the source file has a .cz extension
     if not source_path:match("%.cz$") then
         return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
@@ -27,7 +27,7 @@ function Test.test(source_path, options)
 
     -- Step 2: Build binary
     local output_path = "a.out"
-    local cc_cmd = string.format("cc %s -o %s 2>&1; echo \"EXIT_CODE:$?\"",
+    local cc_cmd = string.format("cc -Wall -Wextra %s -o %s 2>&1; echo \"EXIT_CODE:$?\"",
         shell_escape(c_path), shell_escape(output_path))
     local cc_output = io.popen(cc_cmd)
     local cc_result = cc_output:read("*a")
@@ -49,11 +49,11 @@ function Test.test(source_path, options)
         local ok, _, code = ret
         run_exit_code = code or (ok and 0 or 1)
     end
-    
+
     -- Step 4: Clean up (remove binary and .c file)
     os.remove(output_path)
     os.remove(c_path)
-    
+
     -- Check exit code
     if run_exit_code ~= 0 then
         return false, string.format("Test failed with exit code %d (expected 0)", run_exit_code)

@@ -123,6 +123,7 @@ echo "[CC] main.c -lczar ... -> $OUT"
 echo -e "\t$CFLAGS"
 echo -e "\t$LDFLAGS"
 cp ./src/bin/main.c ./build/main.c
+CFLAGS="$CFLAGS -Wall -Werror"
 cc $CFLAGS -o ./$OUT ./build/main.c $LDFLAGS
 echo -e "[CZ] "$GREEN$(du -h ./$OUT 2>/dev/null)$WHITE" "$(file -b ./$OUT 2>/dev/null )
 
