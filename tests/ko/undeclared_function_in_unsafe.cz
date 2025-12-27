@@ -2,7 +2,7 @@
 // This imports cz.fmt but tries to use printf directly without:
 // 1. Using printf() (the proper namespaced call)
 // 2. Importing C : stdio.h (to use C printf in unsafe blocks)
-#import cz.fmt
+#import cz.fmt.*
 
 fn test_printf() i32 {
     mut i32 x = 42

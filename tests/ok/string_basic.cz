@@ -1,5 +1,5 @@
 // Test basic String functionality
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     // Test heap-allocated String (returns pointer)

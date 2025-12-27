@@ -1,5 +1,5 @@
 // Test printf with format strings and arguments
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     i32 x = 42

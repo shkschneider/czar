@@ -1,5 +1,5 @@
 // Test that String IS available when importing cz.string submodule
-#import cz.string
+#import cz.string.*
 
 fn main() i32 {
     String s = String { "test" }

@@ -1,5 +1,5 @@
 // Test that "String literals" are different from String type
-#import cz.fmt
+#import cz.fmt.*
 
 // String literals "..." are char? in C, not czar_string
 fn main() i32 {

@@ -1,5 +1,5 @@
 // Comprehensive test of String interpolation features
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     i32 age = 30

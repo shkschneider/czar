@@ -1,6 +1,6 @@
 // Test UTF-8 String support
 // The czar_String type treats strings as byte arrays, which naturally supports UTF-8
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     // Test UTF-8 strings with multi-byte characters
