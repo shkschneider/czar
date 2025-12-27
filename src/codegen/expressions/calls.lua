@@ -75,9 +75,10 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         
         for i, a in ipairs(resolved_args) do
             if a.kind == "varargs_list" then
-                -- Pass varargs count followed by arguments directly (C native varargs)
+                -- Pass varargs arguments directly for C native varargs,
+                -- or pass count followed by arguments for Czar varargs emulation
                 if not is_native_varargs then
-                    table.insert(args, tostring(#a.args))  -- Hidden count parameter
+                    table.insert(args, tostring(#a.args))  -- Add count parameter for emulated varargs
                 end
                 for _, varg in ipairs(a.args) do
                     table.insert(args, gen_expr_fn(varg))
