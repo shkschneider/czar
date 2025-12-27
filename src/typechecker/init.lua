@@ -137,6 +137,7 @@ function Typechecker:load_stdlib_module(module_path)
         ["cz.alloc.Heap"] = "src/std/alloc/heap.cz",
         ["cz.alloc.Debug"] = "src/std/alloc/debug.cz",
         ["cz.alloc.iAlloc"] = "src/std/alloc/ialloc.cz",
+        ["cz.os.Os"] = "src/std/os.cz",
     }
     
     local files_to_load = nil
@@ -256,6 +257,15 @@ function Typechecker:load_stdlib_module(module_path)
                             if not self.enums[enum_name] then
                                 self.enums[enum_name] = item
                                 item.is_imported = true
+                                table.insert(self.ast.items, item)
+                            end
+                        elseif item.kind == "var" and item.is_public then
+                            -- Import global variables
+                            local var_name = item.name
+                            if not self.variables[var_name] then
+                                self.variables[var_name] = item
+                                item.is_imported = true
+                                item.module_path = base_module
                                 table.insert(self.ast.items, item)
                             end
                         elseif item.kind == "function" and item.is_public then
