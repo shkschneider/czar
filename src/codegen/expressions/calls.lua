@@ -452,6 +452,12 @@ end
 
 -- Generate field access
 function Calls.gen_field(expr, gen_expr_fn)
+    -- Check if this is Os singleton field access (e.g., Os.linux)
+    if expr.is_os_singleton then
+        -- Generate code that accesses the global Os singleton
+        return string.format("_cz_os_get()->%s", expr.field)
+    end
+    
     -- Check if this is a module alias field access
     if expr.object.kind == "identifier" then
         local obj_name = expr.object.name

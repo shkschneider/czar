@@ -177,6 +177,42 @@ function Fields.infer_field_type(typechecker, expr)
                 return nil
             end
         end
+        
+        -- Check if this is Os struct field access (e.g., Os.linux)
+        -- Os is a special struct from cz.os module that acts like a singleton
+        if expr.object.name == "Os" and typechecker.structs["Os"] then
+            -- This is accessing a field on the Os struct (singleton pattern)
+            -- Generate code that accesses the global _cz_os_get()->field
+            local os_struct = typechecker.structs["Os"]
+            
+            -- Check if field exists in Os struct
+            local field_found = false
+            local field_type = nil
+            for _, field in ipairs(os_struct.fields or {}) do
+                if field.name == expr.field then
+                    field_found = true
+                    field_type = field.type  -- Use field.type, not field.field_type
+                    break
+                end
+            end
+            
+            if field_found then
+                -- Mark this as a special Os singleton access for codegen
+                expr.is_os_singleton = true
+                expr.inferred_type = field_type
+                return field_type
+            else
+                local line = expr.line or (expr.object and expr.object.line) or 0
+                local msg = string.format(
+                    "Field '%s' not found in Os struct (available: name, version, kernel, linux, windows, macos)",
+                    expr.field
+                )
+                local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                    Errors.ErrorType.FIELD_NOT_FOUND, msg, typechecker.source_path)
+                typechecker:add_error(formatted_error)
+                return nil
+            end
+        end
     end
     
     local obj_type = Fields.infer_type(typechecker, expr.object)
