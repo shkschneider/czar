@@ -497,8 +497,17 @@ function Statements.gen_for(stmt)
     local size_expr
     
     if collection_type and collection_type.kind == "array" then
-        -- For arrays, use the compile-time size
-        size_expr = tostring(collection_type.size)
+        -- For arrays, use the compile-time size (unless it's nil, meaning dynamic/varargs)
+        if collection_type.size == nil then
+            -- Dynamic array (varargs collected into array)
+            if stmt.collection.kind == "identifier" then
+                size_expr = "__varargs_count"
+            else
+                error("For loops over dynamic arrays require explicit size tracking")
+            end
+        else
+            size_expr = tostring(collection_type.size)
+        end
     elseif collection_type and (collection_type.kind == "slice" or collection_type.kind == "varargs") then
         -- For slices and varargs, use the count variable
         if stmt.collection.kind == "identifier" then
