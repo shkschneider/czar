@@ -82,9 +82,21 @@ function Types.c_type(type_node)
         elseif name == "Os" then
             -- Built-in Os type maps to cz_os
             return "cz_os"
-        elseif name == "CzAllocArena" then
-            -- Arena allocator type maps to cz_alloc_arena
+        elseif name == "Arena" then
+            -- Arena allocator type maps to cz_alloc_arena for C compatibility
             return "cz_alloc_arena"
+        elseif name == "CzAllocArena" then
+            -- Legacy name also maps to cz_alloc_arena
+            return "cz_alloc_arena"
+        elseif name:match("%.") then
+            -- Qualified name (e.g., alloc.Arena)
+            -- Convert to C name: alloc.Arena -> cz_alloc_arena (lowercase, replace dots)
+            -- Split the name and rebuild with cz_ prefix
+            local parts = {}
+            for part in name:gmatch("[^.]+") do
+                table.insert(parts, part:lower())
+            end
+            return "cz_" .. table.concat(parts, "_")
         else
             return name
         end

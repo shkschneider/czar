@@ -6,9 +6,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// The CzAllocArena struct will be defined by generated code
-// This typedef creates an alias cz_alloc_arena for compatibility
-typedef struct CzAllocArena cz_alloc_arena;
+// The Arena struct from cz.alloc will be defined by generated code as cz_alloc_arena
+// This typedef creates compatibility alias for backwards compatibility
+typedef struct cz_alloc_arena cz_alloc_arena;
+typedef cz_alloc_arena CzAllocArena;  // Legacy alias
 
 // Constructor for any arena struct
 void _cz_alloc_arena_init(cz_alloc_arena* self) {

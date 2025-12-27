@@ -1,56 +1,12 @@
 // Test basic arena allocator functionality
-
-struct CzAllocArena {
-    u64 size
-    any buffer
-    u64 offset
-}
-
-// Constructor - calls raw C
-fn CzAllocArena:init() void {
-    #unsafe {
-        _cz_alloc_arena_init(self);
-    }
-}
-
-// Destructor - calls raw C
-fn CzAllocArena:fini() void {
-    #unsafe {
-        _cz_alloc_arena_fini(self);
-    }
-}
-
-// Allocate from arena
-fn CzAllocArena:alloc(u64 size) any {
-    mut any result = null
-    #unsafe {
-        result = _alloc(self, size);
-    }
-    return result
-}
-
-// Reallocate within arena
-fn CzAllocArena:ralloc(any ptr, u64 new_size) any {
-    mut any result = null
-    #unsafe {
-        result = _ralloc(self, ptr, new_size);
-    }
-    return result
-}
-
-// Clear arena
-fn CzAllocArena:clear() void {
-    #unsafe {
-        _clear(self);
-    }
-}
+#import cz.alloc
 
 fn main() i32 {
-    // Create arena with 1024 bytes
-    CzAllocArena? arena = new CzAllocArena { size: 1024 }
+    // Create arena with 1024 bytes using imported Arena from cz.alloc
+    alloc.Arena? arena = new alloc.Arena { size: 1024 }
     #defer free arena
     
-    // Test allocation
+    // Test allocation using imported method
     any p = arena:alloc(100)
     
     return 0
