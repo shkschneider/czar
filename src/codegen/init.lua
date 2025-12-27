@@ -291,8 +291,11 @@ function Codegen:generate()
             end
         elseif import.kind == "import" then
             -- Track stdlib imports
-            -- import.path is a table of parts, e.g., {"cz", "os"} or {"cz", "alloc"}
+            -- import.path is a table of parts, e.g., {"cz", "os"} or {"cz", "alloc", "*"}
             local import_path = table.concat(import.path, ".")
+            
+            -- Strip trailing .* for wildcard imports
+            import_path = import_path:gsub("%*$", ""):gsub("%.$", "")
 
             -- Only handle specific cz.* imports (not just "cz")
             if import_path:match("^cz%.") then
