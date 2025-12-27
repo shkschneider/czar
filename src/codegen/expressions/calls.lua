@@ -242,7 +242,9 @@ function Calls.gen_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
 
-            return string.format("%s(%s)", method_name, join(args, ", "))
+            -- Use the C name for the method (prefixed with receiver type)
+            local c_method_name = method.c_name or (receiver_type_name .. "_" .. method_name)
+            return string.format("%s(%s)", c_method_name, join(args, ", "))
         else
             error(string.format("Unknown method %s on type %s", method_name, receiver_type_name or "unknown"))
         end
