@@ -5,10 +5,10 @@
 
 // Debug allocator struct that implements the alloc interface
 // Wraps malloc/realloc/free with debug tracking
-pub struct debug : iAlloc {}
+pub struct Debug : iAlloc {}
 
 // Allocate memory with debug tracking
-pub fn debug:alloc(u64 size) any {
+pub fn Debug:alloc(u64 size) any {
     mut any result = null
     #unsafe {
         // Debug: log allocation
@@ -19,7 +19,7 @@ pub fn debug:alloc(u64 size) any {
 }
 
 // Reallocate memory with debug tracking
-pub fn debug:ralloc(any ptr, u64 new_size) any {
+pub fn Debug:ralloc(any ptr, u64 new_size) any {
     mut any result = null
     #unsafe {
         // Debug: log reallocation
@@ -30,7 +30,7 @@ pub fn debug:ralloc(any ptr, u64 new_size) any {
 }
 
 // Free memory with debug tracking
-pub fn debug:free(any ptr) void {
+pub fn Debug:free(any ptr) void {
     #unsafe {
         // Debug: log free
         // TODO: Add proper debug tracking when debug infrastructure is available

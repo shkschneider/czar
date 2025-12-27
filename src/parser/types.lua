@@ -115,7 +115,19 @@ function Types.parse_type(parser)
 
     if Types.is_type_token(tok) then
         parser:advance()
-        local base_type = { kind = "named_type", name = tok.value }
+        
+        -- Build the type name, supporting qualified names like alloc.Arena
+        local name_parts = { tok.value }
+        while parser:check("DOT") do
+            parser:advance()  -- consume DOT
+            local next_tok = parser:expect("IDENT")
+            table.insert(name_parts, next_tok.value)
+        end
+        
+        -- Join the parts with dots for qualified names
+        local type_name = table.concat(name_parts, ".")
+        
+        local base_type = { kind = "named_type", name = type_name }
         -- Check if this is a nullable type (Type?)
         if parser:match("QUESTION") then
             return { kind = "nullable", to = base_type }
@@ -155,7 +167,19 @@ function Types.parse_type_with_map_shorthand(parser)
 
     if Types.is_type_token(tok) then
         parser:advance()
-        local base_type = { kind = "named_type", name = tok.value }
+        
+        -- Build the type name, supporting qualified names like alloc.Arena
+        local name_parts = { tok.value }
+        while parser:check("DOT") do
+            parser:advance()  -- consume DOT
+            local next_tok = parser:expect("IDENT")
+            table.insert(name_parts, next_tok.value)
+        end
+        
+        -- Join the parts with dots for qualified names
+        local type_name = table.concat(name_parts, ".")
+        
+        local base_type = { kind = "named_type", name = type_name }
         -- Check if this is a nullable type (Type?)
         if parser:match("QUESTION") then
             return { kind = "nullable", to = base_type }
