@@ -12,7 +12,7 @@ fn main() i32 {
     }
 
     // Verify content
-    fmt.print(sub.cstr())
+    print(sub.cstr())
 
     free sub
     return 0

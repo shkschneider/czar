@@ -3,7 +3,7 @@
 
 // Function that accepts cstr parameter
 fn print_cstr(cstr message) {
-    fmt.println(message)
+    println(message)
 }
 
 // Function that returns cstr
@@ -14,32 +14,32 @@ fn get_greeting() cstr {
 fn main() i32 {
     // 1. String literals are now cstr type (C char*)
     cstr literal = "Hello, cstr!"
-    fmt.println(literal)
+    println(literal)
     
     // 2. Pass cstr to function
     print_cstr("Function parameter test")
     
     // 3. Get cstr from function
     cstr greeting = get_greeting()
-    fmt.println(greeting)
+    println(greeting)
     
     // 4. String struct has cstr data internally
     String s = String { "test string" }
     cstr c = s.cstr()
-    fmt.println(c)
+    println(c)
     
     // 5. String interpolation produces cstr
     i32 num = 42
     cstr interpolated = "The answer is {num}"
-    fmt.println(interpolated)
+    println(interpolated)
     
     // 6. Macros return cstr
     cstr file = #FILE
     cstr func = #FUNCTION
-    fmt.print("File: ")
-    fmt.println(file)
-    fmt.print("Function: ")
-    fmt.println(func)
+    print("File: ")
+    println(file)
+    print("Function: ")
+    println(func)
     
     return 0
 }
