@@ -5,19 +5,19 @@
 fn main() i32 {
     // Test all fields exist and can be accessed
     // Test String fields
-    println(os.name)
-    println(os.version)
-    println(os.kernel)
+    println(Os.name)
+    println(Os.version)
+    println(Os.kernel)
 
     // Test boolean fields - exactly one should be true
     mut i32 count = 0
-    if os.linux {
+    if Os.linux {
         count = count + 1
     }
-    if os.windows {
+    if Os.windows {
         count = count + 1
     }
-    if os.macos {
+    if Os.macos {
         count = count + 1
     }
 

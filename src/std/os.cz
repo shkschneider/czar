@@ -1,6 +1,6 @@
 // os.cz - Operating system interface
 // Part of the Czar standard library
-#module cz
+#module cz.os
 
 #init {
     #unsafe {

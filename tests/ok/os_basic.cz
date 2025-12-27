@@ -8,15 +8,15 @@ fn main() i32 {
     // os.kernel should be "kernel_name kernel_version"
 
     // Check boolean flags
-    if os.linux {
+    if Os.linux {
         return 0  // Success on Linux
     }
 
-    if os.windows {
+    if Os.windows {
         return 0  // Success on Windows
     }
 
-    if os.macos {
+    if Os.macos {
         return 0  // Success on macOS
     }
 
