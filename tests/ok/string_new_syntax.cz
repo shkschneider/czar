@@ -19,8 +19,8 @@ fn main() i32 {
     i32 len3 = s3.length
 
     // Get C-style string
-    fmt.println(s1.cstr())
-    fmt.println(s2.cstr())
+    println(s1.cstr())
+    println(s2.cstr())
 
     // Verify lengths
     if len1 != 13 {

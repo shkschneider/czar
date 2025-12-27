@@ -9,7 +9,6 @@
 // The Arena struct from cz.alloc will be defined by generated code as cz_alloc_arena
 // This typedef creates compatibility alias for backwards compatibility
 typedef struct cz_alloc_arena cz_alloc_arena;
-typedef cz_alloc_arena CzAllocArena;  // Legacy alias
 
 // Constructor for any arena struct
 void _cz_alloc_arena_init(cz_alloc_arena* self) {
@@ -17,7 +16,7 @@ void _cz_alloc_arena_init(cz_alloc_arena* self) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
-    
+
     *buffer_ptr = malloc(*size_ptr);
     if (!*buffer_ptr) {
         fprintf(stderr, "FATAL: Failed to allocate arena of size %lu\n", *size_ptr);
@@ -31,7 +30,7 @@ void _cz_alloc_arena_fini(cz_alloc_arena* self) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
-    
+
     if (*buffer_ptr) {
         free(*buffer_ptr);
         *buffer_ptr = NULL;
@@ -45,15 +44,15 @@ void* _alloc(cz_alloc_arena* self, uint64_t size) {
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
-    
+
     uint64_t aligned_size = (size + 7) & ~7;
-    
+
     if (*offset_ptr + aligned_size > *size_ptr) {
         fprintf(stderr, "FATAL: Arena out of memory. Requested %lu bytes, but only %lu bytes available.\n",
                 size, *size_ptr - *offset_ptr);
         abort();
     }
-    
+
     void* ptr = (char*)*buffer_ptr + *offset_ptr;
     *offset_ptr += aligned_size;
     return ptr;
@@ -64,19 +63,19 @@ void* _ralloc(cz_alloc_arena* self, const void* ptr, uint64_t new_size) {
     if (!ptr) {
         return _alloc(self, new_size);
     }
-    
+
     uint64_t* size_ptr = (uint64_t*)self;
     void** buffer_ptr = (void**)((char*)self + sizeof(uint64_t));
     uint64_t* offset_ptr = (uint64_t*)((char*)self + sizeof(uint64_t) + sizeof(void*));
-    
+
     uint64_t aligned_new_size = (new_size + 7) & ~7;
-    
+
     char* last_alloc = (char*)*buffer_ptr + *offset_ptr;
     char* ptr_char = (char*)ptr;
-    
+
     if (ptr_char < last_alloc && last_alloc - ptr_char < 1024) {
         uint64_t current_size = last_alloc - ptr_char;
-        
+
         if (aligned_new_size <= current_size) {
             *offset_ptr = (ptr_char - (char*)*buffer_ptr) + aligned_new_size;
             return (void*)ptr;
@@ -88,7 +87,7 @@ void* _ralloc(cz_alloc_arena* self, const void* ptr, uint64_t new_size) {
             }
         }
     }
-    
+
     void* new_ptr = _alloc(self, new_size);
     memcpy(new_ptr, ptr, new_size);
     return new_ptr;

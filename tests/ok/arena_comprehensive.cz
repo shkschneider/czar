@@ -1,21 +1,22 @@
 // Test arena allocator with multiple allocations and clear
 #import cz.alloc
+#import cz.alloc.arena
 
 fn main() i32 {
     // Create mutable arena with 1024 bytes using imported Arena from cz.alloc
     mut Arena? arena = new Arena { size: 1024 }
     #defer free arena
-    
+
     // Test multiple allocations using imported methods
     any p1 = arena:alloc(100)
     any p2 = arena:alloc(200)
     any p3 = arena:alloc(50)
-    
+
     // Test clear using imported method
     arena:clear()
-    
+
     // Allocate again after clear
     any p4 = arena:alloc(500)
-    
+
     return 0
 }

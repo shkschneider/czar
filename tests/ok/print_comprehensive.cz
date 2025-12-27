@@ -3,31 +3,31 @@
 
 fn main() i32 {
     // Test println
-    fmt.println("=== Testing println ===")
-    fmt.println("Line 1")
-    fmt.println("Line 2")
+    println("=== Testing println ===")
+    println("Line 1")
+    println("Line 2")
 
     // Test print
-    fmt.print("=== Testing print ===")
-    fmt.print("\n")
-    fmt.print("A")
-    fmt.print("B")
-    fmt.print("C")
-    fmt.println("")
+    print("=== Testing print ===")
+    print("\n")
+    print("A")
+    print("B")
+    print("C")
+    println("")
 
     // Test printf with various types
-    fmt.println("=== Testing printf ===")
+    println("=== Testing printf ===")
     i32 age = 25
     i32 year = 2024
-    fmt.printf("Age: %d, Year: %d\n", age, year)
+    printf("Age: %d, Year: %d\n", age, year)
 
     i32 a = 10
     i32 b = 20
     i32 c = 30
-    fmt.printf("Values: %d, %d, %d\n", a, b, c)
+    printf("Values: %d, %d, %d\n", a, b, c)
 
     // Printf without arguments
-    fmt.printf("Done!\n")
+    printf("Done!\n")
 
     return 0
 }

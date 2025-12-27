@@ -6,21 +6,21 @@ fn main() i32 {
     i32 year = 2024
 
     // Test basic interpolation
-    fmt.println("Hello {age}")
+    println("Hello {age}")
 
     // Test multiple interpolations
-    fmt.println("Age: {age}, Year: {year}")
+    println("Age: {age}, Year: {year}")
 
     // Test escaped braces
-    fmt.print("Not interpolated: \{age\}")
-    fmt.println("")
+    print("Not interpolated: \{age\}")
+    println("")
 
     // Test with expressions
-    fmt.println("Next year: {year + 1}")
+    println("Next year: {year + 1}")
 
     // Test with print (no newline)
-    fmt.print("Value: {age}")
-    fmt.println("")
+    print("Value: {age}")
+    println("")
 
     return 0
 }

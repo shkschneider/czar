@@ -8,7 +8,7 @@ fn main() i32 {
     // "世界" = 2 Chinese chars = 6 bytes (3 bytes each in UTF-8)
     // "😁" = 1 emoji (U+1F601 - grinning face with smiling eyes) = 4 bytes in UTF-8
 
-    fmt.print("=== Basic UTF-8 Tests ===")
+    print("=== Basic UTF-8 Tests ===")
 
     // Test 1: Simple UTF-8 String with Chinese characters
     String s1 = String { "Hello 世界" }
@@ -16,131 +16,131 @@ fn main() i32 {
     // The length should be in bytes, not characters
     // "Hello " = 6 bytes, "世界" = 6 bytes, total = 12 bytes
     if s1.length != 12 {
-        fmt.print("ERROR: Expected length 12 bytes")
+        print("ERROR: Expected length 12 bytes")
         return 1
     }
-    fmt.print(s1.cstr())
-    fmt.print("Test 1 PASS: Chinese chars")
+    print(s1.cstr())
+    print("Test 1 PASS: Chinese chars")
 
     // Test 2: Find UTF-8 substring
     String needle = String { "世界" }
     i32 idx = s1.index(needle)
     // "Hello " = 6 bytes, so "世界" starts at byte offset 6
     if idx != 6 {
-        fmt.print("ERROR: Expected index 6 (byte offset)")
+        print("ERROR: Expected index 6 (byte offset)")
         return 2
     }
-    fmt.print("Test 2 PASS: Find UTF-8 substring")
+    print("Test 2 PASS: Find UTF-8 substring")
 
     // Test 3: Contains UTF-8
     i32 contains = s1.contains(needle)
     if contains != 1 {
-        fmt.print("ERROR: Should contain UTF-8 substring")
+        print("ERROR: Should contain UTF-8 substring")
         return 3
     }
-    fmt.print("Test 3 PASS: Contains UTF-8")
+    print("Test 3 PASS: Contains UTF-8")
 
     // EXTENSIVE TESTING with 4-byte emoji '😁' (U+1F601)
-    fmt.print("=== Testing 4-byte emoji 😁 ===")
+    print("=== Testing 4-byte emoji 😁 ===")
 
     // Test 4: Create String with 😁
     String smiley = String { "😁" }
     if smiley.length != 4 {
-        fmt.print("ERROR: Emoji 😁 should be 4 bytes")
+        print("ERROR: Emoji 😁 should be 4 bytes")
         return 4
     }
-    fmt.print(smiley.cstr())
-    fmt.print("Test 4 PASS: 😁 is 4 bytes")
+    print(smiley.cstr())
+    print("Test 4 PASS: 😁 is 4 bytes")
 
     // Test 5: String with 😁 in middle
     String with_smiley = String { "Hi 😁 there" }
     // "Hi " = 3 bytes, "😁" = 4 bytes, " there" = 6 bytes = 13 bytes total
     if with_smiley.length != 13 {
-        fmt.print("ERROR: 'Hi 😁 there' should be 13 bytes")
+        print("ERROR: 'Hi 😁 there' should be 13 bytes")
         return 5
     }
-    fmt.print(with_smiley.cstr())
-    fmt.print("Test 5 PASS: String with 😁")
+    print(with_smiley.cstr())
+    print("Test 5 PASS: String with 😁")
 
     // Test 6: Multiple 😁 emojis
     String multi = String { "😁😁😁" }
     // 3 emojis * 4 bytes = 12 bytes
     if multi.length != 12 {
-        fmt.print("ERROR: Three 😁 should be 12 bytes")
+        print("ERROR: Three 😁 should be 12 bytes")
         return 6
     }
-    fmt.print(multi.cstr())
-    fmt.print("Test 6 PASS: Multiple 😁")
+    print(multi.cstr())
+    print("Test 6 PASS: Multiple 😁")
 
     // Test 7: Find 😁 in string
     String haystack = String { "Hello 😁 World" }
     // "Hello " = 6 bytes, so 😁 starts at byte offset 6 (counting from 0)
     i32 emoji_idx = haystack.index(smiley)
     if emoji_idx != 6 {
-        fmt.print("ERROR: 😁 should be at byte offset 6")
+        print("ERROR: 😁 should be at byte offset 6")
         return 7
     }
-    fmt.print("Test 7 PASS: Found 😁 at correct byte offset")
+    print("Test 7 PASS: Found 😁 at correct byte offset")
 
     // Test 8: Contains 😁
     if haystack.contains(smiley) != 1 {
-        fmt.print("ERROR: String should contain 😁")
+        print("ERROR: String should contain 😁")
         return 8
     }
-    fmt.print("Test 8 PASS: Contains 😁")
+    print("Test 8 PASS: Contains 😁")
 
     // Test 9: Mix ASCII and 😁
     String mixed = String { "ABC😁DEF" }
     // "ABC" = 3 bytes, "😁" = 4 bytes, "DEF" = 3 bytes = 10 bytes
     if mixed.length != 10 {
-        fmt.print("ERROR: 'ABC😁DEF' should be 10 bytes")
+        print("ERROR: 'ABC😁DEF' should be 10 bytes")
         return 9
     }
-    fmt.print(mixed.cstr())
-    fmt.print("Test 9 PASS: Mixed ASCII and 😁")
+    print(mixed.cstr())
+    print("Test 9 PASS: Mixed ASCII and 😁")
 
     // Test 10: Prefix with 😁
     String prefix_smiley = String { "😁Hello" }
     if prefix_smiley.prefix(smiley) != 1 {
-        fmt.print("ERROR: String should start with 😁")
+        print("ERROR: String should start with 😁")
         return 10
     }
-    fmt.print("Test 10 PASS: Prefix with 😁")
+    print("Test 10 PASS: Prefix with 😁")
 
     // Test 11: Suffix with 😁
     String suffix_smiley = String { "Hello😁" }
     if suffix_smiley.suffix(smiley) != 1 {
-        fmt.print("ERROR: String should end with 😁")
+        print("ERROR: String should end with 😁")
         return 11
     }
-    fmt.print("Test 11 PASS: Suffix with 😁")
+    print("Test 11 PASS: Suffix with 😁")
 
     // Test 12: Multiple different UTF-8 characters
     String utf8_mix = String { "Hello 世界 😁" }
     // "Hello " = 6, "世界" = 6, " " = 1, "😁" = 4 = 17 bytes
     if utf8_mix.length != 17 {
-        fmt.print("ERROR: Mixed UTF-8 should be 17 bytes")
+        print("ERROR: Mixed UTF-8 should be 17 bytes")
         return 12
     }
-    fmt.print(utf8_mix.cstr())
-    fmt.print("Test 12 PASS: Mixed UTF-8 characters")
+    print(utf8_mix.cstr())
+    print("Test 12 PASS: Mixed UTF-8 characters")
 
     // Test 13: Find Chinese in mixed string
     if utf8_mix.index(needle) != 6 {
-        fmt.print("ERROR: Chinese chars should be at offset 6")
+        print("ERROR: Chinese chars should be at offset 6")
         return 13
     }
-    fmt.print("Test 13 PASS: Find Chinese in mixed string")
+    print("Test 13 PASS: Find Chinese in mixed string")
 
     // Test 14: Find emoji in mixed string
     // "Hello 世界 " = 6 + 6 + 1 = 13 bytes
     if utf8_mix.index(smiley) != 13 {
-        fmt.print("ERROR: Emoji should be at offset 13")
+        print("ERROR: Emoji should be at offset 13")
         return 14
     }
-    fmt.print("Test 14 PASS: Find emoji in mixed string")
+    print("Test 14 PASS: Find emoji in mixed string")
 
-    fmt.print("=== All UTF-8 tests PASSED ===")
+    print("=== All UTF-8 tests PASSED ===")
 
     return 0
 }
