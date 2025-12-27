@@ -384,13 +384,18 @@ function Calls.gen_call(expr, gen_expr_fn)
             -- Resolve arguments (handle named args and defaults)
             local resolved_args = ctx():resolve_arguments(expr.callee.name, expr.args, func_def.params)
 
-            -- Check if this is a builtin that handles its own varargs (like printf)
-            local Builtins = require("src.builtins")
-            local is_builtin_varargs = Builtins.calls[func_name] ~= nil and func_def.is_builtin
+            -- Check if this function uses native C varargs (single unsafe block body)
+            local is_native_varargs = false
+            if func_def.body and #func_def.body.statements == 1 and func_def.body.statements[1].kind == "unsafe_block" then
+                is_native_varargs = true
+            end
 
             for i, a in ipairs(resolved_args) do
                 if a.kind == "varargs_list" then
-                    -- Pass varargs arguments directly (C native varargs)
+                    -- Pass varargs count followed by arguments directly (C native varargs)
+                    if not is_native_varargs then
+                        table.insert(args, tostring(#a.args))  -- Hidden count parameter
+                    end
                     for _, varg in ipairs(a.args) do
                         table.insert(args, gen_expr_fn(varg))
                     end
