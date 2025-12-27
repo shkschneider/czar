@@ -70,12 +70,13 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         -- Resolve arguments with named args and defaults
         local resolved_args = ctx():resolve_arguments(method_name, expr.args, method.params)
 
-        -- Generate function call - no automatic addressing/dereferencing in explicit model
+        -- Generate function call - use c_name if available (for proper naming)
         local args = {}
         for i, a in ipairs(resolved_args) do
             table.insert(args, gen_expr_fn(a))
         end
-        return string.format("%s(%s)", method_name, join(args, ", "))
+        local c_method_name = method.c_name or (type_name .. "_" .. method_name)
+        return string.format("%s(%s)", c_method_name, join(args, ", "))
     else
         error(string.format("Unknown method %s on type %s", method_name, type_name))
     end

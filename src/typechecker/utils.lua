@@ -10,6 +10,13 @@ function Utils.block_has_return(typechecker, block)
     for _, stmt in ipairs(statements) do
         if stmt.kind == "return" then
             return true
+        elseif stmt.kind == "unsafe_block" then
+            -- Unsafe blocks contain raw C code that we can't analyze
+            -- If the function body is ONLY an unsafe block, assume it might return
+            -- This is a conservative approach since we can't parse C code
+            if #statements == 1 then
+                return true
+            end
         elseif stmt.kind == "if" then
             -- For if statements, all branches must have returns
             local then_has_return = Utils.block_has_return(typechecker, stmt.then_block)

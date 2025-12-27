@@ -117,9 +117,9 @@ function Typechecker:load_stdlib_module(module_path)
     local module_files = {
         ["cz.os"] = { "src/std/os.cz" },
         ["cz.fmt"] = { "src/std/fmt.cz" },
-        ["cz.string"] = { "src/std/string.cz" },
+        -- Note: cz.string not included - String is a builtin type, not a module
         ["cz.math"] = { "src/std/math.cz" },
-        ["cz"] = { "src/std/string.cz", "src/std/fmt.cz", "src/std/os.cz" },
+        ["cz"] = { "src/std/fmt.cz", "src/std/os.cz" },
         ["cz.alloc"] = { 
             "src/std/alloc/ialloc.cz",  -- Load interface first
             "src/std/alloc/arena.cz",
@@ -323,10 +323,15 @@ function Typechecker:check()
             -- Regular module import
             local module_path = table.concat(import.path, ".")
             local alias = import.alias or import.path[#import.path]
+            
+            -- Wildcard imports (ending in *) are always considered used
+            -- since items are imported directly into namespace
+            local is_wildcard = module_path:match("%*$")
+            
             table.insert(self.imports, {
                 path = module_path,
                 alias = alias,
-                used = false,
+                used = is_wildcard or false,  -- Mark wildcard imports as used
                 line = import.line,
                 col = import.col
             })
