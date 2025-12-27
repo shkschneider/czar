@@ -232,8 +232,8 @@ function Declarations.collect_declarations(typechecker)
                 typechecker:add_error(formatted_error)
             end
             
-            -- Check for duplicate struct definition
-            if typechecker.structs[item.name] then
+            -- Check for duplicate struct definition (skip for imported items)
+            if typechecker.structs[item.name] and not item.is_imported then
                 local line = item.line or 0
                 local prev_line = typechecker.structs[item.name].line or 0
                 local msg = string.format(
@@ -302,8 +302,8 @@ function Declarations.collect_declarations(typechecker)
                 )
             end
             
-            -- Check for duplicate interface definition
-            if typechecker.ifaces[item.name] then
+            -- Check for duplicate interface definition (skip for imported items)
+            if typechecker.ifaces[item.name] and not item.is_imported then
                 local line = item.line or 0
                 local prev_line = typechecker.ifaces[item.name].line or 0
                 local msg = string.format(
@@ -455,18 +455,25 @@ function Declarations.collect_declarations(typechecker)
                 
                 local existing_overloads = typechecker.functions[type_name][func.name]
                 
-                -- Validate overload (single type variance check)
-                local valid, err_msg = validate_overload_single_type_variance(existing_overloads, func, func.name)
-                if not valid then
-                    local line = func.line or 0
-                    local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
-                        Errors.ErrorType.DUPLICATE_FUNCTION, err_msg, typechecker.source_path)
-                    typechecker:add_error(formatted_error)
-                else
-                    -- Store the overload with its signature
+                -- Validate overload (single type variance check) - skip for imported items
+                if func.is_imported then
+                    -- Imported functions are already validated, just add them
                     func.signature = create_signature(func.params)
-                    table.insert(typechecker.functions[type_name][func.name], func)
-                    table.insert(new_items, func)  -- Add expanded function to new items
+                    -- Don't add to functions table again - already added during import
+                    table.insert(new_items, func)  -- Add to new items for codegen
+                else
+                    local valid, err_msg = validate_overload_single_type_variance(existing_overloads, func, func.name)
+                    if not valid then
+                        local line = func.line or 0
+                        local formatted_error = Errors.format("ERROR", typechecker.source_file, line,
+                            Errors.ErrorType.DUPLICATE_FUNCTION, err_msg, typechecker.source_path)
+                        typechecker:add_error(formatted_error)
+                    else
+                        -- Store the overload with its signature
+                        func.signature = create_signature(func.params)
+                        table.insert(typechecker.functions[type_name][func.name], func)
+                        table.insert(new_items, func)  -- Add expanded function to new items
+                    end
                 end
             end
         elseif item.kind == "allocator_macro" then

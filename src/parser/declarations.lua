@@ -3,23 +3,26 @@
 
 local Declarations = {}
 
--- Parse module declaration: #module foo
--- Module names must be single words (no dots)
+-- Parse module declaration: #module foo or #module foo.bar.baz
+-- Module names can be dotted to represent nested namespaces
 -- This represents the namespace that all identifiers in this file belong to
 function Declarations.parse_module_declaration(parser, directive_tok)
     -- directive_tok is the DIRECTIVE token with value "module"
     local start_tok = directive_tok or parser:expect("DIRECTIVE", "module")
-    local module_name = parser:expect("IDENT").value
     
-    -- Module names must be single words - no dots allowed
-    -- The module name is the namespace for identifiers in this file
-    if parser:check("DOT") then
-        error("Module names must be single words (no dots). Use #module to specify the namespace for identifiers in this file.")
+    -- Parse module path (can be foo or foo.bar.baz)
+    local path = {}
+    table.insert(path, parser:expect("IDENT").value)
+    
+    -- Allow dotted module names like cz.alloc
+    while parser:check("DOT") do
+        parser:advance()  -- consume DOT
+        table.insert(path, parser:expect("IDENT").value)
     end
     
     return {
         kind = "module",
-        path = { module_name }  -- Single element array
+        path = path
     }
 end
 
@@ -97,10 +100,15 @@ function Declarations.parse_import(parser, directive_tok)
         }
     end
     
-    -- Regular module import: #import foo.bar [as baz]
+    -- Regular module import: #import foo.bar [as baz] or #import foo.bar.*
     while parser:match("DOT") do
         local part_tok = parser:current()
-        if part_tok.type == "IDENT" or (part_tok.type == "KEYWORD" and part_tok.value == "string") then
+        -- Check for wildcard import: module.*
+        if part_tok.type == "STAR" then
+            table.insert(parts, "*")
+            parser:advance()
+            break  -- wildcard must be last
+        elseif part_tok.type == "IDENT" or (part_tok.type == "KEYWORD" and part_tok.value == "string") then
             table.insert(parts, part_tok.value)
             parser:advance()
         else

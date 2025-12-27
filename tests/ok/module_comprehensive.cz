@@ -3,7 +3,7 @@
 #module main
 
 // This import is unused and will trigger a warning
-#import cz.math
+#import cz.math.*
 
 // Import with custom alias (also unused, will warn)
 #import cz.io as myio

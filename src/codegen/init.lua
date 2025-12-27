@@ -343,6 +343,7 @@ function Codegen:generate()
     local has_main = false
 
     -- Mark functions in AST as overloaded based on self.functions
+    -- AND set c_name for all functions (including imported ones)
     for _, item in ipairs(self.ast.items) do
         if item.kind == "function" then
             local type_name = "__global__"
@@ -358,6 +359,20 @@ function Codegen:generate()
                     item.is_overloaded = false
                 end
             end
+            
+            -- Set c_name for the function
+            local c_name = item.name
+            if item.receiver_type then
+                c_name = item.receiver_type .. "_" .. item.name
+            elseif item.is_imported and item.module_path then
+                -- Imported global functions: prefix with module path
+                local module_prefix = item.module_path:gsub("%.", "_")
+                c_name = module_prefix .. "_" .. item.name
+            elseif item.is_overloaded then
+                -- Will be handled during actual generation
+                c_name = item.name
+            end
+            item.c_name = c_name
         end
     end
 

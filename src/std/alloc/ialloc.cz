@@ -17,7 +17,7 @@ pub iface iAlloc {
     // Returns pointer to reallocated memory, or null if reallocation fails
     fn ralloc(any ptr, u64 new_size) any
 
-    // Free allocated memory
-    // ptr: pointer to memory to free
-    fn free(any ptr) void
+    // Deallocate allocated memory
+    // ptr: pointer to memory to deallocate
+    fn dealloc(any ptr) void
 }

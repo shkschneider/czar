@@ -274,7 +274,13 @@ function Functions.function_returns_null(fn)
     return check_block(fn.body)
 end
 
-function Functions.gen_params(params)
+function Functions.gen_params(params, fn)
+    -- Check if function body is entirely an unsafe block (native C varargs handling)
+    local is_native_varargs = false
+    if fn and fn.body and #fn.body.statements == 1 and fn.body.statements[1].kind == "unsafe_block" then
+        is_native_varargs = true
+    end
+    
     local parts = {}
     for i, p in ipairs(params) do
         local param_name = p.name
@@ -285,12 +291,14 @@ function Functions.gen_params(params)
 
         local type_str = Codegen.Types.c_type(p.type)
         
-        -- Handle varargs: generate pointer and count parameters (like slices)
+        -- Handle varargs: use C's native varargs (...)
         if p.type.kind == "varargs" then
-            local element_type = Codegen.Types.c_type(p.type.element_type)
-            -- Varargs are read-only (const), generate pointer and count
-            table.insert(parts, string.format("const %s* %s", element_type, param_name))
-            table.insert(parts, string.format("size_t %s_count", param_name))
+            if not is_native_varargs then
+                -- Add a hidden count parameter before the varargs (for CZar varargs)
+                table.insert(parts, "size_t __varargs_count")
+            end
+            -- Use C's native varargs syntax
+            table.insert(parts, "...")
         else
             -- In explicit pointer model with immutability by default:
             -- - Type* without mut → const Type* (immutable data through pointer)
@@ -332,13 +340,14 @@ function Functions.gen_function_declaration(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    -- Special handling for methods to avoid C name conflicts
+    -- Prefix methods with receiver type, and imported global functions with module path
     if fn.receiver_type then
-        if name == "init" then
-            c_name = fn.receiver_type .. "_init"
-        elseif name == "fini" then
-            c_name = fn.receiver_type .. "_fini"
-        end
+        c_name = fn.receiver_type .. "_" .. name
+    elseif fn.is_imported and fn.module_path then
+        -- Imported global functions: prefix with module path (e.g., print from cz.fmt -> cz_fmt_print)
+        local module_prefix = fn.module_path:gsub("%.", "_")
+        c_name = module_prefix .. "_" .. name
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
         c_name = generate_c_function_name(name, fn.params, true)
@@ -361,7 +370,7 @@ function Functions.gen_function_declaration(fn)
         attributes = "__attribute__((noinline)) "
     end
 
-    local sig = string.format("%s%s %s(%s);", attributes, return_type_str, c_name, Functions.gen_params(fn.params))
+    local sig = string.format("%s%s %s(%s);", attributes, return_type_str, c_name, Functions.gen_params(fn.params, fn))
     ctx():emit(sig)
 end
 
@@ -375,13 +384,14 @@ function Functions.gen_function(fn)
         is_overloaded = fn.is_overloaded
     end
 
-    -- Special handling for constructor/destructor methods to avoid C name conflicts
+    -- Special handling for methods to avoid C name conflicts
+    -- Prefix methods with receiver type, and imported global functions with module path
     if fn.receiver_type then
-        if name == "init" then
-            c_name = fn.receiver_type .. "_init"
-        elseif name == "fini" then
-            c_name = fn.receiver_type .. "_fini"
-        end
+        c_name = fn.receiver_type .. "_" .. name
+    elseif fn.is_imported and fn.module_path then
+        -- Imported global functions: prefix with module path (e.g., print from cz.fmt -> cz_fmt_print)
+        local module_prefix = fn.module_path:gsub("%.", "_")
+        c_name = module_prefix .. "_" .. name
     elseif is_overloaded then
         -- Generate unique C name for overloaded functions
         c_name = generate_c_function_name(name, fn.params, true)
@@ -404,18 +414,84 @@ function Functions.gen_function(fn)
         attributes = "__attribute__((noinline)) "
     end
 
-    local sig = string.format("%s%s %s(%s)", attributes, return_type_str, c_name, Functions.gen_params(fn.params))
+    local sig = string.format("%s%s %s(%s)", attributes, return_type_str, c_name, Functions.gen_params(fn.params, fn))
     ctx():emit(sig)
     ctx():push_scope()
     ctx():emit("{")
+
+    -- Check if function body is entirely an unsafe block (native C varargs handling)
+    local is_native_varargs = false
+    if fn.body and #fn.body.statements == 1 and fn.body.statements[1].kind == "unsafe_block" then
+        is_native_varargs = true
+    end
+
+    -- Handle varargs: create local array from va_list (only if not native varargs)
+    local varargs_param = nil
+    local prev_param_name = nil
+    if not is_native_varargs then
+        for i, param in ipairs(fn.params) do
+            if param.type.kind == "varargs" then
+                varargs_param = param
+                -- Get the previous parameter name (needed for va_start)
+                if i > 1 then
+                    prev_param_name = fn.params[i-1].name == "_" and ("_unused_" .. (i-1)) or fn.params[i-1].name
+                else
+                    prev_param_name = "__varargs_count"  -- If varargs is first param, use the count param
+                end
+                break
+            end
+        end
+    end
+    
+    if varargs_param then
+        local param_name = varargs_param.name == "_" and ("_unused_" .. #fn.params) or varargs_param.name
+        local element_type = Codegen.Types.c_type(varargs_param.type.element_type)
+        
+        -- Determine the promoted type for va_arg (C's default argument promotions)
+        -- Types smaller than int are promoted to int
+        -- float is promoted to double
+        local va_arg_type = element_type
+        if element_type == "uint8_t" or element_type == "int8_t" or 
+           element_type == "uint16_t" or element_type == "int16_t" or 
+           element_type == "char" or element_type == "unsigned char" or
+           element_type == "short" or element_type == "unsigned short" then
+            va_arg_type = "int"
+        elseif element_type == "float" then
+            va_arg_type = "double"
+        end
+        
+        -- Generate code to collect varargs into a local array
+        ctx():emit("    // Collect varargs into local array")
+        ctx():emit("    va_list __va_list;")
+        ctx():emit("    va_start(__va_list, " .. prev_param_name .. ");")
+        ctx():emit("    " .. element_type .. " " .. param_name .. "[__varargs_count];")
+        ctx():emit("    for (size_t __i = 0; __i < __varargs_count; __i++) {")
+        if va_arg_type ~= element_type then
+            -- Need to cast from promoted type back to original type
+            ctx():emit("        " .. param_name .. "[__i] = (" .. element_type .. ")va_arg(__va_list, " .. va_arg_type .. ");")
+        else
+            ctx():emit("        " .. param_name .. "[__i] = va_arg(__va_list, " .. element_type .. ");")
+        end
+        ctx():emit("    }")
+        ctx():emit("    va_end(__va_list);")
+        ctx():emit("")
+        
+        -- Add varargs array to scope as an array type
+        local array_type = {
+            kind = "array",
+            element_type = varargs_param.type.element_type,
+            size = nil  -- Dynamic size
+        }
+        ctx():add_var(param_name, array_type, false)  -- immutable
+    end
 
     -- Add unused parameter suppressions for underscore parameters
     for i, param in ipairs(fn.params) do
         if param.name == "_" then
             local param_name = "_unused_" .. i
             ctx():emit("    (void)" .. param_name .. ";")
-        else
-            -- Add regular parameters to scope
+        elseif param.type.kind ~= "varargs" then
+            -- Add regular parameters to scope (varargs already handled above)
             -- In explicit pointer model, parameters track mutability via param.mutable field
             local param_type = param.type
             local is_mutable = param.mutable or false
@@ -473,11 +549,23 @@ function Functions.gen_function(fn)
 end
 
 function Functions.gen_struct(item)
-    ctx():emit("typedef struct " .. item.name .. " {")
+    -- Determine the C name for the struct
+    local c_struct_name = item.name
+    
+    -- If this struct is from an imported module, use the module-based C name
+    if item.module_path and item.module_path:match("^cz%.alloc") then
+        -- Convert to C name: Arena -> cz_alloc_arena
+        c_struct_name = "cz_alloc_" .. item.name:lower()
+    elseif item.name == "Arena" or item.name == "Heap" or item.name == "Debug" then
+        -- Fallback for alloc types
+        c_struct_name = "cz_alloc_" .. item.name:lower()
+    end
+    
+    ctx():emit("typedef struct " .. c_struct_name .. " {")
     for _, field in ipairs(item.fields) do
         ctx():emit(string.format("    %s %s;", Codegen.Types.c_type_in_struct(field.type, item.name), field.name))
     end
-    ctx():emit("} " .. item.name .. ";")
+    ctx():emit("} " .. c_struct_name .. ";")
     ctx():emit("")
 end
 

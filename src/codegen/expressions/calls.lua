@@ -70,12 +70,13 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         -- Resolve arguments with named args and defaults
         local resolved_args = ctx():resolve_arguments(method_name, expr.args, method.params)
 
-        -- Generate function call - no automatic addressing/dereferencing in explicit model
+        -- Generate function call - use c_name if available (for proper naming)
         local args = {}
         for i, a in ipairs(resolved_args) do
             table.insert(args, gen_expr_fn(a))
         end
-        return string.format("%s(%s)", method_name, join(args, ", "))
+        local c_method_name = method.c_name or (type_name .. "_" .. method_name)
+        return string.format("%s(%s)", c_method_name, join(args, ", "))
     else
         error(string.format("Unknown method %s on type %s", method_name, type_name))
     end
@@ -242,7 +243,9 @@ function Calls.gen_call(expr, gen_expr_fn)
                 table.insert(args, gen_expr_fn(a))
             end
 
-            return string.format("%s(%s)", method_name, join(args, ", "))
+            -- Use the C name for the method (prefixed with receiver type)
+            local c_method_name = method.c_name or (receiver_type_name .. "_" .. method_name)
+            return string.format("%s(%s)", c_method_name, join(args, ", "))
         else
             error(string.format("Unknown method %s on type %s", method_name, receiver_type_name or "unknown"))
         end
@@ -374,38 +377,25 @@ function Calls.gen_call(expr, gen_expr_fn)
                 end
                 callee = func_name .. "_" .. type_suffix
             else
-                -- Use regular name (already set by gen_expr_fn)
-                callee = func_name
+                -- Use C name if available (for imported functions), otherwise use regular name
+                callee = func_def.c_name or func_name
             end
 
             -- Resolve arguments (handle named args and defaults)
             local resolved_args = ctx():resolve_arguments(expr.callee.name, expr.args, func_def.params)
 
-            -- Check if this is a builtin that handles its own varargs (like printf)
-            local Builtins = require("src.builtins")
-            local is_builtin_varargs = Builtins.calls[func_name] ~= nil and func_def.is_builtin
+            -- Check if this function uses native C varargs (single unsafe block body)
+            local is_native_varargs = false
+            if func_def.body and #func_def.body.statements == 1 and func_def.body.statements[1].kind == "unsafe_block" then
+                is_native_varargs = true
+            end
 
             for i, a in ipairs(resolved_args) do
-                if a.kind == "varargs_list" and not is_builtin_varargs then
-                    -- Generate varargs array (not for builtins like printf)
-                    if #a.args == 0 then
-                        -- No varargs provided, pass NULL and 0
-                        table.insert(args, "NULL")
-                        table.insert(args, "0")
-                    else
-                        -- Generate compound literal for varargs array
-                        local varargs_exprs = {}
-                        for _, varg in ipairs(a.args) do
-                            table.insert(varargs_exprs, gen_expr_fn(varg))
-                        end
-                        local Types = require("codegen.types")
-                        local element_type = Types.c_type(func_def.params[#func_def.params].type.element_type)
-                        local array_literal = string.format("(%s[]){%s}", element_type, join(varargs_exprs, ", "))
-                        table.insert(args, array_literal)
-                        table.insert(args, tostring(#a.args))
+                if a.kind == "varargs_list" then
+                    -- Pass varargs count followed by arguments directly (C native varargs)
+                    if not is_native_varargs then
+                        table.insert(args, tostring(#a.args))  -- Hidden count parameter
                     end
-                elseif a.kind == "varargs_list" and is_builtin_varargs then
-                    -- For builtin varargs functions like printf, pass args directly
                     for _, varg in ipairs(a.args) do
                         table.insert(args, gen_expr_fn(varg))
                     end
@@ -580,8 +570,21 @@ function Calls.gen_struct_literal(expr, gen_expr_fn)
         c_type_name = "cz_string"
     elseif expr.type_name == "Os" then
         c_type_name = "cz_os"
+    elseif expr.type_name == "Arena" then
+        c_type_name = "cz_alloc_arena"
+    elseif expr.type_name == "Heap" then
+        c_type_name = "cz_alloc_heap"
+    elseif expr.type_name == "Debug" then
+        c_type_name = "cz_alloc_debug"
     elseif expr.type_name == "CzAllocArena" then
         c_type_name = "cz_alloc_arena"
+    elseif expr.type_name:match("%.") then
+        -- Qualified name (e.g., alloc.Arena)
+        local parts = {}
+        for part in expr.type_name:gmatch("[^.]+") do
+            table.insert(parts, part:lower())
+        end
+        c_type_name = "cz_" .. table.concat(parts, "_")
     end
     
     local parts = {}

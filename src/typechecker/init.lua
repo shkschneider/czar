@@ -95,6 +95,201 @@ function Typechecker:register_cz_builtins()
     end
 end
 
+-- Load stdlib module definitions when imported
+-- This function parses stdlib .cz files and merges their definitions into the current context
+function Typechecker:load_stdlib_module(module_path)
+    -- Handle wildcard imports: cz.fmt.* loads all from cz.fmt
+    -- Handle explicit imports: cz.fmt.println loads only println from cz.fmt
+    
+    local is_wildcard = module_path:match("%*$")
+    if is_wildcard then
+        -- Remove the .* suffix
+        module_path = module_path:gsub("%.[*]$", "")
+    end
+    
+    -- Parse the path to determine if it's an explicit item import
+    local parts = {}
+    for part in module_path:gmatch("[^.]+") do
+        table.insert(parts, part)
+    end
+    
+    -- Map modules to their files
+    local module_files = {
+        ["cz.os"] = { "src/std/os.cz" },
+        ["cz.fmt"] = { "src/std/fmt.cz" },
+        -- Note: cz.string not included - String is a builtin type, not a module
+        ["cz.math"] = { "src/std/math.cz" },
+        ["cz"] = { "src/std/fmt.cz", "src/std/os.cz" },
+        ["cz.alloc"] = { 
+            "src/std/alloc/ialloc.cz",  -- Load interface first
+            "src/std/alloc/arena.cz",
+            "src/std/alloc/heap.cz",
+            "src/std/alloc/debug.cz"
+        },
+    }
+    
+    -- Map explicit item imports to their files
+    local item_to_file = {
+        ["cz.fmt.print"] = "src/std/fmt.cz",
+        ["cz.fmt.printf"] = "src/std/fmt.cz",
+        ["cz.fmt.println"] = "src/std/fmt.cz",
+        ["cz.alloc.Arena"] = "src/std/alloc/arena.cz",
+        ["cz.alloc.Heap"] = "src/std/alloc/heap.cz",
+        ["cz.alloc.Debug"] = "src/std/alloc/debug.cz",
+        ["cz.alloc.iAlloc"] = "src/std/alloc/ialloc.cz",
+    }
+    
+    local files_to_load = nil
+    local base_module = nil
+    local item_name = nil
+    
+    if is_wildcard then
+        -- Wildcard import: load all files from the module
+        files_to_load = module_files[module_path]
+        base_module = module_path
+    elseif #parts >= 3 then
+        -- Explicit item import: cz.fmt.println
+        item_name = parts[#parts]
+        table.remove(parts)
+        base_module = table.concat(parts, ".")
+        
+        local full_path = module_path
+        local file_path = item_to_file[full_path]
+        if file_path then
+            files_to_load = { file_path }
+        end
+    else
+        -- Module import without wildcard or item - error
+        return
+    end
+    
+    if not files_to_load then
+        return
+    end
+    
+    -- Load and parse each file
+    local lexer = require("lexer")
+    local parser = require("parser")
+    
+    for _, file_path in ipairs(files_to_load) do
+        -- Read the file
+        local file = io.open(file_path, "r")
+        if file then
+            local source = file:read("*all")
+            file:close()
+            
+            -- Parse the file
+            local ok, tokens = pcall(lexer, source, file_path)
+            if ok then
+                local ok2, module_ast = pcall(parser, tokens, source)
+                if ok2 then
+                    -- Merge structs, interfaces, enums, and functions from the module
+                    -- Store them directly in namespace (flat import)
+                    -- For explicit imports, only load the requested item
+                    -- Also add them to the AST so codegen can see them
+                    for _, item in ipairs(module_ast.items) do
+                        -- Skip if this is an explicit import and the item doesn't match
+                        if item_name and item.name ~= item_name and item.receiver_type ~= item_name then
+                            goto continue
+                        end
+                        
+                        if item.kind == "struct" and item.is_public then
+                            -- Store directly with simple name: Arena (not alloc.Arena)
+                            local struct_name = item.name
+                            
+                            -- Create a copy to avoid modifying the original
+                            local struct_copy = {}
+                            for k, v in pairs(item) do
+                                struct_copy[k] = v
+                            end
+                            
+                            -- Tag the struct with its module path for C code generation
+                            struct_copy.module_path = base_module
+                            
+                            if not self.structs[struct_name] then
+                                self.structs[struct_name] = struct_copy
+                                -- Check if already in AST before adding
+                                local already_in_ast = false
+                                for _, ast_item in ipairs(self.ast.items) do
+                                    if ast_item.kind == "struct" and ast_item.name == struct_name then
+                                        already_in_ast = true
+                                        break
+                                    end
+                                end
+                                if not already_in_ast then
+                                    struct_copy.is_imported = true  -- Mark as imported
+                                    table.insert(self.ast.items, struct_copy)
+                                end
+                            end
+                            
+                            -- For structs that implement interfaces, auto-import those interfaces
+                            if item.implements then
+                                -- implements can be either a string or a table of strings
+                                local iface_list = item.implements
+                                if type(iface_list) == "string" then
+                                    iface_list = { iface_list }
+                                end
+                                for _, iface_name in ipairs(iface_list) do
+                                    self:load_stdlib_module(base_module .. "." .. iface_name)
+                                end
+                            end
+                        elseif item.kind == "iface" and item.is_public then
+                            -- Store directly with simple name: iAlloc (not alloc.iAlloc)
+                            local iface_name = item.name
+                            if not self.ifaces[iface_name] then
+                                self.ifaces[iface_name] = item
+                                -- Check if already in AST before adding
+                                local already_in_ast = false
+                                for _, ast_item in ipairs(self.ast.items) do
+                                    if ast_item.kind == "iface" and ast_item.name == iface_name then
+                                        already_in_ast = true
+                                        break
+                                    end
+                                end
+                                if not already_in_ast then
+                                    item.is_imported = true  -- Mark as imported
+                                    table.insert(self.ast.items, item)
+                                end
+                            end
+                        elseif item.kind == "enum" and item.is_public then
+                            local enum_name = item.name
+                            if not self.enums[enum_name] then
+                                self.enums[enum_name] = item
+                                item.is_imported = true
+                                table.insert(self.ast.items, item)
+                            end
+                        elseif item.kind == "function" and item.is_public then
+                            -- Merge public functions and methods
+                            local type_name = "__global__"
+                            if item.receiver_type then
+                                -- Method on a type: use simple type name
+                                type_name = item.receiver_type
+                            end
+                            
+                            if not self.functions[type_name] then
+                                self.functions[type_name] = {}
+                            end
+                            
+                            local func_name = item.name
+                            if not self.functions[type_name][func_name] then
+                                self.functions[type_name][func_name] = {}
+                            end
+                            
+                            table.insert(self.functions[type_name][func_name], item)
+                            -- Mark as imported with module path and add to AST for codegen
+                            item.is_imported = true
+                            item.module_path = base_module
+                            table.insert(self.ast.items, item)
+                        end
+                        
+                        ::continue::
+                    end
+                end
+            end
+        end
+    end
+end
+
 -- Main entry point: type check the entire AST
 function Typechecker:check()
     -- Determine module name: either from #module declaration or inferred from path
@@ -128,10 +323,15 @@ function Typechecker:check()
             -- Regular module import
             local module_path = table.concat(import.path, ".")
             local alias = import.alias or import.path[#import.path]
+            
+            -- Wildcard imports (ending in *) are always considered used
+            -- since items are imported directly into namespace
+            local is_wildcard = module_path:match("%*$")
+            
             table.insert(self.imports, {
                 path = module_path,
                 alias = alias,
-                used = false,
+                used = is_wildcard or false,  -- Mark wildcard imports as used
                 line = import.line,
                 col = import.col
             })
@@ -140,6 +340,9 @@ function Typechecker:check()
             if import.path[1] == "cz" then
                 self:register_cz_builtins()
             end
+            
+            -- Load stdlib module definitions if this is a stdlib import
+            self:load_stdlib_module(module_path)
         end
     end
 

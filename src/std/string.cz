@@ -1,4 +1,4 @@
-#module cz
+#module cz.string
 
 pub struct String {
     prv cstr data

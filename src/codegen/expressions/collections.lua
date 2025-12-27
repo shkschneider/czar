@@ -49,8 +49,21 @@ function Collections.gen_new_heap(expr, gen_expr_fn)
         c_type_name = "cz_string"
     elseif expr.type_name == "Os" then
         c_type_name = "cz_os"
+    elseif expr.type_name == "Arena" then
+        c_type_name = "cz_alloc_arena"
+    elseif expr.type_name == "Heap" then
+        c_type_name = "cz_alloc_heap"
+    elseif expr.type_name == "Debug" then
+        c_type_name = "cz_alloc_debug"
     elseif expr.type_name == "CzAllocArena" then
         c_type_name = "cz_alloc_arena"
+    elseif expr.type_name:match("%.") then
+        -- Qualified name (e.g., alloc.Arena)
+        local parts = {}
+        for part in expr.type_name:gmatch("[^.]+") do
+            table.insert(parts, part:lower())
+        end
+        c_type_name = "cz_" .. table.concat(parts, "_")
     end
     
     local parts = {}

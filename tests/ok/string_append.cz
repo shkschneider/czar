@@ -1,5 +1,5 @@
 // Test string:append() method
-#import cz.fmt
+#import cz.fmt.*
 
 fn main() i32 {
     String? s = new String { "Hello" }
@@ -14,7 +14,7 @@ fn main() i32 {
     }
 
     // Verify content
-    fmt.print(s.cstr())
+    print(s.cstr())
 
     free s
     return 0
