@@ -1,0 +1,25 @@
+// Example: Adding a new function to the stdlib
+// 
+// BEFORE this change:
+// To add a new function like `debug()` to cz.fmt module:
+// 1. Add the function to src/std/fmt.cz
+// 2. Add manual mapping in src/codegen/expressions/calls.lua (lines 30-51)
+// 3. Update the C implementation if needed
+//
+// AFTER this change:
+// 1. Just add the function to src/std/fmt.cz
+// 2. Done! It works automatically with both syntaxes:
+//    - Static: fmt.debug("msg")
+//    - Wildcard: #import cz.fmt.* then debug("msg")
+
+#import cz.fmt
+
+fn main() i32 {
+    // All these work automatically now:
+    fmt.println("Regular println")
+    fmt.print("Print")
+    fmt.printf(" Printf\n")
+    fmt.debug("New debug function - no manual mapping needed!")
+    
+    return 0
+}
