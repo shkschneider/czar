@@ -539,7 +539,15 @@ function Expressions.parse_primary(parser)
         else
             type_name_tok = parser:expect("IDENT")
         end
-        local type_name = type_name_tok.value
+        
+        -- Build the type name, supporting qualified names like alloc.Arena
+        local name_parts = { type_name_tok.value }
+        while parser:check("DOT") do
+            parser:advance()  -- consume DOT
+            local next_tok = parser:expect("IDENT")
+            table.insert(name_parts, next_tok.value)
+        end
+        local type_name = table.concat(name_parts, ".")
         
         -- Parse struct initialization using parse_struct_literal
         local struct_lit = Expressions.parse_struct_literal(parser, { name = type_name })

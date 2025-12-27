@@ -3,28 +3,28 @@
 #module cz.alloc
 
 // Arena allocator struct that implements the alloc interface
-pub struct arena : iAlloc {
+pub struct Arena : iAlloc {
     u64 size
     any buffer
     u64 offset
 }
 
 // Constructor - allocates the arena buffer
-pub fn arena:init() void {
+pub fn Arena:init() void {
     #unsafe {
         _cz_alloc_arena_init(self);
     }
 }
 
 // Destructor - frees the arena buffer
-pub fn arena:fini() void {
+pub fn Arena:fini() void {
     #unsafe {
         _cz_alloc_arena_fini(self);
     }
 }
 
 // Allocate memory from arena
-pub fn arena:alloc(u64 size) any {
+pub fn Arena:alloc(u64 size) any {
     mut any result = null
     #unsafe {
         result = _alloc(self, size);
@@ -33,7 +33,7 @@ pub fn arena:alloc(u64 size) any {
 }
 
 // Reallocate memory within arena
-pub fn arena:ralloc(any ptr, u64 new_size) any {
+pub fn Arena:ralloc(any ptr, u64 new_size) any {
     mut any result = null
     #unsafe {
         result = _ralloc(self, ptr, new_size);
@@ -43,13 +43,13 @@ pub fn arena:ralloc(any ptr, u64 new_size) any {
 
 // Free memory (no-op for arena allocator)
 // Arena allocators don't free individual allocations
-pub fn arena:free(any ptr) void {
+pub fn Arena:free(any ptr) void {
     // No-op: arena allocator doesn't free individual allocations
     // Use clear() to reset the entire arena
 }
 
 // Clear arena (reset all allocations)
-pub fn arena:clear() void {
+pub fn Arena:clear() void {
     #unsafe {
         _clear(self);
     }

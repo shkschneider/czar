@@ -95,6 +95,122 @@ function Typechecker:register_cz_builtins()
     end
 end
 
+-- Load stdlib module definitions when imported
+-- This function parses stdlib .cz files and merges their definitions into the current context
+function Typechecker:load_stdlib_module(module_path)
+    -- Map module imports to their .cz file paths
+    -- For cz.alloc, we need to load ALL files that are part of that module
+    local module_files = {
+        ["cz.os"] = { "src/std/os.cz" },
+        ["cz.fmt"] = { "src/std/fmt.cz" },
+        ["cz"] = { "src/std/string.cz", "src/std/fmt.cz", "src/std/os.cz" },
+        ["cz.alloc"] = { 
+            "src/std/alloc/ialloc.cz",  -- Load interface first
+            "src/std/alloc/arena.cz",
+            "src/std/alloc/heap.cz",
+            "src/std/alloc/debug.cz"
+        },
+    }
+    
+    local files = module_files[module_path]
+    if not files then
+        -- Not a stdlib module or not mapped
+        return
+    end
+    
+    -- Get the module alias (last part of the module path)
+    local path_parts = {}
+    for part in module_path:gmatch("[^.]+") do
+        table.insert(path_parts, part)
+    end
+    local module_alias = path_parts[#path_parts]
+    
+    -- Load and parse each file in the module
+    local lexer = require("lexer")
+    local parser = require("parser")
+    
+    for _, file_path in ipairs(files) do
+        print("[DEBUG] Attempting to load:", file_path)
+        -- Read the file
+        local file = io.open(file_path, "r")
+        if file then
+            print("[DEBUG] File opened successfully:", file_path)
+            local source = file:read("*all")
+            file:close()
+            
+            -- Parse the file
+            local ok, tokens = pcall(lexer, source, file_path)
+            if ok then
+                print("[DEBUG] Lexed successfully:", file_path)
+                local ok2, module_ast = pcall(parser, tokens, source)
+                if ok2 then
+                    print("[DEBUG] Parsed file:", file_path, "items:", #module_ast.items)
+                    -- Merge structs, interfaces, enums, and functions from the module
+                    -- Store them with qualified names (alias.TypeName)
+                    for _, item in ipairs(module_ast.items) do
+                        print("[DEBUG] Item kind:", item.kind, "is_public:", item.is_public)
+                        if item.kind == "struct" and item.is_public then
+                            -- Store with qualified name: alloc.Arena
+                            local qualified_name = module_alias .. "." .. item.name
+                            
+                            -- Create a copy of the struct with qualified interface name
+                            local struct_copy = {}
+                            for k, v in pairs(item) do
+                                struct_copy[k] = v
+                            end
+                            
+                            -- If the struct implements an interface, qualify the interface name
+                            if struct_copy.implements then
+                                -- Check if the interface name is already qualified
+                                if not struct_copy.implements:match("%.") then
+                                    -- Not qualified, so it's in the same module
+                                    struct_copy.implements = module_alias .. "." .. struct_copy.implements
+                                end
+                            end
+                            
+                            if not self.structs[qualified_name] then
+                                self.structs[qualified_name] = struct_copy
+                            end
+                        elseif item.kind == "iface" and item.is_public then
+                            local qualified_name = module_alias .. "." .. item.name
+                            print("[DEBUG] Loading interface:", qualified_name)
+                            if not self.ifaces[qualified_name] then
+                                self.ifaces[qualified_name] = item
+                                print("[DEBUG] Stored interface:", qualified_name)
+                            end
+                        elseif item.kind == "enum" and item.is_public then
+                            local qualified_name = module_alias .. "." .. item.name
+                            if not self.enums[qualified_name] then
+                                self.enums[qualified_name] = item
+                            end
+                        elseif item.kind == "function" and item.is_public then
+                            -- Merge public functions and methods with qualified type names
+                            local type_name = "__global__"
+                            if item.receiver_type then
+                                -- Method on a type: qualify the type name
+                                type_name = module_alias .. "." .. item.receiver_type
+                            end
+                            
+                            if not self.functions[type_name] then
+                                self.functions[type_name] = {}
+                            end
+                            
+                            local func_name = item.name
+                            if not self.functions[type_name][func_name] then
+                                self.functions[type_name][func_name] = {}
+                            end
+                            
+                            table.insert(self.functions[type_name][func_name], item)
+                        end
+                    end
+                else
+                    print("[DEBUG] Parse FAILED for:", file_path, "error:", tostring(module_ast))
+                end
+            end
+        end
+    end
+end
+
 -- Main entry point: type check the entire AST
 function Typechecker:check()
     -- Determine module name: either from #module declaration or inferred from path
@@ -140,6 +256,9 @@ function Typechecker:check()
             if import.path[1] == "cz" then
                 self:register_cz_builtins()
             end
+            
+            -- Load stdlib module definitions if this is a stdlib import
+            self:load_stdlib_module(module_path)
         end
     end
 
