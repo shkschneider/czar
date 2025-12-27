@@ -85,6 +85,12 @@ function Types.c_type(type_node)
         elseif name == "Arena" then
             -- Arena allocator type maps to cz_alloc_arena for C compatibility
             return "cz_alloc_arena"
+        elseif name == "Heap" then
+            -- Heap allocator type maps to cz_alloc_heap
+            return "cz_alloc_heap"
+        elseif name == "Debug" then
+            -- Debug allocator type maps to cz_alloc_debug
+            return "cz_alloc_debug"
         elseif name == "CzAllocArena" then
             -- Legacy name also maps to cz_alloc_arena
             return "cz_alloc_arena"

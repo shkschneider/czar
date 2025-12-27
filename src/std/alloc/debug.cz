@@ -30,7 +30,7 @@ pub fn Debug:ralloc(any ptr, u64 new_size) any {
 }
 
 // Free memory with debug tracking
-pub fn Debug:free(any ptr) void {
+pub fn Debug:dealloc(any ptr) void {
     #unsafe {
         // Debug: log free
         // TODO: Add proper debug tracking when debug infrastructure is available

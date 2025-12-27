@@ -3,7 +3,7 @@
 
 fn main() i32 {
     // Create arena with 1024 bytes using imported Arena from cz.alloc
-    alloc.Arena? arena = new alloc.Arena { size: 1024 }
+    Arena? arena = new Arena { size: 1024 }
     #defer free arena
     
     // Test allocation using imported method
