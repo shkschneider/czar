@@ -285,12 +285,10 @@ function Functions.gen_params(params)
 
         local type_str = Codegen.Types.c_type(p.type)
         
-        -- Handle varargs: generate pointer and count parameters (like slices)
+        -- Handle varargs: use C's native varargs (...)
         if p.type.kind == "varargs" then
-            local element_type = Codegen.Types.c_type(p.type.element_type)
-            -- Varargs are read-only (const), generate pointer and count
-            table.insert(parts, string.format("const %s* %s", element_type, param_name))
-            table.insert(parts, string.format("size_t %s_count", param_name))
+            -- Use C's native varargs syntax
+            table.insert(parts, "...")
         else
             -- In explicit pointer model with immutability by default:
             -- - Type* without mut → const Type* (immutable data through pointer)
