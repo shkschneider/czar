@@ -43,7 +43,7 @@ pub fn Arena:ralloc(any ptr, u64 new_size) any {
 
 // Free memory (no-op for arena allocator)
 // Arena allocators don't free individual allocations
-pub fn Arena:free(any ptr) void {
+pub fn Arena:dealloc(any ptr) void {
     // No-op: arena allocator doesn't free individual allocations
     // Use clear() to reset the entire arena
 }
