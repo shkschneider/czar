@@ -6,12 +6,12 @@ fn main() i32 {
     cstr greeting = "Hello, World!"
     
     // Can use cstr directly with print
-    fmt.println(greeting)
+    println(greeting)
     
     // String struct has cstr data internally
     String s = String { "test" }
     cstr c = s.cstr()
-    fmt.println(c)
+    println(c)
     
     return 0
 }

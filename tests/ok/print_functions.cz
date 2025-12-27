@@ -2,9 +2,9 @@
 #import cz.fmt
 
 fn main() i32 {
-    fmt.println("Hello, World!")
-    fmt.print("No")
-    fmt.print(" newline")
-    fmt.println(" here")
+    println("Hello, World!")
+    print("No")
+    print(" newline")
+    println(" here")
     return 0
 }

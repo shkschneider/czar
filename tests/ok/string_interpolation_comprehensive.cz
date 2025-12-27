@@ -7,30 +7,30 @@ fn main() i32 {
     bool flag = true
 
     // Basic interpolation
-    fmt.println("Age is {age}")
+    println("Age is {age}")
 
     // Multiple interpolations
-    fmt.println("I am {age} years old in {year}")
+    println("I am {age} years old in {year}")
 
     // Expressions in interpolation
-    fmt.println("Next year I'll be {age + 1}")
-    fmt.println("Double my age: {age * 2}")
+    println("Next year I'll be {age + 1}")
+    println("Double my age: {age * 2}")
 
     // Different types
-    fmt.println("Flag value: {flag}")
+    println("Flag value: {flag}")
 
     // Escaped braces
-    fmt.println("Literal braces: \{not_a_variable\}")
+    println("Literal braces: \{not_a_variable\}")
 
     // With print (no newline)
-    fmt.print("Hello ")
-    fmt.print("{age}")
-    fmt.println("!")
+    print("Hello ")
+    print("{age}")
+    println("!")
 
     // Nested expressions
     i32 a = 10
     i32 b = 20
-    fmt.println("Sum: {a + b}, Product: {a * b}")
+    println("Sum: {a + b}, Product: {a * b}")
 
     return 0
 }
