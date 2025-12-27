@@ -27,33 +27,27 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
         return string.format('%s(%s)', method_name, join(args, ", "))
     end
 
-    -- Special handling for cz.* module functions
-    if type_name == "cz" or type_name == "cz.fmt" then
-        local args = {}
-        for i, a in ipairs(expr.args) do
-            table.insert(args, gen_expr_fn(a))
-        end
-
-        if method_name == "print" then
-            if #args == 1 then
-                return string.format('_cz_print(%s)', args[1])
-            else
-                -- Multiple arguments: treat like printf
-                return string.format('_cz_printf(%s)', join(args, ", "))
-            end
-        elseif method_name == "println" then
-            return string.format('_cz_println(%s)', join(args, ", "))
-        elseif method_name == "printf" then
-            return string.format('_cz_printf(%s)', join(args, ", "))
-        else
-            error(string.format("Unknown method %s on %s module", method_name, type_name))
-        end
-    end
-
     -- Look up the method
     local method_overloads = nil
+    
+    -- First, try direct lookup (for regular type methods)
     if ctx().functions[type_name] then
         method_overloads = ctx().functions[type_name][method_name]
+    end
+    
+    -- If not found and type_name looks like a module path (contains dot),
+    -- look up in __global__ functions with matching module_path
+    if not method_overloads and type_name:match("%.") then
+        if ctx().functions["__global__"] and ctx().functions["__global__"][method_name] then
+            local global_funcs = ctx().functions["__global__"][method_name]
+            -- Find function with matching module_path
+            for _, func in ipairs(global_funcs) do
+                if func.module_path == type_name then
+                    method_overloads = { func }
+                    break
+                end
+            end
+        end
     end
 
     local method = nil
@@ -72,8 +66,25 @@ function Calls.gen_static_method_call(expr, gen_expr_fn)
 
         -- Generate function call - use c_name if available (for proper naming)
         local args = {}
+        
+        -- Check if this function uses native C varargs (single unsafe block body)
+        local is_native_varargs = false
+        if method.body and #method.body.statements == 1 and method.body.statements[1].kind == "unsafe_block" then
+            is_native_varargs = true
+        end
+        
         for i, a in ipairs(resolved_args) do
-            table.insert(args, gen_expr_fn(a))
+            if a.kind == "varargs_list" then
+                -- Pass varargs count followed by arguments directly (C native varargs)
+                if not is_native_varargs then
+                    table.insert(args, tostring(#a.args))  -- Hidden count parameter
+                end
+                for _, varg in ipairs(a.args) do
+                    table.insert(args, gen_expr_fn(varg))
+                end
+            else
+                table.insert(args, gen_expr_fn(a))
+            end
         end
         local c_method_name = method.c_name or (type_name .. "_" .. method_name)
         return string.format("%s(%s)", c_method_name, join(args, ", "))

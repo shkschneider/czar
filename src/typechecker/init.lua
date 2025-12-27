@@ -160,8 +160,10 @@ function Typechecker:load_stdlib_module(module_path)
             files_to_load = { file_path }
         end
     else
-        -- Module import without wildcard or item - error
-        return
+        -- Module import without wildcard or specific item: #import cz.fmt
+        -- Load all files from the module so functions are available for static method calls
+        files_to_load = module_files[module_path]
+        base_module = module_path
     end
     
     if not files_to_load then
