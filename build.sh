@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-OUT="dist/cz"
+OUT="cz"
+if [[ -x ./$OUT ]] ; then
+    echo "[CLEAN] ..."
+    ./clean.sh >/dev/null
+fi
+
 STATIC=${STATIC:-false}
 VERBOSE=${VERBOSE:-false}
 RED="\e[31m"

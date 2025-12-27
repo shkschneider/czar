@@ -16,6 +16,7 @@ stats() {
     echo "*: $r"
 }
 
+./clean.sh >/dev/null
 stats | awk '{print $2" "$1}' | sort -n | awk '{print $2" "$1}'
 
 # EOF

@@ -1,10 +1,9 @@
-build/
-main.h
+/build/
+/cz
 *.out
 *.h
 *.o
 *.c
 *.s
 *.a
-dist/cz
 _codeql_detected_source_root

@@ -4,6 +4,7 @@
 # Analyzes test coverage and provides statistics
 
 set -e
+./clean.sh >/dev/null
 
 RED="\e[31m"
 YELLOW="\e[33m"

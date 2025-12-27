@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
 set +e
+OUT="cz"
+if [[ -x ./$OUT ]] ; then
+    echo "[CLEAN] ..."
+    ./clean.sh >/dev/null
+fi
 ./build.sh || exit 1
-[[ -x ./dist/cz ]] || exit 2
 
 OK=0
 KO=0
@@ -18,7 +22,7 @@ check_ok() {
     local f=$3
     echo -ne "\r[TEST] ($i/$j) $f..."
     local o=${f/.cz/.out}
-    ./dist/cz build $f -o $o >/dev/null 2>/tmp/cz
+    ./$OUT build $f -o $o >/dev/null 2>/tmp/cz
     if [[ ! -x $o ]] ; then
         echo -e $RED" ERROR:"$WHITE" "
         cat /tmp/cz >&2
@@ -44,7 +48,7 @@ check_ko() {
     local f=$3
     echo -ne "\r[TEST] ($i/$j) $f..."
     local o=${f/.cz/.out}
-    ./dist/cz build $f -o $o >/dev/null 2>/tmp/cz
+    ./$OUT build $f -o $o >/dev/null 2>/tmp/cz
     local e=$?
     if [[ $e -ne 0 ]] ; then
         echo -n " SUCCESS "
@@ -87,7 +91,6 @@ if (( KO == 0 )) ; then
     echo -e $GREEN"$OK/$# SUCCESS"$WHITE
 else
     echo -e $RED"$KO/$# FAILURES"$WHITE
-    rm -f ./dist/cz
 fi
 
 exit $KO

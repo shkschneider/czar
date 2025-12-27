@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 
-[ -x ./dist/cz ] || {
-    echo "build.sh ..."
-    ./build.sh >/dev/null || exit 1
-}
+./build.sh || exit 1
 
 ms() { echo $(( $(date +%s%N) / 1000 / 1000 )); }
 
+OUT="cz"
 CZ=()
 C=()
 for p in ./bench/cz/*.cz ; do
@@ -16,7 +14,7 @@ for p in ./bench/cz/*.cz ; do
     c="$d/c/${f/.cz/.c}"
     if [[ -f $cz ]] && [[ -f $c ]] ; then
         echo "- ${f/.cz/} ..."
-        ./dist/cz compile $cz -o ${cz/.cz/.out} >/dev/null || continue
+        ./$OUT compile $cz -o ${cz/.cz/.out} >/dev/null || continue
         cc ${cz/.cz/.c} -o ${cz/.cz/.out} >/dev/null || continue
         start=$(ms)
         ./${cz/.cz/.out} >/dev/null
