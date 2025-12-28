@@ -61,15 +61,14 @@ function Validation.validate_main_function(typechecker)
 end
 
 -- Infer module name from directory structure
--- Returns the module name based on the file's path, or nil for top-level files
+-- Returns the module name based on the file's path (immediate parent directory), or nil for top-level files
+-- Also issues a warning if module name is inferred (not explicitly declared)
 function Validation.infer_module_name(typechecker)
     if not typechecker.source_path then
         return nil
     end
     
     -- Extract directory structure from source path
-    -- e.g., "mod1/file1.cz" -> ["mod1"]
-    -- e.g., "mod2/submod1/test1.cz" -> ["mod2", "submod1"]
     local path_parts = {}
     for part in typechecker.source_path:gmatch("[^/]+") do
         table.insert(path_parts, part)
@@ -83,15 +82,30 @@ function Validation.infer_module_name(typechecker)
         return nil
     end
     
-    -- Join directory parts with dots to create module name
-    -- e.g., ["mod2", "submod1"] -> "mod2.submod1"
-    return table.concat(path_parts, ".")
+    -- Use the immediate parent directory as the module name
+    -- e.g., "app/geometry/point.cz" -> "geometry"
+    local module_name = path_parts[#path_parts]
+    
+    -- Issue a warning that module name is inferred
+    local Warnings = require("warnings")
+    local msg = string.format(
+        "No #module declaration found. Defaulting to module name '%s' (from folder name). Consider adding '#module %s' at the top of the file.",
+        module_name,
+        module_name
+    )
+    -- Warnings.format(filename, line, warning_id, message, source_path, function_name)
+    local warning = Warnings.format(typechecker.source_file, 0, 
+        Warnings.WarningType.MISSING_MODULE_DECLARATION, msg, typechecker.source_path, nil)
+    io.stderr:write(warning .. "\n")
+    
+    return module_name
 end
 
 -- Validate that explicit #module declaration is valid
 -- Rules: 
 -- 1. Module names must be single words (no dots)
--- 2. #module can only be declared as an ancestor directory name
+-- 2. #module must match the immediate parent directory name (except for "main")
+-- 3. "main" module can be declared at any level
 function Validation.validate_module_declaration(typechecker)
     if not typechecker.module_name or not typechecker.source_path then
         return
@@ -100,7 +114,7 @@ function Validation.validate_module_declaration(typechecker)
     -- Module names must be single words (no dots allowed)
     if typechecker.module_name:find("%.") then
         local msg = string.format(
-            "Module name '%s' is invalid. Module names must be single words (no dots). Use #module to specify an ancestor directory name.",
+            "Module name '%s' is invalid. Module names must be single words (no dots). Module name should match the folder name.",
             typechecker.module_name
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
@@ -136,22 +150,15 @@ function Validation.validate_module_declaration(typechecker)
         return
     end
     
-    -- Validate that #module is one of the ancestor directory names
-    -- e.g., for file "mod2/submod1/test1.cz", valid modules are: "mod2"
-    -- The module must match one of the directories in the path
-    local is_ancestor = false
-    for _, dir in ipairs(path_parts) do
-        if dir == typechecker.module_name then
-            is_ancestor = true
-            break
-        end
-    end
+    -- Validate that #module matches the immediate parent directory name (last directory in path)
+    -- e.g., for file "app/geometry/point.cz", module must be "geometry"
+    local immediate_parent = path_parts[#path_parts]
     
-    if not is_ancestor then
+    if immediate_parent ~= typechecker.module_name then
         local msg = string.format(
-            "Module '%s' cannot be declared in '%s'. Files can only declare modules that match ancestor directory names.",
+            "Module '%s' does not match folder name '%s'. Module name must match the immediate parent directory.",
             typechecker.module_name, 
-            table.concat(path_parts, "/")
+            immediate_parent
         )
         local formatted_error = Errors.format("ERROR", typechecker.source_file, 0,
             Errors.ErrorType.INVALID_MODULE_NAME, msg, typechecker.source_path)

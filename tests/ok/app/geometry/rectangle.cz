@@ -1,8 +1,5 @@
-// Rectangle module - flattened to app
-#module app.geometry
-
-// Import Point from the same module (for future multi-file support)
-// import app.geometry.Point
+// Rectangle module - part of geometry
+#module geometry
 
 // Public struct for Rectangle
 pub struct Rectangle {

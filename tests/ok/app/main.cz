@@ -1,17 +1,11 @@
-// Comprehensive modularization test demonstrating all module features
-// This is a single-file test showing module syntax that will work with
-// future multi-file compilation support.
+// Main module for the app test
+#module main
 
-#module app
-
-// These imports demonstrate the syntax but won't resolve in single-file mode
-// import app.math
-// import app.geometry as geo
-// import app.utils
-#import app.geometry
+// Import geometry module to access Rectangle and Point types
+#import geometry
 
 // Demonstrate unused import warning
-#import app.unused
+#import unused
 
 // This calls get_width which is defined later
 fn calculate_area(Rectangle rect) i32 {
@@ -34,7 +28,8 @@ fn main() i32 {
     Point p2 = create_point(10, 5)
 
     Rectangle rect = Rectangle {
-        top_left: p1,
+        x: 0,
+        y: 0,
         width: 10,
         height: 5
     }
