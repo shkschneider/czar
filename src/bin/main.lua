@@ -349,21 +349,41 @@ local function cmd_compile(args)
         usage()
     end
 
-    local files, options = expand_file_args(args)
-    if not files then
-        io.stderr:write(options .. "\n")  -- options contains error message
-        os.exit(1)
+    -- Parse options manually to distinguish directories from files
+    local paths = {}
+    local options = {debug = false}
+    
+    local i = 1
+    while i <= #args do
+        if args[i] == "--debug" then
+            options.debug = true
+        elseif args[i] == "-o" then
+            i = i + 1
+            if i > #args then
+                io.stderr:write("Error: -o requires an argument\n")
+                os.exit(1)
+            end
+            options.output = args[i]
+        elseif args[i]:sub(1, 1) == "-" then
+            io.stderr:write(string.format("Unknown option: %s\n", args[i]))
+            os.exit(1)
+        else
+            -- Add path as-is (don't expand directories)
+            table.insert(paths, args[i])
+        end
+        i = i + 1
     end
 
-    if #files == 0 then
-        io.stderr:write("Error: no .cz files found\n")
+    if #paths == 0 then
+        io.stderr:write("Error: no source files or directories specified\n")
         os.exit(1)
     end
 
     local success_count = 0
     local fail_count = 0
 
-    for _, source_path in ipairs(files) do
+    -- Each path is handled by compile.lua which will handle both files and directories
+    for _, source_path in ipairs(paths) do
         local ok, result, exit_code = compile.compile(source_path, options)
         if not ok then
             io.stderr:write(string.format("%s: %s\n", source_path, result))
