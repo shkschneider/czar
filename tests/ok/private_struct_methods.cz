@@ -1,0 +1,27 @@
+// Test: Private struct with methods of different visibilities
+// Expected behavior:
+// - method1 (no modifier) should be private by default
+// - method2 (pub modifier) should warn but be marked as public
+
+struct PrivateStruct {
+    i32 value
+}
+
+fn PrivateStruct:method1() i32 {
+    return self.value
+}
+
+pub fn PrivateStruct:method2() i32 {
+    return self.value * 2
+}
+
+fn main() i32 {
+    PrivateStruct ps = PrivateStruct { value: 5 }
+    // Both should work from within the same module
+    i32 v1 = ps:method1()
+    i32 v2 = ps:method2()
+    if v1 == 5 and v2 == 10 {
+        return 0
+    }
+    return 1
+}

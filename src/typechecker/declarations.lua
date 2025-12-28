@@ -425,6 +425,42 @@ function Declarations.collect_declarations(typechecker)
             if not typechecker.functions[type_name] then
                 typechecker.functions[type_name] = {}
             end
+            
+            -- Apply visibility inheritance rules for methods
+            if item.receiver_type then
+                local struct_def = typechecker.structs[type_name]
+                if struct_def then
+                    -- Rule 1: By default, methods inherit visibility from their struct
+                    -- If neither pub nor prv is specified on the method, inherit from struct
+                    if not item.is_public and not item.is_private then
+                        if struct_def.is_public then
+                            -- Public struct: methods are public by default
+                            item.is_public = true
+                        end
+                        -- Note: If struct is private (not pub), method remains without is_public flag
+                        -- This means it's module-private (not accessible outside module, but accessible within)
+                        -- We do NOT set is_private = true, as that would make it struct-private
+                    end
+                    
+                    -- Rule 2: Warn if pub method is defined on a private struct
+                    if item.is_public and not struct_def.is_public then
+                        local msg = string.format(
+                            "Public method '%s' defined on private struct '%s' - method will not be accessible outside the module",
+                            item.name, type_name
+                        )
+                        Warnings.emit(
+                            typechecker.source_file,
+                            item.line or 0,
+                            Warnings.WarningType.PUBLIC_METHOD_ON_PRIVATE_STRUCT,
+                            msg,
+                            typechecker.source_path,
+                            nil
+                        )
+                        -- Override: method cannot be more public than its struct
+                        item.is_public = false
+                    end
+                end
+            end
 
             -- Check for duplicate parameter names within the function
             -- Allow multiple '_' parameters (convention for unused/ignored parameters)
