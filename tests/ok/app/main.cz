@@ -1,6 +1,8 @@
 // Main module for the app test
 #module main
 
+#import geometry.*
+
 // Main function demonstrating usage - calls functions that are defined later
 fn main() i32 {
     // Test math operations
