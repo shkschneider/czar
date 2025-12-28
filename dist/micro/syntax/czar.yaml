@@ -11,7 +11,7 @@ rules:
     - statement: "\\b(if|else|elseif|elsif|while|for|repeat|break|continue|return|in)\\b"
     
     # Reserved keywords - declarations and modifiers
-    - statement: "\\b(fn|fun|func|function|struct|module|import|pub|public|mut|mutable|new|alloc|stack|heap|free|type)\\b"
+    - statement: "\\b(fn|fun|func|function|struct|enum|iface|module|import|pub|prv|public|mut|mutable|new|alloc|stack|heap|free|type)\\b"
     
     # Reserved keywords - operators and special
     - statement: "\\b(and|or|not|is|self|clone|copy)\\b"
@@ -26,10 +26,10 @@ rules:
     - type: "\\b(bool|boolean|void|string|cstr|any)\\b"
     
     # Generic/collection types
-    - type: "\\b(pair|array|map)\\b"
+    - type: "\\b(pair|array|slice|map)\\b"
     
     # Generic type syntax with angle brackets
-    - type: "\\b(pair|array|map)<[a-zA-Z0-9_:*]+>"
+    - type: "\\b(pair|array|slice|map)<[a-zA-Z0-9_:*]+>"
     
     # Type with brackets (array declarations)
     - type: "[a-zA-Z_][a-zA-Z0-9_]*\\[[^\\]]*\\]"
@@ -38,7 +38,7 @@ rules:
     - type: "\\b[A-Z][a-zA-Z0-9_]*\\b"
     
     # Directives and macros
-    - preproc: "#(FILE|FUNCTION|DEBUG|assert|log)\\b"
+    - preproc: "#(FILE|FUNCTION|LINE|DEBUG|assert|log|alloc|defer|module|init|unsafe|TODO|FIXME)\\b"
     
     # Cast syntax as<Type>
     - special: "\\bas<[a-zA-Z0-9_*]+>"
