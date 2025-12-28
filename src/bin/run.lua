@@ -13,9 +13,19 @@ end
 function Run.run(source_path, options)
     options = options or {}
     
-    -- Validate that the source file has a .cz extension
+    -- Allow both .cz files and directories
+    -- Validate that the source is either a .cz file or a directory
+    local is_dir = false
     if not source_path:match("%.cz$") then
-        return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
+        -- Check if it's a directory
+        local handle = io.popen("test -d " .. source_path:gsub("'", "'\\''") .. " && echo yes || echo no")
+        local result = handle:read("*a"):match("^%s*(.-)%s*$")
+        handle:close()
+        is_dir = (result == "yes")
+        
+        if not is_dir then
+            return false, string.format("Error: source must be a .cz file or directory, got: %s", source_path)
+        end
     end
 
     -- When running a binary, require a main function

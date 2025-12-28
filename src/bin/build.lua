@@ -14,9 +14,18 @@ function Build.build(source_path, output_path, options)
     options = options or {}
     output_path = output_path or "a.out"
     
-    -- Validate that the source file has a .cz extension
+    -- Allow both .cz files and directories
+    local is_dir = false
     if not source_path:match("%.cz$") then
-        return false, string.format("Error: source file must have .cz extension, got: %s", source_path)
+        -- Check if it's a directory
+        local handle = io.popen("test -d " .. source_path:gsub("'", "'\\''") .. " && echo yes || echo no")
+        local result = handle:read("*a"):match("^%s*(.-)%s*$")
+        handle:close()
+        is_dir = (result == "yes")
+        
+        if not is_dir then
+            return false, string.format("Error: source must be a .cz file or directory, got: %s", source_path)
+        end
     end
 
     -- When building a binary, require a main function
