@@ -2,7 +2,6 @@
 
 _case insensitive_
 
-- _
 - alloc / _malloc_ / arena
 - and
 - _anonymous_
@@ -34,7 +33,7 @@ _case insensitive_
 - inline / noinline
 - is
 - log
-- main / _cz_main_
+- main
 - map
 - module / _package_
 - mut / _mutable_ / _const_
@@ -47,7 +46,7 @@ _case insensitive_
 - ralloc / _realloc_
 - repeat / _loop_
 - return
-- _safe_ / _unsafe_
+- _safe_ / unsafe
 - self / _this_ / _it_
 - _stack_ / _heap_
 - string / cstr
