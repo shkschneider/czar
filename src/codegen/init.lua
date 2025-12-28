@@ -420,10 +420,10 @@ function Codegen:generate()
     -- Always include raw C implementations from src/c/ directory
     -- These are internal C library files that the generated code relies on
     local raw_c_files = {
-        "src/std/string.c",
-        "src/std/fmt.c",
-        "src/std/os.c",
-        "src/std/alloc/arena.c",
+        "src/std/string.h",
+        "src/std/fmt.h",
+        "src/std/os.h",
+        "src/std/alloc/arena.h",
     }
 
     for _, raw_file_path in ipairs(raw_c_files) do
