@@ -318,6 +318,7 @@ function Codegen:generate()
     self:emit("#include <stdio.h>")
     self:emit("#include <stdlib.h>")
     self:emit("#include <string.h>")
+    self:emit("#include <stdarg.h>")
 
     -- Emit C imports from import C : header.h
     for _, header in ipairs(self.c_imports) do
