@@ -8,82 +8,18 @@
 // import app.math
 // import app.geometry as geo
 // import app.utils
+#import app.geometry
 
 // Demonstrate unused import warning
 #import app.unused
 
-// Define types and functions inline for single-file testing
-// In the future, these would come from separate module files
-
-// Math module functionality - with forward declarations working,
-// we can call functions defined later without manual ordering
-
-fn add(i32 a, i32 b) i32 {
-    return a + b
-}
-
-fn multiply(i32 a, i32 b) i32 {
-    return a * b
-}
-
-// This calls internal_square which is defined later
-pub fn sum_of_squares(i32 a, i32 b) i32 {
-    return internal_square(a) + internal_square(b)
-}
-
-// Geometry module functionality
-
-pub struct Point {
-    i32 x
-    i32 y
-}
-
-pub struct Rectangle {
-    Point top_left
-    i32 width
-    i32 height
-}
-
-pub fn create_point(i32 x, i32 y) Point {
-    Point p = Point { x: x, y: y }
-    return p
-}
-
 // This calls get_width which is defined later
-pub fn calculate_area(Rectangle rect) i32 {
+fn calculate_area(Rectangle rect) i32 {
     return get_width(rect) * rect.height
 }
 
-pub fn calculate_perimeter(Rectangle rect) i32 {
+fn calculate_perimeter(Rectangle rect) i32 {
     return 2 * (rect.width + rect.height)
-}
-
-// Utils module functionality
-
-pub fn abs(i32 x) i32 {
-    if x < 0 {
-        return -x
-    }
-    return x
-}
-
-pub fn max(i32 a, i32 b) i32 {
-    if a > b {
-        return a
-    }
-    return b
-}
-
-pub fn min(i32 a, i32 b) i32 {
-    if a < b {
-        return a
-    }
-    return b
-}
-
-// This calls clamp_value which is defined later
-pub fn clamp(i32 x) i32 {
-    return clamp_value(x, 0, 100)
 }
 
 // Main function demonstrating usage - calls functions that are defined later

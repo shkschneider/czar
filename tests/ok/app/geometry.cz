@@ -1,9 +1,0 @@
-// Geometry module with shapes and calculations
-#module app
-
-#import app.geometry
-
-// Private struct (internal only)
-struct InternalBuffer {
-    i32 size
-}
