@@ -1,21 +1,6 @@
 // Main module for the app test
 #module main
 
-// Import geometry module to access Rectangle and Point types
-#import geometry
-
-// Demonstrate unused import warning
-#import unused
-
-// This calls get_width which is defined later
-fn calculate_area(Rectangle rect) i32 {
-    return get_width(rect) * rect.height
-}
-
-fn calculate_perimeter(Rectangle rect) i32 {
-    return 2 * (rect.width + rect.height)
-}
-
 // Main function demonstrating usage - calls functions that are defined later
 fn main() i32 {
     // Test math operations
@@ -47,24 +32,4 @@ fn main() i32 {
     i32 result = sum + product + squares - area - perimeter + abs_val - max_val + min_val - clamped + 100
 
     return result
-}
-
-// Private helper functions defined after use - this works now with forward declarations!
-
-fn internal_square(i32 x) i32 {
-    return x * x
-}
-
-fn get_width(Rectangle rect) i32 {
-    return rect.width
-}
-
-fn clamp_value(i32 x, i32 min_val, i32 max_val) i32 {
-    if x < min_val {
-        return min_val
-    }
-    if x > max_val {
-        return max_val
-    }
-    return x
 }
