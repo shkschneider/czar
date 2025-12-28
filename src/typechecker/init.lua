@@ -95,6 +95,120 @@ function Typechecker:register_cz_builtins()
     end
 end
 
+-- Load user module from subdirectory
+-- This function loads .cz files from a subdirectory relative to the current source file
+function Typechecker:load_user_module(module_name, is_wildcard)
+    -- Get the directory of the current source file
+    local source_dir = self.source_path:match("(.*/)")
+    if not source_dir then
+        return false  -- No directory context
+    end
+    
+    -- Look for subdirectory with module name
+    local module_dir = source_dir .. module_name .. "/"
+    
+    -- Check if directory exists and get all .cz files
+    local handle = io.popen("find " .. module_dir:gsub("'", "'\\''") .. " -maxdepth 1 -type f -name '*.cz' 2>/dev/null | sort")
+    if not handle then
+        return false
+    end
+    
+    local files = {}
+    for file in handle:lines() do
+        table.insert(files, file)
+    end
+    handle:close()
+    
+    if #files == 0 then
+        return false  -- No files found in subdirectory
+    end
+    
+    -- Load and parse each file
+    local lexer = require("lexer")
+    local parser = require("parser")
+    
+    for _, file_path in ipairs(files) do
+        -- Read the file
+        local file = io.open(file_path, "r")
+        if file then
+            local source = file:read("*all")
+            file:close()
+            
+            -- Parse the file
+            local ok, tokens = pcall(lexer, source, file_path)
+            if ok then
+                local ok2, module_ast = pcall(parser, tokens, source)
+                if ok2 then
+                    -- Merge ALL items from the module (both public and private)
+                    -- Private items are needed as dependencies for public items
+                    for _, item in ipairs(module_ast.items) do
+                        if item.kind == "struct" then
+                            -- Only import public structs to user's namespace
+                            if item.is_public then
+                                local struct_name = item.name
+                                
+                                -- Create a copy
+                                local struct_copy = {}
+                                for k, v in pairs(item) do
+                                    struct_copy[k] = v
+                                end
+                                
+                                struct_copy.module_path = module_name
+                                
+                                if not self.structs[struct_name] then
+                                    self.structs[struct_name] = struct_copy
+                                    local already_in_ast = false
+                                    for _, ast_item in ipairs(self.ast.items) do
+                                        if ast_item.kind == "struct" and ast_item.name == struct_name then
+                                            already_in_ast = true
+                                            break
+                                        end
+                                    end
+                                    if not already_in_ast then
+                                        struct_copy.is_imported = true
+                                        table.insert(self.ast.items, struct_copy)
+                                    end
+                                end
+                            end
+                        elseif item.kind == "enum" then
+                            if item.is_public then
+                                local enum_name = item.name
+                                if not self.enums[enum_name] then
+                                    self.enums[enum_name] = item
+                                    item.is_imported = true
+                                    table.insert(self.ast.items, item)
+                                end
+                            end
+                        elseif item.kind == "function" then
+                            -- Import ALL functions (public and private) so dependencies work
+                            local type_name = "__global__"
+                            if item.receiver_type then
+                                type_name = item.receiver_type
+                            end
+                            
+                            if not self.functions[type_name] then
+                                self.functions[type_name] = {}
+                            end
+                            
+                            local func_name = item.name
+                            if not self.functions[type_name][func_name] then
+                                self.functions[type_name][func_name] = {}
+                            end
+                            
+                            table.insert(self.functions[type_name][func_name], item)
+                            item.is_imported = true
+                            item.module_path = module_name
+                            table.insert(self.ast.items, item)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return true
+end
+
 -- Load stdlib module definitions when imported
 -- This function parses stdlib .cz files and merges their definitions into the current context
 function Typechecker:load_stdlib_module(module_path)
@@ -351,6 +465,16 @@ function Typechecker:check()
             -- Register cz module builtins if importing from cz
             if import.path[1] == "cz" then
                 self:register_cz_builtins()
+            end
+            
+            -- Try to load user module from subdirectory first (only for wildcards)
+            -- For non-stdlib modules, only wildcard imports are supported
+            if is_wildcard and import.path[1] ~= "cz" then
+                local module_name = import.path[1]  -- Use first part of path as subdirectory name
+                local loaded = self:load_user_module(module_name, is_wildcard)
+                if not loaded then
+                    -- Module not found in subdirectory, will try stdlib
+                end
             end
             
             -- Load stdlib module definitions if this is a stdlib import
