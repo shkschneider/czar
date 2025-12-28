@@ -417,16 +417,37 @@ function Codegen:generate()
         end
     end
 
-    -- Always include raw C implementations from src/c/ directory
-    -- These are internal C library files that the generated code relies on
-    local raw_c_files = {
-        "src/std/string.h",
-        "src/std/fmt.h",
-        "src/std/os.h",
-        "src/std/alloc/arena.h",
+    -- Only include raw C implementations that are actually imported
+    -- Map stdlib imports to their corresponding header files
+    local stdlib_to_header = {
+        ["cz.fmt"] = "src/std/fmt.h",
+        ["cz.os"] = "src/std/os.h",
+        ["cz.alloc"] = "src/std/alloc/arena.h",
+        ["cz.alloc.arena"] = "src/std/alloc/arena.h",
     }
+    
+    -- Always include string.h as it's fundamental for the language
+    local headers_to_include = {"src/std/string.h"}
+    
+    -- Add headers based on imports
+    for import_path, _ in pairs(self.stdlib_imports) do
+        local header = stdlib_to_header[import_path]
+        if header then
+            -- Check if not already added
+            local already_added = false
+            for _, existing in ipairs(headers_to_include) do
+                if existing == header then
+                    already_added = true
+                    break
+                end
+            end
+            if not already_added then
+                table.insert(headers_to_include, header)
+            end
+        end
+    end
 
-    for _, raw_file_path in ipairs(raw_c_files) do
+    for _, raw_file_path in ipairs(headers_to_include) do
         local file = io.open(raw_file_path, "r")
         if file then
             local content = file:read("*all")
