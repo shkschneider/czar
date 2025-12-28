@@ -1,5 +1,5 @@
 // Rectangle module - flattened to app
-#module app
+#module app.geometry
 
 // Import Point from the same module (for future multi-file support)
 // import app.geometry.Point
