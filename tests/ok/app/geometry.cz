@@ -1,0 +1,56 @@
+// Geometry types and functions
+#module main
+
+// Public struct for 2D point
+pub struct Point {
+    i32 x
+    i32 y
+}
+
+// Public function to create a Point
+pub fn create_point(i32 x, i32 y) Point {
+    Point p = Point { x: x, y: y }
+    return p
+}
+
+// Public function to calculate distance from origin
+pub fn distance_from_origin(Point p) i32 {
+    return point_internal_abs(p.x) + point_internal_abs(p.y)
+}
+
+// Private helper function
+fn point_internal_abs(i32 x) i32 {
+    if x < 0 {
+        return -x
+    }
+    return x
+}
+
+// Public struct for Rectangle
+pub struct Rectangle {
+    i32 x
+    i32 y
+    i32 width
+    i32 height
+}
+
+// Public function to create a Rectangle
+pub fn create_rectangle(i32 x, i32 y, i32 width, i32 height) Rectangle {
+    Rectangle r = Rectangle { x: x, y: y, width: width, height: height }
+    return r
+}
+
+// Public function to calculate area
+pub fn calculate_area(Rectangle rect) i32 {
+    return get_width(rect) * rect.height
+}
+
+// Public function to calculate perimeter
+pub fn calculate_perimeter(Rectangle rect) i32 {
+    return 2 * (rect.width + rect.height)
+}
+
+// Private helper function
+fn get_width(Rectangle rect) i32 {
+    return rect.width
+}

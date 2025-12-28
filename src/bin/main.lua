@@ -198,49 +198,18 @@ local function cmd_build(args)
         usage()
     end
 
-    local files, options = expand_file_args(args)
-    if not files then
-        io.stderr:write(options .. "\n")  -- options contains error message
+    -- Parse options manually without expanding directories
+    local options = parse_options(args)
+    if not options.source_path then
+        io.stderr:write("Error: no source file or directory specified\n")
         os.exit(1)
     end
 
-    if #files == 0 then
-        io.stderr:write("Error: no .cz files found\n")
-        os.exit(1)
-    end
-
-    -- For build, if multiple files are provided, find the one with main function
-    -- or error if none or multiple have main
-    local main_file = nil
-    if #files > 1 then
-        for _, file in ipairs(files) do
-            -- Quick check if file likely has main function
-            local f = io.open(file, "r")
-            if f then
-                local content = f:read("*a")
-                f:close()
-                if content:match("fn%s+main%s*%(") then
-                    if main_file then
-                        io.stderr:write(string.format("Error: multiple files with main function found: %s and %s\n", main_file, file))
-                        os.exit(1)
-                    end
-                    main_file = file
-                end
-            end
-        end
-
-        if not main_file then
-            io.stderr:write("Error: no file with main function found in provided files\n")
-            os.exit(1)
-        end
-    else
-        main_file = files[1]
-    end
-
-    local output_path = options.output or "a.out"
+    local output_path = options.output_path or "a.out"
 
     -- Call build.lua (which calls compile.lua internally)
-    local ok, result = build.build(main_file, output_path, { debug = options.debug })
+    -- build.lua handles both files and directories
+    local ok, result = build.build(options.source_path, output_path, { debug = options.debug })
     if not ok then
         io.stderr:write(result .. "\n")
         os.exit(1)
@@ -255,47 +224,16 @@ local function cmd_run(args)
         usage()
     end
 
-    local files, options = expand_file_args(args)
-    if not files then
-        io.stderr:write(options .. "\n")  -- options contains error message
+    -- Parse options manually without expanding directories
+    local options = parse_options(args)
+    if not options.source_path then
+        io.stderr:write("Error: no source file or directory specified\n")
         os.exit(1)
-    end
-
-    if #files == 0 then
-        io.stderr:write("Error: no .cz files found\n")
-        os.exit(1)
-    end
-
-    -- For run, if multiple files are provided, find the one with main function
-    -- or error if none or multiple have main
-    local main_file = nil
-    if #files > 1 then
-        for _, file in ipairs(files) do
-            -- Quick check if file likely has main function
-            local f = io.open(file, "r")
-            if f then
-                local content = f:read("*a")
-                f:close()
-                if content:match("fn%s+main%s*%(") then
-                    if main_file then
-                        io.stderr:write(string.format("Error: multiple files with main function found: %s and %s\n", main_file, file))
-                        os.exit(1)
-                    end
-                    main_file = file
-                end
-            end
-        end
-
-        if not main_file then
-            io.stderr:write("Error: no file with main function found in provided files\n")
-            os.exit(1)
-        end
-    else
-        main_file = files[1]
     end
 
     -- Call run.lua (which calls build.lua which calls compile.lua internally)
-    local ok, exit_code = run.run(main_file, { debug = options.debug })
+    -- run.lua handles both files and directories
+    local ok, exit_code = run.run(options.source_path, { debug = options.debug })
     if not ok then
         io.stderr:write(exit_code .. "\n")
         os.exit(1)
