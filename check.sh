@@ -86,6 +86,7 @@ check() {
 
 check $@
 echo
+./$OUT build tests/ok/app && (( OK += 1 )) || (( KO += 1 )) >/dev/null
 
 if (( KO == 0 )) ; then
     echo -e $GREEN"$OK/$# SUCCESS"$WHITE
