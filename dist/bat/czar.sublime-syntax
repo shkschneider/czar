@@ -14,7 +14,7 @@ contexts:
     - include: comments
 
     # Directives and macros
-    - match: '\#(FILE|FUNCTION|LINE|DEBUG|assert|log)\b'
+    - match: '\#(FILE|FUNCTION|LINE|DEBUG|assert|log|alloc|defer|module|init|unsafe|TODO|FIXME)\b'
       scope: keyword.preprocessor.czar
 
     # String literals
@@ -27,7 +27,7 @@ contexts:
       scope: keyword.control.czar
 
     # Keywords - declarations and modifiers
-    - match: '\b(fn|fun|func|function|struct|module|import|pub|public|mut|mutable|new|alloc|stack|heap|free|type)\b'
+    - match: '\b(fn|fun|func|function|struct|enum|iface|module|import|pub|prv|public|mut|mutable|new|alloc|stack|heap|free|type)\b'
       scope: keyword.declaration.czar
 
     # Keywords - operators and special
@@ -67,7 +67,7 @@ contexts:
       scope: storage.type.czar
 
     # Generic/collection types
-    - match: '\b(pair|array|map)\b'
+    - match: '\b(pair|array|slice|map)\b'
       scope: storage.type.collection.czar
 
     # Cast syntax as<Type>
@@ -77,7 +77,7 @@ contexts:
         1: storage.type.czar
 
     # Generic type syntax with angle brackets
-    - match: '\b(pair|array|map)<'
+    - match: '\b(pair|array|slice|map)<'
       scope: storage.type.collection.czar
       push: generic_type
 
@@ -157,7 +157,7 @@ contexts:
       pop: 1
     - match: '\b[a-zA-Z_][a-zA-Z0-9_]*\b'
       scope: variable.parameter.czar
-    - match: '\b(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|boolean|void|string|cstr|any|pair|array|map)\b'
+    - match: '\b(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|boolean|void|string|cstr|any|pair|array|slice|map)\b'
       scope: storage.type.czar
     - match: '\b[A-Z][a-zA-Z0-9_]*\b'
       scope: storage.type.custom.czar
