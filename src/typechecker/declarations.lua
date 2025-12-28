@@ -366,7 +366,6 @@ function Declarations.collect_declarations(typechecker)
                 local has_fields = item.fields and #item.fields > 0
                 local has_methods = item.methods and #item.methods > 0
                 if not has_fields and not has_methods then
-                    local Warnings = require("warnings")
                     Warnings.emit(
                         typechecker.source_file,
                         item.line or 0,
