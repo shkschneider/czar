@@ -40,6 +40,9 @@ Warnings.WarningType = {
     
     -- Module warnings
     MISSING_MODULE_DECLARATION = "MISSING_MODULE_DECLARATION",
+    
+    -- Visibility warnings
+    PUBLIC_METHOD_ON_PRIVATE_STRUCT = "PUBLIC_METHOD_ON_PRIVATE_STRUCT",
 }
 
 -- Cache for source file contents
