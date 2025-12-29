@@ -1,0 +1,115 @@
+// co.cz - Coroutine support for Czar language
+// Part of the Czar standard library
+// Provides coroutines using makecontext/swapcontext/getcontext/setcontext
+#module cz.co
+
+// Coroutine state enumeration
+pub enum CoState {
+    READY,      // Created but not started
+    RUNNING,    // Currently executing
+    SUSPENDED,  // Yielded, waiting to be resumed
+    DEAD        // Finished execution
+}
+
+// Coroutine type - opaque pointer to internal structure
+pub struct Coroutine {
+    void? handle  // Internal handle to C coroutine structure
+}
+
+// Initialize a new coroutine
+pub fn Coroutine:init() void {
+    #unsafe {
+        self->handle = NULL;
+    }
+}
+
+// Destructor - free coroutine resources
+pub fn Coroutine:fini() void {
+    #unsafe {
+        if (self->handle != NULL) {
+            _cz_co_free((cz_coroutine*)self->handle);
+            self->handle = NULL;
+        }
+    }
+}
+
+// Resume the coroutine and get yielded value
+pub fn Coroutine:resume() i32 {
+    mut i32 result = 0
+    #unsafe {
+        if (self->handle != NULL) {
+            result = _cz_co_resume((cz_coroutine*)self->handle);
+        }
+    }
+    return result
+}
+
+// Check if coroutine is dead (finished execution)
+pub fn Coroutine:is_dead() bool {
+    mut bool result = true
+    #unsafe {
+        if (self->handle != NULL) {
+            result = _cz_co_is_dead((cz_coroutine*)self->handle);
+        }
+    }
+    return result
+}
+
+// Check if coroutine is ready (not yet started)
+pub fn Coroutine:is_ready() bool {
+    mut bool result = false
+    #unsafe {
+        if (self->handle != NULL) {
+            result = _cz_co_is_ready((cz_coroutine*)self->handle);
+        }
+    }
+    return result
+}
+
+// Check if coroutine is running
+pub fn Coroutine:is_running() bool {
+    mut bool result = false
+    #unsafe {
+        if (self->handle != NULL) {
+            result = _cz_co_is_running((cz_coroutine*)self->handle);
+        }
+    }
+    return result
+}
+
+// Check if coroutine is suspended (yielded)
+pub fn Coroutine:is_suspended() bool {
+    mut bool result = false
+    #unsafe {
+        if (self->handle != NULL) {
+            result = _cz_co_is_suspended((cz_coroutine*)self->handle);
+        }
+    }
+    return result
+}
+
+// Get the current state of the coroutine
+pub fn Coroutine:state() CoState {
+    mut i32 state_val = 3  // Default to DEAD
+    #unsafe {
+        if (self->handle != NULL) {
+            state_val = _cz_co_state((cz_coroutine*)self->handle);
+        }
+    }
+    return <CoState> state_val !!
+}
+
+// Wait for coroutine to complete (run until dead)
+pub fn Coroutine:wait() void {
+    while not self:is_dead() {
+        self:resume()
+    }
+}
+
+// Yield a value from within a coroutine
+// This should be called from within the coroutine function
+pub fn yield(i32 value) void {
+    #unsafe {
+        _cz_co_yield(value);
+    }
+}

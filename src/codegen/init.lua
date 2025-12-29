@@ -67,6 +67,7 @@ local function get_stdlib_file_path(import_path)
     local module_to_file = {
         ["cz.os"] = "src/std/os.cz",
         ["cz.fmt"] = "src/std/fmt.cz",
+        ["cz.co"] = "src/std/co.cz",
         ["cz.alloc"] = "src/std/alloc/ialloc.cz",
         ["cz.alloc.heap"] = "src/std/alloc/heap.cz",
         ["cz.alloc.debug"] = "src/std/alloc/debug.cz",
@@ -423,6 +424,7 @@ function Codegen:generate()
     local stdlib_to_header = {
         ["cz.fmt"] = "src/std/fmt.h",
         ["cz.os"] = "src/std/os.h",
+        ["cz.co"] = "src/std/co.h",
         ["cz.alloc"] = "src/std/alloc/arena.h",
         ["cz.alloc.arena"] = "src/std/alloc/arena.h",
     }
