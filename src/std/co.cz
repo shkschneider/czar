@@ -90,7 +90,7 @@ pub fn Coroutine:is_suspended() bool {
 
 // Get the current state of the coroutine
 pub fn Coroutine:state() CoState {
-    mut i32 state_val = 3  // Default to DEAD
+    mut i32 state_val = <i32> CoState.DEAD !!  // Default to DEAD
     #unsafe {
         if (self->handle != NULL) {
             state_val = _cz_co_state((cz_coroutine*)self->handle);
