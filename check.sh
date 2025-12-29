@@ -90,9 +90,9 @@ echo
 ./$OUT build tests/ko/app && (( KO += 1 )) || (( OK += 1 )) >/dev/null
 
 if (( KO == 0 )) ; then
-    echo -e $GREEN"$OK/$# SUCCESS"$WHITE
+    echo -e $GREEN"$OK/$(($#+2)) SUCCESS"$WHITE
 else
-    echo -e $RED"$KO/$# FAILURES"$WHITE
+    echo -e $RED"$KO/$(($#+2)) FAILURES"$WHITE
 fi
 
 exit $KO
