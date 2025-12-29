@@ -40,7 +40,8 @@ static inline cz_coroutine* _cz_co_init(void (*func)(void)) {
     cz_coroutine *co = (cz_coroutine*)malloc(sizeof(cz_coroutine));
     if (!co) return NULL;
     
-    co->stack = malloc(CZ_CO_STACK_SIZE);
+    // Use calloc to zero the stack for security
+    co->stack = calloc(1, CZ_CO_STACK_SIZE);
     if (!co->stack) {
         free(co);
         return NULL;

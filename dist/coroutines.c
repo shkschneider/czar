@@ -36,7 +36,8 @@ coroutine_t* co_create(void (*func)(void)) {
     coroutine_t *co = (coroutine_t*)malloc(sizeof(coroutine_t));
     if (!co) return NULL;
     
-    co->stack = malloc(STACK_SIZE);
+    // Use calloc to zero the stack for security
+    co->stack = calloc(1, STACK_SIZE);
     if (!co->stack) {
         free(co);
         return NULL;
