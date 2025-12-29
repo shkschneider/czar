@@ -231,6 +231,7 @@ function Typechecker:load_stdlib_module(module_path)
     local module_files = {
         ["cz.os"] = { "src/std/os.cz" },
         ["cz.fmt"] = { "src/std/fmt.cz" },
+        ["cz.co"] = { "src/std/co.cz" },
         -- Note: cz.string not included - String is a builtin type, not a module
         ["cz.math"] = { "src/std/math.cz" },
         ["cz"] = { "src/std/fmt.cz", "src/std/os.cz" },

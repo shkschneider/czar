@@ -380,8 +380,8 @@ function Declarations.collect_declarations(typechecker)
             end
             table.insert(new_items, item)  -- Keep interface in new items
         elseif item.kind == "enum" then
-            -- Check for duplicate enum definition
-            if typechecker.enums[item.name] then
+            -- Check for duplicate enum definition (skip for imported items)
+            if typechecker.enums[item.name] and not item.is_imported then
                 local line = item.line or 0
                 local prev_line = typechecker.enums[item.name].line or 0
                 local msg = string.format(
