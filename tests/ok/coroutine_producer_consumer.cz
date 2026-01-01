@@ -1,0 +1,108 @@
+// Test producer-consumer pattern using coroutines
+#module ok
+#import cz.co.*
+#import cz.fmt.*
+
+fn main() i32 {
+    printf("Producer-Consumer pattern using coroutines\n\n")
+    
+    // Producer coroutine - generates items
+    Coroutine? producer = new Coroutine {}
+    
+    #unsafe {
+        void produce() {
+            printf("Producer: Starting production\n");
+            for (int i = 1; i <= 10; i++) {
+                printf("Producer: Producing item %d\n", i);
+                _cz_co_yield(i);
+            }
+            printf("Producer: Production complete\n");
+        }
+        producer->handle = _cz_co_init(produce);
+    }
+    
+    // Consumer - processes items from producer
+    printf("Consumer: Starting consumption\n")
+    mut i32 consumed = 0
+    mut i32 sum = 0
+    
+    while not producer:is_dead() {
+        i32 item = producer:resume()
+        if not producer:is_dead() {
+            printf("Consumer: Consuming item %d\n", item)
+            sum = sum + item
+            consumed = consumed + 1
+        }
+    }
+    
+    printf("Consumer: Consumption complete\n")
+    printf("Consumer: Consumed %d items, sum: %d\n", consumed, sum)
+    
+    if consumed != 10 {
+        printf("Error: expected to consume 10 items, got %d\n", consumed)
+        return 1
+    }
+    
+    // Expected sum: 1+2+...+10 = 55
+    if sum != 55 {
+        printf("Error: expected sum 55, got %d\n", sum)
+        return 2
+    }
+    
+    // Test multiple producers
+    printf("\nTest: Multiple producers\n")
+    Coroutine? prod1 = new Coroutine {}
+    Coroutine? prod2 = new Coroutine {}
+    
+    #unsafe {
+        void producer1() {
+            for (int i = 1; i <= 5; i++) {
+                _cz_co_yield(i * 10);
+            }
+        }
+        void producer2() {
+            for (int i = 1; i <= 5; i++) {
+                _cz_co_yield(i * 100);
+            }
+        }
+        prod1->handle = _cz_co_init(producer1);
+        prod2->handle = _cz_co_init(producer2);
+    }
+    
+    mut i32 count1 = 0
+    mut i32 count2 = 0
+    
+    // Alternate between producers
+    while not prod1:is_dead() or not prod2:is_dead() {
+        if not prod1:is_dead() {
+            i32 v1 = prod1:resume()
+            if not prod1:is_dead() {
+                printf("Producer1: %d\n", v1)
+                count1 = count1 + 1
+            }
+        }
+        
+        if not prod2:is_dead() {
+            i32 v2 = prod2:resume()
+            if not prod2:is_dead() {
+                printf("Producer2: %d\n", v2)
+                count2 = count2 + 1
+            }
+        }
+    }
+    
+    printf("Consumed %d from producer1, %d from producer2\n", count1, count2)
+    
+    if count1 != 5 or count2 != 5 {
+        printf("Error: expected 5 items from each producer\n")
+        return 3
+    }
+    
+    // Clean up
+    free producer
+    free prod1
+    free prod2
+    
+    printf("\nProducer-Consumer test passed!\n")
+    return 0
+}

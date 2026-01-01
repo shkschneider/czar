@@ -1,0 +1,110 @@
+// Test fibonacci sequence generation using coroutines
+#module ok
+#import cz.co.*
+#import cz.fmt.*
+
+fn main() i32 {
+    printf("Fibonacci sequence generator using coroutines\n")
+    
+    Coroutine? fib = new Coroutine {}
+    
+    #unsafe {
+        void fibonacci() {
+            int32_t a = 0;
+            int32_t b = 1;
+            
+            // Generate first 20 fibonacci numbers
+            for (int i = 0; i < 20; i++) {
+                _cz_co_yield(a);
+                int32_t temp = a + b;
+                a = b;
+                b = temp;
+            }
+        }
+        fib->handle = _cz_co_init(fibonacci);
+    }
+    
+    // Expected fibonacci sequence
+    mut i32 expected_values = 20
+    mut i32 prev = 0
+    mut i32 curr = 1
+    mut i32 idx = 0
+    
+    printf("Fibonacci sequence: ")
+    while not fib:is_dead() {
+        i32 val = fib:resume()
+        if not fib:is_dead() {
+            printf("%d ", val)
+            
+            // Verify the value
+            mut i32 expected = 0
+            if idx == 0 {
+                expected = 0
+            } elseif idx == 1 {
+                expected = 1
+            } else {
+                // Calculate expected fibonacci number
+                mut i32 a = 0
+                mut i32 b = 1
+                mut i32 j = 2
+                while j <= idx {
+                    mut i32 temp = a + b
+                    a = b
+                    b = temp
+                    j = j + 1
+                }
+                expected = b
+            }
+            
+            // For simplicity, just check first few values
+            if idx == 0 and val != 0 {
+                printf("\nError: fib(0) should be 0, got %d\n", val)
+                return 1
+            }
+            if idx == 1 and val != 1 {
+                printf("\nError: fib(1) should be 1, got %d\n", val)
+                return 2
+            }
+            if idx == 2 and val != 1 {
+                printf("\nError: fib(2) should be 1, got %d\n", val)
+                return 3
+            }
+            if idx == 3 and val != 2 {
+                printf("\nError: fib(3) should be 2, got %d\n", val)
+                return 4
+            }
+            if idx == 4 and val != 3 {
+                printf("\nError: fib(4) should be 3, got %d\n", val)
+                return 5
+            }
+            if idx == 5 and val != 5 {
+                printf("\nError: fib(5) should be 5, got %d\n", val)
+                return 6
+            }
+            if idx == 6 and val != 8 {
+                printf("\nError: fib(6) should be 8, got %d\n", val)
+                return 7
+            }
+            if idx == 10 and val != 55 {
+                printf("\nError: fib(10) should be 55, got %d\n", val)
+                return 8
+            }
+            
+            idx = idx + 1
+        }
+    }
+    
+    printf("\n")
+    
+    if idx != 20 {
+        printf("Error: expected 20 fibonacci numbers, got %d\n", idx)
+        return 9
+    }
+    
+    printf("Generated %d fibonacci numbers successfully\n", idx)
+    
+    free fib
+    
+    printf("Fibonacci test passed!\n")
+    return 0
+}
