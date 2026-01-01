@@ -424,7 +424,7 @@ function Codegen:generate()
     local stdlib_to_header = {
         ["cz.fmt"] = "src/std/fmt.h",
         ["cz.os"] = "src/std/os.h",
-        ["cz.co"] = "src/std/co.h",
+        ["cz.co"] = "src/std/coroutine.h",
         ["cz.alloc"] = "src/std/alloc/arena.h",
         ["cz.alloc.arena"] = "src/std/alloc/arena.h",
     }
