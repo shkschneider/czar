@@ -1,9 +1,9 @@
-// co.h - Coroutine support for Czar language
+// coroutine.h - Coroutine support for Czar language
 // Provides coroutines using makecontext/swapcontext/getcontext/setcontext
 // Part of the Czar standard library
 
-#ifndef CZ_CO_H
-#define CZ_CO_H
+#ifndef CZ_COROUTINE_H
+#define CZ_COROUTINE_H
 
 #include <stdlib.h>
 #include <ucontext.h>
@@ -147,4 +147,4 @@ static inline int32_t _cz_co_state(cz_coroutine *co) {
     return (int32_t)co->state;
 }
 
-#endif // CZ_CO_H
+#endif // CZ_COROUTINE_H
