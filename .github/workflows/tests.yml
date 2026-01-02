@@ -13,9 +13,14 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        cc: [ gcc, clang ]
+        cc: [ gcc, clang, musl-gcc ]
         std: [ c11, c17 ]
     steps:
-      - uses: actions/checkout@v4
-      - name: make test
+      - name: Install
+        run: |
+          sudo apt update -y
+          sudo apt install -y build-essential gcc clang musl-tools
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Testing...
         run: make test CC=${{ matrix.cc }} STD=${{ matrix.std }}

@@ -1,9 +1,9 @@
 # Build system for CZar C semantic authority layer
-CC     ?= cc
+CC     ?= cc -v
 STD    ?= c11
 OPT    ?= O2
 CFLAGS := -std=$(STD) -Wall -Wextra -$(OPT)
-LDFLAGS = -lc
+LDFLAGS = -static -lc
 OUT    ?= build/cz
 
 SOURCES = $(wildcard bin/*.c)
