@@ -10,7 +10,6 @@
 #include "transpiler.h"
 #include "transpiler/types.h"
 #include "transpiler/constants.h"
-#include "transpiler/functions.h"
 #include "transpiler/runtime.h"
 #include <stdlib.h>
 #include <string.h>
