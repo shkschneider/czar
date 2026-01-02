@@ -5,8 +5,7 @@
  * Parses tokens into an Abstract Syntax Tree (AST).
  */
 
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
 
 #include "lexer.h"
 #include <stddef.h>
@@ -40,5 +39,3 @@ ASTNode *parser_parse(Parser *parser);
 
 /* Free AST node and all children */
 void ast_node_free(ASTNode *node);
-
-#endif /* PARSER_H */

@@ -5,8 +5,7 @@
  * Tokenizes C source code into a stream of tokens.
  */
 
-#ifndef LEXER_H
-#define LEXER_H
+#pragma once
 
 #include <stddef.h>
 
@@ -55,5 +54,3 @@ void token_free(Token *token);
 
 /* Check if character is valid in an identifier */
 int is_identifier_char(char c, int first);
-
-#endif /* LEXER_H */
