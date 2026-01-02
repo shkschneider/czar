@@ -11,12 +11,15 @@
 #include "transpiler/types.h"
 #include "transpiler/constants.h"
 #include "transpiler/runtime.h"
+#include "transpiler/unused.h"
 #include <stdlib.h>
 #include <string.h>
 
 /* Initialize transpiler with AST */
 void transpiler_init(Transpiler *transpiler, ASTNode *ast) {
     transpiler->ast = ast;
+    /* Reset unused counter for each translation unit */
+    transpiler_reset_unused_counter();
 }
 
 /* Transform AST node recursively */
@@ -27,41 +30,53 @@ static void transform_node(ASTNode *node) {
 
     /* Transform token nodes */
     if (node->type == AST_TOKEN && node->token.type == TOKEN_IDENTIFIER) {
-        /* Check if this identifier is a CZar type */
-        const char *c_type = transpiler_get_c_type(node->token.text);
-        if (c_type) {
-            /* Replace CZar type with C type */
-            char *new_text = strdup(c_type);
+        /* Check if this is the special _ identifier */
+        if (strcmp(node->token.text, "_") == 0) {
+            /* Replace _ with unique unused variable name */
+            char *new_text = transpiler_transform_unused_identifier();
             if (new_text) {
                 free(node->token.text);
                 node->token.text = new_text;
-                node->token.length = strlen(c_type);
+                node->token.length = strlen(new_text);
             }
-            /* If strdup fails, keep the original text */
+            /* If transformation fails, keep the original text */
         } else {
-            /* Check if this identifier is a CZar constant */
-            const char *c_constant = transpiler_get_c_constant(node->token.text);
-            if (c_constant) {
-                /* Replace CZar constant with C constant */
-                char *new_text = strdup(c_constant);
+            /* Check if this identifier is a CZar type */
+            const char *c_type = transpiler_get_c_type(node->token.text);
+            if (c_type) {
+                /* Replace CZar type with C type */
+                char *new_text = strdup(c_type);
                 if (new_text) {
                     free(node->token.text);
                     node->token.text = new_text;
-                    node->token.length = strlen(c_constant);
+                    node->token.length = strlen(c_type);
                 }
                 /* If strdup fails, keep the original text */
             } else {
-                /* Check if this identifier is a CZar function */
-                const char *c_function = transpiler_get_c_function(node->token.text);
-                if (c_function) {
-                    /* Replace CZar function with C function */
-                    char *new_text = strdup(c_function);
+                /* Check if this identifier is a CZar constant */
+                const char *c_constant = transpiler_get_c_constant(node->token.text);
+                if (c_constant) {
+                    /* Replace CZar constant with C constant */
+                    char *new_text = strdup(c_constant);
                     if (new_text) {
                         free(node->token.text);
                         node->token.text = new_text;
-                        node->token.length = strlen(c_function);
+                        node->token.length = strlen(c_constant);
                     }
                     /* If strdup fails, keep the original text */
+                } else {
+                    /* Check if this identifier is a CZar function */
+                    const char *c_function = transpiler_get_c_function(node->token.text);
+                    if (c_function) {
+                        /* Replace CZar function with C function */
+                        char *new_text = strdup(c_function);
+                        if (new_text) {
+                            free(node->token.text);
+                            node->token.text = new_text;
+                            node->token.length = strlen(c_function);
+                        }
+                        /* If strdup fails, keep the original text */
+                    }
                 }
             }
         }
