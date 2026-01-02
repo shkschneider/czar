@@ -13,6 +13,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "casts.h"
+#include "../transpiler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -121,84 +122,6 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
     return i;
 }
 
-/* Get the source line for a given line number */
-static const char *get_source_line(int line_num, char *buffer, size_t buffer_size) {
-    if (!g_source || line_num < 1) {
-        return NULL;
-    }
-
-    const char *line_start = g_source;
-    int current_line = 1;
-
-    /* Find the start of the target line */
-    while (current_line < line_num && *line_start) {
-        if (*line_start == '\n') {
-            current_line++;
-        }
-        line_start++;
-    }
-
-    if (current_line != line_num || !*line_start) {
-        return NULL;
-    }
-
-    /* Copy the line to buffer */
-    const char *line_end = line_start;
-    while (*line_end && *line_end != '\n' && *line_end != '\r') {
-        line_end++;
-    }
-
-    size_t line_len = line_end - line_start;
-    if (line_len >= buffer_size) {
-        line_len = buffer_size - 1;
-    }
-
-    strncpy(buffer, line_start, line_len);
-    buffer[line_len] = '\0';
-
-    return buffer;
-}
-
-/* Report a CZar error and exit */
-static void cz_error(int line, const char *message) {
-    fprintf(stderr, "[CZAR] ERROR at %s:%d: %s\n",
-            g_filename ? g_filename : "<unknown>", line, message);
-
-    /* Try to show the problematic line */
-    char line_buffer[512];
-    const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
-    if (source_line) {
-        /* Trim leading whitespace for display */
-        while (*source_line && isspace((unsigned char)*source_line)) {
-            source_line++;
-        }
-        if (*source_line) {
-            fprintf(stderr, "    > %s\n", source_line);
-        }
-    }
-
-    exit(1);
-}
-
-/* Report a CZar warning */
-static void cz_warning(int line, const char *message) {
-    fprintf(stdout, "[CZAR] WARNING at %s:%d: %s\n",
-            g_filename ? g_filename : "<unknown>", line, message);
-
-    /* Try to show the problematic line */
-    char line_buffer[512];
-    const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
-    if (source_line) {
-        /* Trim leading whitespace for display */
-        while (*source_line && isspace((unsigned char)*source_line)) {
-            source_line++;
-        }
-        if (*source_line) {
-            fprintf(stdout, "    > %s\n", source_line);
-        }
-    }
-}
-
 /* Check for C-style cast pattern: (Type)value */
 static void check_c_style_casts(ASTNode **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
@@ -249,8 +172,8 @@ static void check_c_style_casts(ASTNode **children, size_t count) {
                                 snprintf(error_msg, sizeof(error_msg),
                                          "C-style cast '(%s)' is unsafe and thus not allowed. "
                                          "Use cast<%s>(value[, fallback]) instead.",
-                                         maybe_type->text, maybe_type->text, maybe_type->text);
-                                cz_error(token->line, error_msg);
+                                         maybe_type->text, maybe_type->text);
+                                cz_error(g_filename, g_source, token->line, error_msg);
                             }
                         }
                     }
@@ -312,7 +235,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
                          "cast requires template syntax: cast<Type>(value)");
-                cz_error(token->line, error_msg);
+                cz_error(g_filename, g_source, token->line, error_msg);
                 continue;
             }
 
@@ -325,7 +248,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
                          "cast requires function call syntax with parentheses");
-                cz_error(token->line, error_msg);
+                cz_error(g_filename, g_source, token->line, error_msg);
                 continue;
             }
 
@@ -354,7 +277,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             /* Validate argument count - 1 or 2 arguments allowed */
             if (arg_count < 1 || arg_count > 2) {
                 free(type_name);
-                cz_error(token->line, "cast requires 1 or 2 arguments: cast<Type>(value[, fallback])");
+                cz_error(g_filename, g_source, token->line, "cast requires 1 or 2 arguments: cast<Type>(value[, fallback])");
                 continue;
             }
 
@@ -365,7 +288,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                          "cast<%s>(value) without fallback. "
                          "Consider the safer cast<%s>(value, fallback).",
                          type_name, type_name);
-                cz_warning(token->line, warning_msg);
+                cz_warning(g_filename, g_source, token->line, warning_msg);
             }
 
             /* Check if this cast is potentially unsafe */

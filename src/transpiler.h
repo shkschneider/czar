@@ -27,4 +27,8 @@ void transpiler_transform(Transpiler *transpiler);
 /* Emit transformed AST as C code to output file */
 void transpiler_emit(Transpiler *transpiler, FILE *output);
 
+/* Error and warning reporting functions */
+void cz_error(const char *filename, const char *source, int line, const char *message);
+void cz_warning(const char *filename, const char *source, int line, const char *message);
+
 #endif /* TRANSPILER_H */
