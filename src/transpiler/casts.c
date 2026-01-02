@@ -247,8 +247,8 @@ static void check_c_style_casts(ASTNode **children, size_t count) {
                                 /* This is a C-style cast - ERROR! */
                                 char error_msg[512];
                                 snprintf(error_msg, sizeof(error_msg),
-                                         "C-style cast '(%s)' is not allowed. "
-                                         "Use unsafe_cast<%s>(value) or safe_cast<%s>(value, fallback) instead.",
+                                         "C-style cast '(%s)' is unsafe and thus not allowed. "
+                                         "Use cast<%s>(value[, fallback]) instead.",
                                          maybe_type->text, maybe_type->text, maybe_type->text);
                                 cz_error(token->line, error_msg);
                             }
@@ -354,7 +354,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             /* Validate argument count - 1 or 2 arguments allowed */
             if (arg_count < 1 || arg_count > 2) {
                 free(type_name);
-                cz_error(token->line, "cast requires 1 or 2 arguments: cast<Type>(value) or cast<Type>(value, fallback)");
+                cz_error(token->line, "cast requires 1 or 2 arguments: cast<Type>(value[, fallback])");
                 continue;
             }
 
@@ -363,7 +363,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 char warning_msg[512];
                 snprintf(warning_msg, sizeof(warning_msg),
                          "cast<%s>(value) without fallback. "
-                         "Consider using cast<%s>(value, fallback) for safe conversion with bounds checking.",
+                         "Consider the safer cast<%s>(value, fallback).",
                          type_name, type_name);
                 cz_warning(token->line, warning_msg);
             }
@@ -378,15 +378,6 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             }
 
             free(type_name);
-        } else if (token->type == TOKEN_IDENTIFIER &&
-                   (strcmp(token->text, "unsafe_cast") == 0 ||
-                    strcmp(token->text, "safe_cast") == 0)) {
-            /* These are no longer supported */
-            char error_msg[256];
-            snprintf(error_msg, sizeof(error_msg),
-                     "%s is not supported. Use cast<Type>(value) instead.",
-                     token->text);
-            cz_error(token->line, error_msg);
         }
     }
 }
