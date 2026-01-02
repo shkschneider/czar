@@ -6,6 +6,7 @@
  */
 
 #include "validation.h"
+#include "../transpiler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,44 +25,6 @@ static int token_text_equals(Token *token, const char *text) {
         return 0;
     }
     return strcmp(token->text, text) == 0;
-}
-
-/* Get the source line for a given line number */
-static const char *get_source_line(int line_num, char *buffer, size_t buffer_size) {
-    if (!g_source || line_num < 1) {
-        return NULL;
-    }
-
-    const char *line_start = g_source;
-    int current_line = 1;
-
-    /* Find the start of the target line */
-    while (current_line < line_num && *line_start) {
-        if (*line_start == '\n') {
-            current_line++;
-        }
-        line_start++;
-    }
-
-    if (current_line != line_num || !*line_start) {
-        return NULL;
-    }
-
-    /* Copy the line to buffer */
-    const char *line_end = line_start;
-    while (*line_end && *line_end != '\n' && *line_end != '\r') {
-        line_end++;
-    }
-
-    size_t line_len = line_end - line_start;
-    if (line_len >= buffer_size) {
-        line_len = buffer_size - 1;
-    }
-
-    strncpy(buffer, line_start, line_len);
-    buffer[line_len] = '\0';
-
-    return buffer;
 }
 
 /* Find the current function name by scanning backwards from current position */
@@ -108,32 +71,6 @@ static const char *find_current_function(ASTNode **children, size_t count, size_
     }
 
     return (brace_depth > 0) ? function_name : NULL;
-}
-
-/* Report a CZar error and exit */
-static void cz_error(int line, const char *message, const char *func_name) {
-    fprintf(stderr, "[CZAR] ERROR");
-
-    if (func_name) {
-        fprintf(stderr, " [in %s()]", func_name);
-    }
-
-    fprintf(stderr, " at %s:%d: %s\n", g_filename ? g_filename : "<unknown>", line, message);
-
-    /* Try to show the problematic line */
-    char line_buffer[512];
-    const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
-    if (source_line) {
-        /* Trim leading whitespace for display */
-        while (*source_line && isspace((unsigned char)*source_line)) {
-            source_line++;
-        }
-        if (*source_line) {
-            fprintf(stderr, "    > %s\n", source_line);
-        }
-    }
-
-    exit(1);
 }
 
 /* Check if a token is a type keyword */
@@ -383,21 +320,36 @@ static void validate_variable_declarations(ASTNode *ast) {
             /* Variable is NOT initialized - this is an error in CZar! */
             const char *func_name = find_current_function(children, count, i);
             char error_msg[512];
-            snprintf(error_msg, sizeof(error_msg),
-                     "Variable '%s' must be explicitly initialized. "
-                     "CZar requires zero-initialization: %s %s = 0;%s",
-                     var_name->text, token->text, var_name->text,
-                     is_aggregate ? " or = {0};" : "");
-            cz_error(var_name->line, error_msg, func_name);
+            if (func_name) {
+                snprintf(error_msg, sizeof(error_msg),
+                         "[in %s()] Variable '%s' must be explicitly initialized. "
+                         "CZar requires zero-initialization: %s %s = 0;%s",
+                         func_name, var_name->text, token->text, var_name->text,
+                         is_aggregate ? " or = {0};" : "");
+            } else {
+                snprintf(error_msg, sizeof(error_msg),
+                         "Variable '%s' must be explicitly initialized. "
+                         "CZar requires zero-initialization: %s %s = 0;%s",
+                         var_name->text, token->text, var_name->text,
+                         is_aggregate ? " or = {0};" : "");
+            }
+            cz_error(g_filename, g_source, var_name->line, error_msg);
         } else if (next->type == TOKEN_PUNCTUATION && token_text_equals(next, ",")) {
             /* Multiple declarations in one statement - check each */
             const char *func_name = find_current_function(children, count, i);
             char error_msg[512];
-            snprintf(error_msg, sizeof(error_msg),
-                     "Variable '%s' must be explicitly initialized. "
-                     "CZar requires zero-initialization",
-                     var_name->text);
-            cz_error(var_name->line, error_msg, func_name);
+            if (func_name) {
+                snprintf(error_msg, sizeof(error_msg),
+                         "[in %s()] Variable '%s' must be explicitly initialized. "
+                         "CZar requires zero-initialization",
+                         func_name, var_name->text);
+            } else {
+                snprintf(error_msg, sizeof(error_msg),
+                         "Variable '%s' must be explicitly initialized. "
+                         "CZar requires zero-initialization",
+                         var_name->text);
+            }
+            cz_error(g_filename, g_source, var_name->line, error_msg);
         }
     }
 }
