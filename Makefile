@@ -7,7 +7,7 @@ LDFLAGS = -static -lc
 OUT    ?= build/cz
 
 BIN_SOURCES = $(wildcard bin/*.c)
-SRC_SOURCES = $(wildcard src/*.c)
+SRC_SOURCES = $(wildcard src/*.c) $(wildcard src/transpiler/*.c)
 BIN_OBJECTS = $(patsubst bin/%.c,build/bin/%.o,$(BIN_SOURCES))
 SRC_OBJECTS = $(patsubst src/%.c,build/src/%.o,$(SRC_SOURCES))
 OBJECTS = $(BIN_OBJECTS) $(SRC_OBJECTS)
@@ -20,7 +20,7 @@ build/bin/%.o: bin/%.c
 	@mkdir -p ./build/bin
 	$(CC) $(CFLAGS) -c $< -o $@
 build/src/%.o: src/%.c
-	@mkdir -p ./build/src
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 .PHONY: all
 
