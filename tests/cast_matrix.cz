@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <stdint.h>
+
+/*
+ * Comprehensive cast matrix test
+ * Tests all combinations of cast operations between types
+ */
+
+int main(void) {
+    printf("=== Cast Matrix Tests ===\n\n");
+    
+    /* Test u8 casts */
+    printf("--- u8 casts ---\n");
+    u8 u8_val = 100;
+    u8 u8_to_u8 = unsafe_cast<u8>(u8_val);
+    u16 u8_to_u16 = unsafe_cast<u16>(u8_val);  // Safe widening
+    u32 u8_to_u32 = unsafe_cast<u32>(u8_val);  // Safe widening
+    i8 u8_to_i8 = unsafe_cast<i8>(u8_val);     // Sign change
+    i16 u8_to_i16 = unsafe_cast<i16>(u8_val);  // Safe widening + sign
+    printf("u8(%u) -> u8:%u u16:%u u32:%u i8:%d i16:%d\n", 
+           u8_val, u8_to_u8, u8_to_u16, u8_to_u32, u8_to_i8, u8_to_i16);
+    
+    /* Test u16 casts */
+    printf("\n--- u16 casts ---\n");
+    u16 u16_val = 50000;
+    u8 u16_to_u8 = unsafe_cast<u8>(u16_val);     // Narrowing - data loss
+    u16 u16_to_u16 = unsafe_cast<u16>(u16_val);
+    u32 u16_to_u32 = unsafe_cast<u32>(u16_val);  // Safe widening
+    i8 u16_to_i8 = unsafe_cast<i8>(u16_val);     // Narrowing + sign
+    i16 u16_to_i16 = unsafe_cast<i16>(u16_val);  // Sign change
+    printf("u16(%u) -> u8:%u u16:%u u32:%u i8:%d i16:%d\n",
+           u16_val, u16_to_u8, u16_to_u16, u16_to_u32, u16_to_i8, u16_to_i16);
+    
+    /* Test u32 casts */
+    printf("\n--- u32 casts ---\n");
+    u32 u32_val = 1000;
+    u8 u32_to_u8 = unsafe_cast<u8>(u32_val);     // Narrowing
+    u16 u32_to_u16 = unsafe_cast<u16>(u32_val);  // Narrowing
+    u32 u32_to_u32 = unsafe_cast<u32>(u32_val);
+    i32 u32_to_i32 = unsafe_cast<i32>(u32_val);  // Sign change
+    printf("u32(%u) -> u8:%u u16:%u u32:%u i32:%d\n",
+           u32_val, u32_to_u8, u32_to_u16, u32_to_u32, u32_to_i32);
+    
+    /* Test i8 casts */
+    printf("\n--- i8 casts ---\n");
+    i8 i8_val = -50;
+    u8 i8_to_u8 = unsafe_cast<u8>(i8_val);      // Sign change
+    u16 i8_to_u16 = unsafe_cast<u16>(i8_val);   // Sign change
+    i8 i8_to_i8 = unsafe_cast<i8>(i8_val);
+    i16 i8_to_i16 = unsafe_cast<i16>(i8_val);   // Safe widening
+    i32 i8_to_i32 = unsafe_cast<i32>(i8_val);   // Safe widening
+    printf("i8(%d) -> u8:%u u16:%u i8:%d i16:%d i32:%d\n",
+           i8_val, i8_to_u8, i8_to_u16, i8_to_i8, i8_to_i16, i8_to_i32);
+    
+    /* Test i16 casts */
+    printf("\n--- i16 casts ---\n");
+    i16 i16_val = -1000;
+    u8 i16_to_u8 = unsafe_cast<u8>(i16_val);     // Narrowing + sign
+    i8 i16_to_i8 = unsafe_cast<i8>(i16_val);     // Narrowing
+    i16 i16_to_i16 = unsafe_cast<i16>(i16_val);
+    i32 i16_to_i32 = unsafe_cast<i32>(i16_val);  // Safe widening
+    u32 i16_to_u32 = unsafe_cast<u32>(i16_val);  // Sign change
+    printf("i16(%d) -> u8:%u i8:%d i16:%d i32:%d u32:%u\n",
+           i16_val, i16_to_u8, i16_to_i8, i16_to_i16, i16_to_i32, i16_to_u32);
+    
+    /* Test i32 casts */
+    printf("\n--- i32 casts ---\n");
+    i32 i32_val = -50000;
+    u8 i32_to_u8 = unsafe_cast<u8>(i32_val);     // Narrowing + sign
+    i8 i32_to_i8 = unsafe_cast<i8>(i32_val);     // Narrowing
+    i16 i32_to_i16 = unsafe_cast<i16>(i32_val);  // Narrowing
+    i32 i32_to_i32 = unsafe_cast<i32>(i32_val);
+    u32 i32_to_u32 = unsafe_cast<u32>(i32_val);  // Sign change
+    printf("i32(%d) -> u8:%u i8:%d i16:%d i32:%d u32:%u\n",
+           i32_val, i32_to_u8, i32_to_i8, i32_to_i16, i32_to_i32, i32_to_u32);
+    
+    /* Test safe_cast with fallbacks */
+    printf("\n--- safe_cast with fallbacks ---\n");
+    u32 large = 300;
+    u8 safe_u8 = safe_cast<u8>(large, 255);
+    printf("safe_cast<u8>(%u, 255) = %u\n", large, safe_u8);
+    
+    u32 too_large = 1000;
+    u8 clamped = safe_cast<u8>(too_large, 255);
+    printf("safe_cast<u8>(%u, 255) = %u (clamped)\n", too_large, clamped);
+    
+    i32 neg_val = -200;
+    i8 safe_i8 = safe_cast<i8>(neg_val, -128);
+    printf("safe_cast<i8>(%d, -128) = %d (clamped)\n", neg_val, safe_i8);
+    
+    printf("\n=== All cast matrix tests completed ===\n");
+    return 0;
+}
