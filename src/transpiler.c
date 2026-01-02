@@ -5,21 +5,11 @@
  * Transforms AST by applying CZar-specific transformations.
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "transpiler.h"
 #include <stdlib.h>
 #include <string.h>
-
-/* Define strdup if not available */
-#ifndef _GNU_SOURCE
-static char *strdup(const char *s) {
-    size_t len = strlen(s) + 1;
-    char *copy = malloc(len);
-    if (copy) {
-        memcpy(copy, s, len);
-    }
-    return copy;
-}
-#endif
 
 /* CZar type mapping structure */
 typedef struct {

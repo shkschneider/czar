@@ -79,6 +79,9 @@ static Token make_token(Lexer *lexer, TokenType type, size_t start, size_t lengt
     if (token.text) {
         memcpy(token.text, &lexer->input[start], length);
         token.text[length] = '\0';
+    } else {
+        /* Memory allocation failed - set length to 0 to indicate error */
+        token.length = 0;
     }
     
     return token;
@@ -296,6 +299,9 @@ static Token lex_preprocessor(Lexer *lexer) {
     return token;
 }
 
+/* Punctuation characters */
+#define PUNCTUATION_CHARS "(){}[];,"
+
 /* Lex operator or punctuation */
 static Token lex_operator(Lexer *lexer) {
     size_t start = lexer->position;
@@ -333,7 +339,7 @@ static Token lex_operator(Lexer *lexer) {
     
     /* Determine if it's punctuation or operator */
     TokenType type = TOKEN_OPERATOR;
-    if (strchr("(){}[];,", c)) {
+    if (strchr(PUNCTUATION_CHARS, c)) {
         type = TOKEN_PUNCTUATION;
     }
     
