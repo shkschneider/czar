@@ -19,8 +19,7 @@ _CZar consumes `.cz` files, analyses and rewrites the C AST and emits **portable
 
 **Is Not**:
 
-- is not a new programming language
-- a replacement for C
+- a new programming language / replacement / "C-killer"
 - a macros system
 - a compiler backend
 - a runtime framework
@@ -39,20 +38,18 @@ CZar fills that gap by adding **language features** and **safety checks** while 
 
 ---
 
-## What CZar adds to C
+## Language features
 
-### Language features
-
+- **Mutability**
+  - `mut` must be specified to modify
+  - applies to pointers, struct members etc.
+- **Safer casts** with fallback `cast<Type>(value[, fallback])`
 - **Methods on structs**
   - First parameter must be `self`
   - Call syntax: `v.len()` -> `cz_MyStruct_len(&s)`
-- **Extension methods**
-- **`defer {}`**
-  - Block-scoped, deterministic cleanup
-- **Named arguments** (labels only)
-  - Prevent call-site confusion
-- **`foreach` loops**
-  - Over slices and strings
+- **`defer {}`** block-scoped deterministic cleanup
+- **Named arguments** (labels only) to prevent call-site confusion
+- **`foreach` loops**  over slices and strings
 - **Enums** with exhaustiveness checking
 
 ### Built-in types
@@ -61,26 +58,25 @@ CZar fills that gap by adding **language features** and **safety checks** while 
 - Floating types: `f32`, `f64`
 - `string` (length-aware)
 - `slice` (pointer + length)
-- Exposed numeric limits: `U8_MIN/MAX`, ...
 
 ### Built-in utilities
 
 - **Standard logger**
-  - `cz_log_info`, `cz_log_error`, ...
+  - Comptime: `cz_error()`, `cz_warning()`
+  - Runtime: `cz_log_info()`, `cz_log_error()`, ...
   - Automatic file / function / line context
 - **Monotonic clock**
   - `cz_now_monotonic_ns`
   - `cz_sleep_ns`
 - **Arena allocator**
-- `assert`, `todo`, `fixme`, `unreachable`, ...
+- `ASSERT()`, `TODO()`, `FIXME()`, `UNREACHABLE()`, ...
 
 ### Safety
 
-- Zero-initialized locals
-- Ignored return values are errors
+- Mandatory initialization
+- Zeroed structs
+- Ignored return values are errors (can be ignore with `_`)
 - Detection of unchecked null dereferences
-- Explicit `unsafe {}` blocks
-- `safe_cast()` / `unsafe_cast()`
 - Bans dangerous C APIs
 - Enforced naming conventions
 
@@ -124,7 +120,9 @@ This compiles to **plain, readable C** with:
  | cc -E
 .pp.cz
  | cz
-.c
+.cz.c
+ | cc -c
+.o
  | cc
 binary
 ```
@@ -167,3 +165,7 @@ If you can't explain the generated C, it's a bug!
 ## License
 
 MIT [LICENSE](LICENSE)
+
+---
+
+> Long live C!
