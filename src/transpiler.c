@@ -38,8 +38,19 @@ static void transform_node(ASTNode *node) {
                 free(node->token.text);
                 node->token.text = new_text;
                 node->token.length = strlen(new_text);
+            } else {
+                /* If transformation fails, create a fallback name to avoid duplicate _ */
+                static int fallback_counter = 0;
+                char fallback[32];
+                snprintf(fallback, sizeof(fallback), "_unused_fallback_%d", fallback_counter++);
+                char *fallback_text = strdup(fallback);
+                if (fallback_text) {
+                    free(node->token.text);
+                    node->token.text = fallback_text;
+                    node->token.length = strlen(fallback_text);
+                }
+                /* If even fallback fails, keep original _ (may cause C compilation error) */
             }
-            /* If transformation fails, keep the original text */
         } else {
             /* Check if this identifier is a CZar type */
             const char *c_type = transpiler_get_c_type(node->token.text);

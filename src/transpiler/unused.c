@@ -18,7 +18,13 @@ static int unused_counter = 0;
 /* Transform _ identifier to unique unused variable name */
 char *transpiler_transform_unused_identifier(void) {
     char buffer[64];
-    snprintf(buffer, sizeof(buffer), "_unused_%d __attribute__((unused))", unused_counter++);
+    int written = snprintf(buffer, sizeof(buffer), "_unused_%d __attribute__((unused))", unused_counter++);
+    
+    /* Check if snprintf truncated (should never happen with 64 bytes) */
+    if (written < 0 || written >= (int)sizeof(buffer)) {
+        return NULL;
+    }
+    
     return strdup(buffer);
 }
 
