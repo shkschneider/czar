@@ -557,13 +557,43 @@ void transpiler_transform_casts(ASTNode *ast) {
             }
             
             if (comma_pos > 0) {
-                /* cast<Type>(value, fallback) -> (Type)(value) for now */
-                /* TODO: Implement proper ternary injection */
+                /* cast<Type>(value, fallback) -> ((value) > MAX ? (fallback) : (Type)(value)) */
                 
-                /* Replace 'cast' with '(' */
+                const char *type_max = get_type_max(type_name);
+                if (!type_max) {
+                    /* Type not supported, fall back to simple cast */
+                    free(type_name);
+                    continue;
+                }
+                
+                /* Extract the value expression as a string (for re-injection) */
+                /* This is a workaround for token duplication - we'll reconstruct the value text */
+                char value_text[1024] = "";
+                size_t value_start = open_paren + 1;
+                for (size_t k = value_start; k < comma_pos && k < count; k++) {
+                    if (children[k]->type == AST_TOKEN && children[k]->token.text && 
+                        children[k]->token.length > 0) {
+                        strcat(value_text, children[k]->token.text);
+                    }
+                }
+                
+                /* Build ternary components */
+                char ternary_start[512];
+                snprintf(ternary_start, sizeof(ternary_start), "((");
+                
+                char ternary_cond_end[512];
+                snprintf(ternary_cond_end, sizeof(ternary_cond_end), ") > %s ? (", type_max);
+                
+                char ternary_false_start[1024];
+                snprintf(ternary_false_start, sizeof(ternary_false_start), 
+                         ") : (%s)(%s))", type_name, value_text);
+                
+                /* Transform tokens */
+                
+                /* Replace 'cast' with '((' */
                 free(children[i]->token.text);
-                children[i]->token.text = strdup("(");
-                children[i]->token.length = 1;
+                children[i]->token.text = strdup(ternary_start);
+                children[i]->token.length = strlen(ternary_start);
                 children[i]->token.type = TOKEN_PUNCTUATION;
                 
                 /* Remove '<' */
@@ -571,26 +601,35 @@ void transpiler_transform_casts(ASTNode *ast) {
                 children[open_angle]->token.text = strdup("");
                 children[open_angle]->token.length = 0;
                 
-                /* Type name stays as-is */
+                /* Remove type name */
+                free(children[type_idx]->token.text);
+                children[type_idx]->token.text = strdup("");
+                children[type_idx]->token.length = 0;
                 
-                /* Replace '>' with ')' to close type cast */
+                /* Remove '>' */
                 free(children[close_angle]->token.text);
-                children[close_angle]->token.text = strdup(")");
-                children[close_angle]->token.length = 1;
-                children[close_angle]->token.type = TOKEN_PUNCTUATION;
+                children[close_angle]->token.text = strdup("");
+                children[close_angle]->token.length = 0;
                 
-                /* open_paren stays as '(' for the value */
+                /* Remove open_paren (we already have (( from cast replacement) */
+                free(children[open_paren]->token.text);
+                children[open_paren]->token.text = strdup("");
+                children[open_paren]->token.length = 0;
                 
-                /* Remove comma and everything after until close paren */
-                for (size_t k = comma_pos; k < close_paren && k < count; k++) {
-                    if (children[k]->type == AST_TOKEN) {
-                        free(children[k]->token.text);
-                        children[k]->token.text = strdup("");
-                        children[k]->token.length = 0;
-                    }
-                }
+                /* value tokens stay as-is (between open_paren and comma) */
                 
-                /* close_paren stays as ')' */
+                /* Replace comma with ternary condition end: ) > MAX ? ( */
+                free(children[comma_pos]->token.text);
+                children[comma_pos]->token.text = strdup(ternary_cond_end);
+                children[comma_pos]->token.length = strlen(ternary_cond_end);
+                
+                /* fallback tokens stay as-is (between comma and close_paren) */
+                
+                /* Replace close_paren with false branch: ) : (Type)(value)) */
+                free(children[close_paren]->token.text);
+                children[close_paren]->token.text = strdup(ternary_false_start);
+                children[close_paren]->token.length = strlen(ternary_false_start);
+                
             } else {
                 /* cast<Type>(value) -> (Type)(value) - simple cast */
                 
