@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     while (fgets(line, sizeof(line), input)) {
         /* Check if line was truncated (no newline before buffer end) */
         size_t len = strlen(line);
-        int truncated = (len > 0 && len == sizeof(line) - 1 && 
+        int truncated = (len == sizeof(line) - 1 && 
                         line[len - 1] != '\n' && line[len - 1] != '\r');
         
         /* Skip lines that start with "#pragma czar" (with optional whitespace) */
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
                     /* If line was truncated, skip continuation lines too */
                     while (truncated && fgets(line, sizeof(line), input)) {
                         len = strlen(line);
-                        truncated = (len > 0 && len == sizeof(line) - 1 && 
+                        truncated = (len == sizeof(line) - 1 && 
                                     line[len - 1] != '\n' && line[len - 1] != '\r');
                     }
                     continue;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
             len = strlen(line);
-            truncated = (len > 0 && len == sizeof(line) - 1 && 
+            truncated = (len == sizeof(line) - 1 && 
                         line[len - 1] != '\n' && line[len - 1] != '\r');
         }
     }
