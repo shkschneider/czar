@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include "cz.h"
 #include <stdio.h>
 
 /*
@@ -47,13 +46,13 @@ int main(void) {
     ASSERT(pt.x == 10);
     ASSERT(pt.y == 20);
     printf("Test 1 passed: Can use Point instead of struct Point\n");
-    
+
     /* Test 2: Create point using function */
     Point pt2 = create_point(30, 40);
     ASSERT(pt2.x == 30);
     ASSERT(pt2.y == 40);
     printf("Test 2 passed: Can return Point from function\n");
-    
+
     /* Test 3: Use Color typedef */
     Color red = {0};
     red.r = 255;
@@ -61,7 +60,7 @@ int main(void) {
     red.b = 0;
     print_color(red);
     printf("Test 3 passed: Can use Color typedef\n");
-    
+
     printf("All struct typedef tests passed!\n");
     return 0;
 }

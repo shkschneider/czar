@@ -14,8 +14,8 @@
 #include "transpiler/unused.h"
 #include "transpiler/validation.h"
 #include "transpiler/casts.h"
-#include "transpiler/member_access.h"
-#include "transpiler/struct_typedef.h"
+#include "transpiler/autodereference.h"
+#include "transpiler/structs.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -100,12 +100,6 @@ static void transform_node(ASTNode *node) {
         }
     }
 
-    /* Handle include directive replacements */
-    if (node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR) {
-        /* Check for #include "cz.h" - keep it as-is, no automatic header injection */
-        /* Programmers should include stdint.h, stdbool.h, stddef.h explicitly */
-    }
-
     /* Recursively transform children */
     for (size_t i = 0; i < node->child_count; i++) {
         transform_node(node->children[i]);
@@ -125,10 +119,10 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Transform named structs to typedef structs */
-    transpiler_transform_struct_typedef(transpiler->ast);
+    transpiler_transform_structs(transpiler->ast);
 
     /* Transform member access operators (. to -> for pointers) */
-    transpiler_transform_member_access(transpiler->ast);
+    transpiler_transform_autodereference(transpiler->ast);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);

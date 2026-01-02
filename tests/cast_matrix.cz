@@ -8,7 +8,7 @@
 
 int main(void) {
     printf("=== Cast Matrix Tests ===\n\n");
-    
+
     /* Test u8 casts */
     printf("--- u8 casts ---\n");
     u8 u8_val = 100;
@@ -17,9 +17,9 @@ int main(void) {
     u32 u8_to_u32 = cast<u32>(u8_val);  // Safe widening
     i8 u8_to_i8 = cast<i8>(u8_val);     // Sign change
     i16 u8_to_i16 = cast<i16>(u8_val);  // Safe widening + sign
-    printf("u8(%u) -> u8:%u u16:%u u32:%u i8:%d i16:%d\n", 
+    printf("u8(%u) -> u8:%u u16:%u u32:%u i8:%d i16:%d\n",
            u8_val, u8_to_u8, u8_to_u16, u8_to_u32, u8_to_i8, u8_to_i16);
-    
+
     /* Test u16 casts */
     printf("\n--- u16 casts ---\n");
     u16 u16_val = 50000;
@@ -30,7 +30,7 @@ int main(void) {
     i16 u16_to_i16 = cast<i16>(u16_val);  // Sign change
     printf("u16(%u) -> u8:%u u16:%u u32:%u i8:%d i16:%d\n",
            u16_val, u16_to_u8, u16_to_u16, u16_to_u32, u16_to_i8, u16_to_i16);
-    
+
     /* Test u32 casts */
     printf("\n--- u32 casts ---\n");
     u32 u32_val = 1000;
@@ -40,7 +40,7 @@ int main(void) {
     i32 u32_to_i32 = cast<i32>(u32_val);  // Sign change
     printf("u32(%u) -> u8:%u u16:%u u32:%u i32:%d\n",
            u32_val, u32_to_u8, u32_to_u16, u32_to_u32, u32_to_i32);
-    
+
     /* Test i8 casts */
     printf("\n--- i8 casts ---\n");
     i8 i8_val = -50;
@@ -51,7 +51,7 @@ int main(void) {
     i32 i8_to_i32 = cast<i32>(i8_val);   // Safe widening
     printf("i8(%d) -> u8:%u u16:%u i8:%d i16:%d i32:%d\n",
            i8_val, i8_to_u8, i8_to_u16, i8_to_i8, i8_to_i16, i8_to_i32);
-    
+
     /* Test i16 casts */
     printf("\n--- i16 casts ---\n");
     i16 i16_val = -1000;
@@ -62,7 +62,7 @@ int main(void) {
     u32 i16_to_u32 = cast<u32>(i16_val);  // Sign change
     printf("i16(%d) -> u8:%u i8:%d i16:%d i32:%d u32:%u\n",
            i16_val, i16_to_u8, i16_to_i8, i16_to_i16, i16_to_i32, i16_to_u32);
-    
+
     /* Test i32 casts */
     printf("\n--- i32 casts ---\n");
     i32 i32_val = -50000;
@@ -73,7 +73,7 @@ int main(void) {
     u32 i32_to_u32 = cast<u32>(i32_val);  // Sign change
     printf("i32(%d) -> u8:%u i8:%d i16:%d i32:%d u32:%u\n",
            i32_val, i32_to_u8, i32_to_i8, i32_to_i16, i32_to_i32, i32_to_u32);
-    
+
     printf("\n=== All cast matrix tests completed ===\n");
     return 0;
 }

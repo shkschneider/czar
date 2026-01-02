@@ -1,6 +1,6 @@
 /*
  * CZar - C semantic authority layer
- * Member access transformation implementation (transpiler/member_access.c)
+ * Member access transformation implementation (transpiler/autodereference.c)
  *
  * Handles auto-dereference of pointers when using . operator.
  * This transforms pointer.member to pointer->member automatically.
@@ -8,7 +8,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include "member_access.h"
+#include "autodereference.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -177,7 +177,7 @@ static void scan_for_pointers(ASTNode *node) {
 }
 
 /* Transform member access operators */
-static void transform_member_access_node(ASTNode *node) {
+static void transform_autodereference_node(ASTNode *node) {
     if (!node || node->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -221,7 +221,7 @@ static void transform_member_access_node(ASTNode *node) {
 }
 
 /* Main entry point for member access transformation */
-void transpiler_transform_member_access(ASTNode *ast) {
+void transpiler_transform_autodereference(ASTNode *ast) {
     if (!ast) {
         return;
     }
@@ -233,5 +233,5 @@ void transpiler_transform_member_access(ASTNode *ast) {
     scan_for_pointers(ast);
     
     /* Second pass: transform member access operators */
-    transform_member_access_node(ast);
+    transform_autodereference_node(ast);
 }

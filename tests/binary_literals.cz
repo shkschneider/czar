@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "cz.h"
 
 int main(void) {
     /* Basic binary literals */
@@ -13,27 +12,27 @@ int main(void) {
     u8 nibble = 0b1111;                /* 15 */
     u8 zero = 0b0;                     /* 0 */
     u8 one = 0b1;                      /* 1 */
-    
+
     /* Binary with underscores for readability */
     u8 byte_sep = 0b1111_1111;         /* 255 */
     u16 word = 0b1111_1111_0000_0000;  /* 65280 */
     u32 _ = 0b1111_0000_1111_0000_1010_1010_0101_0101;  /* 4042304085 */
-    
+
     /* Uppercase B */
     u8 upper = 0B11110000;             /* 240 */
     u8 upper_sep = 0B1111_0000;        /* 240 */
-    
+
     /* Common bit patterns */
     u8 all_set = 0b11111111;           /* 255 - all bits set */
     u8 all_clear = 0b00000000;         /* 0 - all bits clear */
     u8 high_nibble = 0b11110000;       /* 240 - high nibble set */
     u8 low_nibble = 0b00001111;        /* 15 - low nibble set */
     u8 alternating = 0b10101010;       /* 170 - alternating bits */
-    
+
     /* With suffixes */
     u32 _ = 0b11111111UL;    /* 255UL */
     u64 _ = 0b1111ULL;   /* 15ULL */
-    
+
     /* Actual test - verify conversions */
     ASSERT(byte == 255);
     ASSERT(nibble == 15);
@@ -48,7 +47,7 @@ int main(void) {
     ASSERT(high_nibble == 240);
     ASSERT(low_nibble == 15);
     ASSERT(alternating == 170);
-    
+
     printf("All binary literal tests passed!\n");
     return 0;
 }
