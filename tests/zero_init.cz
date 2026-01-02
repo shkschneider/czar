@@ -4,24 +4,15 @@
 #include <stdio.h>
 
 /* Test that validates zero-initialization is working properly
- * In CZar, all locals should be zero-initialized by default
+ * In CZar, all locals must be explicitly initialized
  */
 
 int main(void) {
-    /* These should be zero-initialized */
-    u32 uninitialized_u32;
-    i32 uninitialized_i32;
-    f32 uninitialized_f32;
-    usize uninitialized_usize;
-
-    /* In standard C, these would be uninitialized (undefined behavior)
-     * In CZar, the transpiler should ensure they are zero-initialized
-     * For now, we manually initialize them to demonstrate the concept
-     */
-    uninitialized_u32 = 0;
-    uninitialized_i32 = 0;
-    uninitialized_f32 = 0.0f;
-    uninitialized_usize = 0;
+    /* These must be explicitly zero-initialized */
+    u32 uninitialized_u32 = 0;
+    i32 uninitialized_i32 = 0;
+    f32 uninitialized_f32 = 0.0f;
+    usize uninitialized_usize = 0;
 
     /* Verify they are zero */
     ASSERT(uninitialized_u32 == 0);
@@ -29,8 +20,7 @@ int main(void) {
     ASSERT(uninitialized_f32 == 0.0f);
     ASSERT(uninitialized_usize == 0);
 
-    printf("Zero-initialization test: OK\n");
-    printf("Note: Full zero-initialization requires transpiler support\n");
+    printf("Zero-initialization enforcement test: OK\n");
 
     return 0;
 }

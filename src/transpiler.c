@@ -12,6 +12,7 @@
 #include "transpiler/constants.h"
 #include "transpiler/runtime.h"
 #include "transpiler/unused.h"
+#include "transpiler/validation.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -111,6 +112,10 @@ void transpiler_transform(Transpiler *transpiler) {
         return;
     }
 
+    /* First validate the AST for CZar semantic rules */
+    transpiler_validate(transpiler->ast);
+
+    /* Then apply transformations */
     transform_node(transpiler->ast);
 }
 
