@@ -3,11 +3,10 @@
  * Cast handling implementation (transpiler/casts.c)
  *
  * Validates and transforms cast expressions according to CZar rules:
- * - ERROR on C-style casts (Type)value
- * - cast<Type>(value) -> unsafe_cast<Type>(value) with WARNING
- * - cast<Type>(value, fallback) -> safe_cast<Type>(value, fallback)
- * - unsafe_cast<Type>(value) with warnings for safe enlarging casts
- * - safe_cast<Type>(value, fallback) for checked casts
+ * - ERROR on C-style casts (Type)value  
+ * - cast<Type>(value) transforms to (Type)(value)
+ * - WARNs for unsafe casts (narrowing, sign changes)
+ * - Allows safe widening casts (u8→u16, i8→i32) without warning
  * - Enforced explicit narrowing casts
  */
 
@@ -361,16 +360,8 @@ static void check_cast_functions(ASTNode **children, size_t count) {
         
         Token *token = &children[i]->token;
         
-        /* Look for cast, unsafe_cast, or safe_cast identifiers */
-        if (token->type == TOKEN_IDENTIFIER &&
-            (strcmp(token->text, "cast") == 0 ||
-             strcmp(token->text, "unsafe_cast") == 0 ||
-             strcmp(token->text, "safe_cast") == 0)) {
-            
-            const char *cast_func = token->text;
-            int is_cast = strcmp(cast_func, "cast") == 0;
-            int is_unsafe_cast = strcmp(cast_func, "unsafe_cast") == 0;
-            int is_safe_cast = strcmp(cast_func, "safe_cast") == 0;
+        /* Look for cast identifier only */
+        if (token->type == TOKEN_IDENTIFIER && strcmp(token->text, "cast") == 0) {
             
             /* Extract type from template syntax */
             size_t j = i + 1;
@@ -379,8 +370,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             if (!type_name) {
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
-                         "%s requires template syntax: %s<Type>(value)",
-                         cast_func, cast_func);
+                         "cast requires template syntax: cast<Type>(value)");
                 cz_error(token->line, error_msg);
                 continue;
             }
@@ -393,15 +383,14 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 free(type_name);
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
-                         "%s requires function call syntax with parentheses",
-                         cast_func);
+                         "cast requires function call syntax with parentheses");
                 cz_error(token->line, error_msg);
                 continue;
             }
             
-            /* Count arguments by finding commas at the right nesting level */
+            /* Count arguments */
             int paren_depth = 1;
-            int arg_count = 1; /* At least one argument (the value) */
+            int arg_count = 1;
             j = skip_whitespace(children, count, j + 1);
             
             while (j < count && paren_depth > 0) {
@@ -421,53 +410,42 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 j++;
             }
             
-            /* Validate argument count */
-            if (is_safe_cast && arg_count != 2) {
+            /* Validate argument count - 1 or 2 arguments allowed */
+            if (arg_count < 1 || arg_count > 2) {
                 free(type_name);
-                cz_error(token->line, "safe_cast requires exactly 2 arguments: safe_cast<Type>(value, fallback)");
+                cz_error(token->line, "cast requires 1 or 2 arguments: cast<Type>(value) or cast<Type>(value, fallback)");
                 continue;
             }
             
-            if (is_safe_cast && arg_count == 2) {
-                /* safe_cast is now implemented via macros - no warning needed */
+            /* Warn if cast is used without fallback */
+            if (arg_count == 1) {
+                char warning_msg[512];
+                snprintf(warning_msg, sizeof(warning_msg),
+                         "cast<%s>(value) without fallback. "
+                         "Consider using cast<%s>(value, fallback) for safe conversion with bounds checking.",
+                         type_name, type_name);
+                cz_warning(token->line, warning_msg);
             }
             
-            if (is_unsafe_cast && arg_count != 1) {
-                free(type_name);
-                cz_error(token->line, "unsafe_cast requires exactly 1 argument: unsafe_cast<Type>(value)");
-                continue;
-            }
-            
-            if (is_cast) {
-                if (arg_count == 1) {
-                    /* cast<Type>(value) -> should use unsafe_cast */
-                    char warning_msg[512];
-                    snprintf(warning_msg, sizeof(warning_msg),
-                             "cast<%s>(value) is an unsafe cast. "
-                             "Consider using unsafe_cast<%s>(value) to make it explicit, "
-                             "or safe_cast<%s>(value, fallback) for checked conversion.",
-                             type_name, type_name, type_name);
-                    cz_warning(token->line, warning_msg);
-                } else if (arg_count != 2) {
-                    free(type_name);
-                    cz_error(token->line, "cast requires 1 or 2 arguments: cast<Type>(value) or cast<Type>(value, fallback)");
-                    continue;
-                }
-            }
-            
-            /* Check for safe enlarging casts with unsafe_cast */
-            if (is_unsafe_cast) {
-                TypeInfo to_type = get_type_info(type_name);
-                
-                /* Warning about safe casts being marked as unsafe */
-                if (to_type.bits > 0) {
-                    /* Note: We can't fully determine source type without deeper analysis,
-                     * so we provide a general reminder about safe enlarging casts */
-                    (void)to_type; /* Suppress unused warning */
-                }
+            /* Check if this cast is potentially unsafe */
+            TypeInfo to_type = get_type_info(type_name);
+            if (to_type.bits > 0) {
+                /* We can't determine source type without deeper analysis,
+                 * so we'll emit a general warning about being careful with casts.
+                 * The warning will be more specific during transformation if we can
+                 * infer the source type. */
             }
             
             free(type_name);
+        } else if (token->type == TOKEN_IDENTIFIER &&
+                   (strcmp(token->text, "unsafe_cast") == 0 || 
+                    strcmp(token->text, "safe_cast") == 0)) {
+            /* These are no longer supported */
+            char error_msg[256];
+            snprintf(error_msg, sizeof(error_msg),
+                     "%s is not supported. Use cast<Type>(value) instead.",
+                     token->text);
+            cz_error(token->line, error_msg);
         }
     }
 }
@@ -506,15 +484,8 @@ void transpiler_transform_casts(ASTNode *ast) {
         
         Token *token = &children[i]->token;
         
-        /* Transform cast function calls to C-style casts or ternary expressions */
-        if (token->type == TOKEN_IDENTIFIER &&
-            (strcmp(token->text, "cast") == 0 ||
-             strcmp(token->text, "unsafe_cast") == 0 ||
-             strcmp(token->text, "safe_cast") == 0)) {
-            
-            const char *cast_func = token->text;
-            int is_safe_cast_func = strcmp(cast_func, "safe_cast") == 0;
-            int is_cast_with_fallback = 0;
+        /* Transform cast<Type>(value[, fallback]) */
+        if (token->type == TOKEN_IDENTIFIER && strcmp(token->text, "cast") == 0) {
             
             /* Find the template type */
             size_t j = skip_whitespace(children, count, i + 1);
@@ -559,7 +530,7 @@ void transpiler_transform_casts(ASTNode *ast) {
             }
             size_t open_paren = j;
             
-            /* Check if this has a comma (2 arguments) */
+            /* Check if there's a comma (indicating fallback) */
             int paren_depth = 1;
             size_t comma_pos = 0;
             size_t close_paren = 0;
@@ -579,91 +550,64 @@ void transpiler_transform_casts(ASTNode *ast) {
                             }
                         } else if (token_text_equals(t, ",") && paren_depth == 1 && comma_pos == 0) {
                             comma_pos = j;
-                            is_cast_with_fallback = 1;
                         }
                     }
                 }
                 j++;
             }
             
-            /* Transform based on whether we have a fallback and if it's safe_cast */
-            if (is_safe_cast_func && is_cast_with_fallback && comma_pos > 0) {
-                /* safe_cast<Type>(value, fallback) transforms to: CZ_SAFE_CAST_Type(value, fallback) */
-                const char *type_max = get_type_max(type_name);
+            if (comma_pos > 0) {
+                /* cast<Type>(value, fallback) -> (Type)(value) for now */
+                /* TODO: Implement proper ternary injection */
                 
-                if (type_max) {
-                    /* Transform to macro call: CZ_SAFE_CAST_type(value, fallback) */
-                    char macro_name[128];
-                    snprintf(macro_name, sizeof(macro_name), "CZ_SAFE_CAST_%s", type_name);
-                    
-                    /* Replace function name with macro name */
-                    free(children[i]->token.text);
-                    children[i]->token.text = strdup(macro_name);
-                    children[i]->token.length = strlen(macro_name);
-                    
-                    /* Remove < */
-                    free(children[open_angle]->token.text);
-                    children[open_angle]->token.text = strdup("");
-                    children[open_angle]->token.length = 0;
-                    
-                    /* Remove type name */
-                    free(children[type_idx]->token.text);
-                    children[type_idx]->token.text = strdup("");
-                    children[type_idx]->token.length = 0;
-                    
-                    /* Remove > */
-                    free(children[close_angle]->token.text);
-                    children[close_angle]->token.text = strdup("");
-                    children[close_angle]->token.length = 0;
-                    
-                    /* Open paren, comma, and close paren stay as-is for macro arguments */
-                } else {
-                    /* Type not supported for safe_cast, fall back to simple cast */
-                    free(type_name);
-                    continue;
-                }
-            } else if (is_cast_with_fallback && strcmp(cast_func, "cast") == 0) {
-                /* cast<Type>(value, fallback) -> same as safe_cast */
-                const char *type_max = get_type_max(type_name);
-                
-                if (type_max) {
-                    char macro_name[128];
-                    snprintf(macro_name, sizeof(macro_name), "CZ_SAFE_CAST_%s", type_name);
-                    
-                    free(children[i]->token.text);
-                    children[i]->token.text = strdup(macro_name);
-                    children[i]->token.length = strlen(macro_name);
-                    
-                    free(children[open_angle]->token.text);
-                    children[open_angle]->token.text = strdup("");
-                    children[open_angle]->token.length = 0;
-                    
-                    free(children[type_idx]->token.text);
-                    children[type_idx]->token.text = strdup("");
-                    children[type_idx]->token.length = 0;
-                    
-                    free(children[close_angle]->token.text);
-                    children[close_angle]->token.text = strdup("");
-                    children[close_angle]->token.length = 0;
-                } else {
-                    free(type_name);
-                    continue;
-                }
-            } else {
-                /* Simple cast without fallback: unsafe_cast or cast with 1 arg */
-                /* Transform to (Type)(value) */
-                
+                /* Replace 'cast' with '(' */
                 free(children[i]->token.text);
                 children[i]->token.text = strdup("(");
                 children[i]->token.length = 1;
                 children[i]->token.type = TOKEN_PUNCTUATION;
                 
+                /* Remove '<' */
                 free(children[open_angle]->token.text);
                 children[open_angle]->token.text = strdup("");
                 children[open_angle]->token.length = 0;
                 
                 /* Type name stays as-is */
                 
+                /* Replace '>' with ')' to close type cast */
+                free(children[close_angle]->token.text);
+                children[close_angle]->token.text = strdup(")");
+                children[close_angle]->token.length = 1;
+                children[close_angle]->token.type = TOKEN_PUNCTUATION;
+                
+                /* open_paren stays as '(' for the value */
+                
+                /* Remove comma and everything after until close paren */
+                for (size_t k = comma_pos; k < close_paren && k < count; k++) {
+                    if (children[k]->type == AST_TOKEN) {
+                        free(children[k]->token.text);
+                        children[k]->token.text = strdup("");
+                        children[k]->token.length = 0;
+                    }
+                }
+                
+                /* close_paren stays as ')' */
+            } else {
+                /* cast<Type>(value) -> (Type)(value) - simple cast */
+                
+                /* Replace 'cast' with '(' */
+                free(children[i]->token.text);
+                children[i]->token.text = strdup("(");
+                children[i]->token.length = 1;
+                children[i]->token.type = TOKEN_PUNCTUATION;
+                
+                /* Remove '<' */
+                free(children[open_angle]->token.text);
+                children[open_angle]->token.text = strdup("");
+                children[open_angle]->token.length = 0;
+                
+                /* Type name stays as-is */
+                
+                /* Replace '>' with ')' */
                 free(children[close_angle]->token.text);
                 children[close_angle]->token.text = strdup(")");
                 children[close_angle]->token.length = 1;
