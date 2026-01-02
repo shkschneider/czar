@@ -40,6 +40,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+    /* Handle empty input file */
+    if (input_size == 0) {
+        fclose(input);
+        /* For empty input, create empty output */
+        FILE *output = stdout;
+        if (output_file) {
+            output = fopen(output_file, "w");
+            if (!output) {
+                fprintf(stderr, "Error: Cannot open output file '%s'\n", output_file);
+                return 1;
+            }
+            fclose(output);
+        }
+        return 0;
+    }
+    
     if (fseek(input, 0, SEEK_SET) != 0) {
         fprintf(stderr, "Error: Failed to seek input file\n");
         fclose(input);
