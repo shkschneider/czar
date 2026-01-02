@@ -5,8 +5,7 @@
  * Transforms AST by applying CZar-specific transformations.
  */
 
-#ifndef TRANSPILER_H
-#define TRANSPILER_H
+#pragma once
 
 #include "parser.h"
 #include <stdio.h>
@@ -30,5 +29,3 @@ void transpiler_emit(Transpiler *transpiler, FILE *output);
 /* Error and warning reporting functions */
 void cz_error(const char *filename, const char *source, int line, const char *message);
 void cz_warning(const char *filename, const char *source, int line, const char *message);
-
-#endif /* TRANSPILER_H */

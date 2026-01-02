@@ -5,12 +5,9 @@
  * Handles auto-dereference of pointers when using . operator.
  */
 
-#ifndef TRANSPILER_AUTODEREFERENCE_H
-#define TRANSPILER_AUTODEREFERENCE_H
+#pragma once
 
 #include "../parser.h"
 
 /* Transform member access operators (. to -> for pointers) */
 void transpiler_transform_autodereference(ASTNode *ast);
-
-#endif /* TRANSPILER_AUTODEREFERENCE_H */

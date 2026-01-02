@@ -5,8 +5,7 @@
  * Handles cast validation and transformation.
  */
 
-#ifndef TRANSPILER_CASTS_H
-#define TRANSPILER_CASTS_H
+#pragma once
 
 #include "../parser.h"
 
@@ -15,5 +14,3 @@ void transpiler_validate_casts(ASTNode *ast, const char *filename, const char *s
 
 /* Transform cast expressions to C equivalents */
 void transpiler_transform_casts(ASTNode *ast);
-
-#endif /* TRANSPILER_CASTS_H */
