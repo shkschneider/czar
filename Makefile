@@ -2,7 +2,7 @@
 CC     ?= cc -v
 STD    ?= c11
 OPT    ?= O2
-CFLAGS := -std=$(STD) -Wall -Wextra -$(OPT) -I./src
+CFLAGS := -std=$(STD) -Wall -Wextra -Wno-unknown-pragmas -I./src -$(OPT)
 LDFLAGS = -static -lc
 OUT    ?= build/cz
 
