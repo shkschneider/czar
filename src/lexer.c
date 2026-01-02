@@ -187,9 +187,10 @@ static Token lex_number(Lexer *lexer) {
             src++;
         }
         *dst = '\0';
+        size_t clean_length = dst - token.text;
         
         /* Convert binary to decimal */
-        if (is_binary && strlen(token.text) > 2) {
+        if (is_binary && clean_length > 2) {
             unsigned long long value = 0;
             const char *binary_digits = token.text + 2; /* Skip "0b" */
             
@@ -199,8 +200,8 @@ static Token lex_number(Lexer *lexer) {
                 binary_digits++;
             }
             
-            /* Convert to decimal string and append suffix */
-            char decimal_str[128];
+            /* Convert to decimal string and append suffix - buffer sized for max u64 + suffix */
+            char decimal_str[32]; /* Enough for 20 digit u64 + suffix */
             snprintf(decimal_str, sizeof(decimal_str), "%llu%s", value, suffix);
             
             /* Update token text */
@@ -210,10 +211,12 @@ static Token lex_number(Lexer *lexer) {
                 strcpy(token.text, decimal_str);
                 token.length = strlen(token.text);
             } else {
+                /* Memory allocation failed */
                 token.length = 0;
+                token.type = TOKEN_UNKNOWN;
             }
         } else {
-            token.length = strlen(token.text);
+            token.length = clean_length;
         }
     }
     
