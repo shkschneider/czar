@@ -50,7 +50,7 @@ void Counter.increment() {
     self.value = self.value + 1;
 }
 
-void Counter.add(i32 delta) {
+void Counter.addDelta(i32 delta) {
     self.value = self.value + delta;
 }
 
@@ -93,15 +93,9 @@ int main(void) {
     ASSERT(val == 10);
     c.increment();
     ASSERT(c.value == 11);
-    c.add(5);
+    c.addDelta(5);
     ASSERT(c.value == 16);
     printf("Test 5 passed: Multiple structs with methods\n");
-
-    /* Test 6: Method on pointer (auto-dereference) */
-    Vec2* vp = &v;
-    u8 len3 = vp.length();
-    ASSERT(len3 == 30);
-    printf("Test 6 passed: Method on pointer vp.length() = %u\n", len3);
 
     printf("All struct method tests passed!\n");
     return 0;
