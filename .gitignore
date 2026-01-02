@@ -1,9 +1,6 @@
 /build
 *.out
-*.h
-*.o
-*.s
-*.a
 *.pp.cz
-*.app.c
+*.pp.c
+*.o
 _codeql_detected_source_root
