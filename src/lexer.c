@@ -117,19 +117,19 @@ static Token lex_number(Lexer *lexer) {
     if (peek(lexer) == '0' && (peek_at(lexer, 1) == 'x' || peek_at(lexer, 1) == 'X')) {
         advance(lexer); /* 0 */
         advance(lexer); /* x */
-        while (isxdigit(peek(lexer))) {
+        while (isxdigit(peek(lexer)) || peek(lexer) == '_') {
             advance(lexer);
         }
     } else {
         /* Handle decimal numbers */
-        while (isdigit(peek(lexer))) {
+        while (isdigit(peek(lexer)) || peek(lexer) == '_') {
             advance(lexer);
         }
         
         /* Handle decimal point */
         if (peek(lexer) == '.' && isdigit(peek_at(lexer, 1))) {
             advance(lexer); /* . */
-            while (isdigit(peek(lexer))) {
+            while (isdigit(peek(lexer)) || peek(lexer) == '_') {
                 advance(lexer);
             }
         }
@@ -140,7 +140,7 @@ static Token lex_number(Lexer *lexer) {
             if (peek(lexer) == '+' || peek(lexer) == '-') {
                 advance(lexer);
             }
-            while (isdigit(peek(lexer))) {
+            while (isdigit(peek(lexer)) || peek(lexer) == '_') {
                 advance(lexer);
             }
         }
@@ -157,6 +157,20 @@ static Token lex_number(Lexer *lexer) {
     Token token = make_token(lexer, TOKEN_NUMBER, start, length);
     token.line = start_line;
     token.column = start_column;
+    
+    /* Remove underscores from the number text for C compatibility */
+    if (token.text) {
+        char *src = token.text;
+        char *dst = token.text;
+        while (*src) {
+            if (*src != '_') {
+                *dst++ = *src;
+            }
+            src++;
+        }
+        *dst = '\0';
+        token.length = dst - token.text;
+    }
     
     return token;
 }
