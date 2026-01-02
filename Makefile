@@ -25,7 +25,7 @@ else
 test: $(TESTS:.cz=.out)
 	@echo "All tests passed."
 endif
-tests/%.out: tests/%.cz
+tests/%.out: tests/%.cz $(OUT)
 	@echo "- $@"
 	@./$(OUT) $< $<.c
 	@$(CC) $(CFLAGS) $<.c $(LDFLAGS) -o $@

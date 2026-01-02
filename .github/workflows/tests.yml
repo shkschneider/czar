@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  gcc-c11:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test with GCC C11
+        run: make test CC=gcc CFLAGS="-std=c11 -Wall -Wextra -pedantic -O2"
+
+  clang-c11:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test with Clang C11
+        run: make test CC=clang CFLAGS="-std=c11 -Wall -Wextra -pedantic -O2"
+
+  gcc-c17:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test with GCC C17
+        run: make test CC=gcc CFLAGS="-std=c17 -Wall -Wextra -pedantic -O2"
+
+  clang-c17:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test with Clang C17
+        run: make test CC=clang CFLAGS="-std=c17 -Wall -Wextra -pedantic -O2"
