@@ -1,4 +1,4 @@
-#include <cz_types.h>
+#include "cz/types.h"
 #include <stdio.h>
 
 /* Test that cz_types.h can be included independently */
@@ -8,14 +8,14 @@ int main(void) {
     cz_u16 b = 50000;
     cz_i32 c = -12345;
     cz_f32 d = 3.14f;
-    
+
     printf("Types test: ");
     printf("u8=%u, u16=%u, i32=%d, f32=%.2f\n", a, b, c, d);
-    
+
     printf("Limits test: ");
-    printf("U8_MAX=%u, I32_MIN=%d, I32_MAX=%d\n", 
+    printf("U8_MAX=%u, I32_MIN=%d, I32_MAX=%d\n",
            CZ_U8_MAX, CZ_I32_MIN, CZ_I32_MAX);
-    
+
     printf("cz_types.h: OK\n");
     return 0;
 }

@@ -1,4 +1,4 @@
-#include <cz_runtime.h>
+#include "cz/runtime.h"
 #include <stdio.h>
 
 /* Test that cz_runtime.h can be included independently */
@@ -9,10 +9,10 @@ void test_function(void) {
 
 int main(void) {
     test_function();
-    
+
     cz_assert(1 == 1);
     cz_assert(2 + 2 == 4);
-    
+
     printf("cz_runtime.h: OK\n");
     return 0;
 }

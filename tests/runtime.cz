@@ -1,4 +1,4 @@
-#include <cz.h>
+#include "cz.h"
 #include <stdio.h>
 
 /* Test type aliases */
@@ -7,18 +7,18 @@ void test_type_aliases(void) {
     cz_u16 u16_val = 65535;
     cz_u32 u32_val = 4294967295U;
     cz_u64 u64_val = 18446744073709551615ULL;
-    
+
     cz_i8 i8_val = CZ_I8_MIN;
     cz_i16 i16_val = CZ_I16_MIN;
     cz_i32 i32_val = CZ_I32_MIN;
     cz_i64 i64_val = CZ_I64_MIN;
-    
+
     cz_f32 f32_val = 3.14f;
     cz_f64 f64_val = 3.14159265358979323846;
-    
+
     cz_usize usize_val = 1024;
     cz_isize isize_val = -1024;
-    
+
     printf("Type aliases test: OK\n");
     (void)u8_val; (void)u16_val; (void)u32_val; (void)u64_val;
     (void)i8_val; (void)i16_val; (void)i32_val; (void)i64_val;
@@ -37,7 +37,7 @@ void test_numeric_limits(void) {
     cz_u32 u32_max = CZ_U32_MAX;
     cz_u64 u64_min = CZ_U64_MIN;
     cz_u64 u64_max = CZ_U64_MAX;
-    
+
     /* Signed limits */
     cz_i8 i8_min = CZ_I8_MIN;
     cz_i8 i8_max = CZ_I8_MAX;
@@ -47,13 +47,13 @@ void test_numeric_limits(void) {
     cz_i32 i32_max = CZ_I32_MAX;
     cz_i64 i64_min = CZ_I64_MIN;
     cz_i64 i64_max = CZ_I64_MAX;
-    
+
     /* Size limits */
     cz_usize usize_min = CZ_USIZE_MIN;
     cz_usize usize_max = CZ_USIZE_MAX;
     cz_isize isize_min = CZ_ISIZE_MIN;
     cz_isize isize_max = CZ_ISIZE_MAX;
-    
+
     printf("Numeric limits test: OK\n");
     (void)u8_min; (void)u8_max;
     (void)u16_min; (void)u16_max;
@@ -72,7 +72,7 @@ void test_runtime_macros(void) {
     const char* file = FILE;
     int line = LINE;
     const char* func = FUNC;
-    
+
     printf("Runtime macros test: OK\n");
     printf("  FILE: %s\n", file);
     printf("  LINE: %d\n", line);
@@ -93,12 +93,12 @@ void test_cz_assert(void) {
 
 int main(void) {
     printf("=== CZar v0.3 Runtime Tests ===\n\n");
-    
+
     test_type_aliases();
     test_numeric_limits();
     test_runtime_macros();
     test_cz_assert();
-    
+
     printf("\nAll tests passed!\n");
     return 0;
 }
