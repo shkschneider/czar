@@ -17,6 +17,9 @@
 /* Maximum number of identifiers we can track */
 #define MAX_TRACKED_IDENTIFIERS 1024
 
+/* Search window for looking ahead/back in token stream */
+#define TOKEN_SEARCH_WINDOW 5
+
 /* Tracked identifier (variable/parameter that is a pointer) */
 typedef struct {
     char *name;
@@ -47,12 +50,15 @@ static void track_identifier(const char *name, int is_pointer, size_t position) 
     }
     
     /* Add new tracking entry */
-    tracked_ids[tracked_count].name = strdup(name);
+    char *name_copy = strdup(name);
+    if (!name_copy) {
+        return; /* Memory allocation failed, cannot track */
+    }
+    
+    tracked_ids[tracked_count].name = name_copy;
     tracked_ids[tracked_count].is_pointer = is_pointer;
     tracked_ids[tracked_count].declaration_index = position;
-    if (tracked_ids[tracked_count].name) {
-        tracked_count++;
-    }
+    tracked_count++;
 }
 
 /* Check if an identifier is tracked as a pointer at a given position */
@@ -125,7 +131,7 @@ static void scan_for_pointers(ASTNode *node) {
                     /* Look back to see if there's an identifier before ( */
                     if (i > 0 && brace_depth == 0) {
                         /* Skip back over whitespace */
-                        for (int j = (int)i - 1; j >= 0 && j >= (int)i - 5; j--) {
+                        for (int j = (int)i - 1; j >= 0 && j >= (int)i - TOKEN_SEARCH_WINDOW; j--) {
                             ASTNode *prev = node->children[j];
                             if (prev->type != AST_TOKEN) continue;
                             Token *prevtok = &prev->token;
@@ -150,7 +156,7 @@ static void scan_for_pointers(ASTNode *node) {
                 /* Look for pointer operator * */
                 if (tok->type == TOKEN_OPERATOR && token_is_pointer_type(tok)) {
                     /* Look ahead for identifier, skipping whitespace */
-                    for (size_t j = i + 1; j < node->child_count && j < i + 5; j++) {
+                    for (size_t j = i + 1; j < node->child_count && j < i + TOKEN_SEARCH_WINDOW; j++) {
                         ASTNode *next_node = node->children[j];
                         if (next_node->type != AST_TOKEN) continue;
                         
@@ -201,11 +207,13 @@ static void transform_member_access_node(ASTNode *node) {
                 /* Check if left side is a tracked pointer at this position */
                 if (is_tracked_pointer_at(left->text, i)) {
                     /* Transform . to -> */
-                    free(op->text);
-                    op->text = strdup("->");
-                    if (op->text) {
-                        op->length = 2;
+                    char *new_text = strdup("->");
+                    if (new_text) {
+                        free(op->text);
+                        op->text = new_text;
+                        op->length = strlen(new_text);
                     }
+                    /* If strdup fails, leave the original text unchanged */
                 }
             }
         }
