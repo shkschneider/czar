@@ -278,8 +278,11 @@ static void transform_method_declarations(ASTNode *ast) {
             continue;
         }
         
-        /* This looks like a method declaration! */
-        /* Transform: StructName.methodName(...) -> StructName_methodName(StructName* self, ...) */
+        /* Check if this is a function definition (has a body {...}) or just a call */
+        /* We need to distinguish between:
+         *   RetType StructName.method() { ... }  (definition)
+         *   StructName.method(&instance)          (static call)
+         * Look for opening brace after the closing paren */
         
         /* Save copies of names before modifying tokens */
         char *struct_name_copy = strdup(struct_name);
@@ -338,7 +341,7 @@ static void transform_method_declarations(ASTNode *ast) {
                     }
                 }
                 /* Check if there's any non-whitespace content between parens */
-                if (paren_depth > 0 && j > paren_idx && j < close_paren_idx) {
+                if (paren_depth > 0 && j > paren_idx) {
                     if (tj->type != TOKEN_WHITESPACE && tj->type != TOKEN_COMMENT &&
                         !(tj->type == TOKEN_PUNCTUATION && tj->text && strcmp(tj->text, ")") == 0)) {
                         has_params = 1;
@@ -346,6 +349,22 @@ static void transform_method_declarations(ASTNode *ast) {
                 }
             }
         }
+        
+        /* Check if there's a function body after the closing paren */
+        /* Look for { after the ) */
+        size_t brace_idx;
+        ASTNode *brace_node = get_next_non_ws_node(ast, close_paren_idx + 1, &brace_idx);
+        if (!brace_node || brace_node->type != AST_TOKEN || 
+            brace_node->token.type != TOKEN_PUNCTUATION || 
+            !brace_node->token.text || strcmp(brace_node->token.text, "{") != 0) {
+            /* Not a function definition, skip */
+            free(struct_name_copy);
+            free(method_name_copy);
+            continue;
+        }
+        
+        /* This is a method declaration! */
+        /* Transform: StructName.methodName(...) -> StructName_methodName(StructName* self, ...) */
         
         /* Insert self parameter after opening paren */
         /* Create: StructName* self (as separate tokens) */
@@ -570,6 +589,12 @@ static void transform_method_calls(ASTNode *ast) {
         const char *instance_name = n1->token.text;
         const char *method_name = method_node->token.text;
         
+        /* Save copies before modifying tokens */
+        char *instance_name_copy = strdup(instance_name);
+        if (!instance_name_copy) {
+            continue;
+        }
+        
         /* We need to determine the struct type of the instance */
         /* For simplicity, we'll try all tracked struct types to see if the method exists */
         char *struct_name = NULL;
@@ -582,13 +607,13 @@ static void transform_method_calls(ASTNode *ast) {
         
         if (!struct_name) {
             /* Also check if the instance name is itself a struct type (static call) */
-            if (is_struct_type(instance_name) && is_tracked_method(instance_name, method_name)) {
+            if (is_struct_type(instance_name_copy) && is_tracked_method(instance_name_copy, method_name)) {
                 /* Static call: StructName.method(...) */
                 /* Transform to: StructName_method(...) - no & needed, params are as-is */
-                size_t new_name_len = strlen(instance_name) + 1 + strlen(method_name) + 1;
+                size_t new_name_len = strlen(instance_name_copy) + 1 + strlen(method_name) + 1;
                 char *new_name = malloc(new_name_len);
                 if (new_name) {
-                    snprintf(new_name, new_name_len, "%s_%s", instance_name, method_name);
+                    snprintf(new_name, new_name_len, "%s_%s", instance_name_copy, method_name);
                     
                     /* Replace instance name with combined name */
                     free(n1->token.text);
@@ -607,8 +632,10 @@ static void transform_method_calls(ASTNode *ast) {
                         method_node->token.length = 0;
                     }
                 }
+                free(instance_name_copy);
                 continue;
             }
+            free(instance_name_copy);
             continue;
         }
         
@@ -668,50 +695,81 @@ static void transform_method_calls(ASTNode *ast) {
             }
         }
         
-        /* Create &instance */
-        size_t addr_len = 1 + strlen(instance_name) + 1;
-        char *addr_text = malloc(addr_len);
-        if (!addr_text) {
-            continue;
-        }
-        snprintf(addr_text, addr_len, "&%s", instance_name);
-        
+        /* Create &instance as separate tokens */
+        /* Create & token */
         ASTNode *addr_node = malloc(sizeof(ASTNode));
         if (!addr_node) {
-            free(addr_text);
+            free(instance_name_copy);
             continue;
         }
-        
         addr_node->type = AST_TOKEN;
-        addr_node->token.type = TOKEN_PUNCTUATION;
-        addr_node->token.text = addr_text;
-        addr_node->token.length = strlen(addr_text);
+        addr_node->token.type = TOKEN_OPERATOR;
+        addr_node->token.text = strdup("&");
+        addr_node->token.length = 1;
         addr_node->token.line = n1->token.line;
         addr_node->token.column = 0;
         addr_node->children = NULL;
         addr_node->child_count = 0;
         addr_node->child_capacity = 0;
         
-        /* If there are existing args, add ", " */
+        /* Create instance token */
+        ASTNode *instance_node = malloc(sizeof(ASTNode));
+        if (!instance_node) {
+            free(addr_node);
+            free(instance_name_copy);
+            continue;
+        }
+        instance_node->type = AST_TOKEN;
+        instance_node->token.type = TOKEN_IDENTIFIER;
+        instance_node->token.text = instance_name_copy; /* Transfer ownership */
+        instance_node->token.length = strlen(instance_name_copy);
+        instance_node->token.line = n1->token.line;
+        instance_node->token.column = 0;
+        instance_node->children = NULL;
+        instance_node->child_count = 0;
+        instance_node->child_capacity = 0;
+        
+        /* If there are existing args, add "," and " " after instance */
         ASTNode *comma_node = NULL;
+        ASTNode *comma_space_node = NULL;
         if (has_args) {
             comma_node = malloc(sizeof(ASTNode));
-            if (comma_node) {
-                comma_node->type = AST_TOKEN;
-                comma_node->token.type = TOKEN_PUNCTUATION;
-                comma_node->token.text = strdup(", ");
-                comma_node->token.length = 2;
-                comma_node->token.line = n1->token.line;
-                comma_node->token.column = 0;
-                comma_node->children = NULL;
-                comma_node->child_count = 0;
-                comma_node->child_capacity = 0;
+            if (!comma_node) {
+                free(addr_node);
+                free(instance_node);
+                continue;
             }
+            comma_node->type = AST_TOKEN;
+            comma_node->token.type = TOKEN_PUNCTUATION;
+            comma_node->token.text = strdup(",");
+            comma_node->token.length = 1;
+            comma_node->token.line = n1->token.line;
+            comma_node->token.column = 0;
+            comma_node->children = NULL;
+            comma_node->child_count = 0;
+            comma_node->child_capacity = 0;
+            
+            comma_space_node = malloc(sizeof(ASTNode));
+            if (!comma_space_node) {
+                free(addr_node);
+                free(instance_node);
+                free(comma_node);
+                continue;
+            }
+            comma_space_node->type = AST_TOKEN;
+            comma_space_node->token.type = TOKEN_WHITESPACE;
+            comma_space_node->token.text = strdup(" ");
+            comma_space_node->token.length = 1;
+            comma_space_node->token.line = n1->token.line;
+            comma_space_node->token.column = 0;
+            comma_space_node->children = NULL;
+            comma_space_node->child_count = 0;
+            comma_space_node->child_capacity = 0;
         }
         
-        /* Insert after opening paren */
+        /* Insert after opening paren: & instance [, space] */
         size_t insert_pos = paren_idx + 1;
-        size_t nodes_to_insert = has_args ? 2 : 1;
+        size_t nodes_to_insert = has_args ? 4 : 2; /* &, instance, [comma, space] */
         size_t new_count = ast->child_count + nodes_to_insert;
         
         if (new_count > ast->child_capacity) {
@@ -722,7 +780,9 @@ static void transform_method_calls(ASTNode *ast) {
                 ast->child_capacity = new_capacity;
             } else {
                 free(addr_node);
+                free(instance_node);
                 if (comma_node) free(comma_node);
+                if (comma_space_node) free(comma_space_node);
                 continue;
             }
         }
@@ -732,10 +792,12 @@ static void transform_method_calls(ASTNode *ast) {
             ast->children[j + nodes_to_insert - 1] = ast->children[j - 1];
         }
         
-        /* Insert &instance */
+        /* Insert &instance tokens */
         ast->children[insert_pos] = addr_node;
-        if (has_args && comma_node) {
-            ast->children[insert_pos + 1] = comma_node;
+        ast->children[insert_pos + 1] = instance_node;
+        if (has_args && comma_node && comma_space_node) {
+            ast->children[insert_pos + 2] = comma_node;
+            ast->children[insert_pos + 3] = comma_space_node;
         }
         ast->child_count += nodes_to_insert;
         
