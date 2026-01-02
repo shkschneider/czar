@@ -8,10 +8,10 @@ void test_type_aliases(void) {
     cz_u32 u32_val = 4294967295U;
     cz_u64 u64_val = 18446744073709551615ULL;
     
-    cz_i8 i8_val = -128;
-    cz_i16 i16_val = -32768;
-    cz_i32 i32_val = -2147483648;
-    cz_i64 i64_val = -9223372036854775807LL - 1;
+    cz_i8 i8_val = CZ_I8_MIN;
+    cz_i16 i16_val = CZ_I16_MIN;
+    cz_i32 i32_val = CZ_I32_MIN;
+    cz_i64 i64_val = CZ_I64_MIN;
     
     cz_f32 f32_val = 3.14f;
     cz_f64 f64_val = 3.14159265358979323846;
