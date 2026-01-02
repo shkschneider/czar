@@ -4,4 +4,6 @@
 *.o
 *.s
 *.a
+*.pp.cz
+*.app.c
 _codeql_detected_source_root
