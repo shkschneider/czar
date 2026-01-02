@@ -1,0 +1,169 @@
+#include "../src/cz.h"
+#include <stdio.h>
+#include <string.h>
+
+/*
+ * Integration test demonstrating all v0.3 runtime features working together
+ */
+
+/* Example struct using CZar types */
+struct Color {
+    cz_u8 r;
+    cz_u8 g;
+    cz_u8 b;
+    cz_u8 a;
+};
+
+/* Initialize a color with bounds checking */
+struct Color make_color(cz_u32 r, cz_u32 g, cz_u32 b, cz_u32 a) {
+    struct Color c = {0};  /* Zero-initialized */
+    
+    /* Clamp values to valid range using limit constants */
+    c.r = (r > CZ_U8_MAX) ? CZ_U8_MAX : (cz_u8)r;
+    c.g = (g > CZ_U8_MAX) ? CZ_U8_MAX : (cz_u8)g;
+    c.b = (b > CZ_U8_MAX) ? CZ_U8_MAX : (cz_u8)b;
+    c.a = (a > CZ_U8_MAX) ? CZ_U8_MAX : (cz_u8)a;
+    
+    return c;
+}
+
+/* Validate color using assertions */
+void validate_color(struct Color* c) {
+    cz_assert(c != NULL);
+    cz_assert(c->r <= CZ_U8_MAX);
+    cz_assert(c->g <= CZ_U8_MAX);
+    cz_assert(c->b <= CZ_U8_MAX);
+    cz_assert(c->a <= CZ_U8_MAX);
+}
+
+/* Example of using all integer types */
+struct AllTypes {
+    cz_u8  u8_field;
+    cz_u16 u16_field;
+    cz_u32 u32_field;
+    cz_u64 u64_field;
+    cz_i8  i8_field;
+    cz_i16 i16_field;
+    cz_i32 i32_field;
+    cz_i64 i64_field;
+    cz_f32 f32_field;
+    cz_f64 f64_field;
+    cz_usize usize_field;
+    cz_isize isize_field;
+};
+
+/* Initialize all types to their min/max values */
+void test_all_types(void) {
+    struct AllTypes types = {0};  /* Zero-initialized */
+    
+    /* Set to max values */
+    types.u8_field = CZ_U8_MAX;
+    types.u16_field = CZ_U16_MAX;
+    types.u32_field = CZ_U32_MAX;
+    types.u64_field = CZ_U64_MAX;
+    
+    /* Set to min values */
+    types.i8_field = CZ_I8_MIN;
+    types.i16_field = CZ_I16_MIN;
+    types.i32_field = CZ_I32_MIN;
+    types.i64_field = CZ_I64_MIN;
+    
+    /* Floating point */
+    types.f32_field = 3.14159f;
+    types.f64_field = 2.718281828459045;
+    
+    /* Size types */
+    types.usize_field = CZ_USIZE_MAX;
+    types.isize_field = CZ_ISIZE_MIN;
+    
+    /* Verify */
+    cz_assert(types.u8_field == CZ_U8_MAX);
+    cz_assert(types.i32_field == CZ_I32_MIN);
+    
+    printf("All types test: OK\n");
+}
+
+/* Example using FILE, LINE, FUNC macros */
+void trace_function(const char* operation) {
+    fprintf(stderr, "[TRACE] %s:%d in %s() - %s\n", 
+            FILE, LINE, FUNC, operation);
+}
+
+/* Safe division with error checking */
+cz_i32 safe_divide(cz_i32 numerator, cz_i32 denominator) {
+    if (denominator == 0) {
+        fprintf(stderr, "%s:%d: %s: Division by zero!\n", 
+                FILE, LINE, FUNC);
+        return 0;
+    }
+    
+    /* Check for overflow in division */
+    if (numerator == CZ_I32_MIN && denominator == -1) {
+        fprintf(stderr, "%s:%d: %s: Division overflow!\n", 
+                FILE, LINE, FUNC);
+        return CZ_I32_MAX;
+    }
+    
+    return numerator / denominator;
+}
+
+int main(void) {
+    printf("=== CZar v0.3 Integration Test ===\n\n");
+    
+    /* Test 1: Color struct with bounds checking */
+    printf("Test 1: Color struct\n");
+    struct Color red = make_color(255, 0, 0, 255);
+    struct Color overflow = make_color(300, 400, 500, 255);  /* Values clamped */
+    validate_color(&red);
+    validate_color(&overflow);
+    printf("  red: rgba(%u, %u, %u, %u)\n", red.r, red.g, red.b, red.a);
+    printf("  overflow (clamped): rgba(%u, %u, %u, %u)\n", 
+           overflow.r, overflow.g, overflow.b, overflow.a);
+    
+    /* Test 2: All types */
+    printf("\nTest 2: All CZar types\n");
+    test_all_types();
+    
+    /* Test 3: Runtime macros */
+    printf("\nTest 3: Runtime macros\n");
+    trace_function("Starting test");
+    printf("  Current file: %s\n", FILE);
+    printf("  Current line: %d\n", LINE);
+    printf("  Current func: %s\n", FUNC);
+    
+    /* Test 4: Safe operations */
+    printf("\nTest 4: Safe operations\n");
+    cz_i32 result1 = safe_divide(10, 2);
+    printf("  10 / 2 = %d\n", result1);
+    cz_assert(result1 == 5);
+    
+    cz_i32 result2 = safe_divide(10, 0);
+    printf("  10 / 0 = %d (handled safely)\n", result2);
+    cz_assert(result2 == 0);
+    
+    cz_i32 result3 = safe_divide(CZ_I32_MIN, -1);
+    printf("  I32_MIN / -1 = %d (overflow handled)\n", result3);
+    cz_assert(result3 == CZ_I32_MAX);
+    
+    /* Test 5: Zero-initialization */
+    printf("\nTest 5: Zero-initialization\n");
+    struct AllTypes zero_test = {0};
+    cz_assert(zero_test.u32_field == 0);
+    cz_assert(zero_test.i32_field == 0);
+    cz_assert(zero_test.f32_field == 0.0f);
+    printf("  Zero-initialization: OK\n");
+    
+    /* Test 6: Limit constants */
+    printf("\nTest 6: Limit constants\n");
+    cz_assert(CZ_U8_MIN == 0);
+    cz_assert(CZ_U8_MAX == 255);
+    cz_assert(CZ_I8_MIN == -128);
+    cz_assert(CZ_I8_MAX == 127);
+    cz_assert(CZ_I32_MIN < 0);
+    cz_assert(CZ_I32_MAX > 0);
+    cz_assert(CZ_I32_MAX > CZ_I16_MAX);
+    printf("  Limit constants: OK\n");
+    
+    printf("\n=== All integration tests passed! ===\n");
+    return 0;
+}
