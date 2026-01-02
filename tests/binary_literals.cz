@@ -17,7 +17,7 @@ int main(void) {
     /* Binary with underscores for readability */
     u8 byte_sep = 0b1111_1111;         /* 255 */
     u16 word = 0b1111_1111_0000_0000;  /* 65280 */
-    u32 dword = 0b1111_0000_1111_0000_1010_1010_0101_0101;  /* 4042304085 */
+    u32 _ = 0b1111_0000_1111_0000_1010_1010_0101_0101;  /* 4042304085 */
     
     /* Uppercase B */
     u8 upper = 0B11110000;             /* 240 */
@@ -31,8 +31,8 @@ int main(void) {
     u8 alternating = 0b10101010;       /* 170 - alternating bits */
     
     /* With suffixes */
-    u32 long_binary = 0b11111111UL;    /* 255UL */
-    u64 longlong_binary = 0b1111ULL;   /* 15ULL */
+    u32 _ = 0b11111111UL;    /* 255UL */
+    u64 _ = 0b1111ULL;   /* 15ULL */
     
     /* Actual test - verify conversions */
     ASSERT(byte == 255);
