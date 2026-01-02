@@ -2,50 +2,46 @@
  * CZar - C semantic authority layer
  * Transpiler runtime module (transpiler/runtime.c)
  *
- * Handles CZar runtime macro definitions for transpilation.
+ * Handles CZar runtime helper function definitions for transpilation.
  */
 
 #include "runtime.h"
 
-/* Runtime macro definitions to be injected into transpiled code */
-static const char *runtime_macros = 
-"/* CZar runtime macros - injected by transpiler */\n"
+/* Runtime helper function definitions to be injected into transpiled code */
+static const char *runtime_functions = 
+"/* CZar runtime functions - injected by transpiler */\n"
 "#include <stdio.h>\n"
 "#include <stdlib.h>\n"
 "\n"
-"#define cz_assert(condition) \\\n"
-"    do { \\\n"
-"        if (!(condition)) { \\\n"
-"            fprintf(stderr, \"%s:%d: %s: Assertion failed: %s\\n\", \\\n"
-"                    __FILE__, __LINE__, __func__, #condition); \\\n"
-"            abort(); \\\n"
-"        } \\\n"
-"    } while (0)\n"
+"static inline void _cz_assert_impl(int condition, const char* file, int line, const char* func, const char* cond_str) {\n"
+"    if (!condition) {\n"
+"        fprintf(stderr, \"%s:%d: %s: Assertion failed: %s\\n\", file, line, func, cond_str);\n"
+"        abort();\n"
+"    }\n"
+"}\n"
+"#define cz_assert(cond) _cz_assert_impl((cond), __FILE__, __LINE__, __func__, #cond)\n"
 "\n"
-"#define cz_todo(msg) \\\n"
-"    do { \\\n"
-"        fprintf(stderr, \"%s:%d: %s: TODO: %s\\n\", \\\n"
-"                __FILE__, __LINE__, __func__, msg); \\\n"
-"        abort(); \\\n"
-"    } while (0)\n"
+"static inline void _cz_todo_impl(const char* msg, const char* file, int line, const char* func) {\n"
+"    fprintf(stderr, \"%s:%d: %s: TODO: %s\\n\", file, line, func, msg);\n"
+"    abort();\n"
+"}\n"
+"#define cz_todo(msg) _cz_todo_impl((msg), __FILE__, __LINE__, __func__)\n"
 "\n"
-"#define cz_fixme(msg) \\\n"
-"    do { \\\n"
-"        fprintf(stderr, \"%s:%d: %s: FIXME: %s\\n\", \\\n"
-"                __FILE__, __LINE__, __func__, msg); \\\n"
-"        abort(); \\\n"
-"    } while (0)\n"
+"static inline void _cz_fixme_impl(const char* msg, const char* file, int line, const char* func) {\n"
+"    fprintf(stderr, \"%s:%d: %s: FIXME: %s\\n\", file, line, func, msg);\n"
+"    abort();\n"
+"}\n"
+"#define cz_fixme(msg) _cz_fixme_impl((msg), __FILE__, __LINE__, __func__)\n"
 "\n"
-"#define cz_unreachable(msg) \\\n"
-"    do { \\\n"
-"        fprintf(stderr, \"%s:%d: %s: Unreachable code reached: %s\\n\", \\\n"
-"                __FILE__, __LINE__, __func__, msg); \\\n"
-"        abort(); \\\n"
-"    } while (0)\n"
-"/* End of CZar runtime macros */\n"
+"static inline void _cz_unreachable_impl(const char* msg, const char* file, int line, const char* func) {\n"
+"    fprintf(stderr, \"%s:%d: %s: Unreachable code reached: %s\\n\", file, line, func, msg);\n"
+"    abort();\n"
+"}\n"
+"#define cz_unreachable(msg) _cz_unreachable_impl((msg), __FILE__, __LINE__, __func__)\n"
+"/* End of CZar runtime functions */\n"
 "\n";
 
-/* Get the runtime macro definitions to inject into transpiled code */
+/* Get the runtime helper function definitions to inject into transpiled code */
 const char *transpiler_get_runtime_macros(void) {
-    return runtime_macros;
+    return runtime_functions;
 }
