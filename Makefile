@@ -6,20 +6,16 @@ CFLAGS := -std=$(STD) -Wall -Wextra -Wno-unknown-pragmas -I./src -$(OPT)
 LDFLAGS = -static -lc
 OUT    ?= build/cz
 
-BIN_SOURCES = $(wildcard bin/*.c)
-SRC_SOURCES = $(wildcard src/*.c) $(wildcard src/transpiler/*.c)
-BIN_OBJECTS = $(patsubst bin/%.c,build/bin/%.o,$(BIN_SOURCES))
-SRC_OBJECTS = $(patsubst src/%.c,build/src/%.o,$(SRC_SOURCES))
-OBJECTS = $(BIN_OBJECTS) $(SRC_OBJECTS)
+SOURCES = $(wildcard src/*.c) $(wildcard src/**/*.c)
+OBJECTS = $(patsubst src/%.c,build/%.o,$(SOURCES))
 
 # Binary
 all: $(OUT)
+	@echo
+	@file ./$(OUT)
 $(OUT): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUT)
-build/bin/%.o: bin/%.c
-	@mkdir -p ./build/bin
-	$(CC) $(CFLAGS) -c $< -o $@
-build/src/%.o: src/%.c
+build/%.o: src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 .PHONY: all
@@ -28,6 +24,7 @@ build/src/%.o: src/%.c
 demo/a.out:
 	$(MAKE) -B -C demo -o $@
 demo: demo/a.out
+	@echo
 	@./$<
 .PHONY: demo
 
@@ -37,8 +34,9 @@ ifdef FILE
 test: $(OUT)
 	@$(MAKE) $(basename $(FILE)).out
 else
-test: demo $(TESTS:.cz=.out)
+test: $(TESTS:.cz=.out)
 	@grep -R "cz_" tests/*.cz && { echo "FAILURE: grep -R 'cz_' found old-style types"; exit 1; } || true
+	@echo
 	@echo "All tests passed."
 endif
 tests/%.out: tests/%.cz $(OUT)
@@ -54,6 +52,8 @@ tests/%.out: tests/%.cz $(OUT)
 .PHONY: test $(TESTS)
 
 # Cleanup
+stat:
+	@find src -type f -name "*.c" | xargs wc -l | sort -n
 clean:
 	@rm -rvf ./build
 	@rm -vf ./demo/*.pp.cz ./demo/*.cz.c ./demo/*.o ./demo/*.out

@@ -3,6 +3,6 @@
 void hello(const char*);
 
 int main(void) {
-    hello("world");
+    hello("Caesar");
     return 0;
 }
