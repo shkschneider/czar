@@ -6,15 +6,21 @@ CFLAGS := -std=$(STD) -Wall -Wextra -$(OPT) -I./src
 LDFLAGS = -static -lc
 OUT    ?= build/cz
 
-SOURCES = $(wildcard bin/*.c)
-OBJECTS = $(patsubst bin/%.c,build/%.o,$(SOURCES))
+BIN_SOURCES = $(wildcard bin/*.c)
+SRC_SOURCES = $(wildcard src/*.c)
+BIN_OBJECTS = $(patsubst bin/%.c,build/bin/%.o,$(BIN_SOURCES))
+SRC_OBJECTS = $(patsubst src/%.c,build/src/%.o,$(SRC_SOURCES))
+OBJECTS = $(BIN_OBJECTS) $(SRC_OBJECTS)
 
 # Binary
 all: $(OUT)
 $(OUT): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUT)
-./build/%.o: bin/%.c
-	@mkdir -p ./build
+build/bin/%.o: bin/%.c
+	@mkdir -p ./build/bin
+	$(CC) $(CFLAGS) -c $< -o $@
+build/src/%.o: src/%.c
+	@mkdir -p ./build/src
 	$(CC) $(CFLAGS) -c $< -o $@
 .PHONY: all
 
