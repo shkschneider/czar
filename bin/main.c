@@ -34,11 +34,24 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* Read input and write to output (no processing yet) */
-    char buffer[4096];
-    size_t bytes_read;
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), input)) > 0) {
-        if (fwrite(buffer, 1, bytes_read, output) != bytes_read) {
+    /* Process input line by line, stripping #pragma czar directives */
+    char line[4096];
+    while (fgets(line, sizeof(line), input)) {
+        /* Skip lines that start with "#pragma czar" (with optional whitespace) */
+        const char *p = line;
+        while (*p == ' ' || *p == '\t') p++;
+        
+        if (strncmp(p, "#pragma", 7) == 0) {
+            p += 7;
+            while (*p == ' ' || *p == '\t') p++;
+            if (strncmp(p, "czar", 4) == 0) {
+                /* Skip this line - it's a #pragma czar directive */
+                continue;
+            }
+        }
+        
+        /* Write all other lines (including #line directives) */
+        if (fputs(line, output) == EOF) {
             fprintf(stderr, "Error: Write failed\n");
             fclose(input);
             if (output_file) fclose(output);
