@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <stdint.h>
+
+/* Test complex CZar type usage */
+
+/* Test in struct definitions */
+struct Point {
+    i32 x;
+    i32 y;
+};
+
+/* Test in function parameters and return types */
+u32 calculate(u8 a, i16 b, f32 c) {
+    return (u32)(a + b + c);
+}
+
+/* Test in typedef */
+typedef u64 MyBigInt;
+
+/* Test in arrays */
+void test_arrays(void) {
+    u8 buffer[256];
+    i32 values[10];
+    f64 coordinates[3];
+    
+    buffer[0] = 1;
+    values[0] = -42;
+    coordinates[0] = 3.14;
+    
+    printf("Arrays: buffer[0]=%u, values[0]=%d, coords[0]=%.2f\n", 
+           buffer[0], values[0], coordinates[0]);
+}
+
+/* Test in pointers */
+void test_pointers(void) {
+    u32 value = 42;
+    u32 *ptr = &value;
+    i64 large = 1000000;
+    
+    printf("Pointers: *ptr=%u, large=%lld\n", *ptr, (long long)large);
+}
+
+/* Test mixed with standard C types */
+void test_mixed(void) {
+    int standard_int = 10;
+    u32 czar_int = 20;
+    unsigned long standard_long = 30;
+    u64 czar_long = 40;
+    
+    printf("Mixed: std_int=%d, czar_int=%u, std_long=%lu, czar_long=%llu\n",
+           standard_int, czar_int, standard_long, (unsigned long long)czar_long);
+}
+
+int main(void) {
+    printf("Complex CZar types test\n");
+    
+    struct Point p;
+    p.x = 10;
+    p.y = 20;
+    printf("Point: x=%d, y=%d\n", p.x, p.y);
+    
+    u32 result = calculate(5, -10, 3.5f);
+    printf("Calculate result: %u\n", result);
+    
+    MyBigInt big = 999999999;
+    printf("MyBigInt: %llu\n", (unsigned long long)big);
+    
+    test_arrays();
+    test_pointers();
+    test_mixed();
+    
+    printf("Complex CZar types test: OK\n");
+    return 0;
+}

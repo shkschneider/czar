@@ -27,9 +27,24 @@ int main(int argc, char *argv[]) {
     }
 
     /* Read entire input file into memory */
-    fseek(input, 0, SEEK_END);
+    if (fseek(input, 0, SEEK_END) != 0) {
+        fprintf(stderr, "Error: Failed to seek input file\n");
+        fclose(input);
+        return 1;
+    }
+    
     long input_size = ftell(input);
-    fseek(input, 0, SEEK_SET);
+    if (input_size < 0) {
+        fprintf(stderr, "Error: Failed to get input file size\n");
+        fclose(input);
+        return 1;
+    }
+    
+    if (fseek(input, 0, SEEK_SET) != 0) {
+        fprintf(stderr, "Error: Failed to seek input file\n");
+        fclose(input);
+        return 1;
+    }
 
     char *input_buffer = malloc(input_size + 1);
     if (!input_buffer) {

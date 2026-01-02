@@ -8,6 +8,7 @@
 #include "parser.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /* Initialize parser with lexer */
 void parser_init(Parser *parser, Lexer *lexer) {
@@ -50,6 +51,8 @@ static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
         size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
         ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
         if (!new_children) {
+            /* Memory allocation failed - this is a fatal error */
+            fprintf(stderr, "Error: Memory allocation failed in ast_node_add_child\n");
             return;
         }
         parent->children = new_children;
