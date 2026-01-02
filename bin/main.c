@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     /* Initialize transpiler */
     Transpiler transpiler;
-    transpiler_init(&transpiler, ast);
+    transpiler_init(&transpiler, ast, input_file, input_buffer);
 
     /* Transform AST */
     transpiler_transform(&transpiler);
