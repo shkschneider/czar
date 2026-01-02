@@ -7,10 +7,10 @@
 int main(void) {
     // This pragma should also be stripped
     #pragma czar diagnostic null-check=warn
-    
+
     printf("v0.1 features working!\n");
     printf("- #line directives preserved\n");
     printf("- #pragma czar directives stripped\n");
-    
+
     return 0;
 }

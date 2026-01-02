@@ -1,4 +1,4 @@
-#include <cz.h>
+#include "cz.h"
 #include <stdio.h>
 
 /* Test that validates zero-initialization is working properly
@@ -11,7 +11,7 @@ int main(void) {
     cz_i32 uninitialized_i32;
     cz_f32 uninitialized_f32;
     cz_usize uninitialized_usize;
-    
+
     /* In standard C, these would be uninitialized (undefined behavior)
      * In CZar, the transpiler should ensure they are zero-initialized
      * For now, we manually initialize them to demonstrate the concept
@@ -20,15 +20,15 @@ int main(void) {
     uninitialized_i32 = 0;
     uninitialized_f32 = 0.0f;
     uninitialized_usize = 0;
-    
+
     /* Verify they are zero */
     cz_assert(uninitialized_u32 == 0);
     cz_assert(uninitialized_i32 == 0);
     cz_assert(uninitialized_f32 == 0.0f);
     cz_assert(uninitialized_usize == 0);
-    
+
     printf("Zero-initialization test: OK\n");
     printf("Note: Full zero-initialization requires transpiler support\n");
-    
+
     return 0;
 }
