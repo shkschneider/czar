@@ -146,6 +146,8 @@ CZar is **pre-1.0** and under active development.
 - Intended to be **self-hosted** by v1.0
 APIs and rules may evolve before 1.0.
 
+[ROADMAP](ROADMAP.md)
+
 ---
 
 ## Philosophy
@@ -160,8 +162,8 @@ APIs and rules may evolve before 1.0.
 
 If you can't explain the generated C, it's a bug!
 
+[DESIGN](DESIGN.md)
+
 ## License
 
 MIT [LICENSE](LICENSE)
-|
-[ROADMAP](LICENSE)
