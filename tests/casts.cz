@@ -4,39 +4,42 @@
 
 /*
  * Test cast functionality:
- * - unsafe_cast<Type>(value)
- * - safe_cast<Type>(value, fallback)
- * - cast<Type>(value) -> should warn to use unsafe_cast
- * - cast<Type>(value, fallback) -> should map to safe_cast
+ * - cast<Type>(value) - simple cast with warnings for unsafe conversions
+ * - Allows safe widening (u8→u16) without warning
  * - C-style casts should error
  */
 
 int main(void) {
-    /* Test unsafe_cast - widening (safe) */
+    /* Test cast - widening (safe, no warning expected) */
     u8 small = 100;
-    u16 medium = unsafe_cast<u16>(small);
-    printf("unsafe_cast u8 to u16: %u\n", medium);
-    
-    /* Test unsafe_cast - narrowing (potentially unsafe) */
+    u16 medium = cast<u16>(small);
+    printf("cast u8 to u16: %u\n", medium);
+    ASSERT(medium == 100);
+
+    /* Test cast - narrowing (potentially unsafe, warning expected) */
     u32 large = 1000;
-    u8 narrow = unsafe_cast<u8>(large);
-    printf("unsafe_cast u32 to u8: %u (may lose data)\n", narrow);
-    
-    /* Test safe_cast with fallback */
+    u8 narrow = cast<u8>(large);
+    printf("cast u32 to u8: %u (may lose data)\n", narrow);
+    ASSERT(narrow == 232);
+
+    /* Test cast - same type */
     u32 value = 300;
-    u8 safe_narrow = safe_cast<u8>(value, 255);
-    printf("safe_cast u32 to u8 with fallback: %u\n", safe_narrow);
-    
-    /* Test cast with single argument (should warn) */
+    u32 same = cast<u32>(value);
+    printf("cast u32 to u32: %u\n", same);
+    ASSERT(same == 300);
+
+    /* Test cast - sign change (warning expected) */
     i16 signed_val = -100;
     i32 signed_wide = cast<i32>(signed_val);
     printf("cast i16 to i32: %d\n", signed_wide);
-    
-    /* Test cast with two arguments */
+    ASSERT(signed_wide == -100);
+
+    /* Test cast - narrowing with sign change (warning expected) */
     u64 big_val = 500;
-    u8 clamped = cast<u8>(big_val, 255);
-    printf("cast u64 to u8 with fallback: %u\n", clamped);
-    
+    u8 small_val = cast<u8>(big_val, 255);
+    printf("cast u64 to u8 with fallback: %u\n", small_val);
+    ASSERT(small_val == 255);
+
     printf("Cast tests: OK\n");
     return 0;
 }
