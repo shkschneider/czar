@@ -1,23 +1,25 @@
+#include <stdint.h>
+#include <stddef.h>
 #include "cz.h"
 #include <stdio.h>
 
 /* Test type aliases */
 void test_type_aliases(void) {
-    cz_u8 u8_val = 255;
-    cz_u16 u16_val = 65535;
-    cz_u32 u32_val = 4294967295U;
-    cz_u64 u64_val = 18446744073709551615ULL;
+    u8 u8_val = 255;
+    u16 u16_val = 65535;
+    u32 u32_val = 4294967295U;
+    u64 u64_val = 18446744073709551615ULL;
 
-    cz_i8 i8_val = CZ_I8_MIN;
-    cz_i16 i16_val = CZ_I16_MIN;
-    cz_i32 i32_val = CZ_I32_MIN;
-    cz_i64 i64_val = CZ_I64_MIN;
+    i8 i8_val = I8_MIN;
+    i16 i16_val = I16_MIN;
+    i32 i32_val = I32_MIN;
+    i64 i64_val = I64_MIN;
 
-    cz_f32 f32_val = 3.14f;
-    cz_f64 f64_val = 3.14159265358979323846;
+    f32 f32_val = 3.14f;
+    f64 f64_val = 3.14159265358979323846;
 
-    cz_usize usize_val = 1024;
-    cz_isize isize_val = -1024;
+    usize usize_val = 1024;
+    isize isize_val = -1024;
 
     printf("Type aliases test: OK\n");
     (void)u8_val; (void)u16_val; (void)u32_val; (void)u64_val;
@@ -29,30 +31,30 @@ void test_type_aliases(void) {
 /* Test numeric limits */
 void test_numeric_limits(void) {
     /* Unsigned limits */
-    cz_u8 u8_min = CZ_U8_MIN;
-    cz_u8 u8_max = CZ_U8_MAX;
-    cz_u16 u16_min = CZ_U16_MIN;
-    cz_u16 u16_max = CZ_U16_MAX;
-    cz_u32 u32_min = CZ_U32_MIN;
-    cz_u32 u32_max = CZ_U32_MAX;
-    cz_u64 u64_min = CZ_U64_MIN;
-    cz_u64 u64_max = CZ_U64_MAX;
+    u8 u8_min = U8_MIN;
+    u8 u8_max = U8_MAX;
+    u16 u16_min = U16_MIN;
+    u16 u16_max = U16_MAX;
+    u32 u32_min = U32_MIN;
+    u32 u32_max = U32_MAX;
+    u64 u64_min = U64_MIN;
+    u64 u64_max = U64_MAX;
 
     /* Signed limits */
-    cz_i8 i8_min = CZ_I8_MIN;
-    cz_i8 i8_max = CZ_I8_MAX;
-    cz_i16 i16_min = CZ_I16_MIN;
-    cz_i16 i16_max = CZ_I16_MAX;
-    cz_i32 i32_min = CZ_I32_MIN;
-    cz_i32 i32_max = CZ_I32_MAX;
-    cz_i64 i64_min = CZ_I64_MIN;
-    cz_i64 i64_max = CZ_I64_MAX;
+    i8 i8_min = I8_MIN;
+    i8 i8_max = I8_MAX;
+    i16 i16_min = I16_MIN;
+    i16 i16_max = I16_MAX;
+    i32 i32_min = I32_MIN;
+    i32 i32_max = I32_MAX;
+    i64 i64_min = I64_MIN;
+    i64 i64_max = I64_MAX;
 
     /* Size limits */
-    cz_usize usize_min = CZ_USIZE_MIN;
-    cz_usize usize_max = CZ_USIZE_MAX;
-    cz_isize isize_min = CZ_ISIZE_MIN;
-    cz_isize isize_max = CZ_ISIZE_MAX;
+    usize usize_min = USIZE_MIN;
+    usize usize_max = USIZE_MAX;
+    isize isize_min = ISIZE_MIN;
+    isize isize_max = ISIZE_MAX;
 
     printf("Numeric limits test: OK\n");
     (void)u8_min; (void)u8_max;

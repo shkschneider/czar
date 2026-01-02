@@ -42,12 +42,9 @@ test: demo $(TESTS:.cz=.out)
 endif
 tests/%.out: tests/%.cz $(OUT)
 	@echo "- $@"
-# preprocessor
-	@$(CC) $(CFLAGS) -E -x c $< -o $(<:.cz=.pp.cz)
-# transpiler
-	@./$(OUT) $(<:.cz=.pp.cz) $(<:.cz=.cz.c)
-	@rm -f $(<:.cz=.pp.cz)
-# compiler
+# transpiler (works on raw .cz file, adds required headers)
+	@./$(OUT) $< $(<:.cz=.cz.c)
+# compiler (preprocesses and compiles in one step)
 	@$(CC) $(CFLAGS) -c $(<:.cz=.cz.c) -o $(<:.cz=.o)
 # linker
 	@$(CC) $(CFLAGS) $(<:.cz=.o) $(LDFLAGS) -o $@
