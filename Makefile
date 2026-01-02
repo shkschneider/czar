@@ -1,6 +1,7 @@
 # Build system for CZar C semantic authority layer
 CC     ?= cc
-CFLAGS  = -std=c11 -Wall -Wextra -pedantic -O2
+STD    ?= c11
+CFLAGS := -std=$(STD) -Wall -Wextra -pedantic -O2
 LDFLAGS = -lc
 OUT    ?= build/cz
 

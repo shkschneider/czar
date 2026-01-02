@@ -7,30 +7,15 @@ on:
   pull_request:
 
 jobs:
-  gcc-c11:
+  tests:
+    name: ${{ matrix.cc }} -std=${{ matrix.std }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        cc: [ gcc, clang ]
+        std: [ c11, c17 ]
     steps:
       - uses: actions/checkout@v4
-      - name: Build and test with GCC C11
-        run: make test CC=gcc CFLAGS="-std=c11 -Wall -Wextra -pedantic -O2"
-
-  clang-c11:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and test with Clang C11
-        run: make test CC=clang CFLAGS="-std=c11 -Wall -Wextra -pedantic -O2"
-
-  gcc-c17:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and test with GCC C17
-        run: make test CC=gcc CFLAGS="-std=c17 -Wall -Wextra -pedantic -O2"
-
-  clang-c17:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and test with Clang C17
-        run: make test CC=clang CFLAGS="-std=c17 -Wall -Wextra -pedantic -O2"
+      - name: make test
+        run: make test CC=${{ matrix.cc }} STD=${{ matrix.std }}
