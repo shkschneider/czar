@@ -150,6 +150,19 @@ static void transform_node(ASTNode *node) {
                     node->token.length = strlen(c_constant);
                 }
                 /* If strdup fails, keep the original text */
+            } else {
+                /* Check if this identifier is a CZar function */
+                const char *c_function = get_c_function_for_czar_function(node->token.text);
+                if (c_function) {
+                    /* Replace CZar function with C function */
+                    char *new_text = strdup(c_function);
+                    if (new_text) {
+                        free(node->token.text);
+                        node->token.text = new_text;
+                        node->token.length = strlen(c_function);
+                    }
+                    /* If strdup fails, keep the original text */
+                }
             }
         }
     }

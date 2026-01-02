@@ -38,7 +38,7 @@ test: $(OUT)
 	@$(MAKE) $(basename $(FILE)).out
 else
 test: demo $(TESTS:.cz=.out)
-	@grep -R cz_ tests/*.cz && { echo "FAILURE: grep -R 'cz_' found"; exit 1; }
+	@grep -R "cz_" tests/*.cz && { echo "FAILURE: grep -R 'cz_' found old-style types"; exit 1; } || true
 	@echo "All tests passed."
 endif
 tests/%.out: tests/%.cz $(OUT)
