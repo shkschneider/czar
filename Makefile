@@ -16,15 +16,22 @@ $(OUT): $(OBJECTS)
 ./build/%.o: bin/%.c
 	@mkdir -p ./build
 	$(CC) $(CFLAGS) -c $< -o $@
+.PHONY: all
+
+# Demo
+demo/a.out:
+	$(MAKE) -B -C demo -o $@
+demo: demo/a.out
+	@./$<
+.PHONY: demo
 
 # Tests: test FILE=...
 TESTS = $(wildcard tests/*.cz)
-.PHONY: $(TESTS)
 ifdef FILE
 test: $(OUT)
 	@$(MAKE) $(basename $(FILE)).out
 else
-test: $(TESTS:.cz=.out)
+test: demo $(TESTS:.cz=.out)
 	@echo "All tests passed."
 endif
 tests/%.out: tests/%.cz $(OUT)
@@ -40,8 +47,11 @@ tests/%.out: tests/%.cz $(OUT)
 	@$(CC) $(CFLAGS) $(<:.cz=.o) $(LDFLAGS) -o $@
 # test
 	@./$@ >/dev/null || { rc=$$?; echo "FAILURE: tests/$*.out exited $$rc"; exit $$rc; }
+.PHONY: test $(TESTS)
 
 # Cleanup
 clean:
 	@rm -rvf ./build
-	@rm -vf ./tests/*.pp.* ./tests/*.cz.c ./tests/*.o ./tests/*.out
+	@rm -vf ./demo/*.pp.cz ./demo/*.cz.c ./demo/*.o ./demo/*.out
+	@rm -vf ./tests/*.pp.cz ./tests/*.cz.c ./tests/*.o ./tests/*.out
+.PHONY: clean
