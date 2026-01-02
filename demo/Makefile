@@ -1,6 +1,6 @@
 # Business as usual
 CC        ?= cc
-CFLAGS     = -Wall -Wextra -std=c11 -O2
+CFLAGS     = -std=c11 -Wall -Wextra -O2
 LDFLAGS    = -lc
 OUT       ?= a.out
 
