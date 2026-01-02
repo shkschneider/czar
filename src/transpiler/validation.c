@@ -11,9 +11,12 @@
 #include <string.h>
 #include <ctype.h>
 
+/* Maximum lookback distance for finding struct/union/enum keywords before braces */
+#define MAX_LOOKBACK_TOKENS 30
+
 /* Report a CZar error and exit */
-static void cz_error(const char *file, int line, const char *message) {
-    fprintf(stderr, "CZar Error: %s:%d: %s\n", file, line, message);
+static void cz_error(int line, const char *message) {
+    fprintf(stderr, "CZar Error: line %d: %s\n", line, message);
     exit(1);
 }
 
@@ -117,7 +120,7 @@ static int in_function_scope(ASTNode **children, size_t count, size_t current) {
     
     /* Now check if the last unclosed { is a struct/union/enum definition */
     /* Look backward from last_open_brace_index for struct/union/enum keyword */
-    for (size_t j = (last_open_brace_index > 30 ? last_open_brace_index - 30 : 0); 
+    for (size_t j = (last_open_brace_index > MAX_LOOKBACK_TOKENS ? last_open_brace_index - MAX_LOOKBACK_TOKENS : 0); 
          j < last_open_brace_index; j++) {
         if (children[j]->type != AST_TOKEN) continue;
         Token *prev = &children[j]->token;
@@ -270,21 +273,21 @@ static void validate_variable_declarations(ASTNode *ast) {
             continue; /* Variable is initialized */
         } else if (next->type == TOKEN_PUNCTUATION && token_text_equals(next, ";")) {
             /* Variable is NOT initialized - this is an error in CZar! */
-            char error_msg[256];
+            char error_msg[512];
             snprintf(error_msg, sizeof(error_msg),
                      "Variable '%s' must be explicitly initialized. "
                      "CZar requires zero-initialization: %s %s = 0;%s",
                      var_name->text, token->text, var_name->text,
                      is_aggregate ? " or = {0};" : "");
-            cz_error(var_name->text, var_name->line, error_msg);
+            cz_error(var_name->line, error_msg);
         } else if (next->type == TOKEN_PUNCTUATION && token_text_equals(next, ",")) {
             /* Multiple declarations in one statement - check each */
-            char error_msg[256];
+            char error_msg[512];
             snprintf(error_msg, sizeof(error_msg),
                      "Variable '%s' must be explicitly initialized. "
                      "CZar requires zero-initialization",
                      var_name->text);
-            cz_error(var_name->text, var_name->line, error_msg);
+            cz_error(var_name->line, error_msg);
         }
     }
 }
