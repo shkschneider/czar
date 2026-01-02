@@ -1,7 +1,9 @@
-#include "cz/runtime.h"
+#include <stdint.h>
+#include <stddef.h>
+#include "cz.h"
 #include <stdio.h>
 
-/* Test that cz_runtime.h can be included independently */
+/* Test that cz.h runtime can be used for assertions */
 
 void test_function(void) {
     printf("Testing from %s at line %d in %s\n", FILE, LINE, FUNC);
@@ -13,6 +15,6 @@ int main(void) {
     cz_assert(1 == 1);
     cz_assert(2 + 2 == 4);
 
-    printf("cz_runtime.h: OK\n");
+    printf("cz.h: OK\n");
     return 0;
 }

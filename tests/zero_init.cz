@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <stddef.h>
 #include "cz.h"
 #include <stdio.h>
 
@@ -7,10 +9,10 @@
 
 int main(void) {
     /* These should be zero-initialized */
-    cz_u32 uninitialized_u32;
-    cz_i32 uninitialized_i32;
-    cz_f32 uninitialized_f32;
-    cz_usize uninitialized_usize;
+    u32 uninitialized_u32;
+    i32 uninitialized_i32;
+    f32 uninitialized_f32;
+    usize uninitialized_usize;
 
     /* In standard C, these would be uninitialized (undefined behavior)
      * In CZar, the transpiler should ensure they are zero-initialized

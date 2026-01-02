@@ -1,3 +1,7 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stddef.h>
 #include "cz.h"
 #include <stdio.h>
 
@@ -5,23 +9,23 @@
 
 /* Example: A simple vector structure using CZar types */
 struct Vec2 {
-    cz_i32 x;
-    cz_i32 y;
+    i32 x;
+    i32 y;
 };
 
 /* Example: Computing with bounds checking using limit constants */
-cz_u8 safe_add_u8(cz_u8 a, cz_u8 b) {
-    cz_u32 result = (cz_u32)a + (cz_u32)b;
-    if (result > CZ_U8_MAX) {
+u8 safe_add_u8(u8 a, u8 b) {
+    u32 result = (u32)a + (u32)b;
+    if (result > U8_MAX) {
         fprintf(stderr, "Overflow detected in safe_add_u8\n");
-        return CZ_U8_MAX;
+        return U8_MAX;
     }
-    return (cz_u8)result;
+    return (u8)result;
 }
 
 /* Example: Range validation using limit constants */
-int is_valid_i32(cz_i64 value) {
-    return value >= CZ_I32_MIN && value <= CZ_I32_MAX;
+int is_valid_i32(i64 value) {
+    return value >= I32_MIN && value <= I32_MAX;
 }
 
 /* Example: Using runtime macros for debugging */
@@ -39,16 +43,16 @@ int main(void) {
     printf("Vec2: (%d, %d)\n", v.x, v.y);
 
     /* Test safe addition */
-    cz_u8 a = 200;
-    cz_u8 b = 100;
-    cz_u8 sum = safe_add_u8(a, b);
+    u8 a = 200;
+    u8 b = 100;
+    u8 sum = safe_add_u8(a, b);
     printf("safe_add_u8(%u, %u) = %u\n", a, b, sum);
 
     /* Test range validation */
-    cz_i64 big_value = 5000000000LL;
+    i64 big_value = 5000000000LL;
     printf("is_valid_i32(%lld) = %d\n", (long long)big_value, is_valid_i32(big_value));
 
-    cz_i64 small_value = 42;
+    i64 small_value = 42;
     printf("is_valid_i32(%lld) = %d\n", (long long)small_value, is_valid_i32(small_value));
 
     /* Test runtime macros */
@@ -56,14 +60,14 @@ int main(void) {
 
     /* Show numeric limits */
     printf("\nNumeric limits:\n");
-    printf("  CZ_U8_MAX: %u\n", CZ_U8_MAX);
-    printf("  CZ_I32_MIN: %d\n", CZ_I32_MIN);
-    printf("  CZ_I32_MAX: %d\n", CZ_I32_MAX);
+    printf("  U8_MAX: %u\n", U8_MAX);
+    printf("  I32_MIN: %d\n", I32_MIN);
+    printf("  I32_MAX: %d\n", I32_MAX);
 
     /* Test assertions */
-    cz_assert(CZ_U8_MAX == 255);
-    cz_assert(CZ_I32_MIN < 0);
-    cz_assert(CZ_I32_MAX > 0);
+    cz_assert(U8_MAX == 255);
+    cz_assert(I32_MIN < 0);
+    cz_assert(I32_MAX > 0);
 
     printf("\nDemo completed successfully!\n");
     return 0;
