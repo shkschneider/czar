@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 /* Initialize lexer with input string */
 void lexer_init(Lexer *lexer, const char *input, size_t input_length) {
@@ -112,12 +113,22 @@ static Token lex_number(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
+    int is_binary = 0;
     
     /* Handle hex numbers */
     if (peek(lexer) == '0' && (peek_at(lexer, 1) == 'x' || peek_at(lexer, 1) == 'X')) {
         advance(lexer); /* 0 */
         advance(lexer); /* x */
         while (isxdigit(peek(lexer)) || peek(lexer) == '_') {
+            advance(lexer);
+        }
+    }
+    /* Handle binary numbers */
+    else if (peek(lexer) == '0' && (peek_at(lexer, 1) == 'b' || peek_at(lexer, 1) == 'B')) {
+        is_binary = 1;
+        advance(lexer); /* 0 */
+        advance(lexer); /* b */
+        while (peek(lexer) == '0' || peek(lexer) == '1' || peek(lexer) == '_') {
             advance(lexer);
         }
     } else {
@@ -147,19 +158,26 @@ static Token lex_number(Lexer *lexer) {
     }
     
     /* Handle suffix (f, F, l, L, u, U, etc.) */
+    char suffix[10] = {0};
+    int suffix_len = 0;
     while (peek(lexer) && (tolower(peek(lexer)) == 'f' || 
                            tolower(peek(lexer)) == 'l' || 
                            tolower(peek(lexer)) == 'u')) {
+        if (suffix_len < 9) {
+            suffix[suffix_len++] = peek(lexer);
+        }
         advance(lexer);
     }
+    suffix[suffix_len] = '\0';
     
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_NUMBER, start, length);
     token.line = start_line;
     token.column = start_column;
     
-    /* Remove underscores from the number text for C compatibility */
+    /* Process the token text */
     if (token.text) {
+        /* First, remove underscores */
         char *src = token.text;
         char *dst = token.text;
         while (*src) {
@@ -169,7 +187,34 @@ static Token lex_number(Lexer *lexer) {
             src++;
         }
         *dst = '\0';
-        token.length = dst - token.text;
+        
+        /* Convert binary to decimal */
+        if (is_binary && strlen(token.text) > 2) {
+            unsigned long long value = 0;
+            const char *binary_digits = token.text + 2; /* Skip "0b" */
+            
+            /* Calculate decimal value */
+            while (*binary_digits && (*binary_digits == '0' || *binary_digits == '1')) {
+                value = (value << 1) | (*binary_digits - '0');
+                binary_digits++;
+            }
+            
+            /* Convert to decimal string and append suffix */
+            char decimal_str[128];
+            snprintf(decimal_str, sizeof(decimal_str), "%llu%s", value, suffix);
+            
+            /* Update token text */
+            free(token.text);
+            token.text = malloc(strlen(decimal_str) + 1);
+            if (token.text) {
+                strcpy(token.text, decimal_str);
+                token.length = strlen(token.text);
+            } else {
+                token.length = 0;
+            }
+        } else {
+            token.length = strlen(token.text);
+        }
     }
     
     return token;
