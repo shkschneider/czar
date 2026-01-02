@@ -1,0 +1,10 @@
+#include <stdio.h>
+
+#pragma czar safety strict
+#pragma czar diagnostic unused-var=error
+
+int main(void) {
+    #pragma czar diagnostic null-check=warn
+    printf("Testing pragma czar stripping!\n");
+    return 0;
+}

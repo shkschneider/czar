@@ -1,0 +1,12 @@
+#include <stdio.h>
+# 3 "source.cz"
+#pragma czar safety default
+# 5 "source.cz"
+
+int main(void) {
+# 8 "source.cz"
+    #pragma czar diagnostic unused-var=warn
+    printf("Testing both features!\n");
+# 11 "source.cz"
+    return 0;
+}

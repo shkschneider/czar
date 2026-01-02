@@ -1,0 +1,10 @@
+#include <stdio.h>
+# 3 "original.cz"
+
+# 5 "original.cz"
+int main(void) {
+# 7 "original.cz"
+    printf("Testing line directive preservation!\n");
+# 9 "original.cz"
+    return 0;
+}
