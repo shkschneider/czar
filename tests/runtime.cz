@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "cz.h"
 #include <stdio.h>
 
 /* Test type aliases */
@@ -71,14 +70,14 @@ void test_numeric_limits(void) {
 
 /* Test runtime macros */
 void test_runtime_macros(void) {
-    const char* file = FILE;
-    int line = LINE;
-    const char* func = FUNC;
+    const char* file = __FILE__;
+    int line = __LINE__;
+    const char* func = __func__;
 
     printf("Runtime macros test: OK\n");
-    printf("  FILE: %s\n", file);
-    printf("  LINE: %d\n", line);
-    printf("  FUNC: %s\n", func);
+    printf("  __FILE__: %s\n", file);
+    printf("  __LINE__: %d\n", line);
+    printf("  __func__: %s\n", func);
     (void)file; (void)line; (void)func;
 }
 

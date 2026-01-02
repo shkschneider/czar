@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "cz.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -82,24 +81,24 @@ void test_all_types(void) {
     printf("All types test: OK\n");
 }
 
-/* Example using FILE, LINE, FUNC macros */
+/* Example using __FILE__, __LINE__, __func__ macros */
 void trace_function(const char* operation) {
     fprintf(stderr, "[TRACE] %s:%d in %s() - %s\n",
-            FILE, LINE, FUNC, operation);
+            __FILE__, __LINE__, __func__, operation);
 }
 
 /* Safe division with error checking */
 i32 safe_divide(i32 numerator, i32 denominator) {
     if (denominator == 0) {
         fprintf(stderr, "%s:%d: %s: Division by zero!\n",
-                FILE, LINE, FUNC);
+                __FILE__, __LINE__, __func__);
         return 0;
     }
 
     /* Check for overflow in division */
     if (numerator == I32_MIN && denominator == -1) {
         fprintf(stderr, "%s:%d: %s: Division overflow!\n",
-                FILE, LINE, FUNC);
+                __FILE__, __LINE__, __func__);
         return I32_MAX;
     }
 
@@ -126,9 +125,9 @@ int main(void) {
     /* Test 3: Runtime macros */
     printf("\nTest 3: Runtime macros\n");
     trace_function("Starting test");
-    printf("  Current file: %s\n", FILE);
-    printf("  Current line: %d\n", LINE);
-    printf("  Current func: %s\n", FUNC);
+    printf("  Current file: %s\n", __FILE__);
+    printf("  Current line: %d\n", __LINE__);
+    printf("  Current func: %s\n", __func__);
 
     /* Test 4: Safe operations */
     printf("\nTest 4: Safe operations\n");

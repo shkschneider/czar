@@ -1,6 +1,6 @@
 /*
  * CZar - C semantic authority layer
- * Struct typedef transformation implementation (transpiler/struct_typedef.c)
+ * Struct typedef transformation implementation (transpiler/structs.c)
  *
  * Handles automatic typedef generation for named structs.
  * Transforms: struct Name { ... }; into typedef struct { ... } Name;
@@ -8,43 +8,43 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include "struct_typedef.h"
+#include "structs.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 /* Transform named struct declarations into typedef structs */
-void transpiler_transform_struct_typedef(ASTNode *ast) {
+void transpiler_transform_structs(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     /* Look for pattern: struct identifier { ... }; */
     /* Transform to: typedef struct { ... } identifier; */
-    
+
     for (size_t i = 0; i < ast->child_count; i++) {
         /* Need at least: struct, whitespace, identifier, whitespace, { */
         if (i + 4 >= ast->child_count) {
             continue;
         }
-        
+
         ASTNode *n1 = ast->children[i];
         ASTNode *n2 = ast->children[i + 1];
         ASTNode *n3 = ast->children[i + 2];
-        
+
         if (n1->type != AST_TOKEN || n2->type != AST_TOKEN || n3->type != AST_TOKEN) {
             continue;
         }
-        
+
         Token *t1 = &n1->token;
         Token *t2 = &n2->token;
         Token *t3 = &n3->token;
-        
+
         /* Check for: struct <whitespace> identifier */
         if (t1->type == TOKEN_IDENTIFIER && t1->text && strcmp(t1->text, "struct") == 0 &&
             t2->type == TOKEN_WHITESPACE &&
             t3->type == TOKEN_IDENTIFIER) {
-            
+
             /* Look ahead to find the opening brace { - it should be immediately after the struct name */
             /* Pattern: struct Name { (with optional whitespace) */
             /* We want to reject: struct Name x = { (variable declaration) */
@@ -67,11 +67,11 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                     break;
                 }
             }
-            
+
             if (!found_brace || found_other) {
                 continue; /* Not a struct definition */
             }
-            
+
             /* Find the closing brace and semicolon */
             int brace_depth = 0;
             size_t closing_brace_idx = 0;
@@ -91,21 +91,21 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                     }
                 }
             }
-            
+
             if (closing_brace_idx == 0) {
                 continue; /* Couldn't find matching closing brace */
             }
-            
+
             /* Now we have a valid struct definition from i to closing_brace_idx */
             /* Transform: struct Name { ... } to typedef struct Name { ... } Name */
             /* This allows both "struct Name" and "Name" to be used */
-            
+
             /* Step 1: Save the struct name (t3->text) - we'll need it twice */
             char *struct_name = strdup(t3->text);
             if (!struct_name) {
                 continue; /* Memory allocation failed */
             }
-            
+
             /* Step 2: Replace "struct" with "typedef struct" */
             char *new_text = strdup("typedef struct");
             if (new_text) {
@@ -113,10 +113,10 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                 t1->text = new_text;
                 t1->length = strlen(new_text);
             }
-            
+
             /* Step 3: Keep the struct name after struct keyword (DON'T make it anonymous) */
             /* This allows "struct Name" to still work */
-            
+
             /* Step 4: After the closing brace, add the typedef name */
             /* Look for whitespace and semicolon after closing brace */
             size_t semicolon_idx = 0;
@@ -129,12 +129,12 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                     }
                 }
             }
-            
+
             if (semicolon_idx > 0) {
                 /* Insert the struct name before the semicolon */
                 /* Find the token right before semicolon (should be whitespace or closing brace) */
                 size_t insert_pos = semicolon_idx;
-                
+
                 /* We need to insert: " Name" before the semicolon */
                 /* Create a new token for the space */
                 ASTNode *space_node = malloc(sizeof(ASTNode));
@@ -149,7 +149,7 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                     space_node->child_count = 0;
                     space_node->child_capacity = 0;
                 }
-                
+
                 /* Create a new token for the name */
                 ASTNode *name_node = malloc(sizeof(ASTNode));
                 if (name_node) {
@@ -162,7 +162,7 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                     name_node->children = NULL;
                     name_node->child_count = 0;
                     name_node->child_capacity = 0;
-                    
+
                     /* Insert the nodes before the semicolon */
                     /* We need to grow the children array and shift elements */
                     size_t new_count = ast->child_count + 2;
@@ -180,17 +180,17 @@ void transpiler_transform_struct_typedef(ASTNode *ast) {
                             continue;
                         }
                     }
-                    
+
                     /* Shift elements to make room */
                     for (size_t j = ast->child_count; j > insert_pos; j--) {
                         ast->children[j + 1] = ast->children[j - 1];
                     }
-                    
+
                     /* Insert the new nodes */
                     ast->children[insert_pos] = space_node;
                     ast->children[insert_pos + 1] = name_node;
                     ast->child_count += 2;
-                    
+
                     /* Skip ahead so we don't process this struct again */
                     i = semicolon_idx + 2;
                 } else {

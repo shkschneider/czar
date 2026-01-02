@@ -1,8 +1,8 @@
 # Build system for CZar C semantic authority layer
 CC     ?= cc -v
-STD    ?= c11
+STD    ?= c11#-D_POSIX_C_SOURCE=200809L
 OPT    ?= O2
-CFLAGS := -std=$(STD) -Wall -Wextra -Wno-unknown-pragmas -I./src -$(OPT)
+CFLAGS := -std=$(STD) -Wall -Wextra -Wno-unknown-pragmas -$(OPT)
 LDFLAGS = -static -lc
 OUT    ?= build/cz
 

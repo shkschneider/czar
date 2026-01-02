@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "cz.h"
 
 int main(void) {
     /* These would normally generate "unused variable" warnings */
@@ -13,19 +12,19 @@ int main(void) {
     u16 _ = 20;
     u32 _ = 30;
     u64 _ = 40;
-    
+
     /* But we can still use regular variables */
     i32 used_var = 100;
-    
+
     /* More unused variables with different scoping */
     {
         f32 _ = 3.14f;
         f64 _ = 2.718;
     }
-    
+
     /* Use the regular variable to avoid warning */
     ASSERT(used_var == 100);
-    
+
     printf("Unused variable test passed!\n");
     return 0;
 }
