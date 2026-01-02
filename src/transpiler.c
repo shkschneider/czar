@@ -205,12 +205,5 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
         return;
     }
     
-    /* Emit required standard headers at the beginning for constants and types */
-    /* Reset line tracking to avoid conflicts with preprocessed includes */
-    fprintf(output, "#line 1 \"<czar-transpiler>\"\n");
-    fprintf(output, "#include <stdint.h>\n");
-    fprintf(output, "#include <stddef.h>\n");
-    fprintf(output, "#line 1 \"<transpiled-output>\"\n");
-    
     emit_node(transpiler->ast, output);
 }
