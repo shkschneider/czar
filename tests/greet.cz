@@ -1,0 +1,13 @@
+#include <stdio.h>
+
+#pragma czar safety default
+
+void greet(const char* name) {
+    #pragma czar diagnostic unused-var=warn
+    printf("Hello, %s from CZar v0.1!\n", name);
+}
+
+int main(void) {
+    greet("world");
+    return 0;
+}

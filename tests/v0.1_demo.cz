@@ -1,0 +1,16 @@
+#include <stdio.h>
+
+// This should be stripped
+#pragma czar safety strict
+#pragma czar diagnostic unused=error
+
+int main(void) {
+    // This pragma should also be stripped
+    #pragma czar diagnostic null-check=warn
+    
+    printf("v0.1 features working!\n");
+    printf("- #line directives preserved\n");
+    printf("- #pragma czar directives stripped\n");
+    
+    return 0;
+}
