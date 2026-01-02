@@ -80,46 +80,6 @@ static TypeInfo get_type_info(const char *type_name) {
 }
 
 /* Check if a cast is safe (enlarging data without sign issues) */
-static int is_safe_cast(TypeInfo from, TypeInfo to) {
-    /* Unknown types - cannot determine safety */
-    if (from.bits == 0 || to.bits == 0) {
-        return 0;
-    }
-
-    /* Enlarging unsigned to unsigned is safe */
-    if (!from.is_signed && !to.is_signed && from.bits < to.bits) {
-        return 1;
-    }
-
-    /* Enlarging signed to signed is safe if target is larger */
-    if (from.is_signed && to.is_signed && from.bits < to.bits) {
-        return 1;
-    }
-
-    /* All other casts are potentially unsafe */
-    return 0;
-}
-
-/* Check if a cast is narrowing */
-static int is_narrowing_cast(TypeInfo from, TypeInfo to) {
-    /* Unknown types - cannot determine */
-    if (from.bits == 0 || to.bits == 0) {
-        return 0;
-    }
-
-    /* Narrowing if target has fewer bits */
-    if (to.bits < from.bits) {
-        return 1;
-    }
-
-    /* Sign mismatch can be considered narrowing */
-    if (from.is_signed != to.is_signed) {
-        return 1;
-    }
-
-    return 0;
-}
-
 /* Get max value for a type as a string constant */
 static const char *get_type_max(const char *type_name) {
     if (!type_name) return NULL;
@@ -133,25 +93,6 @@ static const char *get_type_max(const char *type_name) {
     if (strcmp(type_name, "i16") == 0 || strcmp(type_name, "int16_t") == 0) return "32767";
     if (strcmp(type_name, "i32") == 0 || strcmp(type_name, "int32_t") == 0) return "2147483647";
     if (strcmp(type_name, "i64") == 0 || strcmp(type_name, "int64_t") == 0) return "9223372036854775807LL";
-
-    return NULL;
-}
-
-/* Get min value for a type as a string constant */
-static const char *get_type_min(const char *type_name) {
-    if (!type_name) return NULL;
-
-    /* Unsigned types have min of 0 */
-    if (strcmp(type_name, "u8") == 0 || strcmp(type_name, "uint8_t") == 0) return "0";
-    if (strcmp(type_name, "u16") == 0 || strcmp(type_name, "uint16_t") == 0) return "0";
-    if (strcmp(type_name, "u32") == 0 || strcmp(type_name, "uint32_t") == 0) return "0";
-    if (strcmp(type_name, "u64") == 0 || strcmp(type_name, "uint64_t") == 0) return "0";
-
-    /* Signed types */
-    if (strcmp(type_name, "i8") == 0 || strcmp(type_name, "int8_t") == 0) return "-128";
-    if (strcmp(type_name, "i16") == 0 || strcmp(type_name, "int16_t") == 0) return "-32768";
-    if (strcmp(type_name, "i32") == 0 || strcmp(type_name, "int32_t") == 0) return "(-2147483647-1)";
-    if (strcmp(type_name, "i64") == 0 || strcmp(type_name, "int64_t") == 0) return "(-9223372036854775807LL-1)";
 
     return NULL;
 }
