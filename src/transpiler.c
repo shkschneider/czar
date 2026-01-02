@@ -169,18 +169,8 @@ static void transform_node(ASTNode *node) {
 
     /* Handle include directive replacements */
     if (node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR) {
-        /* Check for #include "cz.h" or #include "cz/types.h" or #include "cz/runtime.h" */
-        if (strstr(node->token.text, "#include") != NULL) {
-            if (strstr(node->token.text, "\"cz.h\"") != NULL) {
-                /* Replace #include "cz.h" with standard headers + cz.h for runtime */
-                char *new_text = strdup("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n#include \"cz.h\"\n");
-                if (new_text) {
-                    free(node->token.text);
-                    node->token.text = new_text;
-                    node->token.length = strlen(new_text);
-                }
-            }
-        }
+        /* Check for #include "cz.h" - keep it as-is, no automatic header injection */
+        /* Programmers should include stdint.h, stdbool.h, stddef.h explicitly */
     }
 
     /* Recursively transform children */
