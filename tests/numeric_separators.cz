@@ -1,0 +1,37 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+#include "cz.h"
+
+/* Test numeric literal separators in CZar */
+
+int main(void) {
+    /* Decimal numbers with separators */
+    u32 million = 1_000_000;
+    u64 billion = 1_000_000_000;
+    u32 thousand = 1_000;
+    
+    /* Hex numbers with separators */
+    u32 hex_val = 0xDEAD_BEEF;
+    u32 hex_small = 0xFF_00_FF;
+    
+    /* Floating point with separators */
+    f64 pi_approx = 3.141_592_653_589_793;
+    f32 large_float = 1_234.567_890f;
+    
+    /* Verify values are correct */
+    ASSERT(million == 1000000);
+    ASSERT(billion == 1000000000);
+    ASSERT(thousand == 1000);
+    ASSERT(hex_val == 0xDEADBEEF);
+    ASSERT(hex_small == 0xFF00FF);
+    
+    printf("million = %u\n", million);
+    printf("billion = %llu\n", (unsigned long long)billion);
+    printf("hex_val = 0x%X\n", hex_val);
+    printf("pi_approx = %.15f\n", pi_approx);
+    printf("large_float = %.6f\n", large_float);
+    
+    printf("Numeric separators test passed!\n");
+    return 0;
+}
