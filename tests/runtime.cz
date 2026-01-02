@@ -82,15 +82,15 @@ void test_runtime_macros(void) {
     (void)file; (void)line; (void)func;
 }
 
-/* Test cz_assert - only tests passing case */
-void test_cz_assert(void) {
-    cz_assert(1 == 1);
-    cz_assert(2 + 2 == 4);
-    cz_assert("test" != NULL);
-    printf("cz_assert test: OK\n");
+/* Test ASSERT - only tests passing case */
+void test_ASSERT(void) {
+    ASSERT(1 == 1);
+    ASSERT(2 + 2 == 4);
+    ASSERT("test" != NULL);
+    printf("ASSERT test: OK\n");
 }
 
-/* Note: We don't test todo, fixme, or cz_unreachable because they abort */
+/* Note: We don't test TODO, FIXME, or UNREACHABLE because they abort */
 /* These would be tested in separate test files that expect failure */
 
 int main(void) {
@@ -99,7 +99,7 @@ int main(void) {
     test_type_aliases();
     test_numeric_limits();
     test_runtime_macros();
-    test_cz_assert();
+    test_ASSERT();
 
     printf("\nAll tests passed!\n");
     return 0;

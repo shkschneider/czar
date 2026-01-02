@@ -1,7 +1,7 @@
 /*
  * CZar - C semantic authority layer
  * Lexer header (lexer.h)
- * 
+ *
  * Tokenizes C source code into a stream of tokens.
  */
 
