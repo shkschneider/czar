@@ -42,6 +42,7 @@ static size_t struct_type_count = 0;
 /* Add a method to tracking */
 static void track_method(const char *struct_name, const char *method_name) {
     if (method_count >= MAX_METHODS) {
+        fprintf(stderr, "Warning: Maximum method tracking limit (%d) reached\n", MAX_METHODS);
         return;
     }
     
@@ -55,11 +56,18 @@ static void track_method(const char *struct_name, const char *method_name) {
     }
     
     /* Add new method */
-    methods[method_count].struct_name = strdup(struct_name);
-    methods[method_count].method_name = strdup(method_name);
-    if (methods[method_count].struct_name && methods[method_count].method_name) {
-        method_count++;
+    char *struct_name_copy = strdup(struct_name);
+    char *method_name_copy = strdup(method_name);
+    if (!struct_name_copy || !method_name_copy) {
+        /* Memory allocation failed, clean up and return */
+        free(struct_name_copy);
+        free(method_name_copy);
+        return;
     }
+    
+    methods[method_count].struct_name = struct_name_copy;
+    methods[method_count].method_name = method_name_copy;
+    method_count++;
 }
 
 /* Check if a method is tracked */
@@ -77,6 +85,7 @@ static int is_tracked_method(const char *struct_name, const char *method_name) {
 /* Add a struct type to tracking */
 static void track_struct_type(const char *name) {
     if (struct_type_count >= MAX_STRUCT_TYPES) {
+        fprintf(stderr, "Warning: Maximum struct type tracking limit (%d) reached\n", MAX_STRUCT_TYPES);
         return;
     }
     
@@ -88,10 +97,13 @@ static void track_struct_type(const char *name) {
     }
     
     /* Add new struct type */
-    struct_types[struct_type_count].name = strdup(name);
-    if (struct_types[struct_type_count].name) {
-        struct_type_count++;
+    char *name_copy = strdup(name);
+    if (!name_copy) {
+        return;
     }
+    
+    struct_types[struct_type_count].name = name_copy;
+    struct_type_count++;
 }
 
 /* Check if an identifier is a known struct type */
