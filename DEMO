@@ -1,0 +1,24 @@
+TODO in CZ:
+- code your own blockchain in less than 200 lines of Go
+- the valley of code: go tutorial fortune / cowsay
+- cstack.github.io: lets build a simple database
+- build your own database from scratch in go
+- build your own container using less than 100 lines of go
+- brennan.io; on tetris and reimplementation
+- saminiir.com: lets code a tcp/ip stack, 1: ethernet & arp
+- tuhdo: operating systems from 0 to 1
+- cfenellosa/os-tutorial
+- danluu.com: malloc tutorial
+- stuffwithstuff.com: baby's first garbage collector
+- maplant:com writing a simple garbage collector in C
+- uninformativ.de: the very basics of a terminal emulator
+- jamesroutley: write-a-hash-table (in C)
+- init-io.net: writing a simple shell in Go
+- rhaeguard: how to build a regex engine from scratch
+- hazbo/the-super-tiny-compiler
+- dylanaraps/pfetch
+- davecgh/go-spew
+- brennan.io: tutorial - write a system call
+- _littleosbook.github.io_
+- _codecrafters.io_
+- _build-your-own.org_

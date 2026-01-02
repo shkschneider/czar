@@ -1,0 +1,92 @@
+./src/std/string.c[z] (module cz, namespace cz.string):
+```
+#module cz
+pub struct Version {
+    u32 major
+    u32 minor
+    u32 patch
+}
+fn Version:tostring() string {
+    return "{self.major}.{self.minor}.{self.patch}"
+}
+```
+Usage:
+```
+#import cz.version
+v = version { 1, 2, 3 } // on stack: major is 1 minor is 2 patch is 3
+v = new version { 1, 2, 3 } // on heap: major is 1 minor is 2 patch is 3
+print(v.major, ...)
+```
+
+Add static `string.slugify(cstr)` which slugifies an input, returning a cstr.
+
+./src/std/math.c[z] (module cz, namespace cz.math):
+- sin(x) cos(x) tan(x)
+- asin acos atan atan2
+- sqrt pow exp log log10
+- floot ceil round abs
+- min max clamp(lo,x,hi)
+- constants: PI and EPSILON
+- deg2rad rad2deg
+All those should be usable as
+`import cz.math ; cz.math.sin()` or `import cz.math as math ; math.sin()`
+
+./src/std/fs.c[z] (module cz, namespace cz.fs):
+- cwd chdir
+- exists(path) is_file(path) is_dir(path) type(path)?
+- read_file(path) write_file(path,contents)
+- remove(path) rename(old,new)
+- list(path)
+- mkdir(path,bool recursive = false) rmdir(path)
+- stat(path) -- size mtime atime mode uid gid
+- basename dirname extension path_join(...)
+
+./src/std/exe.c[z] (module cz, namespace cz.exe):
+
+Standard library: ./src/std/clock.cz:
+Lets add a monotonic clock as cz.clock() (in ./src/raw/cz_clock.c) -- i'm fine with POSIX-only/Linux support
+This clock will be in millis or nanoseconds, whichever smallest you achieve to get.
+This monotonic clock will be exposed as `#clock`, a float.
+At runtime, each #log will now print the monotonic clock first "MONOTONIC_CLOCK[unit] ...".
+
+Standard library: ./src/std/app.cz
+Add a globally-accessible cz.app struct with name and semver, set like:
+```
+#app("name", cz.version { 1, 2, 3 })
+cz.print(cz.app.name)
+cz.print(cz.app.version)
+```
+
+Standard library: ./src/std/exec.cz:
+- exec.system(string ...) // function that calls system() in C
+- getenv setenv unsetenv
+- exec_sync exec_async?
+- spawn // pid
+- wait(pid)
+- exit(code)
+- uptime pid ppid
+
+./src/std/io.c[z] (module cz, namespace cz.io):
+- stdin stdout stderr
+- open close
+- read readline readall write flush
+
+./src/std/crypt.c[z] (module cz, namespace cz.crypt):
+- base64_encode base64_decode
+- random
+- md5 sha1 sha2 hmac
+
+./src/std/time.c[z] (module cz, namespace cz.time):
+- timestamp(): seconds since epoch
+- epoch(): incremental int from universal epoch
+- now(): struct datetime of now
+- elapsed(): time since application runs
+- date()
+- time()
+- sleep()
+
+./src/std/test.c[z] (module cz, namespace cz.test)
+
+./src/std/encoding.c[z] (module cz, namespace cz.encoding)
+- json_encode json_decode
+- kdl / toml / taml / ini

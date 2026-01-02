@@ -1,0 +1,13 @@
+- Fibonacci(40) naive recursive (call overhead) — keep but don’t rely solely on it.
+- Iterative Fibonacci (tight arithmetic loop)
+- 1000×1000 matrix multiply (float64)
+- JSON parse+serialize of a 10MB file
+- Allocate/free 1M small objects
+- String concatenation of 1M chars
+
+hyperfine --warmup 5 -r 50 "./bench/c" "./bench/go" "./bench/cz"
+
+./bench/c
+./bench/go
+./bench/cz
+...

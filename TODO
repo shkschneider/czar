@@ -1,0 +1,68 @@
+Use the name "coroutine" for files in ./src/std/ ; so coroutine.h. Can you make it a header file like the rest of our raw C stdlib?
+And about function pointers -- right. Lets add syntax `&function` which points to a function.
+
+With our basic generics, could we make Result<T> wrappers for error-as-value?
+```
+struct <Type> Result {
+    bool ok
+    T value
+}
+```
+`value` would be `null` is `!ok` but valid if `ok`
+
+Performances:
+- running (imaginary) cc c.c vs cz compile cz.cz && cc cz.c
+- performances are between 50% and 100% worst using CZ over C
+Of course my pet language shouldnt be as effective as raw C,
+yet given that we transpile to C, I wonder what are my bottlenecks:
+memory allocations? structs? too much generated code?
+Help me investigate and classify performances issues.
+
+Help me write a .github/workflows/release.yml
+which builds cz for linux, macos and windows -- all "latest".
+This should only trigger upon a new tag >= 1.0.0, no 0.*.* tags should not trigger.
+At the end of the task, it should upload artifacts cz-linux, cz-macos, cz-windows -- all x86_64 for now.
+
+Let simplify:
+- `??` as fallback -> `?`: `<u8> f ? 255` // or `orelse`
+- `!!` for unsafe cast -> `<u8> f !`
+- `!!` for null check -> `ptr !`
+So remove `??` and `!!` from our lexer.
+
+Lets depend on musl-libc instead of glibc.
+
+Lets make a uuid-like cz.uuid() in ./src/raw/cz_uuid.c:
+- The first 36 bits are dedicated to the Unix Timestamp: seconds since 1st January 1970 (unixts)
+- The next 12 bits are dedicated to providing sub-second encoding for the Nanosecond precision (nsec).
+- The next 4 bits are dedicated to the version (ver).
+- The next 18 bits are dedicated to providing sub-second encoding for the Nanosecond precision (nsec).
+- The last 58 bits are filled out with random data to pad the length and provide uniqueness (rand).
+```
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                            unixts                             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|unixts |         nsec          |  ver  |         nsec          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     nsec  |                       rand                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             rand                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+`#TRACE` which would output stacktrace?
+
+Complete lowering pass: what is missing from our lowering pass?
+Write me a plan on how to improve and expand it.
+
+type inference upon creation: `myvar := [1, 2, 3]`
+
+continue N / break N
+
+? Pointer-to-pointer types Type**
+? Multi-dimensional arrays
+
+Codegen uses _G.Codegen for module communication -> type checker accumulates errors instead of failing fast
+
+cz tour: tour of the language...
