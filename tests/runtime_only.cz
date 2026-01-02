@@ -3,7 +3,7 @@
 #include "cz.h"
 #include <stdio.h>
 
-/* Test that cz.h runtime can be used for assertions */
+/* Test that cz.h runtime can be used for ASSERTions */
 
 void test_function(void) {
     printf("Testing from %s at line %d in %s\n", FILE, LINE, FUNC);
@@ -12,8 +12,8 @@ void test_function(void) {
 int main(void) {
     test_function();
 
-    cz_assert(1 == 1);
-    cz_assert(2 + 2 == 4);
+    ASSERT(1 == 1);
+    ASSERT(2 + 2 == 4);
 
     printf("cz.h: OK\n");
     return 0;

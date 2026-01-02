@@ -28,7 +28,7 @@
 
 /*
  * cz_assert - Runtime assertion with source location
- * 
+ *
  * Checks a condition at runtime and aborts with diagnostic information
  * if the condition is false.
  */
@@ -43,11 +43,11 @@
 
 /*
  * todo - Mark unimplemented code paths
- * 
+ *
  * Indicates that a code path is not yet implemented. Will abort
  * if executed at runtime with a diagnostic message.
  */
-#define todo(msg) \
+#define cz_todo(msg) \
     do { \
         fprintf(stderr, "%s:%d: %s: TODO: %s\n", \
                 __FILE__, __LINE__, __func__, msg); \
@@ -56,11 +56,11 @@
 
 /*
  * fixme - Mark code that needs attention
- * 
+ *
  * Indicates that a code path has known issues or technical debt.
  * Will abort if executed at runtime with a diagnostic message.
  */
-#define fixme(msg) \
+#define cz_fixme(msg) \
     do { \
         fprintf(stderr, "%s:%d: %s: FIXME: %s\n", \
                 __FILE__, __LINE__, __func__, msg); \
@@ -69,7 +69,7 @@
 
 /*
  * cz_unreachable - Mark logically unreachable code
- * 
+ *
  * Indicates that a code path should never be executed under correct
  * program logic. Will abort if reached with a diagnostic message.
  */

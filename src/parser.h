@@ -1,7 +1,7 @@
 /*
  * CZar - C semantic authority layer
  * Parser header (parser.h)
- * 
+ *
  * Parses tokens into an Abstract Syntax Tree (AST).
  */
 

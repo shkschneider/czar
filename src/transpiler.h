@@ -1,7 +1,7 @@
 /*
  * CZar - C semantic authority layer
  * Transpiler header (transpiler.h)
- * 
+ *
  * Transforms AST by applying CZar-specific transformations.
  */
 

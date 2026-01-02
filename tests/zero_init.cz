@@ -24,10 +24,10 @@ int main(void) {
     uninitialized_usize = 0;
 
     /* Verify they are zero */
-    cz_assert(uninitialized_u32 == 0);
-    cz_assert(uninitialized_i32 == 0);
-    cz_assert(uninitialized_f32 == 0.0f);
-    cz_assert(uninitialized_usize == 0);
+    ASSERT(uninitialized_u32 == 0);
+    ASSERT(uninitialized_i32 == 0);
+    ASSERT(uninitialized_f32 == 0.0f);
+    ASSERT(uninitialized_usize == 0);
 
     printf("Zero-initialization test: OK\n");
     printf("Note: Full zero-initialization requires transpiler support\n");
