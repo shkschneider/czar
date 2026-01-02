@@ -1,5 +1,6 @@
 /build
 *.out
+*.cz.c
 *.pp.cz
 *.pp.c
 *.o
