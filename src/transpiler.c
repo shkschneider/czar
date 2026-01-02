@@ -11,6 +11,7 @@
 #include "transpiler/types.h"
 #include "transpiler/constants.h"
 #include "transpiler/functions.h"
+#include "transpiler/runtime.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -112,6 +113,9 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     if (!transpiler || !transpiler->ast || !output) {
         return;
     }
+    
+    /* Inject runtime macro definitions at the beginning */
+    fprintf(output, "%s", transpiler_get_runtime_macros());
     
     emit_node(transpiler->ast, output);
 }
