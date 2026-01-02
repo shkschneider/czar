@@ -21,10 +21,10 @@ struct Color make_color(u32 r, u32 g, u32 b, u32 a) {
     struct Color c = {0};  /* Zero-initialized */
 
     /* Clamp values to valid range using limit constants */
-    c.r = (r > U8_MAX) ? U8_MAX : (u8)r;
-    c.g = (g > U8_MAX) ? U8_MAX : (u8)g;
-    c.b = (b > U8_MAX) ? U8_MAX : (u8)b;
-    c.a = (a > U8_MAX) ? U8_MAX : (u8)a;
+    c.r = (r > U8_MAX) ? U8_MAX : unsafe_cast<u8>(r);
+    c.g = (g > U8_MAX) ? U8_MAX : unsafe_cast<u8>(g);
+    c.b = (b > U8_MAX) ? U8_MAX : unsafe_cast<u8>(b);
+    c.a = (a > U8_MAX) ? U8_MAX : unsafe_cast<u8>(a);
 
     return c;
 }

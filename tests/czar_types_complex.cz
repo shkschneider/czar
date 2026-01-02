@@ -11,7 +11,7 @@ struct Point {
 
 /* Test in function parameters and return types */
 u32 calculate(u8 a, i16 b, f32 c) {
-    return (u32)(a + b + c);
+    return unsafe_cast<u32>(a + b + c);
 }
 
 /* Test in typedef */
