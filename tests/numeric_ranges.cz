@@ -1,4 +1,4 @@
-#include "../src/cz.h"
+#include <cz.h>
 #include <stdio.h>
 
 /* Demonstrates practical usage of CZar type system */
