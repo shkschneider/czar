@@ -1,0 +1,69 @@
+#include <stdint.h>
+#include "cz.h"
+#include <stdio.h>
+
+/*
+ * Test auto-dereference of pointers using . operator
+ * CZar automatically transforms pointer.member to pointer->member
+ * while keeping the old -> syntax working
+ */
+
+struct Point {
+    i32 x;
+    i32 y;
+};
+
+/* Test function with pointer parameter */
+void modify_point(struct Point* p) {
+    /* New CZar syntax: use . on pointer (auto-dereferences) */
+    p.x = 100;
+    p.y = 200;
+}
+
+/* Test function with non-pointer parameter */
+void print_point(struct Point pt) {
+    /* Regular struct access with . (not a pointer, so no transformation) */
+    printf("Point: (%d, %d)\n", pt.x, pt.y);
+}
+
+/* Test function using old C syntax (should still work) */
+void reset_point(struct Point* p) {
+    /* Old C syntax: use -> on pointer (no transformation needed) */
+    p->x = 0;
+    p->y = 0;
+}
+
+/* Test reading pointer members */
+i32 distance(struct Point* p) {
+    /* Auto-dereference for reading */
+    return p.x + p.y;
+}
+
+int main(void) {
+    struct Point pt = {0};
+    
+    /* Test 1: Auto-dereference for writing */
+    modify_point(&pt);
+    ASSERT(pt.x == 100);
+    ASSERT(pt.y == 200);
+    printf("Test 1 passed: Auto-dereference for writing\n");
+    
+    /* Test 2: Regular struct access (no pointer) */
+    print_point(pt);
+    
+    /* Test 3: Old C syntax still works */
+    reset_point(&pt);
+    ASSERT(pt.x == 0);
+    ASSERT(pt.y == 0);
+    printf("Test 3 passed: Old C syntax still works\n");
+    
+    /* Test 4: Auto-dereference for reading */
+    pt.x = 10;
+    pt.y = 20;
+    i32 dist = distance(&pt);
+    ASSERT(dist == 30);
+    printf("Test 4 passed: Auto-dereference for reading\n");
+    
+    printf("All pointer auto-dereference tests passed!\n");
+    return 0;
+}

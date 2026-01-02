@@ -14,6 +14,7 @@
 #include "transpiler/unused.h"
 #include "transpiler/validation.h"
 #include "transpiler/casts.h"
+#include "transpiler/member_access.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -121,6 +122,9 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Validate cast expressions */
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Transform member access operators (. to -> for pointers) */
+    transpiler_transform_member_access(transpiler->ast);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
