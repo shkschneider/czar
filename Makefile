@@ -46,7 +46,7 @@ tests/%.out: tests/%.cz $(OUT)
 # linker
 	@$(CC) $(CFLAGS) $(<:.cz=.o) $(LDFLAGS) -o $@
 # test
-	@./$@ >/dev/null || { rc=$$?; echo "FAILURE: tests/$*.out exited $$rc"; exit $$rc; }
+	@./$@ >/dev/null 2>/dev/null || { rc=$$?; echo "FAILURE: tests/$*.out exited $$rc"; exit $$rc; }
 .PHONY: test $(TESTS)
 
 # Cleanup
