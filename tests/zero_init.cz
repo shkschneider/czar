@@ -1,4 +1,4 @@
-#include "../src/cz.h"
+#include <cz.h>
 #include <stdio.h>
 
 /* Test that validates zero-initialization is working properly
