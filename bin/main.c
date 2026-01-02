@@ -45,8 +45,12 @@ int main(int argc, char *argv[]) {
             p += 7;
             while (*p == ' ' || *p == '\t') p++;
             if (strncmp(p, "czar", 4) == 0) {
-                /* Skip this line - it's a #pragma czar directive */
-                continue;
+                /* Check that "czar" is followed by whitespace, newline, or end of string */
+                char next = p[4];
+                if (next == ' ' || next == '\t' || next == '\n' || next == '\r' || next == '\0') {
+                    /* Skip this line - it's a #pragma czar directive */
+                    continue;
+                }
             }
         }
         
