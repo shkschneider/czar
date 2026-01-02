@@ -44,7 +44,7 @@ endif
 tests/%.out: tests/%.cz $(OUT)
 	@echo "- $@"
 # transpiler (works on raw .cz file, adds required headers)
-	@./$(OUT) $< $(<:.cz=.cz.c)
+	@./$(OUT) $< $(<:.cz=.cz.c) >/dev/null
 # compiler (preprocesses and compiles in one step)
 	@$(CC) $(CFLAGS) -c $(<:.cz=.cz.c) -o $(<:.cz=.o)
 # linker

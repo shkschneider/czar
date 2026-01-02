@@ -31,10 +31,10 @@ static const char *get_source_line(int line_num, char *buffer, size_t buffer_siz
     if (!g_source || line_num < 1) {
         return NULL;
     }
-    
+
     const char *line_start = g_source;
     int current_line = 1;
-    
+
     /* Find the start of the target line */
     while (current_line < line_num && *line_start) {
         if (*line_start == '\n') {
@@ -42,25 +42,25 @@ static const char *get_source_line(int line_num, char *buffer, size_t buffer_siz
         }
         line_start++;
     }
-    
+
     if (current_line != line_num || !*line_start) {
         return NULL;
     }
-    
+
     /* Copy the line to buffer */
     const char *line_end = line_start;
     while (*line_end && *line_end != '\n' && *line_end != '\r') {
         line_end++;
     }
-    
+
     size_t line_len = line_end - line_start;
     if (line_len >= buffer_size) {
         line_len = buffer_size - 1;
     }
-    
+
     strncpy(buffer, line_start, line_len);
     buffer[line_len] = '\0';
-    
+
     return buffer;
 }
 
@@ -69,12 +69,12 @@ static const char *find_current_function(ASTNode **children, size_t count, size_
     /* Look backwards for a function declaration pattern: type name(...) { */
     int brace_depth = 0;
     const char *function_name = NULL;
-    
+
     for (size_t i = 0; i < current && i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *tok = &children[i]->token;
-        
+
         if (tok->type == TOKEN_PUNCTUATION) {
             if (token_text_equals(tok, "{")) {
                 brace_depth++;
@@ -106,20 +106,20 @@ static const char *find_current_function(ASTNode **children, size_t count, size_
             }
         }
     }
-    
+
     return (brace_depth > 0) ? function_name : NULL;
 }
 
 /* Report a CZar error and exit */
 static void cz_error(int line, const char *message, const char *func_name) {
     fprintf(stderr, "[CZAR] ERROR");
-    
+
     if (func_name) {
         fprintf(stderr, " [in %s()]", func_name);
     }
-    
+
     fprintf(stderr, " at %s:%d: %s\n", g_filename ? g_filename : "<unknown>", line, message);
-    
+
     /* Try to show the problematic line */
     char line_buffer[512];
     const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
@@ -132,7 +132,7 @@ static void cz_error(int line, const char *message, const char *func_name) {
             fprintf(stderr, "    > %s\n", source_line);
         }
     }
-    
+
     exit(1);
 }
 
@@ -146,7 +146,7 @@ static int is_type_keyword(const char *text) {
         strcmp(text, "unsigned") == 0) {
         return 1;
     }
-    
+
     /* CZar types (before transformation) */
     if (strcmp(text, "u8") == 0 || strcmp(text, "u16") == 0 ||
         strcmp(text, "u32") == 0 || strcmp(text, "u64") == 0 ||
@@ -156,7 +156,7 @@ static int is_type_keyword(const char *text) {
         strcmp(text, "usize") == 0 || strcmp(text, "isize") == 0) {
         return 1;
     }
-    
+
     /* CZar types (after transformation to C types) */
     if (strcmp(text, "uint8_t") == 0 || strcmp(text, "uint16_t") == 0 ||
         strcmp(text, "uint32_t") == 0 || strcmp(text, "uint64_t") == 0 ||
@@ -165,14 +165,14 @@ static int is_type_keyword(const char *text) {
         strcmp(text, "size_t") == 0 || strcmp(text, "ptrdiff_t") == 0) {
         return 1;
     }
-    
+
     return 0;
 }
 
 /* Check if a token is likely a struct/union/enum keyword */
 static int is_aggregate_keyword(const char *text) {
-    return strcmp(text, "struct") == 0 || 
-           strcmp(text, "union") == 0 || 
+    return strcmp(text, "struct") == 0 ||
+           strcmp(text, "union") == 0 ||
            strcmp(text, "enum") == 0;
 }
 
@@ -197,13 +197,13 @@ static int in_function_scope(ASTNode **children, size_t count, size_t current) {
     int brace_depth = 0;
     size_t last_open_brace_index = 0;
     int found_open_brace = 0;
-    
+
     /* Scan backwards to find the most recent unclosed { */
     for (size_t i = 0; i < current && i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *tok = &children[i]->token;
-        
+
         if (tok->type == TOKEN_PUNCTUATION) {
             if (token_text_equals(tok, "{")) {
                 brace_depth++;
@@ -220,21 +220,21 @@ static int in_function_scope(ASTNode **children, size_t count, size_t current) {
             }
         }
     }
-    
+
     /* If we're not inside any braces, we're at global scope, not function scope */
     if (!found_open_brace || brace_depth == 0) {
         return 0;
     }
-    
+
     /* Now check if the last unclosed { is a struct/union/enum definition */
     /* Look backward from last_open_brace_index for struct/union/enum keyword */
-    for (size_t j = (last_open_brace_index > MAX_LOOKBACK_TOKENS ? last_open_brace_index - MAX_LOOKBACK_TOKENS : 0); 
+    for (size_t j = (last_open_brace_index > MAX_LOOKBACK_TOKENS ? last_open_brace_index - MAX_LOOKBACK_TOKENS : 0);
          j < last_open_brace_index; j++) {
         if (children[j]->type != AST_TOKEN) continue;
         Token *prev = &children[j]->token;
-        
+
         /* If we find a struct/union/enum keyword */
-        if ((prev->type == TOKEN_KEYWORD || prev->type == TOKEN_IDENTIFIER) && 
+        if ((prev->type == TOKEN_KEYWORD || prev->type == TOKEN_IDENTIFIER) &&
             is_aggregate_keyword(prev->text)) {
             /* Make sure there's no semicolon between keyword and brace */
             int has_semicolon = 0;
@@ -252,7 +252,7 @@ static int in_function_scope(ASTNode **children, size_t count, size_t current) {
             }
         }
     }
-    
+
     /* We're inside braces and it's not a struct, so we're in function scope */
     return 1;
 }
@@ -262,48 +262,48 @@ static void validate_variable_declarations(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
-    
+
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *token = &children[i]->token;
-        
+
         /* Skip if not an identifier that could be a type */
         if (token->type != TOKEN_IDENTIFIER && token->type != TOKEN_KEYWORD) {
             continue;
         }
-        
+
         /* Check if this looks like a type keyword */
         if (!is_type_keyword(token->text) && !is_aggregate_keyword(token->text)) {
             continue;
         }
-        
+
         /* Check if we're in a function scope */
         if (!in_function_scope(children, count, i)) {
             continue;
         }
-        
+
         /* Record if this is an aggregate type */
         int is_aggregate = is_aggregate_keyword(token->text);
-        
+
         /* Find the variable name after the type */
         size_t j = skip_whitespace(children, count, i + 1);
-        
+
         /* For struct/union/enum, skip the tag name */
         if (is_aggregate && j < count && children[j]->type == AST_TOKEN &&
             children[j]->token.type == TOKEN_IDENTIFIER) {
             /* This is the tag name (e.g., "Point" in "struct Point p") */
             j = skip_whitespace(children, count, j + 1);
         }
-        
+
         /* Handle const, volatile, etc. */
         while (j < count && children[j]->type == AST_TOKEN) {
             Token *mod = &children[j]->token;
-            if (mod->type == TOKEN_KEYWORD && 
-                (strcmp(mod->text, "const") == 0 || 
+            if (mod->type == TOKEN_KEYWORD &&
+                (strcmp(mod->text, "const") == 0 ||
                  strcmp(mod->text, "volatile") == 0 ||
                  strcmp(mod->text, "static") == 0 ||
                  strcmp(mod->text, "register") == 0 ||
@@ -313,31 +313,31 @@ static void validate_variable_declarations(ASTNode *ast) {
                 break;
             }
         }
-        
+
         /* Handle pointer types */
         while (j < count && children[j]->type == AST_TOKEN &&
                children[j]->token.type == TOKEN_OPERATOR &&
                token_text_equals(&children[j]->token, "*")) {
             j = skip_whitespace(children, count, j + 1);
         }
-        
+
         /* Get the variable name */
         if (j >= count || children[j]->type != AST_TOKEN ||
             children[j]->token.type != TOKEN_IDENTIFIER) {
             continue;
         }
-        
+
         Token *var_name = &children[j]->token;
-        
+
         /* Check what comes after the variable name */
         j = skip_whitespace(children, count, j + 1);
-        
+
         if (j >= count || children[j]->type != AST_TOKEN) {
             continue;
         }
-        
+
         Token *next = &children[j]->token;
-        
+
         /* Check for array declarations */
         if (next->type == TOKEN_PUNCTUATION && token_text_equals(next, "[")) {
             /* Find the closing bracket */
@@ -361,7 +361,7 @@ static void validate_variable_declarations(ASTNode *ast) {
                 continue;
             }
         }
-        
+
         /* Check if variable is initialized */
         if (next->type == TOKEN_OPERATOR && token_text_equals(next, "=")) {
             /* Variable is initialized - check if it's a struct/union/enum with {0} */
@@ -407,11 +407,11 @@ void transpiler_validate(ASTNode *ast, const char *filename, const char *source)
     if (!ast) {
         return;
     }
-    
+
     /* Set global context for error reporting */
     g_filename = filename;
     g_source = source;
-    
+
     /* Validate variable declarations */
     validate_variable_declarations(ast);
 }

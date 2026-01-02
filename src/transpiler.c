@@ -117,13 +117,13 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* First validate the AST for CZar semantic rules */
     transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
-    
+
     /* Validate cast expressions */
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
-    
+
     /* Transform cast expressions */
     transpiler_transform_casts(transpiler->ast);
 }

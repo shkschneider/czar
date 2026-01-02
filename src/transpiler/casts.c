@@ -3,7 +3,7 @@
  * Cast handling implementation (transpiler/casts.c)
  *
  * Validates and transforms cast expressions according to CZar rules:
- * - ERROR on C-style casts (Type)value  
+ * - ERROR on C-style casts (Type)value
  * - cast<Type>(value) transforms to (Type)(value)
  * - WARNs for unsafe casts (narrowing, sign changes)
  * - Allows safe widening casts (u8→u16, i8→i32) without warning
@@ -32,11 +32,11 @@ typedef struct {
 /* Get type information for known types */
 static TypeInfo get_type_info(const char *type_name) {
     TypeInfo info = {type_name, 0, 0};
-    
+
     if (!type_name) {
         return info;
     }
-    
+
     /* CZar unsigned types */
     if (strcmp(type_name, "u8") == 0 || strcmp(type_name, "uint8_t") == 0) {
         info.is_signed = 0; info.bits = 8;
@@ -75,7 +75,7 @@ static TypeInfo get_type_info(const char *type_name) {
     } else if (strcmp(type_name, "unsigned long") == 0) {
         info.is_signed = 0; info.bits = 64;
     }
-    
+
     return info;
 }
 
@@ -85,17 +85,17 @@ static int is_safe_cast(TypeInfo from, TypeInfo to) {
     if (from.bits == 0 || to.bits == 0) {
         return 0;
     }
-    
+
     /* Enlarging unsigned to unsigned is safe */
     if (!from.is_signed && !to.is_signed && from.bits < to.bits) {
         return 1;
     }
-    
+
     /* Enlarging signed to signed is safe if target is larger */
     if (from.is_signed && to.is_signed && from.bits < to.bits) {
         return 1;
     }
-    
+
     /* All other casts are potentially unsafe */
     return 0;
 }
@@ -106,53 +106,53 @@ static int is_narrowing_cast(TypeInfo from, TypeInfo to) {
     if (from.bits == 0 || to.bits == 0) {
         return 0;
     }
-    
+
     /* Narrowing if target has fewer bits */
     if (to.bits < from.bits) {
         return 1;
     }
-    
+
     /* Sign mismatch can be considered narrowing */
     if (from.is_signed != to.is_signed) {
         return 1;
     }
-    
+
     return 0;
 }
 
 /* Get max value for a type as a string constant */
 static const char *get_type_max(const char *type_name) {
     if (!type_name) return NULL;
-    
+
     if (strcmp(type_name, "u8") == 0 || strcmp(type_name, "uint8_t") == 0) return "255";
     if (strcmp(type_name, "u16") == 0 || strcmp(type_name, "uint16_t") == 0) return "65535";
     if (strcmp(type_name, "u32") == 0 || strcmp(type_name, "uint32_t") == 0) return "4294967295U";
     if (strcmp(type_name, "u64") == 0 || strcmp(type_name, "uint64_t") == 0) return "18446744073709551615ULL";
-    
+
     if (strcmp(type_name, "i8") == 0 || strcmp(type_name, "int8_t") == 0) return "127";
     if (strcmp(type_name, "i16") == 0 || strcmp(type_name, "int16_t") == 0) return "32767";
     if (strcmp(type_name, "i32") == 0 || strcmp(type_name, "int32_t") == 0) return "2147483647";
     if (strcmp(type_name, "i64") == 0 || strcmp(type_name, "int64_t") == 0) return "9223372036854775807LL";
-    
+
     return NULL;
 }
 
 /* Get min value for a type as a string constant */
 static const char *get_type_min(const char *type_name) {
     if (!type_name) return NULL;
-    
+
     /* Unsigned types have min of 0 */
     if (strcmp(type_name, "u8") == 0 || strcmp(type_name, "uint8_t") == 0) return "0";
     if (strcmp(type_name, "u16") == 0 || strcmp(type_name, "uint16_t") == 0) return "0";
     if (strcmp(type_name, "u32") == 0 || strcmp(type_name, "uint32_t") == 0) return "0";
     if (strcmp(type_name, "u64") == 0 || strcmp(type_name, "uint64_t") == 0) return "0";
-    
+
     /* Signed types */
     if (strcmp(type_name, "i8") == 0 || strcmp(type_name, "int8_t") == 0) return "-128";
     if (strcmp(type_name, "i16") == 0 || strcmp(type_name, "int16_t") == 0) return "-32768";
     if (strcmp(type_name, "i32") == 0 || strcmp(type_name, "int32_t") == 0) return "(-2147483647-1)";
     if (strcmp(type_name, "i64") == 0 || strcmp(type_name, "int64_t") == 0) return "(-9223372036854775807LL-1)";
-    
+
     return NULL;
 }
 
@@ -185,10 +185,10 @@ static const char *get_source_line(int line_num, char *buffer, size_t buffer_siz
     if (!g_source || line_num < 1) {
         return NULL;
     }
-    
+
     const char *line_start = g_source;
     int current_line = 1;
-    
+
     /* Find the start of the target line */
     while (current_line < line_num && *line_start) {
         if (*line_start == '\n') {
@@ -196,33 +196,33 @@ static const char *get_source_line(int line_num, char *buffer, size_t buffer_siz
         }
         line_start++;
     }
-    
+
     if (current_line != line_num || !*line_start) {
         return NULL;
     }
-    
+
     /* Copy the line to buffer */
     const char *line_end = line_start;
     while (*line_end && *line_end != '\n' && *line_end != '\r') {
         line_end++;
     }
-    
+
     size_t line_len = line_end - line_start;
     if (line_len >= buffer_size) {
         line_len = buffer_size - 1;
     }
-    
+
     strncpy(buffer, line_start, line_len);
     buffer[line_len] = '\0';
-    
+
     return buffer;
 }
 
 /* Report a CZar error and exit */
 static void cz_error(int line, const char *message) {
-    fprintf(stderr, "[CZAR] ERROR at %s:%d: %s\n", 
+    fprintf(stderr, "[CZAR] ERROR at %s:%d: %s\n",
             g_filename ? g_filename : "<unknown>", line, message);
-    
+
     /* Try to show the problematic line */
     char line_buffer[512];
     const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
@@ -235,15 +235,15 @@ static void cz_error(int line, const char *message) {
             fprintf(stderr, "    > %s\n", source_line);
         }
     }
-    
+
     exit(1);
 }
 
 /* Report a CZar warning */
 static void cz_warning(int line, const char *message) {
-    fprintf(stderr, "[CZAR] WARNING at %s:%d: %s\n", 
+    fprintf(stdout, "[CZAR] WARNING at %s:%d: %s\n",
             g_filename ? g_filename : "<unknown>", line, message);
-    
+
     /* Try to show the problematic line */
     char line_buffer[512];
     const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
@@ -253,7 +253,7 @@ static void cz_warning(int line, const char *message) {
             source_line++;
         }
         if (*source_line) {
-            fprintf(stderr, "    > %s\n", source_line);
+            fprintf(stdout, "    > %s\n", source_line);
         }
     }
 }
@@ -262,44 +262,44 @@ static void cz_warning(int line, const char *message) {
 static void check_c_style_casts(ASTNode **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *token = &children[i]->token;
-        
+
         /* Look for opening parenthesis */
         if (token->type == TOKEN_PUNCTUATION && token_text_equals(token, "(")) {
             /* Check if this could be a C-style cast */
             size_t j = skip_whitespace(children, count, i + 1);
-            
+
             if (j < count && children[j]->type == AST_TOKEN &&
                 children[j]->token.type == TOKEN_IDENTIFIER) {
                 /* Found identifier after (, could be a type */
                 Token *maybe_type = &children[j]->token;
-                
+
                 /* Skip to find closing ) */
                 j = skip_whitespace(children, count, j + 1);
-                
+
                 /* Handle pointer types */
                 while (j < count && children[j]->type == AST_TOKEN &&
                        children[j]->token.type == TOKEN_OPERATOR &&
                        token_text_equals(&children[j]->token, "*")) {
                     j = skip_whitespace(children, count, j + 1);
                 }
-                
+
                 if (j < count && children[j]->type == AST_TOKEN &&
                     children[j]->token.type == TOKEN_PUNCTUATION &&
                     token_text_equals(&children[j]->token, ")")) {
                     /* Found closing ), check what comes after */
                     j = skip_whitespace(children, count, j + 1);
-                    
+
                     if (j < count && children[j]->type == AST_TOKEN) {
                         Token *after_paren = &children[j]->token;
-                        
+
                         /* If what follows is an identifier, number, or another paren,
                          * this is likely a cast expression */
                         if (after_paren->type == TOKEN_IDENTIFIER ||
                             after_paren->type == TOKEN_NUMBER ||
                             (after_paren->type == TOKEN_PUNCTUATION && token_text_equals(after_paren, "("))) {
-                            
+
                             /* Check if this is a known type */
                             TypeInfo type_info = get_type_info(maybe_type->text);
                             if (type_info.bits > 0) {
@@ -322,25 +322,25 @@ static void check_c_style_casts(ASTNode **children, size_t count) {
 /* Extract type name from template-like syntax: func<Type> */
 static char *extract_template_type(ASTNode **children, size_t count, size_t start, size_t *out_end) {
     size_t i = skip_whitespace(children, count, start);
-    
+
     /* Expect < */
     if (i >= count || children[i]->type != AST_TOKEN ||
         children[i]->token.type != TOKEN_OPERATOR ||
         !token_text_equals(&children[i]->token, "<")) {
         return NULL;
     }
-    
+
     i = skip_whitespace(children, count, i + 1);
-    
+
     /* Expect type name */
     if (i >= count || children[i]->type != AST_TOKEN ||
         children[i]->token.type != TOKEN_IDENTIFIER) {
         return NULL;
     }
-    
+
     char *type_name = strdup(children[i]->token.text);
     i = skip_whitespace(children, count, i + 1);
-    
+
     /* Expect > */
     if (i >= count || children[i]->type != AST_TOKEN ||
         children[i]->token.type != TOKEN_OPERATOR ||
@@ -348,7 +348,7 @@ static char *extract_template_type(ASTNode **children, size_t count, size_t star
         free(type_name);
         return NULL;
     }
-    
+
     *out_end = i + 1;
     return type_name;
 }
@@ -357,16 +357,16 @@ static char *extract_template_type(ASTNode **children, size_t count, size_t star
 static void check_cast_functions(ASTNode **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *token = &children[i]->token;
-        
+
         /* Look for cast identifier only */
         if (token->type == TOKEN_IDENTIFIER && strcmp(token->text, "cast") == 0) {
-            
+
             /* Extract type from template syntax */
             size_t j = i + 1;
             char *type_name = extract_template_type(children, count, j, &j);
-            
+
             if (!type_name) {
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
@@ -374,7 +374,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 cz_error(token->line, error_msg);
                 continue;
             }
-            
+
             /* Expect ( */
             j = skip_whitespace(children, count, j);
             if (j >= count || children[j]->type != AST_TOKEN ||
@@ -387,12 +387,12 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 cz_error(token->line, error_msg);
                 continue;
             }
-            
+
             /* Count arguments */
             int paren_depth = 1;
             int arg_count = 1;
             j = skip_whitespace(children, count, j + 1);
-            
+
             while (j < count && paren_depth > 0) {
                 if (children[j]->type == AST_TOKEN) {
                     Token *t = &children[j]->token;
@@ -409,14 +409,14 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 }
                 j++;
             }
-            
+
             /* Validate argument count - 1 or 2 arguments allowed */
             if (arg_count < 1 || arg_count > 2) {
                 free(type_name);
                 cz_error(token->line, "cast requires 1 or 2 arguments: cast<Type>(value) or cast<Type>(value, fallback)");
                 continue;
             }
-            
+
             /* Warn if cast is used without fallback */
             if (arg_count == 1) {
                 char warning_msg[512];
@@ -426,7 +426,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                          type_name, type_name);
                 cz_warning(token->line, warning_msg);
             }
-            
+
             /* Check if this cast is potentially unsafe */
             TypeInfo to_type = get_type_info(type_name);
             if (to_type.bits > 0) {
@@ -435,10 +435,10 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                  * The warning will be more specific during transformation if we can
                  * infer the source type. */
             }
-            
+
             free(type_name);
         } else if (token->type == TOKEN_IDENTIFIER &&
-                   (strcmp(token->text, "unsafe_cast") == 0 || 
+                   (strcmp(token->text, "unsafe_cast") == 0 ||
                     strcmp(token->text, "safe_cast") == 0)) {
             /* These are no longer supported */
             char error_msg[256];
@@ -455,17 +455,17 @@ void transpiler_validate_casts(ASTNode *ast, const char *filename, const char *s
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     /* Set global context for error reporting */
     g_filename = filename;
     g_source = source;
-    
+
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
-    
+
     /* Check for C-style casts */
     check_c_style_casts(children, count);
-    
+
     /* Check for cast functions */
     check_cast_functions(children, count);
 }
@@ -475,21 +475,21 @@ void transpiler_transform_casts(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
-    
+
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *token = &children[i]->token;
-        
+
         /* Transform cast<Type>(value[, fallback]) */
         if (token->type == TOKEN_IDENTIFIER && strcmp(token->text, "cast") == 0) {
-            
+
             /* Find the template type */
             size_t j = skip_whitespace(children, count, i + 1);
-            
+
             /* Expect < */
             if (j >= count || children[j]->type != AST_TOKEN ||
                 children[j]->token.type != TOKEN_OPERATOR ||
@@ -497,9 +497,9 @@ void transpiler_transform_casts(ASTNode *ast) {
                 continue;
             }
             size_t open_angle = j;
-            
+
             j = skip_whitespace(children, count, j + 1);
-            
+
             /* Get type name */
             if (j >= count || children[j]->type != AST_TOKEN ||
                 children[j]->token.type != TOKEN_IDENTIFIER) {
@@ -507,9 +507,9 @@ void transpiler_transform_casts(ASTNode *ast) {
             }
             size_t type_idx = j;
             char *type_name = strdup(children[type_idx]->token.text);
-            
+
             j = skip_whitespace(children, count, j + 1);
-            
+
             /* Expect > */
             if (j >= count || children[j]->type != AST_TOKEN ||
                 children[j]->token.type != TOKEN_OPERATOR ||
@@ -518,9 +518,9 @@ void transpiler_transform_casts(ASTNode *ast) {
                 continue;
             }
             size_t close_angle = j;
-            
+
             j = skip_whitespace(children, count, j + 1);
-            
+
             /* Expect ( */
             if (j >= count || children[j]->type != AST_TOKEN ||
                 children[j]->token.type != TOKEN_PUNCTUATION ||
@@ -529,13 +529,13 @@ void transpiler_transform_casts(ASTNode *ast) {
                 continue;
             }
             size_t open_paren = j;
-            
+
             /* Check if there's a comma (indicating fallback) */
             int paren_depth = 1;
             size_t comma_pos = 0;
             size_t close_paren = 0;
             j = skip_whitespace(children, count, j + 1);
-            
+
             while (j < count && paren_depth > 0) {
                 if (children[j]->type == AST_TOKEN) {
                     Token *t = &children[j]->token;
@@ -555,104 +555,104 @@ void transpiler_transform_casts(ASTNode *ast) {
                 }
                 j++;
             }
-            
+
             if (comma_pos > 0) {
                 /* cast<Type>(value, fallback) -> ((value) > MAX ? (fallback) : (Type)(value)) */
-                
+
                 const char *type_max = get_type_max(type_name);
                 if (!type_max) {
                     /* Type not supported, fall back to simple cast */
                     free(type_name);
                     continue;
                 }
-                
+
                 /* Extract the value expression as a string (for re-injection) */
                 /* This is a workaround for token duplication - we'll reconstruct the value text */
                 char value_text[1024] = "";
                 size_t value_start = open_paren + 1;
                 for (size_t k = value_start; k < comma_pos && k < count; k++) {
-                    if (children[k]->type == AST_TOKEN && children[k]->token.text && 
+                    if (children[k]->type == AST_TOKEN && children[k]->token.text &&
                         children[k]->token.length > 0) {
                         strcat(value_text, children[k]->token.text);
                     }
                 }
-                
+
                 /* Build ternary components */
                 char ternary_start[512];
                 snprintf(ternary_start, sizeof(ternary_start), "((");
-                
+
                 char ternary_cond_end[512];
                 snprintf(ternary_cond_end, sizeof(ternary_cond_end), ") > %s ? (", type_max);
-                
+
                 char ternary_false_start[1024];
-                snprintf(ternary_false_start, sizeof(ternary_false_start), 
+                snprintf(ternary_false_start, sizeof(ternary_false_start),
                          ") : (%s)(%s))", type_name, value_text);
-                
+
                 /* Transform tokens */
-                
+
                 /* Replace 'cast' with '((' */
                 free(children[i]->token.text);
                 children[i]->token.text = strdup(ternary_start);
                 children[i]->token.length = strlen(ternary_start);
                 children[i]->token.type = TOKEN_PUNCTUATION;
-                
+
                 /* Remove '<' */
                 free(children[open_angle]->token.text);
                 children[open_angle]->token.text = strdup("");
                 children[open_angle]->token.length = 0;
-                
+
                 /* Remove type name */
                 free(children[type_idx]->token.text);
                 children[type_idx]->token.text = strdup("");
                 children[type_idx]->token.length = 0;
-                
+
                 /* Remove '>' */
                 free(children[close_angle]->token.text);
                 children[close_angle]->token.text = strdup("");
                 children[close_angle]->token.length = 0;
-                
+
                 /* Remove open_paren (we already have (( from cast replacement) */
                 free(children[open_paren]->token.text);
                 children[open_paren]->token.text = strdup("");
                 children[open_paren]->token.length = 0;
-                
+
                 /* value tokens stay as-is (between open_paren and comma) */
-                
+
                 /* Replace comma with ternary condition end: ) > MAX ? ( */
                 free(children[comma_pos]->token.text);
                 children[comma_pos]->token.text = strdup(ternary_cond_end);
                 children[comma_pos]->token.length = strlen(ternary_cond_end);
-                
+
                 /* fallback tokens stay as-is (between comma and close_paren) */
-                
+
                 /* Replace close_paren with false branch: ) : (Type)(value)) */
                 free(children[close_paren]->token.text);
                 children[close_paren]->token.text = strdup(ternary_false_start);
                 children[close_paren]->token.length = strlen(ternary_false_start);
-                
+
             } else {
                 /* cast<Type>(value) -> (Type)(value) - simple cast */
-                
+
                 /* Replace 'cast' with '(' */
                 free(children[i]->token.text);
                 children[i]->token.text = strdup("(");
                 children[i]->token.length = 1;
                 children[i]->token.type = TOKEN_PUNCTUATION;
-                
+
                 /* Remove '<' */
                 free(children[open_angle]->token.text);
                 children[open_angle]->token.text = strdup("");
                 children[open_angle]->token.length = 0;
-                
+
                 /* Type name stays as-is */
-                
+
                 /* Replace '>' with ')' */
                 free(children[close_angle]->token.text);
                 children[close_angle]->token.text = strdup(")");
                 children[close_angle]->token.length = 1;
                 children[close_angle]->token.type = TOKEN_PUNCTUATION;
             }
-            
+
             free(type_name);
         }
     }
