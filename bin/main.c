@@ -37,6 +37,11 @@ int main(int argc, char *argv[]) {
     /* Process input line by line, stripping #pragma czar directives */
     char line[4096];
     while (fgets(line, sizeof(line), input)) {
+        /* Check if line was truncated (no newline before buffer end) */
+        size_t len = strlen(line);
+        int truncated = (len > 0 && len == sizeof(line) - 1 && 
+                        line[len - 1] != '\n' && line[len - 1] != '\r');
+        
         /* Skip lines that start with "#pragma czar" (with optional whitespace) */
         const char *p = line;
         while (*p == ' ' || *p == '\t') p++;
@@ -45,10 +50,17 @@ int main(int argc, char *argv[]) {
             p += 7;
             while (*p == ' ' || *p == '\t') p++;
             if (strncmp(p, "czar", 4) == 0) {
-                /* Check that "czar" is followed by whitespace, newline, or end of string */
+                /* Check that "czar" is followed by whitespace, newline, or end of string
+                 * Note: p[4] is safe because fgets always null-terminates the buffer */
                 char next = p[4];
                 if (next == ' ' || next == '\t' || next == '\n' || next == '\r' || next == '\0') {
                     /* Skip this line - it's a #pragma czar directive */
+                    /* If line was truncated, skip continuation lines too */
+                    while (truncated && fgets(line, sizeof(line), input)) {
+                        len = strlen(line);
+                        truncated = (len > 0 && len == sizeof(line) - 1 && 
+                                    line[len - 1] != '\n' && line[len - 1] != '\r');
+                    }
                     continue;
                 }
             }
@@ -60,6 +72,19 @@ int main(int argc, char *argv[]) {
             fclose(input);
             if (output_file) fclose(output);
             return 1;
+        }
+        
+        /* If line was truncated, write continuation lines */
+        while (truncated && fgets(line, sizeof(line), input)) {
+            if (fputs(line, output) == EOF) {
+                fprintf(stderr, "Error: Write failed\n");
+                fclose(input);
+                if (output_file) fclose(output);
+                return 1;
+            }
+            len = strlen(line);
+            truncated = (len > 0 && len == sizeof(line) - 1 && 
+                        line[len - 1] != '\n' && line[len - 1] != '\r');
         }
     }
 
