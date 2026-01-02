@@ -1,9 +1,0 @@
-// Test duplicate struct field
-struct Point {
-    i32 x
-    i32 x  // ERROR: duplicate field
-}
-
-fn main() i32 {
-    return 0
-}

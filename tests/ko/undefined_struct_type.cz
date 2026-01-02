@@ -1,5 +1,0 @@
-// Test undefined struct type
-fn main() i32 {
-    UndefinedStruct s  // ERROR: undefined type
-    return 0
-}

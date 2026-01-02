@@ -1,8 +1,0 @@
-struct Vec2 { u32 x ; u32 y }
-struct Vec3 { u32 x ; u32 y ; u32 z ; }
-
-fn main() i32 {
-    Vec2 v = Vec2 {}
-    Vec3 w = Vec3 {}
-    return 0
-}

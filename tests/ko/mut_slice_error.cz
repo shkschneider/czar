@@ -1,9 +1,0 @@
-// Test that mut on slice is an error
-fn main() i32 {
-    i32[3] arr = [ 1, 2, 3 ]
-    
-    // This should fail: slices cannot be mutable
-    mut i32[] s = arr[0:2]
-    
-    return 0
-}

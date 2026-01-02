@@ -1,9 +1,0 @@
-// FAIL TEST: Cannot access data field directly (memory safety)
-fn main() i32 {
-    string s = string "test"
-    
-    // This should fail - data field is not exposed
-    i8? ptr = s.data
-    
-    return 0
-}

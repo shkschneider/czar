@@ -1,8 +1,0 @@
-// Test that varargs must be last parameter - should fail
-fn bad(i32... nums, i32 x) i32 {
-    return 0
-}
-
-fn main() i32 {
-    return 0
-}

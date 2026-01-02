@@ -1,3 +1,0 @@
-fn nomain() i32 {
-    return 0
-}

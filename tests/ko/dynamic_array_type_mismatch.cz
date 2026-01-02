@@ -1,5 +1,0 @@
-// Test that type mismatches in dynamic array elements are rejected
-fn main() i32 {
-    i32[] mixed = new [1, 2, true]
-    return 0
-}

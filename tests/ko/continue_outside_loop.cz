@@ -1,5 +1,0 @@
-// Test that continue outside loop fails
-fn main() i32 {
-    continue
-    return 0
-}

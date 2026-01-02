@@ -1,9 +1,0 @@
-// Test missing return statement
-fn missing_return() i32 {
-    i32 x = 10
-    // ERROR: missing return statement
-}
-
-fn main() i32 {
-    return missing_return()
-}

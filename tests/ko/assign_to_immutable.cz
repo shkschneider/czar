@@ -1,6 +1,0 @@
-// Test assigning to immutable variable
-fn main() i32 {
-    i32 x = 10
-    x = 20  // ERROR: cannot assign to immutable variable
-    return x
-}

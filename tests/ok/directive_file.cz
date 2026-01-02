@@ -1,6 +1,0 @@
-// Test #FILE directive returns correct filename
-fn main() i32 {
-    // #FILE should be replaced with "directive_file@0.cz"
-    // Just verify it compiles and runs
-    return 0
-}

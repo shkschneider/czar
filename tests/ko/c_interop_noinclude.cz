@@ -1,7 +1,0 @@
-// missing headers
-import C
-
-fn main() i32 {
-    C.printf("Hello from C!\n")
-    return 0
-}

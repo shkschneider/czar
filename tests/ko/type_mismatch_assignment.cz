@@ -1,5 +1,0 @@
-// Test type mismatch in assignment
-fn main() i32 {
-    i32 x = true  // ERROR: cannot assign bool to i32
-    return x
-}

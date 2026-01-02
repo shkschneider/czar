@@ -1,9 +1,0 @@
-// FAIL TEST: Cannot directly modify string (should use methods)
-fn main() i32 {
-    string s = string "test"
-    
-    // This should fail - length is read-only
-    s.length = 10
-    
-    return 0
-}

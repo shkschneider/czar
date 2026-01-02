@@ -1,6 +1,0 @@
-// Test missing main function
-// ERROR: should fail when building because main function is not defined
-
-fn helper() i32 {
-    return 42
-}

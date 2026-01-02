@@ -1,8 +1,0 @@
-// Test wrong number of function arguments (too few)
-fn takes_two(i32 a, i32 b) i32 {
-    return a + b
-}
-
-fn main() i32 {
-    return takes_two(42)  // ERROR: too few arguments
-}

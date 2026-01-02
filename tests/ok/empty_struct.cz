@@ -1,8 +1,0 @@
-// Test empty structs
-struct Empty {
-}
-
-fn main() i32 {
-    Empty e = Empty {}
-    return 0
-}

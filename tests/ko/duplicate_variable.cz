@@ -1,6 +1,0 @@
-// Test that duplicate variable declarations are detected
-fn main() i32 {
-    u8 x = 0
-    u8 x = 1  // ERROR: duplicate variable
-    return 0
-}

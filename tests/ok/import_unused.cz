@@ -1,6 +1,0 @@
-// Test import with unused import warning
-#import cz.math.*
-
-fn main() i32 {
-    return 0
-}

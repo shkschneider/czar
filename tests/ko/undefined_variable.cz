@@ -1,4 +1,0 @@
-// Test undefined variable
-fn main() i32 {
-    return undefined_variable  // ERROR: undefined variable
-}

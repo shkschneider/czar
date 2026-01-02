@@ -1,8 +1,0 @@
-// Test type mismatch in return
-fn returns_int() i32 {
-    return true  // ERROR: cannot return bool from i32 function
-}
-
-fn main() i32 {
-    return returns_int()
-}

@@ -1,66 +1,167 @@
-# Czar
+# CZar
 
-> "Veni. Vidi. Vici." ~Caesar
+CZar - an empowering semantic and authority layer for C
 
-*Just kidding.*
+> Rules, without replacing the kingdom.
 
-This is a **toy language**, used as a playground of mine to learn more about languages and compilation.
-It currently is written in Lua and transpiles to C.
+_CZar consumes `.cz` files, analyses and rewrites the C AST and emits **portable C11** that you compile with your usual toolchain._
 
-> Someone had good intentions at each step along the way, but nobody stopped to ask why
+---
 
-## Phylosophy
+## What CZar is (and is not)
 
-- Explicit - Safe(r) - Modular
-- Structs with methods but without inheritence
-- Mutability - Nullability - Visibility
+**Is**:
 
-## Features
+- a post-preprocessor, pre-compiler tool
+- a C-to-C semantic transformer
+- a way to add features to C without changing C
+- incrementally adoptable in existing C codebases
 
-- Static typing with explicit types
-- Modularization with `module` and `import` (default: main)
-- Structs with members and methods (`self`)
-- Mutability `mut` (immutable by default)
-- Nullability `?` on pointers
-- Visibility with `pub` (private by default)
-- Casting with `<Type> x !!` or fallback with `??`
-- Implicit pointers: no `*` nor `&`
-- Safe `Type` (non-null) and unsafe `Type?` (nullable) pointers
-- Memory management with `new` and `free`
-- Error-as-value pattern (no exceptions)
-- Protections: out-of-bounds, dangling pointers, use-after-free...
-- Internal types: `pair<T:T>`, `array<T>`, `map<T:T>`
-- Macros: `#FILE`, `#LINE`, `#DEBUG`, `#log(...)`, `#assert(...)`...
-- Named and default parameters
-- Primitive generics `fn <u8:u16:u32:u64> f(T a, T b)`
-- Some overloading...
-- ...
+**Is Not**:
 
-[All Features](FEATURES.md)
+- is not a new programming language
+- a replacement for C
+- a macros system
+- a compiler backend
+- a runtime framework
+
+## Why CZar
+
+C remains unmatched for performance, control, portability and tooling.
+
+What is lack is **not** power, but **structure and ergonomics**.
+
+CZar fills that gap by adding **language features** and **safety checks** while preserving:
+- the C syntax
+- the C compilation model
+- existing build systems
+- debuggability (via correct `#line` mapping)
+
+---
+
+## What CZar adds to C
+
+### Language features
+
+- **Methods on structs**
+  - First parameter must be `self`
+  - Call syntax: `v.len()` -> `cz_MyStruct_len(&s)`
+- **Extension methods**
+- **`defer {}`**
+  - Block-scoped, deterministic cleanup
+- **Named arguments** (labels only)
+  - Prevent call-site confusion
+- **`foreach` loops**
+  - Over slices and strings
+- **Enums** with exhaustiveness checking
+
+### Built-in types
+
+- Fixed-width integers: `u8..64`, `i8..64`
+- Floating types: `f32`, `f64`
+- `string` (length-aware)
+- `slice` (pointer + length)
+- Exposed numeric limits: `U8_MIN/MAX`, ...
+
+### Built-in utilities
+
+- **Standard logger**
+  - `cz_log_info`, `cz_log_error`, ...
+  - Automatic file / function / line context
+- **Monotonic clock**
+  - `cz_now_monotonic_ns`
+  - `cz_sleep_ns`
+- **Arena allocator**
+- `assert`, `todo`, `fixme`, `unreachable`, ...
+
+### Safety
+
+- Zero-initialized locals
+- Ignored return values are errors
+- Detection of unchecked null dereferences
+- Explicit `unsafe {}` blocks
+- `safe_cast()` / `unsafe_cast()`
+- Bans dangerous C APIs
+- Enforced naming conventions
+
+---
+
+## Example
+
+```c
+#include <cz>
+
+struct Vec2 {
+    i32 x
+    i32 y
+}
+
+i32 Vec2.length(Vec* self) {
+    return self.x * self.y;
+}
+
+i32 read_value(File* f) {
+    assert(f);
+    i32 value;
+    defer { file_close(f); }
+    _ = file_read(f, &value);
+    return value;
+}
+```
+
+This compiles to **plain, readable C** with:
+- real methods
+- deterministic cleanup
+- explicit error handling
+- correct source locations
+
+---
+
+## How it works
+
+```
+.cz
+ | cc -E
+.pp.cz
+ | cz
+.c
+ | cc
+binary
+```
+
+- CZar runs **after** preprocessing
+- Macros and includes are already resolved
+- CZar rewrites the AST, not text
+- Output remains debuggable C
+
+If a `.cz` file contains only valid C, the output is identical!
+
+---
+
+## Status
+
+CZar is **pre-1.0** and under active development.
+- Implemented incrementally
+- Tested across GCC / Clang and C11 / C17
+- Intended to be **self-hosted** by v1.0
+APIs and rules may evolve before 1.0.
+
+---
+
+## Philosophy
+
+- C stays C
+- Features, not frameworks
+- Unsafe must be explicit
+- Errors over warnings
+- No hidden runtime costs
+- Easy to audit
+- Easy to remove
+
+If you can't explain the generated C, it's a bug!
+
+## License
+
+MIT [LICENSE](LICENSE)
 |
-[Semantics](SEMANTICS.md)
-
-## Binary
-
-The compiler is built via `./build.sh`.
-It produces a `./dist/cz` binary.
-
-```
-./dist/cz compile ...
-./dist/cz build ...
-./dist/cz run ...
-./dist/cz test ...
-./dist/cz inspect ...
-./dist/cz format ...
-./dist/cz todo|fixme ...
-```
-
-## Steps
-
-- lexer -> tokens
-- parser -> ast
-- typechecker
-- lowering
-- analysis
-- codegen -> c
-+ macros builtins warnings errors
+[ROADMAP](LICENSE)

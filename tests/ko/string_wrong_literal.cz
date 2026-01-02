@@ -1,7 +1,0 @@
-// FAIL TEST: Cannot assign C string literal to string type
-fn main() i32 {
-    // This should fail - "hello" is char?, not string
-    string s = "hello"
-    
-    return 0
-}

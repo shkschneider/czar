@@ -1,6 +1,0 @@
-// Test dereference of non-pointer
-fn main() i32 {
-    i32 x = 10
-    i32 y = *x  // ERROR: cannot dereference non-pointer
-    return y
-}

@@ -1,7 +1,0 @@
-// Test that String is not available without importing cz module
-// This should ERROR: String is undefined
-
-fn main() i32 {
-    String s = String { "test" }
-    return 0
-}

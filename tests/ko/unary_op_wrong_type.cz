@@ -1,5 +1,0 @@
-// Test unary operator on wrong type
-fn main() i32 {
-    bool b = true
-    return -b  // ERROR: cannot negate bool
-}

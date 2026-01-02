@@ -1,6 +1,0 @@
-// Test import with alias
-#import cz.io as io
-
-fn main() i32 {
-    return 0
-}

@@ -1,9 +1,0 @@
-// Test type mismatch in function call
-fn takes_int(i32 x) i32 {
-    return x
-}
-
-fn main() i32 {
-    bool b = true
-    return takes_int(b)  // ERROR: cannot pass bool where i32 expected
-}

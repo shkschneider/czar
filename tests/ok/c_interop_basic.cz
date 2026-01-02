@@ -1,7 +1,0 @@
-// Test basic C interop with printf
-#import C : stdio.h
-
-fn main() i32 {
-    C.printf("Hello from C!\n")
-    return 0
-}

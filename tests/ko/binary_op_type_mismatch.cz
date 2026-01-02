@@ -1,6 +1,0 @@
-// Test binary operation type mismatch
-fn main() i32 {
-    i32 x = 10
-    bool b = true
-    return x + b  // ERROR: cannot add i32 and bool
-}

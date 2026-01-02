@@ -1,6 +1,0 @@
-// Test module validation - this should fail
-#module wrong
-
-fn test() i32 {
-    return 0
-}
