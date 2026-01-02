@@ -14,10 +14,12 @@
 /* Transpiler structure */
 typedef struct {
     ASTNode *ast;
+    const char *filename;
+    const char *source;
 } Transpiler;
 
 /* Initialize transpiler with AST */
-void transpiler_init(Transpiler *transpiler, ASTNode *ast);
+void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename, const char *source);
 
 /* Transform AST (apply CZar-specific transformations) */
 void transpiler_transform(Transpiler *transpiler);

@@ -14,9 +14,125 @@
 /* Maximum lookback distance for finding struct/union/enum keywords before braces */
 #define MAX_LOOKBACK_TOKENS 30
 
+/* Global context for error reporting */
+static const char *g_filename = NULL;
+static const char *g_source = NULL;
+
+/* Check if token text matches */
+static int token_text_equals(Token *token, const char *text) {
+    if (!token || !token->text || !text) {
+        return 0;
+    }
+    return strcmp(token->text, text) == 0;
+}
+
+/* Get the source line for a given line number */
+static const char *get_source_line(int line_num, char *buffer, size_t buffer_size) {
+    if (!g_source || line_num < 1) {
+        return NULL;
+    }
+    
+    const char *line_start = g_source;
+    int current_line = 1;
+    
+    /* Find the start of the target line */
+    while (current_line < line_num && *line_start) {
+        if (*line_start == '\n') {
+            current_line++;
+        }
+        line_start++;
+    }
+    
+    if (current_line != line_num || !*line_start) {
+        return NULL;
+    }
+    
+    /* Copy the line to buffer */
+    const char *line_end = line_start;
+    while (*line_end && *line_end != '\n' && *line_end != '\r') {
+        line_end++;
+    }
+    
+    size_t line_len = line_end - line_start;
+    if (line_len >= buffer_size) {
+        line_len = buffer_size - 1;
+    }
+    
+    strncpy(buffer, line_start, line_len);
+    buffer[line_len] = '\0';
+    
+    return buffer;
+}
+
+/* Find the current function name by scanning backwards from current position */
+static const char *find_current_function(ASTNode **children, size_t count, size_t current) {
+    /* Look backwards for a function declaration pattern: type name(...) { */
+    int brace_depth = 0;
+    const char *function_name = NULL;
+    
+    for (size_t i = 0; i < current && i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        
+        Token *tok = &children[i]->token;
+        
+        if (tok->type == TOKEN_PUNCTUATION) {
+            if (token_text_equals(tok, "{")) {
+                brace_depth++;
+                /* Check if there's a function name before this brace */
+                /* Look for pattern: identifier ( ... ) { */
+                for (size_t j = (i > 20 ? i - 20 : 0); j < i; j++) {
+                    if (children[j]->type == AST_TOKEN &&
+                        children[j]->token.type == TOKEN_IDENTIFIER) {
+                        /* Check if followed by ( */
+                        size_t k = j + 1;
+                        while (k < i && children[k]->type == AST_TOKEN &&
+                               children[k]->token.type == TOKEN_WHITESPACE) {
+                            k++;
+                        }
+                        if (k < i && children[k]->type == AST_TOKEN &&
+                            children[k]->token.type == TOKEN_PUNCTUATION &&
+                            token_text_equals(&children[k]->token, "(")) {
+                            function_name = children[j]->token.text;
+                        }
+                    }
+                }
+            } else if (token_text_equals(tok, "}")) {
+                if (brace_depth > 0) {
+                    brace_depth--;
+                    if (brace_depth == 0) {
+                        function_name = NULL;  /* Exited function */
+                    }
+                }
+            }
+        }
+    }
+    
+    return (brace_depth > 0) ? function_name : NULL;
+}
+
 /* Report a CZar error and exit */
-static void cz_error(int line, const char *message) {
-    fprintf(stderr, "CZar Error: line %d: %s\n", line, message);
+static void cz_error(int line, const char *message, const char *func_name) {
+    fprintf(stderr, "[CZAR] ERROR");
+    
+    if (func_name) {
+        fprintf(stderr, " [in %s()]", func_name);
+    }
+    
+    fprintf(stderr, " at %s:%d: %s\n", g_filename ? g_filename : "<unknown>", line, message);
+    
+    /* Try to show the problematic line */
+    char line_buffer[512];
+    const char *source_line = get_source_line(line, line_buffer, sizeof(line_buffer));
+    if (source_line) {
+        /* Trim leading whitespace for display */
+        while (*source_line && isspace((unsigned char)*source_line)) {
+            source_line++;
+        }
+        if (*source_line) {
+            fprintf(stderr, "    > %s\n", source_line);
+        }
+    }
+    
     exit(1);
 }
 
@@ -58,14 +174,6 @@ static int is_aggregate_keyword(const char *text) {
     return strcmp(text, "struct") == 0 || 
            strcmp(text, "union") == 0 || 
            strcmp(text, "enum") == 0;
-}
-
-/* Check if token text matches */
-static int token_text_equals(Token *token, const char *text) {
-    if (!token || !token->text || !text) {
-        return 0;
-    }
-    return strcmp(token->text, text) == 0;
 }
 
 /* Skip whitespace and comment tokens */
@@ -273,30 +381,36 @@ static void validate_variable_declarations(ASTNode *ast) {
             continue; /* Variable is initialized */
         } else if (next->type == TOKEN_PUNCTUATION && token_text_equals(next, ";")) {
             /* Variable is NOT initialized - this is an error in CZar! */
+            const char *func_name = find_current_function(children, count, i);
             char error_msg[512];
             snprintf(error_msg, sizeof(error_msg),
                      "Variable '%s' must be explicitly initialized. "
                      "CZar requires zero-initialization: %s %s = 0;%s",
                      var_name->text, token->text, var_name->text,
                      is_aggregate ? " or = {0};" : "");
-            cz_error(var_name->line, error_msg);
+            cz_error(var_name->line, error_msg, func_name);
         } else if (next->type == TOKEN_PUNCTUATION && token_text_equals(next, ",")) {
             /* Multiple declarations in one statement - check each */
+            const char *func_name = find_current_function(children, count, i);
             char error_msg[512];
             snprintf(error_msg, sizeof(error_msg),
                      "Variable '%s' must be explicitly initialized. "
                      "CZar requires zero-initialization",
                      var_name->text);
-            cz_error(var_name->line, error_msg);
+            cz_error(var_name->line, error_msg, func_name);
         }
     }
 }
 
 /* Validate AST for CZar semantic rules */
-void transpiler_validate(ASTNode *ast) {
+void transpiler_validate(ASTNode *ast, const char *filename, const char *source) {
     if (!ast) {
         return;
     }
+    
+    /* Set global context for error reporting */
+    g_filename = filename;
+    g_source = source;
     
     /* Validate variable declarations */
     validate_variable_declarations(ast);

@@ -17,8 +17,10 @@
 #include <string.h>
 
 /* Initialize transpiler with AST */
-void transpiler_init(Transpiler *transpiler, ASTNode *ast) {
+void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename, const char *source) {
     transpiler->ast = ast;
+    transpiler->filename = filename;
+    transpiler->source = source;
     /* Reset unused counter for each translation unit */
     transpiler_reset_unused_counter();
 }
@@ -113,7 +115,7 @@ void transpiler_transform(Transpiler *transpiler) {
     }
 
     /* First validate the AST for CZar semantic rules */
-    transpiler_validate(transpiler->ast);
+    transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
