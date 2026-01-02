@@ -79,9 +79,13 @@ static void transform_node(ASTNode *node) {
         const char *c_type = get_c_type_for_czar_type(node->token.text);
         if (c_type) {
             /* Replace CZar type with C type */
-            free(node->token.text);
-            node->token.text = strdup(c_type);
-            node->token.length = strlen(c_type);
+            char *new_text = strdup(c_type);
+            if (new_text) {
+                free(node->token.text);
+                node->token.text = new_text;
+                node->token.length = strlen(c_type);
+            }
+            /* If strdup fails, keep the original text */
         }
     }
     
