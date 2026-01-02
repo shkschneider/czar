@@ -9,14 +9,12 @@ OBJECTS = $(patsubst ./bin/%.c,./build/%.o,$(SOURCES))
 
 all: $(OUT)
 
-$(OUT): $(OBJECTS) | build
+$(OUT): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUT)
 
 ./build/%.o: ./bin/%.c
+	@mkdir -p ./build
 	$(CC) $(CFLAGS) -c $< -o $@
-
-build:
-	mkdir -p ./build
 
 clean:
 	@rm -rvf ./build
