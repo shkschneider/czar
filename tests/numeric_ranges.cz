@@ -13,12 +13,12 @@ struct Vec2 {
 
 /* Example: Computing with bounds checking using limit constants */
 u8 safe_add_u8(u8 a, u8 b) {
-    u32 result = (u32)a + (u32)b;
+    u32 result = unsafe_cast<u32>(a) + unsafe_cast<u32>(b);
     if (result > U8_MAX) {
         fprintf(stderr, "Overflow detected in safe_add_u8\n");
         return U8_MAX;
     }
-    return (u8)result;
+    return unsafe_cast<u8>(result);
 }
 
 /* Example: Range validation using limit constants */
