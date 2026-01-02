@@ -1,7 +1,8 @@
 # Build system for CZar C semantic authority layer
 CC     ?= cc
 STD    ?= c11
-CFLAGS := -std=$(STD) -Wall -Wextra -pedantic -O2
+OPT    ?= O2
+CFLAGS := -std=$(STD) -Wall -Wextra -$(OPT)
 LDFLAGS = -lc
 OUT    ?= build/cz
 
@@ -28,8 +29,16 @@ test: $(TESTS:.cz=.out)
 endif
 tests/%.out: tests/%.cz $(OUT)
 	@echo "- $@"
-	@./$(OUT) $< $<.c
-	@$(CC) $(CFLAGS) $<.c $(LDFLAGS) -o $@
+# preprocessor
+	@$(CC) $(CFLAGS) -E -x c $< -o $(<:.cz=.pp.cz)
+# transpiler
+	@./$(OUT) $(<:.cz=.pp.cz) $(<:.cz=.cz.c)
+	@rm -f $(<:.cz=.pp.cz)
+# compiler
+	@$(CC) $(CFLAGS) -c $(<:.cz=.cz.c) -o $(<:.cz=.o)
+# linker
+	@$(CC) $(CFLAGS) $(<:.cz=.o) $(LDFLAGS) -o $@
+# test
 	@./$@ >/dev/null || { rc=$$?; echo "FAILURE: tests/$*.out exited $$rc"; exit $$rc; }
 
 # Cleanup
