@@ -16,6 +16,7 @@
 #include "transpiler/casts.h"
 #include "transpiler/autodereference.h"
 #include "transpiler/structs.h"
+#include "transpiler/methods.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -120,6 +121,9 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
+
+    /* Transform struct methods (before autodereference) */
+    transpiler_transform_methods(transpiler->ast);
 
     /* Transform member access operators (. to -> for pointers) */
     transpiler_transform_autodereference(transpiler->ast);
