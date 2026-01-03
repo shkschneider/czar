@@ -9,13 +9,23 @@
 #pragma once
 
 /* Cast Warnings */
-#define WARN_CAST_WITHOUT_FALLBACK "cast<%s>(value) without fallback. Consider the safer cast<%s>(value, fallback)."
+#define WARN_CAST_WITHOUT_FALLBACK \
+    "cast<%s>(value) without fallback. " \
+    "Consider the safer cast<%s>(value, fallback)."
 
 /* Enum/Switch Warnings */
-#define WARN_UNSCOPED_ENUM_CONSTANT "Unscoped enum constant '%s' in switch. Prefer scoped syntax: 'case %s.%s'"
-#define WARN_SWITCH_MISSING_DEFAULT "Switch statement should have a default case. Consider adding 'default: UNREACHABLE(\"\");' or appropriate handling."
+#define WARN_UNSCOPED_ENUM_CONSTANT \
+    "Unscoped enum constant '%s' in switch. " \
+    "Prefer scoped syntax: 'case %s.%s'"
+#define WARN_SWITCH_MISSING_DEFAULT \
+    "Switch statement should have a default case. " \
+    "Consider adding 'default: UNREACHABLE(\"\");' or appropriate handling."
 
 /* Tracking Limit Warnings */
-#define WARN_MAX_METHOD_TRACKING_LIMIT "Maximum method tracking limit (%d) reached"
-#define WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT "Maximum struct type tracking limit (%d) reached"
-#define WARN_MAX_ENUM_TRACKING_LIMIT "Maximum number of tracked enums (%d) reached. Exhaustiveness checking may be incomplete for enum '%s'."
+#define WARN_MAX_METHOD_TRACKING_LIMIT \
+    "Maximum method tracking limit (%d) reached"
+#define WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT \
+    "Maximum struct type tracking limit (%d) reached"
+#define WARN_MAX_ENUM_TRACKING_LIMIT \
+    "Maximum number of tracked enums (%d) reached. " \
+    "Exhaustiveness checking may be incomplete for enum '%s'."

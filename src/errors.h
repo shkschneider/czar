@@ -26,12 +26,12 @@
 #define ERR_VARIABLE_NOT_INITIALIZED_MULTI_IN_FUNC "[in %s()] Variable '%s' must be explicitly initialized. CZar requires zero-initialization"
 
 /* Cast Errors */
-#define ERR_C_STYLE_CAST_NOT_ALLOWED "C-style cast '(%s)' is unsafe and thus not allowed. Use cast<%s>(value[, fallback]) instead."
+#define ERR_C_STYLE_CAST_NOT_ALLOWED "Unsafe C-style cast '(%s)' is not allowed. Use cast<%s>(value[, fallback]) instead."
 #define ERR_CAST_REQUIRES_TEMPLATE_SYNTAX "cast requires template syntax: cast<Type>(value)"
 #define ERR_CAST_REQUIRES_PARENTHESES "cast requires function call syntax with parentheses"
 #define ERR_CAST_INVALID_ARG_COUNT "cast requires 1 or 2 arguments: cast<Type>(value[, fallback])"
 
 /* Enum/Switch Errors */
 #define ERR_SWITCH_CASE_NO_CONTROL_FLOW "Switch case must have explicit control flow. Use 'break' to end case, 'continue' for fallthrough, or 'return'/'goto' for other control flow."
-#define ERR_ENUM_SWITCH_MISSING_DEFAULT "Switch on enum '%s' must have a default case. Add 'default: UNREACHABLE(\"\");' if all cases are covered."
+#define ERR_ENUM_SWITCH_MISSING_DEFAULT "Switch on enum '%s' must have a default case. Add 'default: UNREACHABLE()' if all cases are covered."
 #define ERR_ENUM_SWITCH_NOT_EXHAUSTIVE "Non-exhaustive switch on enum '%s': missing case for '%s'. All enum values must be explicitly handled."
