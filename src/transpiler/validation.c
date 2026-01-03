@@ -7,6 +7,7 @@
 
 #include "validation.h"
 #include "../transpiler.h"
+#include "../errors.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -322,14 +323,12 @@ static void validate_variable_declarations(ASTNode *ast) {
             char error_msg[512];
             if (func_name) {
                 snprintf(error_msg, sizeof(error_msg),
-                         "[in %s()] Variable '%s' must be explicitly initialized. "
-                         "CZar requires zero-initialization: %s %s = 0;%s",
+                         ERR_VARIABLE_NOT_INITIALIZED_IN_FUNC,
                          func_name, var_name->text, token->text, var_name->text,
                          is_aggregate ? " or = {0};" : "");
             } else {
                 snprintf(error_msg, sizeof(error_msg),
-                         "Variable '%s' must be explicitly initialized. "
-                         "CZar requires zero-initialization: %s %s = 0;%s",
+                         ERR_VARIABLE_NOT_INITIALIZED,
                          var_name->text, token->text, var_name->text,
                          is_aggregate ? " or = {0};" : "");
             }
@@ -340,13 +339,11 @@ static void validate_variable_declarations(ASTNode *ast) {
             char error_msg[512];
             if (func_name) {
                 snprintf(error_msg, sizeof(error_msg),
-                         "[in %s()] Variable '%s' must be explicitly initialized. "
-                         "CZar requires zero-initialization",
+                         ERR_VARIABLE_NOT_INITIALIZED_MULTI_IN_FUNC,
                          func_name, var_name->text);
             } else {
                 snprintf(error_msg, sizeof(error_msg),
-                         "Variable '%s' must be explicitly initialized. "
-                         "CZar requires zero-initialization",
+                         ERR_VARIABLE_NOT_INITIALIZED_MULTI,
                          var_name->text);
             }
             cz_error(g_filename, g_source, var_name->line, error_msg);

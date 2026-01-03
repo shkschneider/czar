@@ -6,6 +6,7 @@
  */
 
 #include "parser.h"
+#include "errors.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -52,7 +53,7 @@ static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
         ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
         if (!new_children) {
             /* Memory allocation failed - this is a fatal error */
-            fprintf(stderr, "Error: Memory allocation failed in ast_node_add_child\n");
+            fprintf(stderr, "Error: " ERR_MEMORY_ALLOCATION_FAILED_IN_AST_NODE "\n");
             return;
         }
         parent->children = new_children;
