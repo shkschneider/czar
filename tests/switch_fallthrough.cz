@@ -1,0 +1,61 @@
+#include <stdio.h>
+
+enum Level { LOW, MEDIUM, HIGH };
+
+// Test case with explicit break
+void test_break(enum Level l) {
+    switch (l) {
+    case Level.LOW:
+        printf("Low level\n");
+        break;
+    case Level.MEDIUM:
+        printf("Medium level\n");
+        break;
+    case Level.HIGH:
+        printf("High level\n");
+        break;
+    default:
+        UNREACHABLE("");
+    }
+}
+
+// Test case with continue for fallthrough
+void test_fallthrough(enum Level l) {
+    switch (l) {
+    case Level.LOW:
+        printf("Low or medium\n");
+        continue;
+    case Level.MEDIUM:
+        printf("Medium or high\n");
+        continue;
+    case Level.HIGH:
+        printf("High\n");
+        break;
+    default:
+        UNREACHABLE("");
+    }
+}
+
+// Test case with return
+void test_return(enum Level l) {
+    switch (l) {
+    case Level.LOW:
+        printf("Low\n");
+        return;
+    case Level.MEDIUM:
+        printf("Medium\n");
+        return;
+    case Level.HIGH:
+        printf("High\n");
+        return;
+    default:
+        UNREACHABLE("");
+    }
+}
+
+int main(void) {
+    test_break(LOW);
+    test_fallthrough(LOW);
+    test_return(MEDIUM);
+    return 0;
+}
