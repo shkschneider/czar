@@ -19,8 +19,9 @@ const char* color_name_scoped(enum Color c) {
         return "Green";
     case Color.BLUE:
         return "Blue";
+    default:
+        UNREACHABLE("Invalid color");
     }
-    UNREACHABLE("Invalid color");
 }
 
 /* Using unscoped syntax (generates warnings) */
@@ -32,8 +33,9 @@ const char* color_name_unscoped(enum Color c) {
         return "Green";
     case BLUE:
         return "Blue";
+    default:
+        UNREACHABLE("Invalid color");
     }
-    UNREACHABLE("Invalid color");
 }
 
 int main(void) {

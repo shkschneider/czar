@@ -262,7 +262,7 @@ static EnumInfo *get_variable_enum_type(ASTNode **children, size_t count, const 
     return NULL;
 }
 
-/* Validate switch statement for exhaustiveness */
+/* Validate switch statement for exhaustiveness and default case */
 static void validate_switch_exhaustiveness(ASTNode **children, size_t count, size_t switch_pos) {
     /* Find the switch expression */
     size_t i = skip_whitespace(children, count, switch_pos + 1);
@@ -288,9 +288,6 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
     
     /* Check if the variable is of enum type */
     EnumInfo *enum_info = get_variable_enum_type(children, count, switch_var);
-    if (!enum_info) {
-        return; /* Not an enum type, no exhaustiveness check needed */
-    }
     
     /* Find closing paren */
     int paren_depth = 1;
@@ -337,13 +334,20 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
         i++;
     }
     
-    /* Track which enum members are covered */
+    /* Track which enum members are covered and if default exists */
     int covered[MAX_ENUM_MEMBERS] = {0};
+    int has_default = 0;
     
-    /* Scan switch body for case labels */
+    /* Scan switch body for case labels and default */
     for (i = switch_body_start; i < switch_body_end; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         Token *tok = &children[i]->token;
+        
+        /* Check for default case */
+        if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
+            strcmp(tok->text, "default") == 0) {
+            has_default = 1;
+        }
         
         if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
             strcmp(tok->text, "case") == 0) {
@@ -372,38 +376,62 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
                     }
                 }
                 
-                /* Mark this member as covered and check if it's an enum member */
-                for (int k = 0; k < enum_info->member_count; k++) {
-                    if (strcmp(enum_info->members[k].name, case_label) == 0) {
-                        covered[k] = 1;
-                        
-                        /* Warn if using unscoped enum constant */
-                        if (!is_scoped) {
-                            char warning_msg[512];
-                            snprintf(warning_msg, sizeof(warning_msg),
-                                     "Unscoped enum constant '%s' in switch. "
-                                     "Prefer scoped syntax: 'case %s.%s'",
-                                     case_label, enum_info->name, case_label);
-                            cz_warning(g_filename, g_source, 
-                                      children[label_start_pos]->token.line, warning_msg);
+                /* If this is an enum switch, mark member as covered and warn if unscoped */
+                if (enum_info) {
+                    for (int k = 0; k < enum_info->member_count; k++) {
+                        if (strcmp(enum_info->members[k].name, case_label) == 0) {
+                            covered[k] = 1;
+                            
+                            /* Warn if using unscoped enum constant */
+                            if (!is_scoped) {
+                                char warning_msg[512];
+                                snprintf(warning_msg, sizeof(warning_msg),
+                                         "Unscoped enum constant '%s' in switch. "
+                                         "Prefer scoped syntax: 'case %s.%s'",
+                                         case_label, enum_info->name, case_label);
+                                cz_warning(g_filename, g_source, 
+                                          children[label_start_pos]->token.line, warning_msg);
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }
         }
     }
     
-    /* Check if all members are covered */
-    for (int k = 0; k < enum_info->member_count; k++) {
-        if (!covered[k]) {
-            /* Missing case! */
-            char error_msg[1024];
+    /* Check if default case is missing */
+    if (!has_default) {
+        if (enum_info) {
+            /* ERROR: enum switch must have default case */
+            char error_msg[512];
             snprintf(error_msg, sizeof(error_msg),
-                     "Non-exhaustive switch on enum '%s': missing case for '%s'. "
-                     "All enum values must be explicitly handled.",
-                     enum_info->name, enum_info->members[k].name);
+                     "Switch on enum '%s' must have a default case. "
+                     "Add 'default: UNREACHABLE(\"\");' if all cases are covered.",
+                     enum_info->name);
             cz_error(g_filename, g_source, children[switch_pos]->token.line, error_msg);
+        } else {
+            /* WARNING: non-enum switch should have default case */
+            char warning_msg[512];
+            snprintf(warning_msg, sizeof(warning_msg),
+                     "Switch statement should have a default case. "
+                     "Consider adding 'default: UNREACHABLE(\"\");' or appropriate handling.");
+            cz_warning(g_filename, g_source, children[switch_pos]->token.line, warning_msg);
+        }
+    }
+    
+    /* For enum switches with default, check if all members are covered */
+    if (enum_info && has_default) {
+        for (int k = 0; k < enum_info->member_count; k++) {
+            if (!covered[k]) {
+                /* Missing case! */
+                char error_msg[1024];
+                snprintf(error_msg, sizeof(error_msg),
+                         "Non-exhaustive switch on enum '%s': missing case for '%s'. "
+                         "All enum values must be explicitly handled.",
+                         enum_info->name, enum_info->members[k].name);
+                cz_error(g_filename, g_source, children[switch_pos]->token.line, error_msg);
+            }
         }
     }
 }
@@ -534,6 +562,190 @@ static void strip_enum_prefixes(ASTNode *ast) {
     }
 }
 
+/* Helper to create a new AST token node */
+static ASTNode *create_token_node(TokenType type, const char *text, int line, int column) {
+    ASTNode *node = malloc(sizeof(ASTNode));
+    if (!node) return NULL;
+    
+    node->type = AST_TOKEN;
+    node->token.type = type;
+    node->token.text = strdup(text);
+    if (!node->token.text) {
+        free(node);
+        return NULL;
+    }
+    node->token.length = strlen(text);
+    node->token.line = line;
+    node->token.column = column;
+    node->children = NULL;
+    node->child_count = 0;
+    node->child_capacity = 0;
+    
+    return node;
+}
+
+/* Helper to add a child to an AST node */
+static int ast_add_child(ASTNode *parent, ASTNode *child) {
+    if (!parent || !child) {
+        return 0;
+    }
+    
+    /* Grow children array if needed */
+    if (parent->child_count >= parent->child_capacity) {
+        size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
+        ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
+        if (!new_children) {
+            return 0;
+        }
+        parent->children = new_children;
+        parent->child_capacity = new_capacity;
+    }
+    
+    parent->children[parent->child_count++] = child;
+    return 1;
+}
+
+/* Helper to insert a child at a specific position in an AST node */
+static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
+    if (!parent || !child || position > parent->child_count) {
+        return 0;
+    }
+    
+    /* Grow children array if needed */
+    if (parent->child_count >= parent->child_capacity) {
+        size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
+        ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
+        if (!new_children) {
+            return 0;
+        }
+        parent->children = new_children;
+        parent->child_capacity = new_capacity;
+    }
+    
+    /* Shift elements to make room */
+    for (size_t i = parent->child_count; i > position; i--) {
+        parent->children[i] = parent->children[i - 1];
+    }
+    
+    parent->children[position] = child;
+    parent->child_count++;
+    return 1;
+}
+
+/* Insert default: cz_unreachable(""); into ALL switches that lack a default */
+static void insert_default_cases(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    ASTNode **children = ast->children;
+    size_t count = ast->child_count;
+
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *token = &children[i]->token;
+
+        /* Look for "switch" keyword */
+        if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
+            strcmp(token->text, "switch") == 0) {
+            
+            /* Find the switch expression */
+            size_t j = skip_whitespace(children, count, i + 1);
+            
+            if (j >= count || children[j]->type != AST_TOKEN ||
+                !token_text_equals(&children[j]->token, "(")) {
+                continue;
+            }
+            
+            /* Find closing paren and opening brace */
+            int paren_depth = 1;
+            j++;
+            while (j < count && paren_depth > 0) {
+                if (children[j]->type == AST_TOKEN &&
+                    children[j]->token.type == TOKEN_PUNCTUATION) {
+                    if (token_text_equals(&children[j]->token, "(")) paren_depth++;
+                    else if (token_text_equals(&children[j]->token, ")")) paren_depth--;
+                }
+                j++;
+            }
+            
+            j = skip_whitespace(children, count, j);
+            
+            /* Find switch body braces */
+            if (j >= count || children[j]->type != AST_TOKEN ||
+                !token_text_equals(&children[j]->token, "{")) {
+                continue;
+            }
+            
+            size_t switch_body_start = j;
+            
+            /* Find closing brace */
+            int brace_depth = 1;
+            j++;
+            size_t switch_body_end = j;
+            while (j < count && brace_depth > 0) {
+                if (children[j]->type == AST_TOKEN &&
+                    children[j]->token.type == TOKEN_PUNCTUATION) {
+                    if (token_text_equals(&children[j]->token, "{")) brace_depth++;
+                    else if (token_text_equals(&children[j]->token, "}")) {
+                        brace_depth--;
+                        if (brace_depth == 0) {
+                            switch_body_end = j;
+                        }
+                    }
+                }
+                j++;
+            }
+            
+            /* Check if there's a default */
+            int has_default = 0;
+            
+            for (size_t k = switch_body_start; k < switch_body_end; k++) {
+                if (children[k]->type != AST_TOKEN) continue;
+                Token *tok = &children[k]->token;
+                
+                /* Check for default */
+                if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
+                    strcmp(tok->text, "default") == 0) {
+                    has_default = 1;
+                    break;
+                }
+            }
+            
+            /* If no default, insert one */
+            if (!has_default) {
+                int line = children[switch_body_end]->token.line;
+                
+                /* Insert: newline, default, :, space, cz_unreachable, (, "", ), ; */
+                /* Insert before the closing brace - in reverse order to maintain positions */
+                ASTNode *nodes[10];
+                int node_count = 0;
+                
+                /* Build nodes in forward order */
+                nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_KEYWORD, "default", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ":", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, " ", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_IDENTIFIER, "cz_unreachable", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, "(", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_STRING, "\"\"", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ")", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ";", line, 0);
+                nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);
+                
+                /* Insert all nodes in reverse order before the closing brace */
+                for (int n = node_count - 1; n >= 0; n--) {
+                    if (nodes[n] && !ast_insert_child(ast, switch_body_end, nodes[n])) {
+                        /* Failed to insert, free the node */
+                        free(nodes[n]->token.text);
+                        free(nodes[n]);
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* Transform switch statements on enums to add default: UNREACHABLE() if missing */
 void transpiler_transform_enums(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
@@ -542,4 +754,7 @@ void transpiler_transform_enums(ASTNode *ast) {
 
     /* Strip enum prefixes from scoped case labels (EnumName.MEMBER -> MEMBER) */
     strip_enum_prefixes(ast);
+    
+    /* Insert default: cz_unreachable(""); into all switches without defaults */
+    insert_default_cases(ast);
 }
