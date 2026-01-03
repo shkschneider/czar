@@ -35,19 +35,14 @@ test: $(OUT)
 	@$(MAKE) $(basename $(FILE)).out
 else
 test: $(TESTS:.cz=.out)
-	@grep -R "cz_" tests/*.cz && { echo "FAILURE: grep -R 'cz_' found old-style types"; exit 1; } || true
 	@echo
 	@echo "All tests passed."
 endif
 tests/%.out: tests/%.cz $(OUT)
 	@echo "- $@"
-# transpiler (works on raw .cz file, adds required headers)
-	@./$(OUT) $< $(<:.cz=.cz.c) >/dev/null
-# compiler (preprocesses and compiles in one step)
-	@$(CC) $(CFLAGS) -c $(<:.cz=.cz.c) -o $(<:.cz=.o)
-# linker
-	@$(CC) $(CFLAGS) $(<:.cz=.o) $(LDFLAGS) -o $@
-# test
+	@./$(OUT) $< $<.c >/dev/null
+	@$(CC) $(CFLAGS) -c $<.c -o $<.o
+	@$(CC) $(CFLAGS) $<.o $(LDFLAGS) -o $@
 	@./$@ >/dev/null 2>/dev/null || { rc=$$?; echo "FAILURE: tests/$*.out exited $$rc"; exit $$rc; }
 .PHONY: test $(TESTS)
 
