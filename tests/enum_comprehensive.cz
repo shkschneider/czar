@@ -1,0 +1,90 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+
+/* Comprehensive test for enum exhaustiveness checking */
+
+/* Simple enum */
+enum Direction {
+    DIR_NORTH,
+    DIR_SOUTH,
+    DIR_EAST,
+    DIR_WEST
+};
+
+/* Enum with explicit values */
+enum ErrorCode {
+    ERR_OK = 0,
+    ERR_NOT_FOUND = 404,
+    ERR_SERVER_ERROR = 500
+};
+
+/* Function with exhaustive switch on Direction */
+const char* direction_name(enum Direction dir) {
+    switch (dir) {
+    case DIR_NORTH: return "North";
+    case DIR_SOUTH: return "South";
+    case DIR_EAST: return "East";
+    case DIR_WEST: return "West";
+    }
+    UNREACHABLE("Invalid direction");
+}
+
+/* Function with exhaustive switch on ErrorCode */
+const char* error_message(enum ErrorCode code) {
+    switch (code) {
+    case ERR_OK:
+        return "Success";
+    case ERR_NOT_FOUND:
+        return "Not Found";
+    case ERR_SERVER_ERROR:
+        return "Internal Server Error";
+    }
+    UNREACHABLE("Invalid error code");
+}
+
+/* Function demonstrating that switches on non-enums don't require exhaustiveness */
+const char* int_category(i32 n) {
+    switch (n) {
+    case 0:
+        return "Zero";
+    case 1:
+        return "One";
+    default:
+        return "Other";
+    }
+}
+
+/* Main test function */
+int main(void) {
+    printf("=== Enum Exhaustiveness Test ===\n\n");
+
+    /* Test Direction enum */
+    printf("Directions:\n");
+    enum Direction d = DIR_NORTH;
+    printf("  %d: %s\n", d, direction_name(d));
+    d = DIR_SOUTH;
+    printf("  %d: %s\n", d, direction_name(d));
+    d = DIR_EAST;
+    printf("  %d: %s\n", d, direction_name(d));
+    d = DIR_WEST;
+    printf("  %d: %s\n", d, direction_name(d));
+
+    /* Test ErrorCode enum */
+    printf("\nError codes:\n");
+    enum ErrorCode err = ERR_OK;
+    printf("  %d: %s\n", err, error_message(err));
+    err = ERR_NOT_FOUND;
+    printf("  %d: %s\n", err, error_message(err));
+    err = ERR_SERVER_ERROR;
+    printf("  %d: %s\n", err, error_message(err));
+
+    /* Test non-enum switch */
+    printf("\nInteger categories:\n");
+    printf("  0: %s\n", int_category(0));
+    printf("  1: %s\n", int_category(1));
+    printf("  42: %s\n", int_category(42));
+
+    printf("\n=== All tests passed! ===\n");
+    return 0;
+}
