@@ -355,8 +355,10 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
                 children[j]->token.type == TOKEN_IDENTIFIER) {
                 
                 char *case_label = children[j]->token.text;
+                int is_scoped = 0;
                 
                 /* Check for enum prefix (EnumName.MEMBER syntax) */
+                size_t label_start_pos = j;
                 j = skip_whitespace(children, count, j + 1);
                 if (j < count && children[j]->type == AST_TOKEN &&
                     children[j]->token.type == TOKEN_OPERATOR &&
@@ -366,13 +368,25 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
                     if (j < count && children[j]->type == AST_TOKEN &&
                         children[j]->token.type == TOKEN_IDENTIFIER) {
                         case_label = children[j]->token.text;
+                        is_scoped = 1;
                     }
                 }
                 
-                /* Mark this member as covered */
+                /* Mark this member as covered and check if it's an enum member */
                 for (int k = 0; k < enum_info->member_count; k++) {
                     if (strcmp(enum_info->members[k].name, case_label) == 0) {
                         covered[k] = 1;
+                        
+                        /* Warn if using unscoped enum constant */
+                        if (!is_scoped) {
+                            char warning_msg[512];
+                            snprintf(warning_msg, sizeof(warning_msg),
+                                     "Unscoped enum constant '%s' in switch. "
+                                     "Prefer scoped syntax: 'case %s.%s'",
+                                     case_label, enum_info->name, case_label);
+                            cz_warning(g_filename, g_source, 
+                                      children[label_start_pos]->token.line, warning_msg);
+                        }
                         break;
                     }
                 }
@@ -464,15 +478,68 @@ void transpiler_validate_enums(ASTNode *ast, const char *filename, const char *s
     scan_switch_statements(ast);
 }
 
+/* Remove enum prefix from scoped case labels (EnumName.MEMBER -> MEMBER) */
+static void strip_enum_prefixes(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    ASTNode **children = ast->children;
+    size_t count = ast->child_count;
+
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *token = &children[i]->token;
+
+        /* Look for "case" keyword */
+        if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
+            strcmp(token->text, "case") == 0) {
+            
+            size_t j = skip_whitespace(children, count, i + 1);
+            
+            /* Check for EnumName.MEMBER pattern */
+            if (j < count && children[j]->type == AST_TOKEN &&
+                children[j]->token.type == TOKEN_IDENTIFIER) {
+                
+                size_t k = skip_whitespace(children, count, j + 1);
+                
+                /* If followed by . and another identifier, remove the prefix */
+                if (k < count && children[k]->type == AST_TOKEN &&
+                    children[k]->token.type == TOKEN_OPERATOR &&
+                    token_text_equals(&children[k]->token, ".")) {
+                    
+                    size_t m = skip_whitespace(children, count, k + 1);
+                    
+                    if (m < count && children[m]->type == AST_TOKEN &&
+                        children[m]->token.type == TOKEN_IDENTIFIER) {
+                        
+                        /* Remove the enum prefix and dot by making them whitespace */
+                        /* Replace EnumName with empty string */
+                        free(children[j]->token.text);
+                        children[j]->token.text = strdup("");
+                        if (children[j]->token.text) {
+                            children[j]->token.length = 0;
+                        }
+                        
+                        /* Replace . with empty string */
+                        free(children[k]->token.text);
+                        children[k]->token.text = strdup("");
+                        if (children[k]->token.text) {
+                            children[k]->token.length = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* Transform switch statements on enums to add default: UNREACHABLE() if missing */
 void transpiler_transform_enums(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    /* Note: This function would insert default: UNREACHABLE() clauses,
-     * but doing so requires modifying the AST structure in complex ways.
-     * For the initial implementation, we rely on validation to enforce
-     * exhaustiveness, and developers must write explicit default cases
-     * or handle all enum values. */
+    /* Strip enum prefixes from scoped case labels (EnumName.MEMBER -> MEMBER) */
+    strip_enum_prefixes(ast);
 }

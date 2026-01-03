@@ -1,0 +1,46 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+
+/* Test mixed scoped and unscoped enum syntax */
+
+enum Color {
+    RED,
+    GREEN,
+    BLUE
+};
+
+/* Using scoped syntax (preferred - no warnings) */
+const char* color_name_scoped(enum Color c) {
+    switch (c) {
+    case Color.RED:
+        return "Red";
+    case Color.GREEN:
+        return "Green";
+    case Color.BLUE:
+        return "Blue";
+    }
+    UNREACHABLE("Invalid color");
+}
+
+/* Using unscoped syntax (generates warnings) */
+const char* color_name_unscoped(enum Color c) {
+    switch (c) {
+    case RED:
+        return "Red";
+    case GREEN:
+        return "Green";
+    case BLUE:
+        return "Blue";
+    }
+    UNREACHABLE("Invalid color");
+}
+
+int main(void) {
+    enum Color c = RED;
+    
+    printf("Scoped:   %s\n", color_name_scoped(c));
+    printf("Unscoped: %s\n", color_name_unscoped(c));
+    
+    return 0;
+}
