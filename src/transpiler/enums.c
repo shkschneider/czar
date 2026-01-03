@@ -262,6 +262,174 @@ static EnumInfo *get_variable_enum_type(ASTNode **children, size_t count, const 
     return NULL;
 }
 
+/* Validate that each case in a switch has explicit control flow */
+static void validate_switch_case_control_flow(ASTNode **children, size_t count, size_t switch_pos) {
+    /* Find the switch body */
+    size_t i = skip_whitespace(children, count, switch_pos + 1);
+    
+    /* Skip switch expression: ( ... ) */
+    if (i >= count || children[i]->type != AST_TOKEN ||
+        !token_text_equals(&children[i]->token, "(")) {
+        return;
+    }
+    
+    int paren_depth = 1;
+    i++;
+    while (i < count && paren_depth > 0) {
+        if (children[i]->type == AST_TOKEN &&
+            children[i]->token.type == TOKEN_PUNCTUATION) {
+            if (token_text_equals(&children[i]->token, "(")) paren_depth++;
+            else if (token_text_equals(&children[i]->token, ")")) paren_depth--;
+        }
+        i++;
+    }
+    
+    i = skip_whitespace(children, count, i);
+    
+    /* Find opening brace */
+    if (i >= count || children[i]->type != AST_TOKEN ||
+        !token_text_equals(&children[i]->token, "{")) {
+        return;
+    }
+    
+    size_t switch_body_start = i;
+    
+    /* Find closing brace */
+    int brace_depth = 1;
+    i++;
+    size_t switch_body_end = i;
+    while (i < count && brace_depth > 0) {
+        if (children[i]->type == AST_TOKEN &&
+            children[i]->token.type == TOKEN_PUNCTUATION) {
+            if (token_text_equals(&children[i]->token, "{")) brace_depth++;
+            else if (token_text_equals(&children[i]->token, "}")) {
+                brace_depth--;
+                if (brace_depth == 0) switch_body_end = i;
+            }
+        }
+        i++;
+    }
+    
+    /* Scan for case/default labels and validate control flow */
+    for (i = switch_body_start; i < switch_body_end; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok = &children[i]->token;
+        
+        /* Look for case or default */
+        if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
+            (strcmp(tok->text, "case") == 0 || strcmp(tok->text, "default") == 0)) {
+            
+            size_t case_start = i;
+            
+            /* Find the colon after case/default */
+            size_t j = i + 1;
+            while (j < count) {  /* Search in full AST, not just switch body */
+                if (children[j]->type == AST_TOKEN &&
+                    (children[j]->token.type == TOKEN_OPERATOR || children[j]->token.type == TOKEN_PUNCTUATION) &&
+                    token_text_equals(&children[j]->token, ":")) {
+                    break;
+                }
+                j++;
+                if (j >= switch_body_end) break;  /* But still stop at switch end */
+            }
+            
+            if (j >= switch_body_end || j >= count) {
+                continue;
+            }
+            
+            /* Now scan from after the colon to the next case/default/closing brace */
+            j = skip_whitespace(children, count, j + 1);
+            size_t case_body_start = j;
+            size_t case_body_end = switch_body_end;
+            
+            /* Find the end of this case (next case/default or closing brace) */
+            int inner_brace_depth = 0;
+            while (j < switch_body_end) {
+                if (children[j]->type != AST_TOKEN) {
+                    j++;
+                    continue;
+                }
+                
+                Token *t = &children[j]->token;
+                
+                /* Track braces to avoid false positives in nested blocks */
+                if (t->type == TOKEN_PUNCTUATION) {
+                    if (token_text_equals(t, "{")) inner_brace_depth++;
+                    else if (token_text_equals(t, "}")) {
+                        if (inner_brace_depth > 0) inner_brace_depth--;
+                        else {
+                            case_body_end = j;
+                            break;
+                        }
+                    }
+                }
+                
+                /* Check for next case/default at same nesting level */
+                if (inner_brace_depth == 0 &&
+                    (t->type == TOKEN_KEYWORD || t->type == TOKEN_IDENTIFIER) &&
+                    (strcmp(t->text, "case") == 0 || strcmp(t->text, "default") == 0)) {
+                    case_body_end = j;
+                    break;
+                }
+                
+                j++;
+            }
+            
+            /* Now validate that the case body has explicit control flow */
+            int has_control_flow = 0;
+            for (j = case_body_start; j < case_body_end; j++) {
+                if (children[j]->type != AST_TOKEN) continue;
+                Token *t = &children[j]->token;
+                
+                /* Check for control flow keywords */
+                if ((t->type == TOKEN_KEYWORD || t->type == TOKEN_IDENTIFIER) &&
+                    (strcmp(t->text, "break") == 0 ||
+                     strcmp(t->text, "continue") == 0 ||
+                     strcmp(t->text, "return") == 0 ||
+                     strcmp(t->text, "goto") == 0 ||
+                     strcmp(t->text, "UNREACHABLE") == 0 ||
+                     strcmp(t->text, "TODO") == 0 ||
+                     strcmp(t->text, "FIXME") == 0)) {
+                    has_control_flow = 1;
+                    break;
+                }
+            }
+            
+            /* Report error if no control flow found */
+            if (!has_control_flow && case_body_end > case_body_start) {
+                /* Skip empty cases (allowed to fall through to next case) */
+                int is_empty = 1;
+                int non_whitespace_count = 0;
+                for (j = case_body_start; j < case_body_end; j++) {
+                    if (children[j]->type == AST_TOKEN) {
+                        Token *t = &children[j]->token;
+                        /* Consider only meaningful tokens */
+                        if (t->type != TOKEN_WHITESPACE && t->type != TOKEN_COMMENT &&
+                            !(t->type == TOKEN_PUNCTUATION && (token_text_equals(t, ";") || 
+                                                                token_text_equals(t, "{") ||
+                                                                token_text_equals(t, "}")))) {
+                            is_empty = 0;
+                            non_whitespace_count++;
+                        }
+                    }
+                }
+                
+                if (!is_empty && non_whitespace_count > 0) {
+                    char error_msg[512];
+                    snprintf(error_msg, sizeof(error_msg),
+                             "Switch case must have explicit control flow. "
+                             "Use 'break' to end case, 'continue' for fallthrough, "
+                             "or 'return'/'goto' for other control flow.");
+                    cz_error(g_filename, g_source, children[case_start]->token.line, error_msg);
+                }
+            }
+            
+            /* Skip to the end of this case to continue scanning */
+            i = case_body_end > 0 ? case_body_end - 1 : i;
+        }
+    }
+}
+
 /* Validate switch statement for exhaustiveness and default case */
 static void validate_switch_exhaustiveness(ASTNode **children, size_t count, size_t switch_pos) {
     /* Find the switch expression */
@@ -475,6 +643,7 @@ static void scan_switch_statements(ASTNode *ast) {
         /* Look for "switch" keyword */
         if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
             strcmp(token->text, "switch") == 0) {
+            validate_switch_case_control_flow(children, count, i);
             validate_switch_exhaustiveness(children, count, i);
         }
     }
@@ -558,6 +727,58 @@ static void strip_enum_prefixes(ASTNode *ast) {
                     }
                 }
             }
+        }
+    }
+}
+
+/* Transform continue in switch cases to fallthrough */
+static void transform_switch_continue_to_fallthrough(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    ASTNode **children = ast->children;
+    size_t count = ast->child_count;
+
+    /* Track if we're inside a switch (not inside a loop) */
+    int switch_depth = 0;
+    int loop_depth = 0;
+
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *token = &children[i]->token;
+
+        /* Track switch/loop depth */
+        if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER)) {
+            if (strcmp(token->text, "switch") == 0) {
+                switch_depth++;
+            } else if (strcmp(token->text, "for") == 0 ||
+                       strcmp(token->text, "while") == 0 ||
+                       strcmp(token->text, "do") == 0) {
+                loop_depth++;
+            } else if (strcmp(token->text, "continue") == 0) {
+                /* Only transform if we're in a switch but not in a loop */
+                if (switch_depth > 0 && loop_depth == 0) {
+                    /* Replace continue with __attribute__((fallthrough)) or comment */
+                    free(token->text);
+                    #ifdef __GNUC__
+                    token->text = strdup("__attribute__((fallthrough))");
+                    #else
+                    token->text = strdup("/* fallthrough */");
+                    #endif
+                    if (token->text) {
+                        token->length = strlen(token->text);
+                        token->type = TOKEN_COMMENT;
+                    }
+                }
+            }
+        }
+
+        /* Track closing braces to decrement depth */
+        if (token->type == TOKEN_PUNCTUATION && token_text_equals(token, "}")) {
+            /* Heuristic: decrement switch/loop depth (this is simplified) */
+            if (loop_depth > 0) loop_depth--;
+            else if (switch_depth > 0) switch_depth--;
         }
     }
 }
@@ -733,6 +954,9 @@ void transpiler_transform_enums(ASTNode *ast) {
 
     /* Strip enum prefixes from scoped case labels (EnumName.MEMBER -> MEMBER) */
     strip_enum_prefixes(ast);
+    
+    /* Transform continue in switch cases to fallthrough */
+    transform_switch_continue_to_fallthrough(ast);
     
     /* Insert default: cz_unreachable(""); into all switches without defaults */
     insert_default_cases(ast);
