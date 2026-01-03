@@ -9,6 +9,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "transpiler.h"
+#include "errors.h"
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -22,20 +23,20 @@ int main(int argc, char *argv[]) {
     /* Open input file */
     FILE *input = fopen(input_file, "r");
     if (!input) {
-        fprintf(stderr, "Error: Cannot open input file '%s'\n", input_file);
+        fprintf(stderr, "Error: " ERR_CANNOT_OPEN_INPUT_FILE "\n", input_file);
         return 1;
     }
 
     /* Read entire input file into memory */
     if (fseek(input, 0, SEEK_END) != 0) {
-        fprintf(stderr, "Error: Failed to seek input file\n");
+        fprintf(stderr, "Error: " ERR_FAILED_TO_SEEK_INPUT_FILE "\n");
         fclose(input);
         return 1;
     }
     
     long input_size = ftell(input);
     if (input_size < 0) {
-        fprintf(stderr, "Error: Failed to get input file size\n");
+        fprintf(stderr, "Error: " ERR_FAILED_TO_GET_INPUT_FILE_SIZE "\n");
         fclose(input);
         return 1;
     }
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
         if (output_file) {
             output = fopen(output_file, "w");
             if (!output) {
-                fprintf(stderr, "Error: Cannot open output file '%s'\n", output_file);
+                fprintf(stderr, "Error: " ERR_CANNOT_OPEN_OUTPUT_FILE "\n", output_file);
                 return 1;
             }
             fclose(output);
@@ -57,14 +58,14 @@ int main(int argc, char *argv[]) {
     }
     
     if (fseek(input, 0, SEEK_SET) != 0) {
-        fprintf(stderr, "Error: Failed to seek input file\n");
+        fprintf(stderr, "Error: " ERR_FAILED_TO_SEEK_INPUT_FILE "\n");
         fclose(input);
         return 1;
     }
 
     char *input_buffer = malloc(input_size + 1);
     if (!input_buffer) {
-        fprintf(stderr, "Error: Memory allocation failed\n");
+        fprintf(stderr, "Error: " ERR_MEMORY_ALLOCATION_FAILED "\n");
         fclose(input);
         return 1;
     }
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
     /* Parse input into AST */
     ASTNode *ast = parser_parse(&parser);
     if (!ast) {
-        fprintf(stderr, "Error: Failed to parse input\n");
+        fprintf(stderr, "Error: " ERR_FAILED_TO_PARSE_INPUT "\n");
         free(input_buffer);
         return 1;
     }
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
     if (output_file) {
         output = fopen(output_file, "w");
         if (!output) {
-            fprintf(stderr, "Error: Cannot open output file '%s'\n", output_file);
+            fprintf(stderr, "Error: " ERR_CANNOT_OPEN_OUTPUT_FILE "\n", output_file);
             ast_node_free(ast);
             free(input_buffer);
             return 1;

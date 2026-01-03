@@ -9,6 +9,8 @@
 
 #include "enums.h"
 #include "../transpiler.h"
+#include "../errors.h"
+#include "../warnings.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,8 +68,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 static void register_enum(const char *enum_name, EnumMember *members, int member_count) {
     if (g_enum_count >= MAX_ENUMS) {
         /* Warn about capacity limit - validation may be incomplete */
-        fprintf(stderr, "[CZAR] WARNING: Maximum number of tracked enums (%d) reached. "
-                "Exhaustiveness checking may be incomplete for enum '%s'.\n",
+        fprintf(stderr, "[CZAR] WARNING: " WARN_MAX_ENUM_TRACKING_LIMIT "\n",
                 MAX_ENUMS, enum_name);
         return;
     }
@@ -417,9 +418,7 @@ static void validate_switch_case_control_flow(ASTNode **children, size_t count, 
                 if (!is_empty && non_whitespace_count > 0) {
                     char error_msg[512];
                     snprintf(error_msg, sizeof(error_msg),
-                             "Switch case must have explicit control flow. "
-                             "Use 'break' to end case, 'continue' for fallthrough, "
-                             "or 'return'/'goto' for other control flow.");
+                             ERR_SWITCH_CASE_NO_CONTROL_FLOW);
                     cz_error(g_filename, g_source, children[case_start]->token.line, error_msg);
                 }
             }
@@ -554,8 +553,7 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
                             if (!is_scoped) {
                                 char warning_msg[512];
                                 snprintf(warning_msg, sizeof(warning_msg),
-                                         "Unscoped enum constant '%s' in switch. "
-                                         "Prefer scoped syntax: 'case %s.%s'",
+                                         WARN_UNSCOPED_ENUM_CONSTANT,
                                          case_label, enum_info->name, case_label);
                                 cz_warning(g_filename, g_source, 
                                           children[label_start_pos]->token.line, warning_msg);
@@ -574,16 +572,14 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
             /* ERROR: enum switch must have default case */
             char error_msg[512];
             snprintf(error_msg, sizeof(error_msg),
-                     "Switch on enum '%s' must have a default case. "
-                     "Add 'default: UNREACHABLE(\"\");' if all cases are covered.",
+                     ERR_ENUM_SWITCH_MISSING_DEFAULT,
                      enum_info->name);
             cz_error(g_filename, g_source, children[switch_pos]->token.line, error_msg);
         } else {
             /* WARNING: non-enum switch should have default case */
             char warning_msg[512];
             snprintf(warning_msg, sizeof(warning_msg),
-                     "Switch statement should have a default case. "
-                     "Consider adding 'default: UNREACHABLE(\"\");' or appropriate handling.");
+                     WARN_SWITCH_MISSING_DEFAULT);
             cz_warning(g_filename, g_source, children[switch_pos]->token.line, warning_msg);
         }
     }
@@ -595,8 +591,7 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
                 /* Missing case! */
                 char error_msg[1024];
                 snprintf(error_msg, sizeof(error_msg),
-                         "Non-exhaustive switch on enum '%s': missing case for '%s'. "
-                         "All enum values must be explicitly handled.",
+                         ERR_ENUM_SWITCH_NOT_EXHAUSTIVE,
                          enum_info->name, enum_info->members[k].name);
                 cz_error(g_filename, g_source, children[switch_pos]->token.line, error_msg);
             }

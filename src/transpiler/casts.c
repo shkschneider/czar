@@ -14,6 +14,8 @@
 
 #include "casts.h"
 #include "../transpiler.h"
+#include "../errors.h"
+#include "../warnings.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,8 +172,7 @@ static void check_c_style_casts(ASTNode **children, size_t count) {
                                 /* This is a C-style cast - ERROR! */
                                 char error_msg[512];
                                 snprintf(error_msg, sizeof(error_msg),
-                                         "C-style cast '(%s)' is unsafe and thus not allowed. "
-                                         "Use cast<%s>(value[, fallback]) instead.",
+                                         ERR_C_STYLE_CAST_NOT_ALLOWED,
                                          maybe_type->text, maybe_type->text);
                                 cz_error(g_filename, g_source, token->line, error_msg);
                             }
@@ -234,7 +235,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             if (!type_name) {
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
-                         "cast requires template syntax: cast<Type>(value)");
+                         ERR_CAST_REQUIRES_TEMPLATE_SYNTAX);
                 cz_error(g_filename, g_source, token->line, error_msg);
                 continue;
             }
@@ -247,7 +248,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
                 free(type_name);
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg),
-                         "cast requires function call syntax with parentheses");
+                         ERR_CAST_REQUIRES_PARENTHESES);
                 cz_error(g_filename, g_source, token->line, error_msg);
                 continue;
             }
@@ -277,7 +278,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             /* Validate argument count - 1 or 2 arguments allowed */
             if (arg_count < 1 || arg_count > 2) {
                 free(type_name);
-                cz_error(g_filename, g_source, token->line, "cast requires 1 or 2 arguments: cast<Type>(value[, fallback])");
+                cz_error(g_filename, g_source, token->line, ERR_CAST_INVALID_ARG_COUNT);
                 continue;
             }
 
@@ -285,8 +286,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
             if (arg_count == 1) {
                 char warning_msg[512];
                 snprintf(warning_msg, sizeof(warning_msg),
-                         "cast<%s>(value) without fallback. "
-                         "Consider the safer cast<%s>(value, fallback).",
+                         WARN_CAST_WITHOUT_FALLBACK,
                          type_name, type_name);
                 cz_warning(g_filename, g_source, token->line, warning_msg);
             }
