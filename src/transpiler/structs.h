@@ -11,3 +11,6 @@
 
 /* Transform named struct declarations into typedef structs */
 void transpiler_transform_structs(ASTNode *ast);
+
+/* Transform struct initialization syntax */
+void transpiler_transform_struct_init(ASTNode *ast);

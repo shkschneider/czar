@@ -122,6 +122,9 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
 
+    /* Transform struct initialization syntax */
+    transpiler_transform_struct_init(transpiler->ast);
+
     /* Transform struct methods (before autodereference) */
     transpiler_transform_methods(transpiler->ast);
 

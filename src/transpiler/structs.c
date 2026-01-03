@@ -203,3 +203,196 @@ void transpiler_transform_structs(ASTNode *ast) {
         }
     }
 }
+
+/* Transform struct initialization syntax
+ * Handles:
+ * - MyStruct s = {} -> MyStruct s = {0}
+ * - MyStruct s = MyStruct {} -> MyStruct s = {0}
+ * - MyStruct s = MyStruct {0} -> MyStruct s = {0}
+ */
+void transpiler_transform_struct_init(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    /* Look for pattern: = { or = StructName { */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        if (i + 2 >= ast->child_count) {
+            continue;
+        }
+
+        ASTNode *n1 = ast->children[i];
+        if (n1->type != AST_TOKEN || n1->token.type != TOKEN_OPERATOR ||
+            !n1->token.text || strcmp(n1->token.text, "=") != 0) {
+            continue;
+        }
+
+        /* Found =, now look for what comes after (skipping whitespace) */
+        size_t next_idx = i + 1;
+        while (next_idx < ast->child_count && 
+               ast->children[next_idx]->type == AST_TOKEN &&
+               ast->children[next_idx]->token.type == TOKEN_WHITESPACE) {
+            next_idx++;
+        }
+
+        if (next_idx >= ast->child_count) {
+            continue;
+        }
+
+        ASTNode *next = ast->children[next_idx];
+        if (next->type != AST_TOKEN) {
+            continue;
+        }
+
+        /* Case 1: = {} (empty braces) */
+        if (next->token.type == TOKEN_PUNCTUATION && next->token.text &&
+            strcmp(next->token.text, "{") == 0) {
+            /* Check if followed by } */
+            size_t close_idx = next_idx + 1;
+            while (close_idx < ast->child_count && 
+                   ast->children[close_idx]->type == AST_TOKEN &&
+                   ast->children[close_idx]->token.type == TOKEN_WHITESPACE) {
+                close_idx++;
+            }
+
+            if (close_idx < ast->child_count && 
+                ast->children[close_idx]->type == AST_TOKEN &&
+                ast->children[close_idx]->token.type == TOKEN_PUNCTUATION &&
+                ast->children[close_idx]->token.text &&
+                strcmp(ast->children[close_idx]->token.text, "}") == 0) {
+                /* Insert 0 between { and } */
+                ASTNode *zero_node = malloc(sizeof(ASTNode));
+                if (zero_node) {
+                    zero_node->type = AST_TOKEN;
+                    zero_node->token.type = TOKEN_NUMBER;
+                    zero_node->token.text = strdup("0");
+                    zero_node->token.length = 1;
+                    zero_node->token.line = next->token.line;
+                    zero_node->token.column = 0;
+                    zero_node->children = NULL;
+                    zero_node->child_count = 0;
+                    zero_node->child_capacity = 0;
+
+                    if (zero_node->token.text) {
+                        /* Insert zero_node between { and } */
+                        size_t insert_pos = next_idx + 1;
+                        size_t new_count = ast->child_count + 1;
+
+                        if (new_count > ast->child_capacity) {
+                            size_t new_capacity = new_count * 2;
+                            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                            if (new_children) {
+                                ast->children = new_children;
+                                ast->child_capacity = new_capacity;
+                            } else {
+                                free(zero_node->token.text);
+                                free(zero_node);
+                                continue;
+                            }
+                        }
+
+                        /* Shift elements */
+                        for (size_t j = ast->child_count; j > insert_pos; j--) {
+                            ast->children[j] = ast->children[j - 1];
+                        }
+
+                        ast->children[insert_pos] = zero_node;
+                        ast->child_count++;
+                    } else {
+                        free(zero_node);
+                    }
+                }
+            }
+        }
+        /* Case 2: = StructName { ... } */
+        else if (next->token.type == TOKEN_IDENTIFIER) {
+            /* Look for { after the identifier */
+            size_t brace_idx = next_idx + 1;
+            while (brace_idx < ast->child_count && 
+                   ast->children[brace_idx]->type == AST_TOKEN &&
+                   ast->children[brace_idx]->token.type == TOKEN_WHITESPACE) {
+                brace_idx++;
+            }
+
+            if (brace_idx < ast->child_count && 
+                ast->children[brace_idx]->type == AST_TOKEN &&
+                ast->children[brace_idx]->token.type == TOKEN_PUNCTUATION &&
+                ast->children[brace_idx]->token.text &&
+                strcmp(ast->children[brace_idx]->token.text, "{") == 0) {
+                
+                /* This is StructName { ... } pattern */
+                /* Check what's inside the braces */
+                size_t inside_idx = brace_idx + 1;
+                while (inside_idx < ast->child_count && 
+                       ast->children[inside_idx]->type == AST_TOKEN &&
+                       ast->children[inside_idx]->token.type == TOKEN_WHITESPACE) {
+                    inside_idx++;
+                }
+
+                /* Check if empty */
+                int is_empty = 0;
+                
+                if (inside_idx < ast->child_count && 
+                    ast->children[inside_idx]->type == AST_TOKEN) {
+                    if (ast->children[inside_idx]->token.type == TOKEN_PUNCTUATION &&
+                        ast->children[inside_idx]->token.text &&
+                        strcmp(ast->children[inside_idx]->token.text, "}") == 0) {
+                        is_empty = 1;
+                    }
+                }
+
+                /* Transform by removing the struct name */
+                /* = StructName { -> = { */
+                free(next->token.text);
+                next->token.text = strdup("");
+                next->token.length = 0;
+
+                /* If empty, add 0 */
+                if (is_empty) {
+                    
+                    ASTNode *zero_node = malloc(sizeof(ASTNode));
+                    if (zero_node) {
+                        zero_node->type = AST_TOKEN;
+                        zero_node->token.type = TOKEN_NUMBER;
+                        zero_node->token.text = strdup("0");
+                        zero_node->token.length = 1;
+                        zero_node->token.line = ast->children[brace_idx]->token.line;
+                        zero_node->token.column = 0;
+                        zero_node->children = NULL;
+                        zero_node->child_count = 0;
+                        zero_node->child_capacity = 0;
+
+                        if (zero_node->token.text) {
+                            /* Insert before } */
+                            size_t insert_pos = brace_idx + 1;
+                            size_t new_count = ast->child_count + 1;
+
+                            if (new_count > ast->child_capacity) {
+                                size_t new_capacity = new_count * 2;
+                                ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                                if (new_children) {
+                                    ast->children = new_children;
+                                    ast->child_capacity = new_capacity;
+                                } else {
+                                    free(zero_node->token.text);
+                                    free(zero_node);
+                                    continue;
+                                }
+                            }
+
+                            /* Shift elements */
+                            for (size_t j = ast->child_count; j > insert_pos; j--) {
+                                ast->children[j] = ast->children[j - 1];
+                            }
+
+                            ast->children[insert_pos] = zero_node;
+                            ast->child_count++;
+                        } else {
+                            free(zero_node);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

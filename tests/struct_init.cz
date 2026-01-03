@@ -1,0 +1,64 @@
+#include <stdint.h>
+#include <stdio.h>
+
+/*
+ * Test struct initialization syntax
+ * CZar supports convenient struct initialization:
+ *   MyStruct s = {}          -> MyStruct s = {0} (zero-initialized)
+ *   MyStruct s = MyStruct {} -> MyStruct s = {0} (constructor-like)
+ *   MyStruct s = MyStruct {0} -> MyStruct s = {0} (explicit zero)
+ */
+
+struct Point {
+    i32 x;
+    i32 y;
+};
+
+struct Color {
+    u8 r;
+    u8 g;
+    u8 b;
+};
+
+struct Vec3 {
+    f32 x;
+    f32 y;
+    f32 z;
+};
+
+int main(void) {
+    /* Test 1: Empty brace initialization {} */
+    Point p1 = {};
+    ASSERT(p1.x == 0);
+    ASSERT(p1.y == 0);
+    printf("Test 1 passed: Empty brace initialization {}\n");
+
+    /* Test 2: Constructor-like empty initialization StructName {} */
+    Color c1 = Color {};
+    ASSERT(c1.r == 0);
+    ASSERT(c1.g == 0);
+    ASSERT(c1.b == 0);
+    printf("Test 2 passed: Constructor-like empty initialization StructName {}\n");
+
+    /* Test 3: Constructor-like zero initialization StructName {0} */
+    Vec3 v1 = Vec3 {0};
+    ASSERT(v1.x == 0.0f);
+    ASSERT(v1.y == 0.0f);
+    ASSERT(v1.z == 0.0f);
+    printf("Test 3 passed: Constructor-like zero initialization StructName {0}\n");
+
+    /* Test 4: Traditional zero initialization {0} */
+    Point p2 = {0};
+    ASSERT(p2.x == 0);
+    ASSERT(p2.y == 0);
+    printf("Test 4 passed: Traditional zero initialization {0}\n");
+
+    /* Test 5: Mixed - ensure we can still initialize with values */
+    Point p3 = {10, 20};
+    ASSERT(p3.x == 10);
+    ASSERT(p3.y == 20);
+    printf("Test 5 passed: Mixed initialization with values\n");
+
+    printf("All struct initialization tests passed!\n");
+    return 0;
+}
