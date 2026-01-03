@@ -11,6 +11,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "methods.h"
+#include "../warnings.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -42,7 +43,7 @@ static size_t struct_type_count = 0;
 /* Add a method to tracking */
 static void track_method(const char *struct_name, const char *method_name) {
     if (method_count >= MAX_METHODS) {
-        fprintf(stderr, "Warning: Maximum method tracking limit (%d) reached\n", MAX_METHODS);
+        fprintf(stderr, "Warning: " WARN_MAX_METHOD_TRACKING_LIMIT "\n", MAX_METHODS);
         return;
     }
     
@@ -85,7 +86,7 @@ static int is_tracked_method(const char *struct_name, const char *method_name) {
 /* Add a struct type to tracking */
 static void track_struct_type(const char *name) {
     if (struct_type_count >= MAX_STRUCT_TYPES) {
-        fprintf(stderr, "Warning: Maximum struct type tracking limit (%d) reached\n", MAX_STRUCT_TYPES);
+        fprintf(stderr, "Warning: " WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT "\n", MAX_STRUCT_TYPES);
         return;
     }
     
