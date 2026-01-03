@@ -65,7 +65,11 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 /* Register an enum declaration */
 static void register_enum(const char *enum_name, EnumMember *members, int member_count) {
     if (g_enum_count >= MAX_ENUMS) {
-        return; /* Silently ignore if we're at capacity */
+        /* Warn about capacity limit - validation may be incomplete */
+        fprintf(stderr, "[CZAR] WARNING: Maximum number of tracked enums (%d) reached. "
+                "Exhaustiveness checking may be incomplete for enum '%s'.\n",
+                MAX_ENUMS, enum_name);
+        return;
     }
 
     /* Check if enum already exists */
@@ -78,10 +82,22 @@ static void register_enum(const char *enum_name, EnumMember *members, int member
 
     EnumInfo *info = &g_enums[g_enum_count];
     info->name = strdup(enum_name);
+    if (!info->name) {
+        /* Memory allocation failed, cannot register enum */
+        return;
+    }
     info->member_count = member_count;
 
     for (int i = 0; i < member_count && i < MAX_ENUM_MEMBERS; i++) {
         info->members[i].name = strdup(members[i].name);
+        if (!info->members[i].name) {
+            /* Memory allocation failed, clean up and return */
+            for (int j = 0; j < i; j++) {
+                free(info->members[j].name);
+            }
+            free(info->name);
+            return;
+        }
     }
 
     g_enum_count++;
@@ -179,7 +195,12 @@ static void parse_enum_declaration(ASTNode **children, size_t count, size_t enum
 
 /* Check if a variable is of enum type */
 static EnumInfo *get_variable_enum_type(ASTNode **children, size_t count, const char *var_name) {
-    /* Search backwards for variable declaration */
+    /* Search forward through AST for variable declaration
+     * Note: This implementation has limitations - it may not detect:
+     * - typedef'd enum types
+     * - enum variables passed as function parameters
+     * - enum members of structs/unions
+     */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         Token *tok = &children[i]->token;
