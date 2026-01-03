@@ -18,8 +18,9 @@ const char* color_name(enum Color c) {
         return "Green";
     case Color.COLOR_BLUE:
         return "Blue";
+    default:
+        UNREACHABLE("Invalid color value");
     }
-    UNREACHABLE("Invalid color value");
 }
 
 enum Status {
@@ -36,8 +37,9 @@ i32 status_code(enum Status s) {
         return 1;
     case Status.STATUS_PENDING:
         return 2;
+    default:
+        UNREACHABLE("Invalid status value");
     }
-    UNREACHABLE("Invalid status value");
 }
 
 int main(void) {

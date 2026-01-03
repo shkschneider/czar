@@ -26,8 +26,8 @@ const char* direction_name(enum Direction dir) {
     case DIR_SOUTH: return "South";
     case DIR_EAST: return "East";
     case DIR_WEST: return "West";
+    default: UNREACHABLE("Invalid direction");
     }
-    UNREACHABLE("Invalid direction");
 }
 
 /* Function with exhaustive switch on ErrorCode */
@@ -39,8 +39,8 @@ const char* error_message(enum ErrorCode code) {
         return "Not Found";
     case ERR_SERVER_ERROR:
         return "Internal Server Error";
+    default: UNREACHABLE("Invalid error code");
     }
-    UNREACHABLE("Invalid error code");
 }
 
 /* Function demonstrating that switches on non-enums don't require exhaustiveness */
