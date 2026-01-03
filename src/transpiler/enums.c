@@ -584,27 +584,6 @@ static ASTNode *create_token_node(TokenType type, const char *text, int line, in
     return node;
 }
 
-/* Helper to add a child to an AST node */
-static int ast_add_child(ASTNode *parent, ASTNode *child) {
-    if (!parent || !child) {
-        return 0;
-    }
-    
-    /* Grow children array if needed */
-    if (parent->child_count >= parent->child_capacity) {
-        size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
-        ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
-        if (!new_children) {
-            return 0;
-        }
-        parent->children = new_children;
-        parent->child_capacity = new_capacity;
-    }
-    
-    parent->children[parent->child_count++] = child;
-    return 1;
-}
-
 /* Helper to insert a child at a specific position in an AST node */
 static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
     if (!parent || !child || position > parent->child_count) {
