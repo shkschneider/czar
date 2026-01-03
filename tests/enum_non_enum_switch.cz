@@ -1,0 +1,23 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+
+/* Test that non-enum switches work normally */
+
+const char* number_name(i32 n) {
+    switch (n) {
+    case 0:
+        return "Zero";
+    case 1:
+        return "One";
+    /* No exhaustiveness check for int types */
+    default:
+        return "Other";
+    }
+}
+
+int main(void) {
+    printf("%s\n", number_name(0));
+    printf("%s\n", number_name(5));
+    return 0;
+}

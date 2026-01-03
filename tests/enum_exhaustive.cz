@@ -1,0 +1,51 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+
+/* Test enum exhaustiveness checking */
+
+enum Color {
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_BLUE
+};
+
+const char* color_name(enum Color c) {
+    switch (c) {
+    case COLOR_RED:
+        return "Red";
+    case COLOR_GREEN:
+        return "Green";
+    case COLOR_BLUE:
+        return "Blue";
+    }
+    UNREACHABLE("Invalid color value");
+}
+
+enum Status {
+    STATUS_OK,
+    STATUS_ERROR,
+    STATUS_PENDING
+};
+
+i32 status_code(enum Status s) {
+    switch (s) {
+    case STATUS_OK:
+        return 0;
+    case STATUS_ERROR:
+        return 1;
+    case STATUS_PENDING:
+        return 2;
+    }
+    UNREACHABLE("Invalid status value");
+}
+
+int main(void) {
+    enum Color c = COLOR_RED;
+    printf("Color: %s\n", color_name(c));
+    
+    enum Status s = STATUS_OK;
+    printf("Status code: %d\n", status_code(s));
+    
+    return 0;
+}

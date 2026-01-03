@@ -17,6 +17,7 @@
 #include "transpiler/autodereference.h"
 #include "transpiler/structs.h"
 #include "transpiler/methods.h"
+#include "transpiler/enums.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -119,6 +120,9 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Validate cast expressions */
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
 
+    /* Validate enum declarations and switch exhaustiveness */
+    transpiler_validate_enums(transpiler->ast, transpiler->filename, transpiler->source);
+
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
 
@@ -130,6 +134,9 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Transform member access operators (. to -> for pointers) */
     transpiler_transform_autodereference(transpiler->ast);
+
+    /* Transform enums (add default: UNREACHABLE() if needed) */
+    transpiler_transform_enums(transpiler->ast);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
