@@ -35,3 +35,4 @@
 #define ERR_SWITCH_CASE_NO_CONTROL_FLOW "Switch case must have explicit control flow. Use 'break' to end case, 'continue' for fallthrough, or 'return'/'goto' for other control flow."
 #define ERR_ENUM_SWITCH_MISSING_DEFAULT "Switch on enum '%s' must have a default case. Add 'default: UNREACHABLE()' if all cases are covered."
 #define ERR_ENUM_SWITCH_NOT_EXHAUSTIVE "Non-exhaustive switch on enum '%s': missing case for '%s'. All enum values must be explicitly handled."
+#define ERR_ENUM_VALUE_NOT_UPPERCASE "Enum value '%s' in enum '%s' must be ALL_UPPERCASE (e.g., %s)"

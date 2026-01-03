@@ -23,6 +23,7 @@
 /* Structure to hold enum member information */
 typedef struct {
     char *name;
+    char *original_name;  /* Original name from source */
 } EnumMember;
 
 /* Structure to hold enum information */
@@ -64,6 +65,87 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
     return i;
 }
 
+/* Check if a string is all uppercase (allows underscores and digits) */
+static int is_all_uppercase(const char *str) {
+    if (!str || !*str) {
+        return 0;
+    }
+    
+    for (const char *p = str; *p; p++) {
+        if (isalpha((unsigned char)*p) && !isupper((unsigned char)*p)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/* Convert string to uppercase */
+static char *to_uppercase(const char *str) {
+    if (!str) {
+        return NULL;
+    }
+    
+    char *result = strdup(str);
+    if (!result) {
+        return NULL;
+    }
+    
+    for (char *p = result; *p; p++) {
+        *p = toupper((unsigned char)*p);
+    }
+    return result;
+}
+
+/* Check if enum value already has the enum prefix */
+static int has_enum_prefix(const char *enum_name, const char *value_name) {
+    if (!enum_name || !value_name) {
+        return 0;
+    }
+    
+    /* Convert enum name to uppercase for comparison */
+    char *enum_upper = to_uppercase(enum_name);
+    if (!enum_upper) {
+        return 0;
+    }
+    
+    size_t prefix_len = strlen(enum_upper);
+    int has_prefix = (strncmp(value_name, enum_upper, prefix_len) == 0 &&
+                      value_name[prefix_len] == '_');
+    
+    free(enum_upper);
+    return has_prefix;
+}
+
+/* Generate prefixed enum value name (e.g., Color + RED -> COLOR_RED) */
+static char *generate_prefixed_name(const char *enum_name, const char *value_name) {
+    if (!enum_name || !value_name) {
+        return NULL;
+    }
+    
+    /* If already prefixed, return copy of original */
+    if (has_enum_prefix(enum_name, value_name)) {
+        return strdup(value_name);
+    }
+    
+    /* Convert enum name to uppercase */
+    char *enum_upper = to_uppercase(enum_name);
+    if (!enum_upper) {
+        return NULL;
+    }
+    
+    /* Allocate: ENUMNAME_ + value_name + \0 */
+    size_t len = strlen(enum_upper) + 1 + strlen(value_name) + 1;
+    char *result = malloc(len);
+    if (!result) {
+        free(enum_upper);
+        return NULL;
+    }
+    
+    snprintf(result, len, "%s_%s", enum_upper, value_name);
+    free(enum_upper);
+    return result;
+}
+
 /* Register an enum declaration */
 static void register_enum(const char *enum_name, EnumMember *members, int member_count) {
     if (g_enum_count >= MAX_ENUMS) {
@@ -91,10 +173,13 @@ static void register_enum(const char *enum_name, EnumMember *members, int member
 
     for (int i = 0; i < member_count && i < MAX_ENUM_MEMBERS; i++) {
         info->members[i].name = strdup(members[i].name);
+        info->members[i].original_name = members[i].original_name ? 
+                                          strdup(members[i].original_name) : NULL;
         if (!info->members[i].name) {
             /* Memory allocation failed, clean up and return */
             for (int j = 0; j < i; j++) {
                 free(info->members[j].name);
+                free(info->members[j].original_name);
             }
             free(info->name);
             return;
@@ -154,7 +239,32 @@ static void parse_enum_declaration(ASTNode **children, size_t count, size_t enum
         /* Get member name */
         if (children[i]->type == AST_TOKEN &&
             children[i]->token.type == TOKEN_IDENTIFIER) {
-            members[member_count].name = children[i]->token.text;
+            const char *original_name = children[i]->token.text;
+            Token *member_token = &children[i]->token;
+            
+            /* Validate that enum value is ALL_UPPERCASE */
+            if (enum_name && !is_all_uppercase(original_name)) {
+                char error_msg[512];
+                char *uppercase_suggestion = to_uppercase(original_name);
+                snprintf(error_msg, sizeof(error_msg),
+                         ERR_ENUM_VALUE_NOT_UPPERCASE,
+                         original_name, enum_name,
+                         uppercase_suggestion ? uppercase_suggestion : "UPPERCASE_VERSION");
+                free(uppercase_suggestion);
+                cz_error(g_filename, g_source, member_token->line, error_msg);
+            }
+            
+            /* Store original name and generate prefixed name */
+            members[member_count].original_name = (char *)original_name;
+            if (enum_name) {
+                members[member_count].name = generate_prefixed_name(enum_name, original_name);
+                if (!members[member_count].name) {
+                    /* Memory allocation failed, use original */
+                    members[member_count].name = (char *)original_name;
+                }
+            } else {
+                members[member_count].name = (char *)original_name;
+            }
             member_count++;
 
             i = skip_whitespace(children, count, i + 1);
@@ -191,6 +301,13 @@ static void parse_enum_declaration(ASTNode **children, size_t count, size_t enum
     /* Register the enum if it has a name and members */
     if (enum_name && member_count > 0) {
         register_enum(enum_name, members, member_count);
+    }
+    
+    /* Clean up dynamically allocated prefixed names */
+    for (int j = 0; j < member_count; j++) {
+        if (members[j].name != members[j].original_name) {
+            free(members[j].name);
+        }
     }
 }
 
@@ -546,7 +663,11 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
                 /* If this is an enum switch, mark member as covered and warn if unscoped */
                 if (enum_info) {
                     for (int k = 0; k < enum_info->member_count; k++) {
-                        if (strcmp(enum_info->members[k].name, case_label) == 0) {
+                        /* Compare against original name since validation happens before transformation */
+                        const char *member_name_to_check = enum_info->members[k].original_name ?
+                                                            enum_info->members[k].original_name :
+                                                            enum_info->members[k].name;
+                        if (strcmp(member_name_to_check, case_label) == 0) {
                             covered[k] = 1;
                             
                             /* Warn if using unscoped enum constant */
@@ -588,11 +709,14 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
     if (enum_info && has_default) {
         for (int k = 0; k < enum_info->member_count; k++) {
             if (!covered[k]) {
-                /* Missing case! */
+                /* Missing case! Use original name for error message */
+                const char *member_name = enum_info->members[k].original_name ?
+                                          enum_info->members[k].original_name :
+                                          enum_info->members[k].name;
                 char error_msg[1024];
                 snprintf(error_msg, sizeof(error_msg),
                          ERR_ENUM_SWITCH_NOT_EXHAUSTIVE,
-                         enum_info->name, enum_info->members[k].name);
+                         enum_info->name, member_name);
                 cz_error(g_filename, g_source, children[switch_pos]->token.line, error_msg);
             }
         }
@@ -679,46 +803,58 @@ static void strip_enum_prefixes(ASTNode *ast) {
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
 
+    /* Strip EnumName. prefix from all scoped enum references */
     for (size_t i = 0; i < count; i++) {
-        if (children[i]->type != AST_TOKEN) continue;
-        Token *token = &children[i]->token;
-
-        /* Look for "case" keyword */
-        if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
-            strcmp(token->text, "case") == 0) {
+        if (children[i]->type != AST_TOKEN ||
+            children[i]->token.type != TOKEN_IDENTIFIER) {
+            continue;
+        }
+        
+        const char *identifier = children[i]->token.text;
+        
+        /* Check if this identifier is a registered enum name */
+        EnumInfo *enum_info = find_enum(identifier);
+        if (!enum_info) {
+            /* Not an enum, skip */
+            continue;
+        }
+        
+        /* Check if this is EnumName followed by . and MEMBER */
+        size_t j = skip_whitespace(children, count, i + 1);
+        if (j < count && children[j]->type == AST_TOKEN &&
+            children[j]->token.type == TOKEN_OPERATOR &&
+            token_text_equals(&children[j]->token, ".")) {
             
-            size_t j = skip_whitespace(children, count, i + 1);
-            
-            /* Check for EnumName.MEMBER pattern */
-            if (j < count && children[j]->type == AST_TOKEN &&
-                children[j]->token.type == TOKEN_IDENTIFIER) {
+            size_t k = skip_whitespace(children, count, j + 1);
+            if (k < count && children[k]->type == AST_TOKEN &&
+                children[k]->token.type == TOKEN_IDENTIFIER) {
                 
-                size_t k = skip_whitespace(children, count, j + 1);
+                const char *member_name = children[k]->token.text;
                 
-                /* If followed by . and another identifier, remove the prefix */
-                if (k < count && children[k]->type == AST_TOKEN &&
-                    children[k]->token.type == TOKEN_OPERATOR &&
-                    token_text_equals(&children[k]->token, ".")) {
+                /* Verify this is actually an enum member */
+                int is_member = 0;
+                for (int m = 0; m < enum_info->member_count; m++) {
+                    if (enum_info->members[m].original_name &&
+                        strcmp(enum_info->members[m].original_name, member_name) == 0) {
+                        is_member = 1;
+                        break;
+                    }
+                }
+                
+                if (is_member) {
+                    /* This is EnumName.MEMBER pattern - remove EnumName and dot */
+                    /* Replace EnumName with empty string */
+                    free(children[i]->token.text);
+                    children[i]->token.text = strdup("");
+                    if (children[i]->token.text) {
+                        children[i]->token.length = 0;
+                    }
                     
-                    size_t m = skip_whitespace(children, count, k + 1);
-                    
-                    if (m < count && children[m]->type == AST_TOKEN &&
-                        children[m]->token.type == TOKEN_IDENTIFIER) {
-                        
-                        /* Remove the enum prefix and dot by making them whitespace */
-                        /* Replace EnumName with empty string */
-                        free(children[j]->token.text);
-                        children[j]->token.text = strdup("");
-                        if (children[j]->token.text) {
-                            children[j]->token.length = 0;
-                        }
-                        
-                        /* Replace . with empty string */
-                        free(children[k]->token.text);
-                        children[k]->token.text = strdup("");
-                        if (children[k]->token.text) {
-                            children[k]->token.length = 0;
-                        }
+                    /* Replace . with empty string */
+                    free(children[j]->token.text);
+                    children[j]->token.text = strdup("");
+                    if (children[j]->token.text) {
+                        children[j]->token.length = 0;
                     }
                 }
             }
@@ -941,6 +1077,149 @@ static void insert_default_cases(ASTNode *ast) {
     }
 }
 
+/* Prefix enum members in declarations and update all references */
+static void prefix_enum_members(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+    
+    ASTNode **children = ast->children;
+    size_t count = ast->child_count;
+    
+    /* First pass: Transform enum declarations to use prefixed names */
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) {
+            continue;
+        }
+        
+        Token *token = &children[i]->token;
+        
+        /* Look for enum keyword */
+        if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
+            token_text_equals(token, "enum")) {
+            
+            /* Skip to get enum name */
+            size_t j = skip_whitespace(children, count, i + 1);
+            if (j >= count || children[j]->type != AST_TOKEN ||
+                children[j]->token.type != TOKEN_IDENTIFIER) {
+                continue;
+            }
+            
+            const char *enum_name = children[j]->token.text;
+            EnumInfo *enum_info = find_enum(enum_name);
+            if (!enum_info) {
+                continue;
+            }
+            
+            /* Find opening brace */
+            j = skip_whitespace(children, count, j + 1);
+            if (j >= count || children[j]->type != AST_TOKEN ||
+                children[j]->token.type != TOKEN_PUNCTUATION ||
+                !token_text_equals(&children[j]->token, "{")) {
+                continue;
+            }
+            j = skip_whitespace(children, count, j + 1);
+            
+            /* Replace member names with prefixed versions */
+            int member_idx = 0;
+            while (j < count && member_idx < enum_info->member_count) {
+                /* Check for closing brace */
+                if (children[j]->type == AST_TOKEN &&
+                    children[j]->token.type == TOKEN_PUNCTUATION &&
+                    token_text_equals(&children[j]->token, "}")) {
+                    break;
+                }
+                
+                /* Check if this is a member name */
+                if (children[j]->type == AST_TOKEN &&
+                    children[j]->token.type == TOKEN_IDENTIFIER) {
+                    
+                    /* Check if this matches the original member name */
+                    if (enum_info->members[member_idx].original_name &&
+                        strcmp(children[j]->token.text, enum_info->members[member_idx].original_name) == 0) {
+                        
+                        /* Replace with prefixed name */
+                        free(children[j]->token.text);
+                        children[j]->token.text = strdup(enum_info->members[member_idx].name);
+                        children[j]->token.length = strlen(enum_info->members[member_idx].name);
+                        member_idx++;
+                    }
+                }
+                j++;
+            }
+        }
+    }
+    
+    /* Second pass: Update all references to enum members */
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN ||
+            children[i]->token.type != TOKEN_IDENTIFIER) {
+            continue;
+        }
+        
+        const char *identifier = children[i]->token.text;
+        
+        /* Check all registered enums to see if this is a member */
+        for (int e = 0; e < g_enum_count; e++) {
+            EnumInfo *enum_info = &g_enums[e];
+            for (int m = 0; m < enum_info->member_count; m++) {
+                if (enum_info->members[m].original_name &&
+                    strcmp(identifier, enum_info->members[m].original_name) == 0) {
+                    
+                    /* Check if this is not already in the enum declaration
+                     * (we don't want to replace it twice) */
+                    int in_enum_decl = 0;
+                    
+                    /* Look backwards for enum keyword */
+                    for (size_t k = i; k > 0 && k > i - 20; k--) {
+                        if (children[k]->type == AST_TOKEN &&
+                            (children[k]->token.type == TOKEN_KEYWORD ||
+                             children[k]->token.type == TOKEN_IDENTIFIER) &&
+                            token_text_equals(&children[k]->token, "enum")) {
+                            
+                            /* Check if this enum matches */
+                            size_t name_idx = skip_whitespace(children, count, k + 1);
+                            if (name_idx < count && children[name_idx]->type == AST_TOKEN &&
+                                strcmp(children[name_idx]->token.text, enum_info->name) == 0) {
+                                /* Look for opening brace */
+                                size_t brace_idx = skip_whitespace(children, count, name_idx + 1);
+                                if (brace_idx < count && children[brace_idx]->type == AST_TOKEN &&
+                                    token_text_equals(&children[brace_idx]->token, "{")) {
+                                    /* Find closing brace */
+                                    size_t close_idx = brace_idx + 1;
+                                    int depth = 1;
+                                    while (close_idx < count && depth > 0) {
+                                        if (children[close_idx]->type == AST_TOKEN &&
+                                            children[close_idx]->token.type == TOKEN_PUNCTUATION) {
+                                            if (token_text_equals(&children[close_idx]->token, "{")) depth++;
+                                            else if (token_text_equals(&children[close_idx]->token, "}")) depth--;
+                                        }
+                                        close_idx++;
+                                    }
+                                    /* Check if current position is within enum declaration */
+                                    if (i > brace_idx && i < close_idx) {
+                                        in_enum_decl = 1;
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (!in_enum_decl) {
+                        /* Replace with prefixed name */
+                        free(children[i]->token.text);
+                        children[i]->token.text = strdup(enum_info->members[m].name);
+                        children[i]->token.length = strlen(enum_info->members[m].name);
+                    }
+                    goto next_identifier;
+                }
+            }
+        }
+        next_identifier:;
+    }
+}
+
 /* Transform switch statements on enums to add default: UNREACHABLE() if missing */
 void transpiler_transform_enums(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
@@ -949,6 +1228,9 @@ void transpiler_transform_enums(ASTNode *ast) {
 
     /* Strip enum prefixes from scoped case labels (EnumName.MEMBER -> MEMBER) */
     strip_enum_prefixes(ast);
+    
+    /* Prefix enum members in declarations and update all references */
+    prefix_enum_members(ast);
     
     /* Transform continue in switch cases to fallthrough */
     transform_switch_continue_to_fallthrough(ast);
