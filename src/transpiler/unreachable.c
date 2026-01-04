@@ -13,24 +13,6 @@
 #include <string.h>
 #include <stdio.h>
 
-/* Helper to create a token node */
-static ASTNode *create_token_node(TokenType type, const char *text, int line, int column) {
-    ASTNode *node = malloc(sizeof(ASTNode));
-    if (!node) return NULL;
-    
-    node->type = AST_TOKEN;
-    node->token.type = type;
-    node->token.text = strdup(text);
-    node->token.length = strlen(text);
-    node->token.line = line;
-    node->token.column = column;
-    node->children = NULL;
-    node->child_count = 0;
-    node->child_capacity = 0;
-    
-    return node;
-}
-
 /* Check if token text matches */
 static int token_text_equals(Token *token, const char *text) {
     if (!token || !token->text || !text) return 0;
@@ -159,7 +141,6 @@ void transpiler_expand_unreachable(ASTNode *ast, const char *filename) {
         
         /* Get location info from the original UNREACHABLE token */
         int line = tok->line;
-        int column = tok->column;
         const char *func_name = find_function_name(ast->children, ast->child_count, i);
         if (!func_name) func_name = "<unknown>";
         
