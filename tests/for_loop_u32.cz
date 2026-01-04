@@ -1,0 +1,14 @@
+#include <stdio.h>
+
+int main(int argc, char **argv) {
+    for (u32 i = 1; i < 10 && i < cast<u32>(argc); i++) {
+        printf("arg %u\n", i);
+    }
+    
+    for (i32 j = -5; j < 5; j++) {
+        printf("%d ", j);
+    }
+    printf("\n");
+    
+    return 0;
+}
