@@ -43,8 +43,8 @@ int main(void) {
 
     /* Test 1: Auto-dereference for writing */
     modify_point(&pt);
-    ASSERT(pt.x == 100);
-    ASSERT(pt.y == 200);
+    cz_assert(pt.x == 100);
+    cz_assert(pt.y == 200);
     printf("Test 1 passed: Auto-dereference for writing\n");
 
     /* Test 2: Regular struct access (no pointer) */
@@ -52,15 +52,15 @@ int main(void) {
 
     /* Test 3: Old C syntax still works */
     reset_point(&pt);
-    ASSERT(pt.x == 0);
-    ASSERT(pt.y == 0);
+    cz_assert(pt.x == 0);
+    cz_assert(pt.y == 0);
     printf("Test 3 passed: Old C syntax still works\n");
 
     /* Test 4: Auto-dereference for reading */
     pt.x = 10;
     pt.y = 20;
     i32 dist = distance(&pt);
-    ASSERT(dist == 30);
+    cz_assert(dist == 30);
     printf("Test 4 passed: Auto-dereference for reading\n");
 
     printf("All pointer auto-dereference tests passed!\n");

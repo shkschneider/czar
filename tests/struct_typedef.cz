@@ -43,14 +43,14 @@ int main(void) {
     /* Test 1: Use Point typedef instead of struct Point */
     Point pt = {0};
     set_point(&pt, 10, 20);
-    ASSERT(pt.x == 10);
-    ASSERT(pt.y == 20);
+    cz_assert(pt.x == 10);
+    cz_assert(pt.y == 20);
     printf("Test 1 passed: Can use Point instead of struct Point\n");
 
     /* Test 2: Create point using function */
     Point pt2 = create_point(30, 40);
-    ASSERT(pt2.x == 30);
-    ASSERT(pt2.y == 40);
+    cz_assert(pt2.x == 30);
+    cz_assert(pt2.y == 40);
     printf("Test 2 passed: Can return Point from function\n");
 
     /* Test 3: Use Color typedef */

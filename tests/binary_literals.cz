@@ -34,19 +34,19 @@ int main(void) {
     u64 _ = 0b1111ULL;   /* 15ULL */
 
     /* Actual test - verify conversions */
-    ASSERT(byte == 255);
-    ASSERT(nibble == 15);
-    ASSERT(zero == 0);
-    ASSERT(one == 1);
-    ASSERT(byte_sep == 255);
-    ASSERT(word == 65280);
-    ASSERT(upper == 240);
-    ASSERT(upper_sep == 240);
-    ASSERT(all_set == 255);
-    ASSERT(all_clear == 0);
-    ASSERT(high_nibble == 240);
-    ASSERT(low_nibble == 15);
-    ASSERT(alternating == 170);
+    cz_assert(byte == 255);
+    cz_assert(nibble == 15);
+    cz_assert(zero == 0);
+    cz_assert(one == 1);
+    cz_assert(byte_sep == 255);
+    cz_assert(word == 65280);
+    cz_assert(upper == 240);
+    cz_assert(upper_sep == 240);
+    cz_assert(all_set == 255);
+    cz_assert(all_clear == 0);
+    cz_assert(high_nibble == 240);
+    cz_assert(low_nibble == 15);
+    cz_assert(alternating == 170);
 
     printf("All binary literal tests passed!\n");
     return 0;

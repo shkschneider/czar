@@ -172,9 +172,9 @@ void runtime_emit_print(FILE *output) {
     fprintf(output, "    fflush(stdout);\n");
     fprintf(output, "}\n\n");
 
-    /* Emit the PRINT macro that uses _Generic to auto-detect types */
-    fprintf(output, "/* CZar Print Runtime - PRINT macro with type detection */\n");
-    fprintf(output, "#define PRINT(...) PRINT_IMPL(__VA_ARGS__)\n\n");
+    /* Emit the cz_print macro that uses _Generic to auto-detect types */
+    fprintf(output, "/* CZar Print Runtime - cz_print macro with type detection */\n");
+    fprintf(output, "#define cz_print(...) CZ_PRINT_IMPL(__VA_ARGS__)\n\n");
     
     /* Emit helper macros for counting and type detection */
     fprintf(output, "/* Helper to detect type and create any_t */\n");
@@ -193,46 +193,46 @@ void runtime_emit_print(FILE *output) {
 
     /* Emit implementation macros for different argument counts */
     fprintf(output, "/* Implementation macros for different argument counts */\n");
-    fprintf(output, "#define PRINT_IMPL_1(fmt) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_1(fmt) \\\n");
     fprintf(output, "    cz_print_internal(fmt, 0, NULL)\n\n");
     
-    fprintf(output, "#define PRINT_IMPL_2(fmt, a1) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_2(fmt, a1) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 1, _args); \\\n");
     fprintf(output, "    } while(0)\n\n");
     
-    fprintf(output, "#define PRINT_IMPL_3(fmt, a1, a2) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_3(fmt, a1, a2) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1), CZ_TO_ANY(a2)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 2, _args); \\\n");
     fprintf(output, "    } while(0)\n\n");
     
-    fprintf(output, "#define PRINT_IMPL_4(fmt, a1, a2, a3) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_4(fmt, a1, a2, a3) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1), CZ_TO_ANY(a2), CZ_TO_ANY(a3)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 3, _args); \\\n");
     fprintf(output, "    } while(0)\n\n");
     
-    fprintf(output, "#define PRINT_IMPL_5(fmt, a1, a2, a3, a4) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_5(fmt, a1, a2, a3, a4) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1), CZ_TO_ANY(a2), CZ_TO_ANY(a3), CZ_TO_ANY(a4)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 4, _args); \\\n");
     fprintf(output, "    } while(0)\n\n");
     
-    fprintf(output, "#define PRINT_IMPL_6(fmt, a1, a2, a3, a4, a5) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_6(fmt, a1, a2, a3, a4, a5) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1), CZ_TO_ANY(a2), CZ_TO_ANY(a3), CZ_TO_ANY(a4), CZ_TO_ANY(a5)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 5, _args); \\\n");
     fprintf(output, "    } while(0)\n\n");
 
-    fprintf(output, "#define PRINT_IMPL_7(fmt, a1, a2, a3, a4, a5, a6) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_7(fmt, a1, a2, a3, a4, a5, a6) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1), CZ_TO_ANY(a2), CZ_TO_ANY(a3), CZ_TO_ANY(a4), CZ_TO_ANY(a5), CZ_TO_ANY(a6)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 6, _args); \\\n");
     fprintf(output, "    } while(0)\n\n");
 
-    fprintf(output, "#define PRINT_IMPL_8(fmt, a1, a2, a3, a4, a5, a6, a7) \\\n");
+    fprintf(output, "#define CZ_PRINT_IMPL_8(fmt, a1, a2, a3, a4, a5, a6, a7) \\\n");
     fprintf(output, "    do { \\\n");
     fprintf(output, "        any_t _args[] = {CZ_TO_ANY(a1), CZ_TO_ANY(a2), CZ_TO_ANY(a3), CZ_TO_ANY(a4), CZ_TO_ANY(a5), CZ_TO_ANY(a6), CZ_TO_ANY(a7)}; \\\n");
     fprintf(output, "        cz_print_internal(fmt, 7, _args); \\\n");
@@ -244,7 +244,7 @@ void runtime_emit_print(FILE *output) {
     fprintf(output, "#define CZ_ARG_COUNT_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N\n\n");
 
     fprintf(output, "/* Dispatch to appropriate implementation based on argument count */\n");
-    fprintf(output, "#define PRINT_IMPL(...) CZ_CONCAT(PRINT_IMPL_, CZ_ARG_COUNT(__VA_ARGS__))(__VA_ARGS__)\n");
+    fprintf(output, "#define CZ_PRINT_IMPL(...) CZ_CONCAT(CZ_PRINT_IMPL_, CZ_ARG_COUNT(__VA_ARGS__))(__VA_ARGS__)\n");
     fprintf(output, "#define CZ_CONCAT(a, b) CZ_CONCAT_IMPL(a, b)\n");
     fprintf(output, "#define CZ_CONCAT_IMPL(a, b) a##b\n\n");
 }

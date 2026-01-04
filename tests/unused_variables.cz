@@ -23,7 +23,7 @@ int main(void) {
     }
 
     /* Use the regular variable to avoid warning */
-    ASSERT(used_var == 100);
+    cz_assert(used_var == 100);
 
     printf("Unused variable test passed!\n");
     return 0;

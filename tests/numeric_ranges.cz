@@ -62,9 +62,9 @@ int main(void) {
     printf("  I32_MAX: %d\n", I32_MAX);
 
     /* Test ASSERTions */
-    ASSERT(U8_MAX == 255);
-    ASSERT(I32_MIN < 0);
-    ASSERT(I32_MAX > 0);
+    cz_assert(U8_MAX == 255);
+    cz_assert(I32_MIN < 0);
+    cz_assert(I32_MAX > 0);
 
     printf("\nDemo completed successfully!\n");
     return 0;

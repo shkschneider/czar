@@ -29,34 +29,34 @@ struct Vec3 {
 int main(void) {
     /* Test 1: Empty brace initialization {} */
     Point p1 = {};
-    ASSERT(p1.x == 0);
-    ASSERT(p1.y == 0);
+    cz_assert(p1.x == 0);
+    cz_assert(p1.y == 0);
     printf("Test 1 passed: Empty brace initialization {}\n");
 
     /* Test 2: Constructor-like empty initialization StructName {} */
     Color c1 = Color {};
-    ASSERT(c1.r == 0);
-    ASSERT(c1.g == 0);
-    ASSERT(c1.b == 0);
+    cz_assert(c1.r == 0);
+    cz_assert(c1.g == 0);
+    cz_assert(c1.b == 0);
     printf("Test 2 passed: Constructor-like empty initialization StructName {}\n");
 
     /* Test 3: Constructor-like zero initialization StructName {0} */
     Vec3 v1 = Vec3 {0};
-    ASSERT(v1.x == 0.0f);
-    ASSERT(v1.y == 0.0f);
-    ASSERT(v1.z == 0.0f);
+    cz_assert(v1.x == 0.0f);
+    cz_assert(v1.y == 0.0f);
+    cz_assert(v1.z == 0.0f);
     printf("Test 3 passed: Constructor-like zero initialization StructName {0}\n");
 
     /* Test 4: Traditional zero initialization {0} */
     Point p2 = {0};
-    ASSERT(p2.x == 0);
-    ASSERT(p2.y == 0);
+    cz_assert(p2.x == 0);
+    cz_assert(p2.y == 0);
     printf("Test 4 passed: Traditional zero initialization {0}\n");
 
     /* Test 5: Mixed - ensure we can still initialize with values */
     Point p3 = {10, 20};
-    ASSERT(p3.x == 10);
-    ASSERT(p3.y == 20);
+    cz_assert(p3.x == 10);
+    cz_assert(p3.y == 20);
     printf("Test 5 passed: Mixed initialization with values\n");
 
     printf("All struct initialization tests passed!\n");

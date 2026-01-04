@@ -12,7 +12,7 @@ void runtime_emit_assert(FILE* output) {
     fprintf(output, "#include <stdarg.h>\n");
     fprintf(output, "#include <string.h>\n");
     fprintf(output, "\n");
-    fprintf(output, "#define ASSERT(cond) do {\\\n");
+    fprintf(output, "#define cz_assert(cond) do {\\\n");
     fprintf(output, "  if (!(cond)) {\\\n");
     fprintf(output, "    fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond);\\\n");
     fprintf(output, "    abort();\\\n");

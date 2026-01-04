@@ -81,12 +81,12 @@ void test_runtime_macros(void) {
     (void)file; (void)line; (void)func;
 }
 
-/* Test ASSERT - only tests passing case */
+/* Test cz_assert - only tests passing case */
 void test_ASSERT(void) {
-    ASSERT(1 == 1);
-    ASSERT(2 + 2 == 4);
-    ASSERT("test" != NULL);
-    printf("ASSERT test: OK\n");
+    cz_assert(1 == 1);
+    cz_assert(2 + 2 == 4);
+    cz_assert("test" != NULL);
+    printf("cz_assert test: OK\n");
 }
 
 /* Note: We don't test TODO, FIXME, or UNREACHABLE because they abort */

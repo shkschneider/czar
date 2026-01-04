@@ -11,8 +11,8 @@ void test_function(void) {
 int main(void) {
     test_function();
 
-    ASSERT(1 == 1);
-    ASSERT(2 + 2 == 4);
+    cz_assert(1 == 1);
+    cz_assert(2 + 2 == 4);
 
     printf("cz.h: OK\n");
     return 0;

@@ -14,31 +14,31 @@ int main(void) {
     u8 small = 100;
     u16 medium = cast<u16>(small);
     printf("cast u8 to u16: %u\n", medium);
-    ASSERT(medium == 100);
+    cz_assert(medium == 100);
 
     /* Test cast - narrowing (potentially unsafe, warning expected) */
     u32 large = 1000;
     u8 narrow = cast<u8>(large);
     printf("cast u32 to u8: %u (may lose data)\n", narrow);
-    ASSERT(narrow == 232);
+    cz_assert(narrow == 232);
 
     /* Test cast - same type */
     u32 value = 300;
     u32 same = cast<u32>(value);
     printf("cast u32 to u32: %u\n", same);
-    ASSERT(same == 300);
+    cz_assert(same == 300);
 
     /* Test cast - sign change (warning expected) */
     i16 signed_val = -100;
     i32 signed_wide = cast<i32>(signed_val);
     printf("cast i16 to i32: %d\n", signed_wide);
-    ASSERT(signed_wide == -100);
+    cz_assert(signed_wide == -100);
 
     /* Test cast - narrowing with sign change (warning expected) */
     u64 big_val = 500;
     u8 small_val = cast<u8>(big_val, 255);
     printf("cast u64 to u8 with fallback: %u\n", small_val);
-    ASSERT(small_val == 255);
+    cz_assert(small_val == 255);
 
     printf("Cast tests: OK\n");
     return 0;
