@@ -403,6 +403,17 @@ void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, co
         if (children[i]->type != AST_TOKEN) continue;
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
 
+        const char *identifier = children[i]->token.text;
+        
+        /* Skip control flow keywords that use parentheses but are not function calls */
+        if (identifier && (strcmp(identifier, "for") == 0 ||
+                          strcmp(identifier, "while") == 0 ||
+                          strcmp(identifier, "if") == 0 ||
+                          strcmp(identifier, "switch") == 0 ||
+                          strcmp(identifier, "sizeof") == 0)) {
+            continue;
+        }
+
         /* Look for function call pattern: identifier ( */
         size_t j = skip_whitespace(children, count, i + 1);
         if (j >= count) continue;
