@@ -20,7 +20,7 @@ static const FunctionMapping function_mappings[] = {
     {"ASSERT", "cz_assert"},
     {"TODO", "cz_todo"},
     {"FIXME", "cz_fixme"},
-    {"UNREACHABLE", "cz_unreachable"},
+    /* UNREACHABLE is expanded inline, not mapped */
     {NULL, NULL} /* Sentinel */
 };
 
@@ -71,11 +71,7 @@ static const char *runtime_functions =
 "}\n"
 "#define cz_fixme(msg) _cz_fixme((msg), __FILE__, __LINE__, __func__)\n"
 "\n"
-"CZ_NORETURN static inline void _cz_unreachable(const char* msg, const char* file, int line, const char* func) {\n"
-"    fprintf(stderr, \"%s:%d: %s: Unreachable code reached: %s\\n\", file, line, func, msg);\n"
-"    abort();\n"
-"}\n"
-"#define cz_unreachable(msg) _cz_unreachable((msg), __FILE__, __LINE__, __func__)\n"
+"/* UNREACHABLE() is expanded inline by the transpiler with .cz file locations */\n"
 "/* End of CZar runtime functions */\n"
 "\n";
 

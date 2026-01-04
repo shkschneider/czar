@@ -35,4 +35,4 @@ void transpiler_validate_enums(ASTNode *ast, const char *filename, const char *s
  * - Strips enum prefixes from scoped case labels (EnumName.MEMBER -> MEMBER)
  * - Transforms continue to fallthrough attributes in switch cases
  * - Inserts default cases where missing */
-void transpiler_transform_enums(ASTNode *ast);
+void transpiler_transform_enums(ASTNode *ast, const char *filename);

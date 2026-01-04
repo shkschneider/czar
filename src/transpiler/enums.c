@@ -963,8 +963,90 @@ static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
     return 1;
 }
 
+/* Find the function name containing this position */
+static const char *find_function_name(ASTNode **children, size_t count, size_t current_pos) {
+    int brace_depth = 0;
+    const char *function_name = NULL;
+    const char *last_function_name = NULL;
+    
+    /* Scan from start to find which function we're in at current_pos */
+    for (size_t i = 0; i < current_pos && i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        
+        Token *tok = &children[i]->token;
+        
+        if (tok->type == TOKEN_PUNCTUATION) {
+            if (token_text_equals(tok, "{")) {
+                brace_depth++;
+                /* Check if this is a function opening brace */
+                /* Look back for function name pattern: identifier ( ... ) { */
+                /* Skip back over whitespace and find identifier before ( */
+                for (int j = (int)i - 1; j >= 0 && j >= (int)i - 30; j--) {
+                    if (children[j]->type != AST_TOKEN) continue;
+                    Token *jtok = &children[j]->token;
+                    
+                    if (jtok->type == TOKEN_WHITESPACE || jtok->type == TOKEN_COMMENT) continue;
+                    
+                    /* Look for closing paren ) */
+                    if (jtok->type == TOKEN_PUNCTUATION && token_text_equals(jtok, ")")) {
+                        /* Found ), now look back for identifier before matching ( */
+                        int paren_depth_local = 1;
+                        int found_func = 0;
+                        for (int k = j - 1; k >= 0 && k >= j - 30; k--) {
+                            if (children[k]->type != AST_TOKEN) continue;
+                            Token *ktok = &children[k]->token;
+                            
+                            if (ktok->type == TOKEN_PUNCTUATION) {
+                                if (token_text_equals(ktok, ")")) paren_depth_local++;
+                                else if (token_text_equals(ktok, "(")) {
+                                    paren_depth_local--;
+                                    if (paren_depth_local == 0) {
+                                        /* Found matching (, look for identifier before it */
+                                        for (int m = k - 1; m >= 0 && m >= k - 5; m--) {
+                                            if (children[m]->type != AST_TOKEN) continue;
+                                            Token *mtok = &children[m]->token;
+                                            if (mtok->type == TOKEN_WHITESPACE || mtok->type == TOKEN_COMMENT) continue;
+                                            if (mtok->type == TOKEN_IDENTIFIER) {
+                                                /* Avoid keywords */
+                                                if (strcmp(mtok->text, "if") != 0 &&
+                                                    strcmp(mtok->text, "while") != 0 &&
+                                                    strcmp(mtok->text, "for") != 0 &&
+                                                    strcmp(mtok->text, "switch") != 0) {
+                                                    last_function_name = mtok->text;
+                                                    found_func = 1;
+                                                }
+                                                break;
+                                            }
+                                            break; /* Not an identifier */
+                                        }
+                                        break; /* Found matching ( */
+                                    }
+                                }
+                            }
+                        }
+                        if (found_func) break;
+                    }
+                    break; /* First non-whitespace token after { wasn't ) */
+                }
+                /* If we just entered the first brace level, this is the function */
+                if (brace_depth == 1 && last_function_name) {
+                    function_name = last_function_name;
+                }
+            } else if (token_text_equals(tok, "}")) {
+                brace_depth--;
+                /* If we exit all braces, clear function name */
+                if (brace_depth == 0) {
+                    function_name = NULL;
+                }
+            }
+        }
+    }
+    
+    return function_name;
+}
+
 /* Insert default: cz_unreachable(""); into ALL switches that lack a default */
-static void insert_default_cases(ASTNode *ast) {
+static void insert_default_cases(ASTNode *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -1046,22 +1128,27 @@ static void insert_default_cases(ASTNode *ast) {
             /* If no default, insert one */
             if (!has_default) {
                 int line = children[switch_body_end]->token.line;
+                /* Find function name at the switch statement location */
+                const char *func_name = find_function_name(children, count, switch_body_start);
+                if (!func_name) func_name = "<unknown>";
                 
-                /* Insert: newline, default, :, space, cz_unreachable, (, "", ), ; */
-                /* Insert before the closing brace - in reverse order to maintain positions */
-                ASTNode *nodes[10];
+                /* Insert: default: { fprintf(stderr, "file:line: func: Unreachable code reached: \n"); abort(); } */
+                /* Build nodes in forward order */
+                ASTNode *nodes[20];
                 int node_count = 0;
                 
-                /* Build nodes in forward order */
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_KEYWORD, "default", line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ":", line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, " ", line, 0);
-                nodes[node_count++] = create_token_node(TOKEN_IDENTIFIER, "cz_unreachable", line, 0);
-                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, "(", line, 0);
-                nodes[node_count++] = create_token_node(TOKEN_STRING, "\"\"", line, 0);
-                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ")", line, 0);
-                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ";", line, 0);
+                
+                /* Create inline expansion: { fprintf(stderr, "...\n"); abort(); } */
+                char inline_code[512];
+                snprintf(inline_code, sizeof(inline_code),
+                         "{ fprintf(stderr, \"%s:%d: %s: Unreachable code reached: \\n\"); abort(); }",
+                         filename ? filename : "<unknown>", line, func_name);
+                
+                nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, inline_code, line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);
                 
                 /* Insert all nodes in reverse order before the closing brace */
@@ -1221,7 +1308,7 @@ static void prefix_enum_members(ASTNode *ast) {
 }
 
 /* Transform switch statements on enums to add default: UNREACHABLE() if missing */
-void transpiler_transform_enums(ASTNode *ast) {
+void transpiler_transform_enums(ASTNode *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -1235,6 +1322,6 @@ void transpiler_transform_enums(ASTNode *ast) {
     /* Transform continue in switch cases to fallthrough */
     transform_switch_continue_to_fallthrough(ast);
     
-    /* Insert default: cz_unreachable(""); into all switches without defaults */
-    insert_default_cases(ast);
+    /* Insert default: inline unreachable code into all switches without defaults */
+    insert_default_cases(ast, filename);
 }
