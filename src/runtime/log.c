@@ -136,7 +136,7 @@ void runtime_emit_log(FILE *output, int debug_mode) {
     fprintf(output, "} CzLogLevel;\n\n");
 
     /* Emit global debug mode variable */
-    fprintf(output, "/* CZar Log Runtime - Debug mode (1=only info+, 0=all levels) */\n");
+    fprintf(output, "/* CZar Log Runtime - Debug mode (1=all levels, 0=only info+) */\n");
     fprintf(output, "static int CZ_LOG_DEBUG_MODE = %d;\n\n", debug_mode);
 
     /* Emit internal helper function */
@@ -153,7 +153,7 @@ void runtime_emit_log(FILE *output, int debug_mode) {
     fprintf(output, "        case CZ_LOG_FATAL: level_str = \"FATAL\"; out = stderr; break;\n");
     fprintf(output, "        default: level_str = \"UNKNOWN\"; out = stdout; break;\n");
     fprintf(output, "    }\n");
-    fprintf(output, "    if (CZ_LOG_DEBUG_MODE && level < CZ_LOG_INFO) return;\n");
+    fprintf(output, "    if (!CZ_LOG_DEBUG_MODE && level < CZ_LOG_INFO) return;\n");
     fprintf(output, "    \n");
     fprintf(output, "    /* Get elapsed time since program start in seconds */\n");
     fprintf(output, "    unsigned long long elapsed_ns = cz_monotonic_timer_ns();\n");

@@ -6,11 +6,11 @@
 int main(void) {
     printf("=== Testing CZar Logging with Debug ON via Pragma ===\n\n");
 
-    /* With debug true (default), only INFO+ should appear */
-    printf("--- Only INFO+ log levels should be visible ---\n");
+    /* With debug true, all log levels should appear */
+    printf("--- All log levels should be visible ---\n");
 
-    Log.verbose("This verbose should NOT appear");
-    Log.debug("This debug should NOT appear");
+    Log.verbose("This verbose SHOULD appear");
+    Log.debug("This debug SHOULD appear");
     Log.info("This info SHOULD appear");
     Log.warning("This warning SHOULD appear");
     Log.error("This error SHOULD appear");
