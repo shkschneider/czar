@@ -1,0 +1,11 @@
+#include <stdio.h>
+
+/* This should fail - trying to modify immutable parameter */
+void test_modify_immutable(u32 x) {
+    x = 10;  /* ERROR: x is immutable */
+}
+
+int main(void) {
+    test_modify_immutable(5);
+    return 0;
+}
