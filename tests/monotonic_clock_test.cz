@@ -3,16 +3,18 @@
 int main(void) {
     printf("=== Testing CZar Monotonic Clock ===\n\n");
 
-    /* Test 1: Get current time */
-    printf("--- Test 1: Get current time ---\n");
+    /* Test 1: Demonstrate monotonic clock basics */
+    printf("--- Test 1: Monotonic clock timestamp ---\n");
     unsigned long long time1 = cz_monotonic_clock_ns();
-    printf("Current time (ns): %llu\n", time1);
+    printf("Timestamp (ns since unspecified start): %llu\n", time1);
+    printf("Equivalent seconds: %.2f\n", time1 / 1000000000.0);
+    printf("Note: This is time since system boot or similar reference point\n");
 
     /* Test 2: Verify time advances */
     printf("\n--- Test 2: Verify time advances ---\n");
     cz_sleep_ns(10000000);  /* Sleep 10 milliseconds */
     unsigned long long time2 = cz_monotonic_clock_ns();
-    printf("Time after 10ms sleep: %llu\n", time2);
+    printf("Timestamp after 10ms sleep: %llu\n", time2);
     unsigned long long elapsed = time2 - time1;
     printf("Elapsed time (ns): %llu\n", elapsed);
     printf("Elapsed time (ms): %llu\n", elapsed / 1000000);

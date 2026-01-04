@@ -11,6 +11,9 @@ static int fibonacci(int n) {
 int main(void) {
     printf("=== CZar Monotonic Clock Demo ===\n\n");
     
+    printf("Note: Monotonic clock measures time intervals, not wall time.\n");
+    printf("      Timestamps are relative to an unspecified start point.\n\n");
+    
     /* Measure fibonacci calculation */
     printf("Calculating fibonacci(30)...\n");
     unsigned long long start = cz_monotonic_clock_ns();
