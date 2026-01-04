@@ -9,5 +9,9 @@
 
 #include <stdio.h>
 
-/* Emit Monotonic Clock runtime support to output */
-void runtime_emit_monotonic_clock(FILE *output);
+/* Emit Monotonic Clock/Timer runtime support to output */
+void runtime_emit_monotonic(FILE *output);
+
+unsigned long long cz_monotonic_clock_ns(void);
+unsigned long long cz_monotonic_timer_ns(void);
+void cz_nanosleep(void);

@@ -8,12 +8,11 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include "monotonic_clock.h"
+#include "monotonic.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-/* Emit Monotonic Clock runtime support to output */
 void runtime_emit_monotonic_clock(FILE *output) {
     if (!output) {
         return;
@@ -48,14 +47,15 @@ void runtime_emit_monotonic_clock(FILE *output) {
     fprintf(output, "    return (unsigned long long)(ts.tv_sec) * 1000000000ULL + (unsigned long long)(ts.tv_nsec);\n");
     fprintf(output, "#endif\n");
     fprintf(output, "}\n\n");
+}
 
-    /* Also emit cz_now_monotonic_ns as an alias for consistency with README */
-    fprintf(output, "/* Alias for consistency with documentation */\n");
-    fprintf(output, "#define cz_now_monotonic_ns cz_monotonic_clock_ns\n\n");
-
+void runtime_emit_nanosleep(FILE *output) {
+    if (!output) {
+        return;
+    }
     /* Emit sleep function */
     fprintf(output, "/* Sleep for specified nanoseconds */\n");
-    fprintf(output, "__attribute__((unused)) static void cz_sleep_ns(unsigned long long nanoseconds) {\n");
+    fprintf(output, "__attribute__((unused)) static void cz_nanosleep(unsigned long long nanoseconds) {\n");
     fprintf(output, "#ifdef _WIN32\n");
     fprintf(output, "    /* Windows Sleep takes milliseconds */\n");
     fprintf(output, "    DWORD ms = (DWORD)(nanoseconds / 1000000ULL);\n");
@@ -69,7 +69,12 @@ void runtime_emit_monotonic_clock(FILE *output) {
     fprintf(output, "    nanosleep(&ts, NULL);\n");
     fprintf(output, "#endif\n");
     fprintf(output, "}\n\n");
+}
 
+void runtime_emit_monotonic_timer(FILE *output) {
+    if (!output) {
+        return;
+    }
     /* Emit timer function for measuring time since program start */
     fprintf(output, "/* Timer: nanoseconds since program start */\n");
     fprintf(output, "static unsigned long long __cz_timer_start = 0;\n");
@@ -79,4 +84,10 @@ void runtime_emit_monotonic_clock(FILE *output) {
     fprintf(output, "__attribute__((unused)) static unsigned long long cz_monotonic_timer_ns(void) {\n");
     fprintf(output, "    return cz_monotonic_clock_ns() - __cz_timer_start;\n");
     fprintf(output, "}\n\n");
+}
+
+void runtime_emit_monotonic(FILE *output) {
+    runtime_emit_monotonic_clock(output);
+    runtime_emit_nanosleep(output);
+    runtime_emit_monotonic_timer(output);
 }

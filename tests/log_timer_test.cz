@@ -10,15 +10,15 @@ int main(void) {
     Log.info("Program started");
 
     /* Sleep a bit and log again */
-    cz_sleep_ns(50000000);  /* 50ms */
+    cz_nanosleep(50000000);  /* 50ms */
     Log.info("After 50ms sleep");
 
     /* More sleep */
-    cz_sleep_ns(100000000);  /* 100ms */
+    cz_nanosleep(100000000);  /* 100ms */
     Log.warning("After 100ms more (150ms total)");
 
     /* Final sleep */
-    cz_sleep_ns(150000000);  /* 150ms */
+    cz_nanosleep(150000000);  /* 150ms */
     Log.info("After 150ms more (300ms total)");
 
     /* Show different log levels with timing */
@@ -27,6 +27,6 @@ int main(void) {
     Log.error("Error at ~0.3s");
 
     printf("\n=== Test completed - timestamps show elapsed program time ===\n");
-    
+
     return 0;
 }

@@ -28,7 +28,7 @@
 #include "runtime/assert.h"
 #include "runtime/log.h"
 #include "runtime/print.h"
-#include "runtime/monotonic_clock.h"
+#include "runtime/monotonic.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -200,8 +200,8 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     /* Inject runtime macro definitions at the beginning */
     runtime_emit_assert(output);
 
-    /* Emit Monotonic Clock runtime support (needed by log) */
-    runtime_emit_monotonic_clock(output);
+    /* Emit Monotonic Clock/Timer runtime support (needed by log) */
+    runtime_emit_monotonic(output);
 
     /* Emit Log runtime support using pragma debug mode setting */
     runtime_emit_log(output, transpiler->pragma_ctx.debug_mode);
