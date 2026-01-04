@@ -29,7 +29,7 @@ void transpiler_emit_log_runtime(FILE *output, int debug_mode) {
 
     /* Emit global debug mode variable */
     fprintf(output, "/* CZar Log Runtime - Debug mode (1=only info+, 0=all levels) */\n");
-    fprintf(output, "static int cz_log_debug_mode = %d;\n\n", debug_mode);
+    fprintf(output, "static int CZ_LOG_DEBUG_MODE = %d;\n\n", debug_mode);
 
     /* Emit internal helper function */
     fprintf(output, "/* CZar Log Runtime - Internal helper */\n");
@@ -45,7 +45,7 @@ void transpiler_emit_log_runtime(FILE *output, int debug_mode) {
     fprintf(output, "        case CZ_LOG_FATAL: level_str = \"FATAL\"; out = stderr; break;\n");
     fprintf(output, "        default: level_str = \"UNKNOWN\"; out = stdout; break;\n");
     fprintf(output, "    }\n");
-    fprintf(output, "    if (cz_log_debug_mode && level < CZ_LOG_INFO) return;\n");
+    fprintf(output, "    if (CZ_LOG_DEBUG_MODE && level < CZ_LOG_INFO) return;\n");
     fprintf(output, "    fprintf(out, \"[CZAR] %%s \", level_str);\n");
     fprintf(output, "    if (func) fprintf(out, \"in %%s() \", func);\n");
     fprintf(output, "    /* Strip .c suffix from filename if present */\n");
@@ -71,8 +71,12 @@ void transpiler_emit_log_runtime(FILE *output, int debug_mode) {
     fprintf(output, "    if (level == CZ_LOG_FATAL) abort();\n");
     fprintf(output, "}\n\n");
 
-    /* Emit convenience macros with __func__ support */
-    fprintf(output, "/* CZar Log Runtime - Convenience macros */\n");
+    /* Emit Log struct with static method syntax support */
+    fprintf(output, "/* CZar Log Runtime - Log struct for static method syntax */\n");
+    fprintf(output, "typedef struct { int _unused; } Log;\n\n");
+    
+    /* Emit static method wrappers for Log struct */
+    fprintf(output, "/* CZar Log Runtime - Static method wrappers */\n");
     fprintf(output, "#ifdef __GNUC__\n");
     fprintf(output, "#define Log_verbose(...) cz_log_internal(CZ_LOG_VERBOSE, __FILE__, __LINE__, __func__, __VA_ARGS__)\n");
     fprintf(output, "#define Log_debug(...) cz_log_internal(CZ_LOG_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)\n");
@@ -88,8 +92,4 @@ void transpiler_emit_log_runtime(FILE *output, int debug_mode) {
     fprintf(output, "#define Log_error(...) cz_log_internal(CZ_LOG_ERROR, __FILE__, __LINE__, NULL, __VA_ARGS__)\n");
     fprintf(output, "#define Log_fatal(...) cz_log_internal(CZ_LOG_FATAL, __FILE__, __LINE__, NULL, __VA_ARGS__)\n");
     fprintf(output, "#endif\n\n");
-
-    /* Emit Log struct with static method syntax support */
-    fprintf(output, "/* CZar Log Runtime - Log struct for static method syntax */\n");
-    fprintf(output, "typedef struct { int _unused; } Log;\n\n");
 }

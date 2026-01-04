@@ -24,14 +24,18 @@ static int token_text_starts_with(Token *token, const char *prefix) {
     return strncmp(token->text, prefix, strlen(prefix)) == 0;
 }
 
-/* Skip whitespace and comments */
+/* Skip whitespace, comments, and empty tokens */
 static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
     for (size_t i = start; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        TokenType type = children[i]->token.type;
-        if (type != TOKEN_WHITESPACE && type != TOKEN_COMMENT) {
-            return i;
+        Token *token = &children[i]->token;
+        TokenType type = token->type;
+        /* Skip whitespace, comments, and empty tokens (from method transformation) */
+        if (type == TOKEN_WHITESPACE || type == TOKEN_COMMENT || 
+            !token->text || token->length == 0 || token->text[0] == '\0') {
+            continue;
         }
+        return i;
     }
     return count;
 }
@@ -89,14 +93,14 @@ void transpiler_expand_log_calls(ASTNode *ast, const char *filename) {
         return;
     }
     
-    /* Scan for Log_* call patterns */
+    /* Scan for Log_* call patterns (after method transformation) */
     for (size_t i = 0; i < ast->child_count; i++) {
         if (ast->children[i]->type != AST_TOKEN) continue;
         if (ast->children[i]->token.type != TOKEN_IDENTIFIER) continue;
         
         Token *tok = &ast->children[i]->token;
         
-        /* Check if this is a Log method call */
+        /* Check if this is a Log method call (Log_verbose, Log_debug, etc.) */
         if (token_text_starts_with(tok, "Log_")) {
             /* Found Log_* identifier, check for ( after it */
             size_t j = skip_whitespace(ast->children, ast->child_count, i + 1);

@@ -827,6 +827,15 @@ void transpiler_transform_methods(ASTNode *ast) {
     
     clear_tracking();
     
+    /* Pre-register Log struct and its methods for runtime logging */
+    track_struct_type("Log");
+    track_method("Log", "verbose");
+    track_method("Log", "debug");
+    track_method("Log", "info");
+    track_method("Log", "warning");
+    track_method("Log", "error");
+    track_method("Log", "fatal");
+    
     /* Pass 1: Scan for struct definitions */
     scan_struct_definitions(ast);
     
