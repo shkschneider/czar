@@ -26,8 +26,8 @@
 #include "transpiler/arguments.h"
 #include "transpiler/pragma.h"
 #include "runtime/assert.h"
+#include "runtime/format.h"
 #include "runtime/log.h"
-#include "runtime/print.h"
 #include "runtime/monotonic.h"
 #include <stdlib.h>
 #include <string.h>
@@ -206,8 +206,8 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     /* Emit Log runtime support using pragma debug mode setting */
     runtime_emit_log(output, transpiler->pragma_ctx.debug_mode);
 
-    /* Emit Print runtime support */
-    runtime_emit_print(output);
+    /* Emit Format runtime support */
+    runtime_emit_format(output);
 
     emit_node(transpiler->ast, output);
 }
