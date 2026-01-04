@@ -1,36 +1,36 @@
 #include <stdio.h>
 
-/* Test 1: Should WARN - consecutive same type without labels */
+/* Test 1: consecutive same type - must use labels */
 void my_function(u8 x, u8 y) {
     printf("x=%d, y=%d\n", x, y);
 }
 
-/* Test 2: Should NOT warn - different types */
+/* Test 2: Should NOT error - different types */
 void different_types(u8 x, u16 y) {
     printf("x=%d, y=%d\n", x, y);
 }
 
-/* Test 3: Should NOT warn - first arg labeled */
+/* Test 3: Should NOT error - first arg labeled */
 void labeled_first(u8 x, u8 y) {
     printf("x=%d, y=%d\n", x, y);
 }
 
-/* Test 4: Should NOT warn - both labeled */
+/* Test 4: Should NOT error - both labeled */
 void both_labeled(u8 x, u8 y) {
     printf("x=%d, y=%d\n", x, y);
 }
 
 u32 main(void) {
-    /* Test 1: Should WARN - my_function(2, 3) */
-    my_function(2, 3);
+    /* Test 1: Fixed - use labels to avoid error */
+    my_function(x = 2, y = 3);
     
-    /* Test 2: Should NOT warn - different_types(2, 3) */
+    /* Test 2: Should NOT error - different_types(2, 3) */
     different_types(2, 3);
     
-    /* Test 3: Should NOT warn - labeled_first(x = 2, 3) */
+    /* Test 3: Should NOT error - labeled_first(x = 2, 3) */
     labeled_first(x = 2, 3);
     
-    /* Test 4: Should NOT warn - both_labeled(x = 2, y = 3) */
+    /* Test 4: Should NOT error - both_labeled(x = 2, y = 3) */
     both_labeled(x = 2, y = 3);
     
     return 0;

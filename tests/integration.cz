@@ -131,15 +131,15 @@ int main(void) {
 
     /* Test 4: Safe operations */
     printf("\nTest 4: Safe operations\n");
-    i32 result1 = safe_divide(10, 2);
+    i32 result1 = safe_divide(numerator = 10, denominator = 2);
     printf("  10 / 2 = %d\n", result1);
     ASSERT(result1 == 5);
 
-    i32 result2 = safe_divide(10, 0);
+    i32 result2 = safe_divide(numerator = 10, denominator = 0);
     printf("  10 / 0 = %d (handled safely)\n", result2);
     ASSERT(result2 == 0);
 
-    i32 result3 = safe_divide(I32_MIN, -1);
+    i32 result3 = safe_divide(numerator = I32_MIN, denominator = -1);
     printf("  I32_MIN / -1 = %d (overflow handled)\n", result3);
     ASSERT(result3 == I32_MAX);
 
