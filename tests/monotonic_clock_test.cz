@@ -1,0 +1,51 @@
+#include <stdio.h>
+
+int main(void) {
+    printf("=== Testing CZar Monotonic Clock ===\n\n");
+
+    /* Test 1: Get current time */
+    printf("--- Test 1: Get current time ---\n");
+    unsigned long long time1 = cz_monotonic_clock_ns();
+    printf("Current time (ns): %llu\n", time1);
+
+    /* Test 2: Verify time advances */
+    printf("\n--- Test 2: Verify time advances ---\n");
+    cz_sleep_ns(10000000);  /* Sleep 10 milliseconds */
+    unsigned long long time2 = cz_monotonic_clock_ns();
+    printf("Time after 10ms sleep: %llu\n", time2);
+    unsigned long long elapsed = time2 - time1;
+    printf("Elapsed time (ns): %llu\n", elapsed);
+    printf("Elapsed time (ms): %llu\n", elapsed / 1000000);
+
+    /* Test 3: Measure a small operation */
+    printf("\n--- Test 3: Measure operation duration ---\n");
+    unsigned long long start = cz_monotonic_clock_ns();
+    
+    /* Do some work */
+    volatile int sum = 0;
+    for (int i = 0; i < 1000000; i++) {
+        sum += i;
+    }
+    
+    unsigned long long end = cz_monotonic_clock_ns();
+    unsigned long long duration = end - start;
+    printf("Operation took %llu nanoseconds\n", duration);
+    printf("Operation took %llu microseconds\n", duration / 1000);
+
+    /* Test 4: Test cz_now_monotonic_ns alias */
+    printf("\n--- Test 4: Test cz_now_monotonic_ns alias ---\n");
+    unsigned long long now = cz_now_monotonic_ns();
+    printf("Using cz_now_monotonic_ns(): %llu\n", now);
+
+    /* Test 5: Test multiple sleep durations */
+    printf("\n--- Test 5: Test sleep durations ---\n");
+    unsigned long long before_sleep = cz_monotonic_clock_ns();
+    cz_sleep_ns(5000000);  /* 5ms */
+    unsigned long long after_sleep = cz_monotonic_clock_ns();
+    unsigned long long sleep_duration = after_sleep - before_sleep;
+    printf("Requested sleep: 5ms, Actual: %llu ms\n", sleep_duration / 1000000);
+
+    printf("\n=== All monotonic clock tests completed ===\n");
+    
+    return 0;
+}

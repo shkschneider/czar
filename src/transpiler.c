@@ -28,6 +28,7 @@
 #include "runtime/assert.h"
 #include "runtime/log.h"
 #include "runtime/print.h"
+#include "runtime/monotonic_clock.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -190,6 +191,12 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
         return;
     }
 
+    /* Emit POSIX feature test macro first, before any includes */
+    fprintf(output, "/* CZar - Enable POSIX features */\n");
+    fprintf(output, "#ifndef _POSIX_C_SOURCE\n");
+    fprintf(output, "#define _POSIX_C_SOURCE 199309L\n");
+    fprintf(output, "#endif\n\n");
+
     /* Inject runtime macro definitions at the beginning */
     runtime_emit_assert(output);
 
@@ -198,6 +205,9 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
 
     /* Emit Print runtime support */
     runtime_emit_print(output);
+
+    /* Emit Monotonic Clock runtime support */
+    runtime_emit_monotonic_clock(output);
 
     emit_node(transpiler->ast, output);
 }
