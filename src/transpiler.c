@@ -22,6 +22,7 @@
 #include "transpiler/unreachable.h"
 #include "transpiler/todo.h"
 #include "transpiler/fixme.h"
+#include "transpiler/functions.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -115,6 +116,12 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Validate enum declarations and switch exhaustiveness */
     transpiler_validate_enums(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Validate function declarations (empty parameter lists) */
+    transpiler_validate_functions(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Transform function declarations (main return type, empty parameter lists to void) */
+    transpiler_transform_functions(transpiler->ast);
 
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
