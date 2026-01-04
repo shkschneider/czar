@@ -18,6 +18,7 @@
 #include "transpiler/structs.h"
 #include "transpiler/methods.h"
 #include "transpiler/enums.h"
+#include "transpiler/unreachable.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -135,8 +136,11 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform member access operators (. to -> for pointers) */
     transpiler_transform_autodereference(transpiler->ast);
 
-    /* Transform enums (add default: UNREACHABLE() if needed) */
-    transpiler_transform_enums(transpiler->ast);
+    /* Transform enums (add default: inline unreachable if needed) */
+    transpiler_transform_enums(transpiler->ast, transpiler->filename);
+
+    /* Expand UNREACHABLE() calls inline with .cz file location (before transforming identifiers) */
+    transpiler_expand_unreachable(transpiler->ast, transpiler->filename);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
