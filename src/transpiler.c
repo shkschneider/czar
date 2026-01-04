@@ -192,6 +192,7 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     fprintf(output, "#include <stdbool.h>\n");
     fprintf(output, "#include <assert.h>\n");
     fprintf(output, "#include <stdarg.h>\n");
+    fprintf(output, "#include <string.h>\n");
     fprintf(output, "#define ASSERT(cond) do { if (!(cond)) { fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond); abort(); } } while (0)\n\n");
 
     /* Emit Log runtime support using pragma debug mode setting */
