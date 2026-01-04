@@ -23,6 +23,7 @@
 #include "transpiler/todo.h"
 #include "transpiler/fixme.h"
 #include "transpiler/functions.h"
+#include "transpiler/arguments.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -142,6 +143,9 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_expand_unreachable(transpiler->ast, transpiler->filename);
     transpiler_expand_todo(transpiler->ast, transpiler->filename);
     transpiler_expand_fixme(transpiler->ast, transpiler->filename);
+    
+    /* Transform named arguments (strip labels) - must run before type transformations */
+    transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
