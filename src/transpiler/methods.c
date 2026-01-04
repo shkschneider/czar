@@ -292,11 +292,47 @@ static void transform_method_declarations(ASTNode *ast) {
         }
 
         /* Check if this is a function definition (has a body {...}) or just a call */
-        /* We need to distinguish between:
-         *   RetType StructName.method() { ... }  (definition)
-         *   StructName.method(&instance)          (static call)
-         * Look for opening brace after the closing paren */
+        /* First, find the closing paren to see if there's a brace after it */
+        int paren_depth = 0;
+        size_t close_paren_idx = paren_idx;
+        int has_params = 0;
 
+        for (size_t j = paren_idx; j < ast->child_count; j++) {
+            if (ast->children[j]->type == AST_TOKEN) {
+                Token *tj = &ast->children[j]->token;
+                if (tj->type == TOKEN_PUNCTUATION && tj->text) {
+                    if (strcmp(tj->text, "(") == 0) {
+                        paren_depth++;
+                    } else if (strcmp(tj->text, ")") == 0) {
+                        paren_depth--;
+                        if (paren_depth == 0) {
+                            close_paren_idx = j;
+                            break;
+                        }
+                    }
+                }
+                /* Check if there's any non-whitespace content between parens */
+                if (paren_depth > 0 && j > paren_idx) {
+                    if (tj->type != TOKEN_WHITESPACE && tj->type != TOKEN_COMMENT &&
+                        !(tj->type == TOKEN_PUNCTUATION && tj->text && strcmp(tj->text, ")") == 0)) {
+                        has_params = 1;
+                    }
+                }
+            }
+        }
+
+        /* Check if there's a function body after the closing paren */
+        /* Look for { after the ) */
+        size_t brace_idx;
+        ASTNode *brace_node = get_next_non_ws_node(ast, close_paren_idx + 1, &brace_idx);
+        if (!brace_node || brace_node->type != AST_TOKEN ||
+            brace_node->token.type != TOKEN_PUNCTUATION ||
+            !brace_node->token.text || strcmp(brace_node->token.text, "{") != 0) {
+            /* Not a function definition, skip - this is just a method call */
+            continue;
+        }
+
+        /* This is a method declaration! Now we can transform it. */
         /* Save copies of names before modifying tokens */
         char *struct_name_copy = strdup(struct_name);
         char *method_name_copy = strdup(method_name);
@@ -334,53 +370,6 @@ static void transform_method_declarations(ASTNode *ast) {
         }
 
         /* Step 2: Add self parameter */
-        /* Find the opening parenthesis and check if there are parameters */
-        int paren_depth = 0;
-        size_t close_paren_idx = paren_idx;
-        int has_params = 0;
-
-        for (size_t j = paren_idx; j < ast->child_count; j++) {
-            if (ast->children[j]->type == AST_TOKEN) {
-                Token *tj = &ast->children[j]->token;
-                if (tj->type == TOKEN_PUNCTUATION && tj->text) {
-                    if (strcmp(tj->text, "(") == 0) {
-                        paren_depth++;
-                    } else if (strcmp(tj->text, ")") == 0) {
-                        paren_depth--;
-                        if (paren_depth == 0) {
-                            close_paren_idx = j;
-                            break;
-                        }
-                    }
-                }
-                /* Check if there's any non-whitespace content between parens */
-                if (paren_depth > 0 && j > paren_idx) {
-                    if (tj->type != TOKEN_WHITESPACE && tj->type != TOKEN_COMMENT &&
-                        !(tj->type == TOKEN_PUNCTUATION && tj->text && strcmp(tj->text, ")") == 0)) {
-                        has_params = 1;
-                    }
-                }
-            }
-        }
-
-        /* Check if there's a function body after the closing paren */
-        /* Look for { after the ) */
-        size_t brace_idx;
-        ASTNode *brace_node = get_next_non_ws_node(ast, close_paren_idx + 1, &brace_idx);
-        if (!brace_node || brace_node->type != AST_TOKEN ||
-            brace_node->token.type != TOKEN_PUNCTUATION ||
-            !brace_node->token.text || strcmp(brace_node->token.text, "{") != 0) {
-            /* Not a function definition, skip */
-            free(struct_name_copy);
-            free(method_name_copy);
-            continue;
-        }
-
-        /* This is a method declaration! */
-        /* Transform: StructName.methodName(...) -> StructName_methodName(StructName* self, ...) */
-
-        /* Insert self parameter after opening paren */
-        /* Create: StructName* self (as separate tokens) */
 
         /* Create struct name token */
         ASTNode *struct_name_node = malloc(sizeof(ASTNode));
