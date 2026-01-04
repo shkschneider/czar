@@ -25,9 +25,9 @@ u32 main(void) {
     pointer_func(ptr = &x, value = 42);
     printf("x=%d\n", x);
     
-    /* Test 5: Nested function calls */
+    /* Test 5: Nested function calls - must use labels for same base type */
     u8 y = 0;
-    pointer_func(&y, 99);
+    pointer_func(ptr = &y, value = 99);
     printf("y=%d\n", y);
     
     return 0;

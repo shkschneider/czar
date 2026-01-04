@@ -9,7 +9,6 @@
 
 #include "arguments.h"
 #include "../errors.h"
-#include "../warnings.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -273,21 +272,21 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                 
                 /* Check if both arguments are unlabeled */
                 if (!arg_labeled[i] && !arg_labeled[i + 1]) {
-                    /* Found ambiguous parameters - issue warning */
-                    /* Only warn if parameter names are available */
+                    /* Found ambiguous parameters - issue error */
+                    /* Only error if parameter names are available */
                     if (func_info->params[i].name && func_info->params[i + 1].name) {
-                        char warning_msg[256];
+                        char error_msg[256];
                         char suggestion[128];
                         snprintf(suggestion, sizeof(suggestion), 
                                 "%s(%s = ..., %s = ...)",
                                 func_name,
                                 func_info->params[i].name,
                                 func_info->params[i + 1].name);
-                        snprintf(warning_msg, sizeof(warning_msg),
-                                WARN_AMBIGUOUS_ARGUMENTS, suggestion);
-                        cz_warning(g_filename, g_source, children[call_pos]->token.line, warning_msg);
+                        snprintf(error_msg, sizeof(error_msg),
+                                ERR_AMBIGUOUS_ARGUMENTS, suggestion);
+                        cz_error(g_filename, g_source, children[call_pos]->token.line, error_msg);
                     }
-                    break;  /* Only warn once per function call */
+                    break;  /* Only error once per function call */
                 }
             }
         }

@@ -39,3 +39,6 @@ void cz_error(const char *filename, const char *source, int line, const char *me
 #define ERR_ENUM_SWITCH_MISSING_DEFAULT "Switch on enum '%s' must have a default case. Add 'default: UNREACHABLE()' if all cases are covered."
 #define ERR_ENUM_SWITCH_NOT_EXHAUSTIVE "Non-exhaustive switch on enum '%s': missing case for '%s'. All enum values must be explicitly handled."
 #define ERR_ENUM_VALUE_NOT_UPPERCASE "Enum value '%s' in enum '%s' must be ALL_UPPERCASE (e.g., %s)"
+
+/* Named Arguments Errors */
+#define ERR_AMBIGUOUS_ARGUMENTS "Ambiguous function call with consecutive same-type parameters without labels. Use named arguments for clarity: %s"

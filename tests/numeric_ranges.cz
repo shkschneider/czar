@@ -42,7 +42,7 @@ int main(void) {
     /* Test safe addition */
     u8 a = 200;
     u8 b = 100;
-    u8 sum = safe_add_u8(a, b);
+    u8 sum = safe_add_u8(a = a, b = b);
     printf("safe_add_u8(%u, %u) = %u\n", a, b, sum);
 
     /* Test range validation */

@@ -11,11 +11,11 @@ void test_func(u8 a, u8 b, u8 c, u8 d) {
 }
 
 u32 main(void) {
-    /* Test 1: All positional (no named arguments) */
-    my_function(1, 2, 3);
+    /* Test 1: All arguments named (required for consecutive same types) */
+    my_function(x = 1, y = 2, z = 3);
     
     /* Test 2: First argument named */
-    my_function(x = 1, 2, 3);
+    my_function(x = 1, y = 2, 3);
     
     /* Test 3: First two arguments named */
     my_function(x = 1, y = 2, 3);
@@ -23,14 +23,14 @@ u32 main(void) {
     /* Test 4: All arguments named */
     my_function(x = 1, y = 2, z = 3);
     
-    /* Test 5: Last argument named */
-    my_function(1, 2, z = 3);
+    /* Test 5: Last argument named (first two must be labeled) */
+    my_function(x = 1, y = 2, z = 3);
     
     /* Test 6: Mixed usage with more parameters */
-    test_func(a = 10, 20, c = 30, d = 40);
+    test_func(a = 10, b = 20, c = 30, d = 40);
     
-    /* Test 7: All positional with different values */
-    test_func(5, 6, 7, 8);
+    /* Test 7: All positional - must use labels for consecutive same types */
+    test_func(a = 5, b = 6, c = 7, d = 8);
     
     return 0;
 }
