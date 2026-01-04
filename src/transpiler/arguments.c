@@ -269,14 +269,36 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                     /* We'll allow it but can't validate */
                 }
                 
-                /* Strip the label and = by setting text to empty */
+                /* Strip the label, =, and any whitespace after = */
+                /* Strip the label */
                 free(t->text);
                 t->text = strdup("");
                 t->length = 0;
                 
+                /* Strip whitespace between label and = */
+                for (size_t m = j + 1; m < k; m++) {
+                    if (children[m]->type == AST_TOKEN &&
+                        children[m]->token.type == TOKEN_WHITESPACE) {
+                        free(children[m]->token.text);
+                        children[m]->token.text = strdup("");
+                        children[m]->token.length = 0;
+                    }
+                }
+                
+                /* Strip the = operator */
                 free(children[k]->token.text);
                 children[k]->token.text = strdup("");
                 children[k]->token.length = 0;
+                
+                /* Strip whitespace after = */
+                size_t m = k + 1;
+                while (m < count && children[m]->type == AST_TOKEN &&
+                       children[m]->token.type == TOKEN_WHITESPACE) {
+                    free(children[m]->token.text);
+                    children[m]->token.text = strdup("");
+                    children[m]->token.length = 0;
+                    m++;
+                }
             }
         }
         
