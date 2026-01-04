@@ -1,0 +1,60 @@
+#include <stdio.h>
+
+int main(void) {
+    printf("=== Testing CZar PRINT System ===\n\n");
+
+    /* Test 1: Simple string with {} placeholder */
+    printf("--- Test 1: Simple {} placeholder ---\n");
+    const char *name = "CZar";
+    PRINT("Hello {}\n", name);
+
+    /* Test 2: Multiple {} placeholders */
+    printf("\n--- Test 2: Multiple {} placeholders ---\n");
+    int x = 42;
+    int y = 100;
+    PRINT("x = {}, y = {}\n", x, y);
+
+    /* Test 3: Different types with {} */
+    printf("\n--- Test 3: Different types ---\n");
+    int integer = 123;
+    unsigned int uinteger = 456;
+    long lvalue = 789L;
+    double dvalue = 3.14159;
+    char character = 'A';
+    
+    PRINT("int: {}\n", integer);
+    PRINT("uint: {}\n", uinteger);
+    PRINT("long: {}\n", lvalue);
+    PRINT("double: {}\n", dvalue);
+    PRINT("char: {}\n", character);
+
+    /* Test 4: Named placeholder {{name}} syntax */
+    printf("\n--- Test 4: Named {{name}} placeholders ---\n");
+    int count = 5;
+    PRINT("Count is {{count}}\n", count);
+    PRINT("Name is {{username}}\n", "Alice");
+
+    /* Test 5: Mixed placeholders */
+    printf("\n--- Test 5: Mixed placeholders ---\n");
+    PRINT("User {{user}} has {{points}} points\n", "Bob", 1000);
+
+    /* Test 6: Pointer type */
+    printf("\n--- Test 6: Pointer type ---\n");
+    int val = 99;
+    int *ptr = &val;
+    PRINT("Pointer: {}\n", ptr);
+
+    /* Test 7: String formatting */
+    printf("\n--- Test 7: String formatting ---\n");
+    const char *greeting = "Hello";
+    const char *world = "World";
+    PRINT("{} {}!\n", greeting, world);
+
+    /* Test 8: Zero arguments (just format string) */
+    printf("\n--- Test 8: No placeholders ---\n");
+    PRINT("This is a plain message\n");
+
+    printf("\n=== All PRINT tests completed ===\n");
+    
+    return 0;
+}
