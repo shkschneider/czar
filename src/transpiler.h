@@ -8,6 +8,7 @@
 #pragma once
 
 #include "parser.h"
+#include "transpiler/pragma.h"
 #include <stdio.h>
 
 /* Transpiler structure */
@@ -15,6 +16,7 @@ typedef struct {
     ASTNode *ast;
     const char *filename;
     const char *source;
+    PragmaContext pragma_ctx;  /* Pragma settings */
 } Transpiler;
 
 /* Initialize transpiler with AST */

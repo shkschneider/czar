@@ -1,0 +1,21 @@
+#include <stdio.h>
+
+/* Test pragma czar debug directive */
+#pragma czar debug false
+
+int main(void) {
+    printf("=== Testing CZar Logging with Debug OFF via Pragma ===\n\n");
+    
+    /* With debug false, all log levels should appear */
+    printf("--- All log levels should be visible ---\n");
+    
+    Log_verbose("Verbose message");
+    Log_debug("Debug message");
+    Log_info("Info message");
+    Log_warning("Warning message");
+    Log_error("Error message");
+    
+    printf("\n=== All logs displayed ===\n");
+    
+    return 0;
+}
