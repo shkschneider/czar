@@ -65,6 +65,10 @@ CZar fills that gap by adding **language features** and **safety checks** while 
   - Comptime: `cz_error()`, `cz_warning()`
   - Runtime: `cz_log_info()`, `cz_log_error()`, ...
   - Automatic file / function / line context
+- **Print helper**
+  - `PRINT()` with mustache-like templates
+  - Supports `{}` and `{{name}}` placeholders
+  - Automatic type detection for all basic types
 - **Monotonic clock**
   - `cz_now_monotonic_ns`
   - `cz_sleep_ns`

@@ -1,0 +1,31 @@
+/* Demo showcasing CZar's PRINT functionality */
+
+#include <stdio.h>
+
+int main(void) {
+    /* Basic usage with {} placeholders */
+    const char *name = "CZar";
+    int version = 1;
+    PRINT("Welcome to {}!\n", name);
+    PRINT("Version: {}\n", version);
+    
+    /* Multiple arguments */
+    int x = 10;
+    int y = 20;
+    PRINT("Coordinates: ({}, {})\n", x, y);
+    
+    /* Named placeholders for readability */
+    int width = 1920;
+    int height = 1080;
+    PRINT("Resolution: {{width}}x{{height}}\n", width, height);
+    
+    /* Mixed types */
+    double pi = 3.14159;
+    char grade = 'A';
+    PRINT("Pi = {}, Grade = {}\n", pi, grade);
+    
+    /* Expressions */
+    PRINT("Result: {} + {} = {}\n", 5, 3, 5 + 3);
+    
+    return 0;
+}
