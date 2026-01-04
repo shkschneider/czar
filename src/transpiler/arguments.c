@@ -9,6 +9,7 @@
 
 #include "arguments.h"
 #include "../errors.h"
+#include "../warnings.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -24,6 +25,7 @@ static const char *g_source = NULL;
 /* Function parameter info */
 typedef struct {
     char *name;
+    char *type;  /* Parameter type for ambiguity checking */
 } ParamInfo;
 
 /* Function declaration info */
@@ -80,6 +82,7 @@ static void register_function(const char *func_name, ParamInfo *params, int para
     
     for (int i = 0; i < param_count && i < MAX_PARAMS; i++) {
         func->params[i].name = params[i].name ? strdup(params[i].name) : NULL;
+        func->params[i].type = params[i].type ? strdup(params[i].type) : NULL;
     }
     
     g_function_count++;
@@ -172,6 +175,7 @@ static void scan_function_declarations(ASTNode **children, size_t count) {
                 
                 /* If we see a type, look ahead for the parameter name */
                 if (is_type_token(t)) {
+                    const char *param_type = t->text;
                     size_t k = skip_whitespace(children, count, j + 1);
                     
                     /* Skip pointer markers */
@@ -185,6 +189,7 @@ static void scan_function_declarations(ASTNode **children, size_t count) {
                     if (k < count && children[k]->type == AST_TOKEN &&
                         children[k]->token.type == TOKEN_IDENTIFIER) {
                         params[param_count].name = children[k]->token.text;
+                        params[param_count].type = param_type;
                         param_count++;
                     }
                 }
@@ -216,9 +221,78 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
     
     j++;
     
-    /* Scan the argument list for named arguments */
+    /* First pass: collect info about arguments */
+    int arg_labeled[MAX_PARAMS] = {0};  /* Track which args have labels */
+    int arg_count = 0;
     int paren_depth = 1;
     int arg_index = 0;
+    size_t scan_j = j;
+    
+    while (scan_j < count && paren_depth > 0 && arg_index < MAX_PARAMS) {
+        if (children[scan_j]->type != AST_TOKEN) {
+            scan_j++;
+            continue;
+        }
+        
+        Token *t = &children[scan_j]->token;
+        
+        /* Track parentheses */
+        if (t->type == TOKEN_PUNCTUATION) {
+            if (token_text_equals(t, "(")) {
+                paren_depth++;
+            } else if (token_text_equals(t, ")")) {
+                paren_depth--;
+                if (paren_depth == 0) {
+                    arg_count = arg_index + 1;
+                    break;
+                }
+            } else if (token_text_equals(t, ",") && paren_depth == 1) {
+                arg_index++;
+            }
+        }
+        
+        /* Check if this argument has a label */
+        if (paren_depth == 1 && t->type == TOKEN_IDENTIFIER) {
+            size_t k = skip_whitespace(children, count, scan_j + 1);
+            if (k < count && children[k]->type == AST_TOKEN &&
+                children[k]->token.type == TOKEN_OPERATOR &&
+                token_text_equals(&children[k]->token, "=")) {
+                arg_labeled[arg_index] = 1;
+            }
+        }
+        
+        scan_j++;
+    }
+    
+    /* Check for ambiguous consecutive same-type parameters */
+    if (func_info && arg_count >= 2) {
+        for (int i = 0; i < func_info->param_count - 1 && i < arg_count - 1; i++) {
+            /* Check if consecutive parameters have the same type */
+            if (func_info->params[i].type && func_info->params[i + 1].type &&
+                strcmp(func_info->params[i].type, func_info->params[i + 1].type) == 0) {
+                
+                /* Check if both arguments are unlabeled */
+                if (!arg_labeled[i] && !arg_labeled[i + 1]) {
+                    /* Found ambiguous parameters - issue warning */
+                    char warning_msg[256];
+                    char suggestion[128];
+                    snprintf(suggestion, sizeof(suggestion), 
+                            "%s(%s = ..., %s = ...)",
+                            func_name,
+                            func_info->params[i].name,
+                            func_info->params[i + 1].name);
+                    snprintf(warning_msg, sizeof(warning_msg),
+                            WARN_AMBIGUOUS_ARGUMENTS, suggestion);
+                    cz_warning(g_filename, g_source, children[call_pos]->token.line, warning_msg);
+                    break;  /* Only warn once per function call */
+                }
+            }
+        }
+    }
+    
+    /* Second pass: transform named arguments */
+    paren_depth = 1;
+    arg_index = 0;
     
     while (j < count && paren_depth > 0) {
         if (children[j]->type != AST_TOKEN) {
@@ -358,6 +432,7 @@ void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, co
         free(g_functions[i].name);
         for (int j = 0; j < g_functions[i].param_count; j++) {
             free(g_functions[i].params[j].name);
+            free(g_functions[i].params[j].type);
         }
     }
     g_function_count = 0;

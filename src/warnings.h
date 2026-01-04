@@ -32,3 +32,8 @@ void cz_warning(const char *filename, const char *source, int line, const char *
 #define WARN_MAX_ENUM_TRACKING_LIMIT \
     "Maximum number of tracked enums (%d) reached. " \
     "Exhaustiveness checking may be incomplete for enum '%s'."
+
+/* Named Arguments Warnings */
+#define WARN_AMBIGUOUS_ARGUMENTS \
+    "Ambiguous function call with consecutive same-type parameters without labels. " \
+    "Consider using named arguments for clarity: %s"
