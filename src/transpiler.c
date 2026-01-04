@@ -12,7 +12,6 @@
 #include "warnings.h"
 #include "transpiler/types.h"
 #include "transpiler/constants.h"
-#include "transpiler/runtime.h"
 #include "transpiler/unused.h"
 #include "transpiler/validation.h"
 #include "transpiler/casts.h"
@@ -91,17 +90,6 @@ static void transform_node(ASTNode *node) {
                     /* If strdup fails, keep the original text */
                 } else {
                     /* Check if this identifier is a CZar function */
-                    const char *c_function = transpiler_get_c_function(node->token.text);
-                    if (c_function) {
-                        /* Replace CZar function with C function */
-                        char *new_text = strdup(c_function);
-                        if (new_text) {
-                            free(node->token.text);
-                            node->token.text = new_text;
-                            node->token.length = strlen(c_function);
-                        }
-                        /* If strdup fails, keep the original text */
-                    }
                 }
             }
         }
@@ -181,7 +169,12 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     }
 
     /* Inject runtime macro definitions at the beginning */
-    fprintf(output, "%s", transpiler_get_runtime_macros());
+    fprintf(output, "#include <stdlib.h>\n");
+    fprintf(output, "#include <stdio.h>\n");
+    fprintf(output, "#include <stdint.h>\n");
+    fprintf(output, "#include <stdbool.h>\n");
+    fprintf(output, "#include <assert.h>\n");
+    fprintf(output, "#define ASSERT(cond) do { if (!(cond)) { fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond); abort(); } } while (0)\n");
 
     emit_node(transpiler->ast, output);
 }
