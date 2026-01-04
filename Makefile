@@ -40,7 +40,8 @@ tests/%.out: tests/%.cz $(OUT)
 
 # Cleanup
 stat:
-	@find src -type f -name "*.c" | xargs wc -l | sort -n
+	@find src -type f -name "*.c" | xargs wc -l | cut -c2-
+	@find tests -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz' "{}"
 clean:
 	@rm -rvf ./build
 	@rm -vf ./tests/*.pp.cz ./tests/*.cz.c ./tests/*.o ./tests/*.out
