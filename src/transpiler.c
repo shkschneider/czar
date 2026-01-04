@@ -14,6 +14,7 @@
 #include "transpiler/constants.h"
 #include "transpiler/unused.h"
 #include "transpiler/validation.h"
+#include "transpiler/mutability.h"
 #include "transpiler/casts.h"
 #include "transpiler/autodereference.h"
 #include "transpiler/structs.h"
@@ -121,6 +122,9 @@ void transpiler_transform(Transpiler *transpiler) {
     /* First validate the AST for CZar semantic rules */
     transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
 
+    /* Validate mutability rules */
+    transpiler_validate_mutability(transpiler->ast, transpiler->filename, transpiler->source);
+
     /* Validate cast expressions */
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
 
@@ -158,6 +162,9 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Transform named arguments (strip labels) - must run before type transformations */
     transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Transform mutability keywords (strip 'mut') */
+    transpiler_transform_mutability(transpiler->ast);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);

@@ -1,0 +1,9 @@
+#include <stdio.h>
+
+int main(void) {
+    /* This should fail - assigning to immutable variable */
+    u8 x = 0;
+    x = 1;  /* ERROR: x is immutable */
+    
+    return 0;
+}

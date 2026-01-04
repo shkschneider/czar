@@ -42,3 +42,8 @@ void cz_error(const char *filename, const char *source, int line, const char *me
 
 /* Named Arguments Errors */
 #define ERR_AMBIGUOUS_ARGUMENTS "Ambiguous function call with consecutive same-type parameters without labels. Use named arguments for clarity: %s"
+
+/* Mutability Errors */
+#define ERR_IMMUTABLE_ASSIGNMENT "Cannot assign to immutable variable '%s'. Add 'mut' qualifier to make it mutable: mut %s"
+#define ERR_IMMUTABLE_MODIFICATION "Cannot modify immutable variable '%s'. Add 'mut' qualifier to make it mutable: mut %s"
+#define ERR_FOR_LOOP_IMMUTABLE_COUNTER "For-loop counter '%s' must be mutable. Use: for (mut %s ...)"

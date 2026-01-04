@@ -1,0 +1,20 @@
+#include <stdio.h>
+
+int main(void) {
+    /* Test immutable variable - should work */
+    u8 x = 0;
+    printf("x = %u\n", x);
+
+    /* Test mutable variable - should work */
+    mut u8 y = 0;
+    y = 1;
+    printf("y = %u\n", y);
+
+    /* Test increment on mutable - should work */
+    mut u8 z = 5;
+    z++;
+    printf("z = %u\n", z);
+
+    printf("Mutability test: OK\n");
+    return 0;
+}
