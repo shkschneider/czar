@@ -24,6 +24,7 @@
 #include "transpiler/fixme.h"
 #include "transpiler/functions.h"
 #include "transpiler/arguments.h"
+#include "transpiler/log.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -185,7 +186,11 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     fprintf(output, "#include <stdint.h>\n");
     fprintf(output, "#include <stdbool.h>\n");
     fprintf(output, "#include <assert.h>\n");
-    fprintf(output, "#define ASSERT(cond) do { if (!(cond)) { fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond); abort(); } } while (0)\n");
+    fprintf(output, "#include <stdarg.h>\n");
+    fprintf(output, "#define ASSERT(cond) do { if (!(cond)) { fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond); abort(); } } while (0)\n\n");
+
+    /* Emit Log runtime support (default: debug mode = true) */
+    transpiler_emit_log_runtime(output, 1);
 
     emit_node(transpiler->ast, output);
 }
