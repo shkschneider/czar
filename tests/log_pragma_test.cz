@@ -5,17 +5,17 @@
 
 int main(void) {
     printf("=== Testing CZar Logging with Debug OFF via Pragma ===\n\n");
-    
+
     /* With debug false, all log levels should appear */
     printf("--- All log levels should be visible ---\n");
-    
+
     Log.verbose("Verbose message");
     Log.debug("Debug message");
     Log.info("Info message");
     Log.warning("Warning message");
     Log.error("Error message");
-    
+
     printf("\n=== All logs displayed ===\n");
-    
+
     return 0;
 }

@@ -2,33 +2,33 @@
 
 int main(void) {
     printf("=== Testing CZar Logging System ===\n\n");
-    
+
     /* Test with debug mode enabled (default) - should only show INFO and above */
     printf("--- Test 1: Debug mode ON (default) - should only show INFO+ ---\n");
-    
+
     Log.verbose("This verbose message should NOT appear");
     Log.debug("This debug message should NOT appear");
     Log.info("This info message SHOULD appear");
     Log.warning("This warning message SHOULD appear");
     Log.error("This error message SHOULD appear");
-    
+
     printf("\n--- Test 2: Debug mode OFF - should show all levels ---\n");
     CZ_LOG_DEBUG_MODE = 0;
-    
+
     Log.verbose("This verbose message SHOULD appear");
     Log.debug("This debug message SHOULD appear");
     Log.info("This info message SHOULD appear");
     Log.warning("This warning message SHOULD appear");
     Log.error("This error message SHOULD appear");
-    
+
     printf("\n--- Test 3: Testing format strings ---\n");
-    
+
     int value = 42;
     const char *text = "test";
     Log.info("Integer: %d, String: %s", value, text);
     Log.warning("Pointer: %p, Hex: 0x%x", (void*)&value, value);
-    
+
     printf("\n=== All logging tests passed ===\n");
-    
+
     return 0;
 }
