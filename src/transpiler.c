@@ -21,6 +21,8 @@
 #include "transpiler/methods.h"
 #include "transpiler/enums.h"
 #include "transpiler/unreachable.h"
+#include "transpiler/todo.h"
+#include "transpiler/fixme.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -141,8 +143,10 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform enums (add default: inline unreachable if needed) */
     transpiler_transform_enums(transpiler->ast, transpiler->filename);
 
-    /* Expand UNREACHABLE() calls inline with .cz file location (before transforming identifiers) */
+    /* Expand runtime function calls inline with .cz file location (before transforming identifiers) */
     transpiler_expand_unreachable(transpiler->ast, transpiler->filename);
+    transpiler_expand_todo(transpiler->ast, transpiler->filename);
+    transpiler_expand_fixme(transpiler->ast, transpiler->filename);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
