@@ -200,14 +200,14 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     /* Inject runtime macro definitions at the beginning */
     runtime_emit_assert(output);
 
+    /* Emit Monotonic Clock runtime support (needed by log) */
+    runtime_emit_monotonic_clock(output);
+
     /* Emit Log runtime support using pragma debug mode setting */
     runtime_emit_log(output, transpiler->pragma_ctx.debug_mode);
 
     /* Emit Print runtime support */
     runtime_emit_print(output);
-
-    /* Emit Monotonic Clock runtime support */
-    runtime_emit_monotonic_clock(output);
 
     emit_node(transpiler->ast, output);
 }

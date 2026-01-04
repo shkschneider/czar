@@ -69,4 +69,14 @@ void runtime_emit_monotonic_clock(FILE *output) {
     fprintf(output, "    nanosleep(&ts, NULL);\n");
     fprintf(output, "#endif\n");
     fprintf(output, "}\n\n");
+
+    /* Emit timer function for measuring time since program start */
+    fprintf(output, "/* Timer: nanoseconds since program start */\n");
+    fprintf(output, "static unsigned long long __cz_timer_start = 0;\n");
+    fprintf(output, "__attribute__((constructor)) static void __cz_timer_init(void) {\n");
+    fprintf(output, "    __cz_timer_start = cz_monotonic_clock_ns();\n");
+    fprintf(output, "}\n");
+    fprintf(output, "__attribute__((unused)) static unsigned long long cz_monotonic_timer_ns(void) {\n");
+    fprintf(output, "    return cz_monotonic_clock_ns() - __cz_timer_start;\n");
+    fprintf(output, "}\n\n");
 }

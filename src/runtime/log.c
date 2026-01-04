@@ -154,7 +154,12 @@ void runtime_emit_log(FILE *output, int debug_mode) {
     fprintf(output, "        default: level_str = \"UNKNOWN\"; out = stdout; break;\n");
     fprintf(output, "    }\n");
     fprintf(output, "    if (CZ_LOG_DEBUG_MODE && level < CZ_LOG_INFO) return;\n");
-    fprintf(output, "    fprintf(out, \"[CZAR] %%s \", level_str);\n");
+    fprintf(output, "    \n");
+    fprintf(output, "    /* Get elapsed time since program start in seconds */\n");
+    fprintf(output, "    unsigned long long elapsed_ns = cz_monotonic_timer_ns();\n");
+    fprintf(output, "    double elapsed_s = elapsed_ns / 1000000000.0;\n");
+    fprintf(output, "    \n");
+    fprintf(output, "    fprintf(out, \"[CZAR] %%.2fs %%s \", elapsed_s, level_str);\n");
     fprintf(output, "    if (func) fprintf(out, \"in %%s() \", func);\n");
     fprintf(output, "    /* Strip .c suffix from filename if present */\n");
     fprintf(output, "    const char *display_file = file ? file : \"<unknown>\";\n");

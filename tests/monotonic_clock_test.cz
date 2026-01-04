@@ -10,8 +10,17 @@ int main(void) {
     printf("Equivalent seconds: %.2f\n", time1 / 1000000000.0);
     printf("Note: This is time since system boot or similar reference point\n");
 
-    /* Test 2: Verify time advances */
-    printf("\n--- Test 2: Verify time advances ---\n");
+    /* Test 2: Test monotonic timer (program-relative) */
+    printf("\n--- Test 2: Monotonic timer (program-relative) ---\n");
+    unsigned long long timer1 = cz_monotonic_timer_ns();
+    printf("Timer at start: %llu ns (%.3f ms)\n", timer1, timer1 / 1000000.0);
+    cz_sleep_ns(5000000);  /* Sleep 5 milliseconds */
+    unsigned long long timer2 = cz_monotonic_timer_ns();
+    printf("Timer after 5ms sleep: %llu ns (%.3f ms)\n", timer2, timer2 / 1000000.0);
+    printf("Note: Timer measures time since program started\n");
+
+    /* Test 3: Verify time advances */
+    printf("\n--- Test 3: Verify time advances ---\n");
     cz_sleep_ns(10000000);  /* Sleep 10 milliseconds */
     unsigned long long time2 = cz_monotonic_clock_ns();
     printf("Timestamp after 10ms sleep: %llu\n", time2);
@@ -19,8 +28,8 @@ int main(void) {
     printf("Elapsed time (ns): %llu\n", elapsed);
     printf("Elapsed time (ms): %llu\n", elapsed / 1000000);
 
-    /* Test 3: Measure a small operation */
-    printf("\n--- Test 3: Measure operation duration ---\n");
+    /* Test 4: Measure a small operation */
+    printf("\n--- Test 4: Measure operation duration ---\n");
     unsigned long long start = cz_monotonic_clock_ns();
     
     /* Do some work */
@@ -34,13 +43,13 @@ int main(void) {
     printf("Operation took %llu nanoseconds\n", duration);
     printf("Operation took %llu microseconds\n", duration / 1000);
 
-    /* Test 4: Test cz_now_monotonic_ns alias */
-    printf("\n--- Test 4: Test cz_now_monotonic_ns alias ---\n");
+    /* Test 5: Test cz_now_monotonic_ns alias */
+    printf("\n--- Test 5: Test cz_now_monotonic_ns alias ---\n");
     unsigned long long now = cz_now_monotonic_ns();
     printf("Using cz_now_monotonic_ns(): %llu\n", now);
 
-    /* Test 5: Test multiple sleep durations */
-    printf("\n--- Test 5: Test sleep durations ---\n");
+    /* Test 6: Test multiple sleep durations */
+    printf("\n--- Test 6: Test sleep durations ---\n");
     unsigned long long before_sleep = cz_monotonic_clock_ns();
     cz_sleep_ns(5000000);  /* 5ms */
     unsigned long long after_sleep = cz_monotonic_clock_ns();
