@@ -8,6 +8,9 @@
 
 #pragma once
 
+/* Warning reporting function */
+void cz_warning(const char *filename, const char *source, int line, const char *message);
+
 /* Cast Warnings */
 #define WARN_CAST_WITHOUT_FALLBACK \
     "cast<%s>(value) without fallback. " \
