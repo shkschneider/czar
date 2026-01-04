@@ -34,7 +34,7 @@ ifdef FILE
 test: $(OUT)
 	@$(MAKE) $(basename $(FILE)).out
 else
-test: $(TESTS:.cz=.out)
+test: $(TESTS:.cz=.out) $(OUT)
 	@echo
 	@echo "All tests passed."
 endif

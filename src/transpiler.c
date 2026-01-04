@@ -24,9 +24,10 @@
 #include "transpiler/fixme.h"
 #include "transpiler/functions.h"
 #include "transpiler/arguments.h"
-#include "transpiler/log.h"
-#include "transpiler/log_expand.h"
 #include "transpiler/pragma.h"
+#include "runtime/assert.h"
+#include "runtime/log.h"
+#include "runtime/log_expand.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -150,10 +151,10 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_expand_unreachable(transpiler->ast, transpiler->filename);
     transpiler_expand_todo(transpiler->ast, transpiler->filename);
     transpiler_expand_fixme(transpiler->ast, transpiler->filename);
-    
+
     /* Expand Log calls with #line directives for correct source locations */
     transpiler_expand_log_calls(transpiler->ast, transpiler->filename);
-    
+
     /* Transform named arguments (strip labels) - must run before type transformations */
     transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
 
@@ -190,17 +191,10 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     }
 
     /* Inject runtime macro definitions at the beginning */
-    fprintf(output, "#include <stdlib.h>\n");
-    fprintf(output, "#include <stdio.h>\n");
-    fprintf(output, "#include <stdint.h>\n");
-    fprintf(output, "#include <stdbool.h>\n");
-    fprintf(output, "#include <assert.h>\n");
-    fprintf(output, "#include <stdarg.h>\n");
-    fprintf(output, "#include <string.h>\n");
-    fprintf(output, "#define ASSERT(cond) do { if (!(cond)) { fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond); abort(); } } while (0)\n\n");
+    runtime_emit_assert(output);
 
     /* Emit Log runtime support using pragma debug mode setting */
-    transpiler_emit_log_runtime(output, transpiler->pragma_ctx.debug_mode);
+    runtime_emit_log(output, transpiler->pragma_ctx.debug_mode);
 
     emit_node(transpiler->ast, output);
 }

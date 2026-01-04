@@ -11,4 +11,4 @@
 #include <stdio.h>
 
 /* Emit Log runtime support to output */
-void transpiler_emit_log_runtime(FILE *output, int debug_mode);
+void runtime_emit_log(FILE *output, int debug_mode);
