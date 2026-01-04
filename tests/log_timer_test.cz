@@ -1,10 +1,10 @@
 #include <stdio.h>
 
+/* Use pragma to set debug mode OFF - all log levels will be visible */
+#pragma czar debug false
+
 int main(void) {
     printf("=== Testing CZar Log with Timer ===\n\n");
-
-    /* Enable all log levels */
-    CZ_LOG_DEBUG_MODE = 0;
 
     /* Log at start */
     Log.info("Program started");

@@ -1,19 +1,13 @@
 #include <stdio.h>
 
+/* Use pragma to set debug mode OFF - all log levels will be visible */
+#pragma czar debug false
+
 int main(void) {
     printf("=== Testing CZar Logging System ===\n\n");
 
-    /* Test with debug mode enabled (default) - should only show INFO and above */
-    printf("--- Test 1: Debug mode ON (default) - should only show INFO+ ---\n");
-
-    Log.verbose("This verbose message should NOT appear");
-    Log.debug("This debug message should NOT appear");
-    Log.info("This info message SHOULD appear");
-    Log.warning("This warning message SHOULD appear");
-    Log.error("This error message SHOULD appear");
-
-    printf("\n--- Test 2: Debug mode OFF - should show all levels ---\n");
-    CZ_LOG_DEBUG_MODE = 0;
+    /* Test with debug mode OFF (via pragma) - all levels should show */
+    printf("--- Debug mode OFF (via pragma) - all levels visible ---\n");
 
     Log.verbose("This verbose message SHOULD appear");
     Log.debug("This debug message SHOULD appear");
@@ -21,7 +15,7 @@ int main(void) {
     Log.warning("This warning message SHOULD appear");
     Log.error("This error message SHOULD appear");
 
-    printf("\n--- Test 3: Testing format strings ---\n");
+    printf("\n--- Testing format strings ---\n");
 
     int value = 42;
     const char *text = "test";
