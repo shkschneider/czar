@@ -25,6 +25,7 @@
 #include "transpiler/functions.h"
 #include "transpiler/arguments.h"
 #include "transpiler/log.h"
+#include "transpiler/log_expand.h"
 #include "transpiler/pragma.h"
 #include <stdlib.h>
 #include <string.h>
@@ -149,6 +150,9 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_expand_unreachable(transpiler->ast, transpiler->filename);
     transpiler_expand_todo(transpiler->ast, transpiler->filename);
     transpiler_expand_fixme(transpiler->ast, transpiler->filename);
+    
+    /* Expand Log calls with #line directives for correct source locations */
+    transpiler_expand_log_calls(transpiler->ast, transpiler->filename);
     
     /* Transform named arguments (strip labels) - must run before type transformations */
     transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
