@@ -8,6 +8,9 @@
 
 #pragma once
 
+/* Error reporting function */
+void cz_error(const char *filename, const char *source, int line, const char *message);
+
 /* Main/CLI Errors */
 #define ERR_CANNOT_OPEN_INPUT_FILE "Cannot open input file '%s'"
 #define ERR_CANNOT_OPEN_OUTPUT_FILE "Cannot open output file '%s'"
