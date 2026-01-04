@@ -27,7 +27,6 @@
 #include "transpiler/pragma.h"
 #include "runtime/assert.h"
 #include "runtime/log.h"
-#include "runtime/log_expand.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
