@@ -25,6 +25,7 @@
 #include "transpiler/functions.h"
 #include "transpiler/arguments.h"
 #include "transpiler/log.h"
+#include "transpiler/pragma.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -34,6 +35,10 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
     transpiler->ast = ast;
     transpiler->filename = filename;
     transpiler->source = source;
+    /* Initialize pragma context with defaults */
+    pragma_context_init(&transpiler->pragma_ctx);
+    /* Parse pragmas from AST to update context */
+    transpiler_parse_pragmas(ast, &transpiler->pragma_ctx);
     /* Reset unused counter for each translation unit */
     transpiler_reset_unused_counter();
 }
@@ -189,8 +194,8 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     fprintf(output, "#include <stdarg.h>\n");
     fprintf(output, "#define ASSERT(cond) do { if (!(cond)) { fprintf(stderr, \"[CZAR] ASSERTION failed at %%s:%%d: %%s\\n\", __FILE__, __LINE__, #cond); abort(); } } while (0)\n\n");
 
-    /* Emit Log runtime support (default: debug mode = true) */
-    transpiler_emit_log_runtime(output, 1);
+    /* Emit Log runtime support using pragma debug mode setting */
+    transpiler_emit_log_runtime(output, transpiler->pragma_ctx.debug_mode);
 
     emit_node(transpiler->ast, output);
 }
