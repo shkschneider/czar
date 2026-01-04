@@ -20,14 +20,6 @@ build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 .PHONY: all
 
-# Demo
-demo/a.out:
-	$(MAKE) -B -C demo -o $@
-demo: demo/a.out
-	@echo
-	@./$<
-.PHONY: demo
-
 # Tests: test FILE=...
 TESTS = $(wildcard tests/*.cz)
 ifdef FILE
@@ -51,6 +43,5 @@ stat:
 	@find src -type f -name "*.c" | xargs wc -l | sort -n
 clean:
 	@rm -rvf ./build
-	@rm -vf ./demo/*.pp.cz ./demo/*.cz.c ./demo/*.o ./demo/*.out
 	@rm -vf ./tests/*.pp.cz ./tests/*.cz.c ./tests/*.o ./tests/*.out
 .PHONY: clean

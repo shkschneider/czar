@@ -10,9 +10,11 @@ SOURCES_C  = $(filter-out %.cz.c,$(wildcard *.c))
 SOURCES_CZ = $(patsubst %.cz,%.cz.c,$(wildcard *.cz))
 OBJECTS    = $(SOURCES_C:.c=.o) $(SOURCES_CZ:.c=.o)
 
-all:
-	@echo $(SOURCES_C) + $(SOURCES_CZ) -> $(OBJECTS) = $(OUT)
-	$(MAKE) $(OUT)
+all: $(CZ) $(OUT)
+	@./$(OUT)
+
+$(CZ):
+	$(MAKE) -C .. -B
 
 # Using CZar, you'll just need to add this:
 .SUFFIXES: # turn off implicit suffix rules (circular dependency)
