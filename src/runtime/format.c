@@ -86,12 +86,20 @@ void runtime_emit_format(FILE *output) {
     /* Emit the internal format function that processes template and args and returns a string */
     fprintf(output, "/* CZar Format Runtime - Internal format implementation */\n");
     fprintf(output, "__attribute__((unused)) static char* _cz_format(const char *fmt, int argc, any_t *argv) {\n");
-    fprintf(output, "    if (!fmt) return strdup(\"\");\n");
+    fprintf(output, "    if (!fmt) {\n");
+    fprintf(output, "        char *empty = (char*)malloc(1);\n");
+    fprintf(output, "        if (empty) empty[0] = '\\0';\n");
+    fprintf(output, "        return empty;\n");
+    fprintf(output, "    }\n");
     fprintf(output, "    \n");
     fprintf(output, "    /* Estimate buffer size */\n");
     fprintf(output, "    size_t estimated_size = strlen(fmt) + argc * 64 + 1;\n");
     fprintf(output, "    char *result = malloc(estimated_size);\n");
-    fprintf(output, "    if (!result) return strdup(\"\");\n");
+    fprintf(output, "    if (!result) {\n");
+    fprintf(output, "        char *empty = (char*)malloc(1);\n");
+    fprintf(output, "        if (empty) empty[0] = '\\0';\n");
+    fprintf(output, "        return empty;\n");
+    fprintf(output, "    }\n");
     fprintf(output, "    \n");
     fprintf(output, "    char *out = result;\n");
     fprintf(output, "    int arg_idx = 0;\n");
