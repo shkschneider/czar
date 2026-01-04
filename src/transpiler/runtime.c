@@ -17,10 +17,8 @@ typedef struct {
 
 /* CZar function to C function mappings */
 static const FunctionMapping function_mappings[] = {
-    {"ASSERT", "cz_assert"},
-    {"TODO", "cz_todo"},
-    {"FIXME", "cz_fixme"},
-    /* UNREACHABLE is expanded inline, not mapped */
+    {"ASSERT", "cz_assert"},  /* ASSERT kept as macro - needs stringification */
+    /* TODO, FIXME, and UNREACHABLE are all expanded inline, not mapped */
     {NULL, NULL} /* Sentinel */
 };
 
@@ -40,17 +38,7 @@ static const char *runtime_functions =
 "#include <stdio.h>\n"
 "#include <stdlib.h>\n"
 "\n"
-"/* Compatibility for noreturn attribute */\n"
-"#if defined(__GNUC__) || defined(__clang__)\n"
-"#define CZ_NORETURN __attribute__((noreturn))\n"
-"#elif defined(_MSC_VER)\n"
-"#define CZ_NORETURN __declspec(noreturn)\n"
-"#elif __STDC_VERSION__ >= 201112L\n"
-"#define CZ_NORETURN _Noreturn\n"
-"#else\n"
-"#define CZ_NORETURN\n"
-"#endif\n"
-"\n"
+"/* ASSERT macro - requires stringification, cannot be expanded inline */\n"
 "static inline void _cz_assert(int condition, const char* file, int line, const char* func, const char* cond_str) {\n"
 "    if (!condition) {\n"
 "        fprintf(stderr, \"%s:%d: %s: Assertion failed: %s\\n\", file, line, func, cond_str);\n"
@@ -59,19 +47,7 @@ static const char *runtime_functions =
 "}\n"
 "#define cz_assert(cond) _cz_assert((cond), __FILE__, __LINE__, __func__, #cond)\n"
 "\n"
-"CZ_NORETURN static inline void _cz_todo(const char* msg, const char* file, int line, const char* func) {\n"
-"    fprintf(stderr, \"%s:%d: %s: TODO: %s\\n\", file, line, func, msg);\n"
-"    abort();\n"
-"}\n"
-"#define cz_todo(msg) _cz_todo((msg), __FILE__, __LINE__, __func__)\n"
-"\n"
-"CZ_NORETURN static inline void _cz_fixme(const char* msg, const char* file, int line, const char* func) {\n"
-"    fprintf(stderr, \"%s:%d: %s: FIXME: %s\\n\", file, line, func, msg);\n"
-"    abort();\n"
-"}\n"
-"#define cz_fixme(msg) _cz_fixme((msg), __FILE__, __LINE__, __func__)\n"
-"\n"
-"/* UNREACHABLE() is expanded inline by the transpiler with .cz file locations */\n"
+"/* TODO, FIXME, and UNREACHABLE are expanded inline by the transpiler with .cz file locations */\n"
 "/* End of CZar runtime functions */\n"
 "\n";
 
