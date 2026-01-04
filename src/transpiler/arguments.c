@@ -67,23 +67,23 @@ static void register_function(const char *func_name, ParamInfo *params, int para
     if (g_function_count >= MAX_FUNCTIONS) {
         return;
     }
-    
+
     /* Check if already registered */
     for (int i = 0; i < g_function_count; i++) {
         if (g_functions[i].name && strcmp(g_functions[i].name, func_name) == 0) {
             return; /* Already registered */
         }
     }
-    
+
     FunctionInfo *func = &g_functions[g_function_count];
     func->name = strdup(func_name);
     func->param_count = param_count;
-    
+
     for (int i = 0; i < param_count && i < MAX_PARAMS; i++) {
         func->params[i].name = params[i].name ? strdup(params[i].name) : NULL;
         func->params[i].type = params[i].type ? strdup(params[i].type) : NULL;
     }
-    
+
     g_function_count++;
 }
 
@@ -100,10 +100,10 @@ static FunctionInfo *find_function(const char *func_name) {
 /* Check if a token is a type keyword or identifier */
 static int is_type_token(Token *token) {
     if (!token || !token->text) return 0;
-    
+
     if (token->type == TOKEN_KEYWORD) return 1;
     if (token->type != TOKEN_IDENTIFIER) return 0;
-    
+
     /* Check common type names */
     const char *text = token->text;
     return (strcmp(text, "void") == 0 || strcmp(text, "int") == 0 ||
@@ -125,39 +125,39 @@ static void scan_function_declarations(ASTNode **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
-        
+
         Token *tok = &children[i]->token;
-        
+
         /* Look for function name followed by ( */
         size_t j = skip_whitespace(children, count, i + 1);
         if (j >= count) continue;
         if (children[j]->type != AST_TOKEN) continue;
         if (!token_text_equals(&children[j]->token, "(")) continue;
-        
+
         /* Check if this is a function declaration by looking backward for return type */
         int is_function_decl = 0;
         for (int k = (int)i - 1; k >= 0 && k >= (int)i - 10; k--) {
             if (children[k]->type != AST_TOKEN) continue;
-            if (children[k]->token.type == TOKEN_WHITESPACE || 
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
                 children[k]->token.type == TOKEN_COMMENT) continue;
-            
+
             if (is_type_token(&children[k]->token)) {
                 is_function_decl = 1;
                 break;
             }
             break;
         }
-        
+
         if (!is_function_decl) continue;
-        
+
         /* Parse parameter list */
         const char *func_name = tok->text;
         ParamInfo params[MAX_PARAMS];
         int param_count = 0;
-        
+
         int paren_depth = 1;
         j++;
-        
+
         while (j < count && paren_depth > 0 && param_count < MAX_PARAMS) {
             if (children[j]->type == AST_TOKEN &&
                 children[j]->token.type == TOKEN_PUNCTUATION) {
@@ -167,36 +167,36 @@ static void scan_function_declarations(ASTNode **children, size_t count) {
                     paren_depth--;
                 }
             }
-            
+
             /* Look for parameter name (identifier after type) */
             if (paren_depth == 1 && children[j]->type == AST_TOKEN) {
                 Token *t = &children[j]->token;
-                
+
                 /* If we see a type, look ahead for the parameter name */
                 if (is_type_token(t)) {
                     const char *param_type = t->text;
                     size_t k = skip_whitespace(children, count, j + 1);
-                    
+
                     /* Skip pointer markers */
                     while (k < count && children[k]->type == AST_TOKEN &&
                            children[k]->token.type == TOKEN_OPERATOR &&
                            token_text_equals(&children[k]->token, "*")) {
                         k = skip_whitespace(children, count, k + 1);
                     }
-                    
+
                     /* Get parameter name */
                     if (k < count && children[k]->type == AST_TOKEN &&
                         children[k]->token.type == TOKEN_IDENTIFIER) {
                         params[param_count].name = children[k]->token.text;
-                        params[param_count].type = param_type;
+                        params[param_count].type = strdup(param_type);
                         param_count++;
                     }
                 }
             }
-            
+
             j++;
         }
-        
+
         /* Register the function */
         if (param_count > 0) {
             register_function(func_name, params, param_count);
@@ -209,32 +209,32 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
     /* call_pos points to the function name */
     if (call_pos >= count) return;
     if (children[call_pos]->type != AST_TOKEN) return;
-    
+
     const char *func_name = children[call_pos]->token.text;
     FunctionInfo *func_info = find_function(func_name);
-    
+
     /* Find opening paren */
     size_t j = skip_whitespace(children, count, call_pos + 1);
     if (j >= count || children[j]->type != AST_TOKEN) return;
     if (!token_text_equals(&children[j]->token, "(")) return;
-    
+
     j++;
-    
+
     /* First pass: collect info about arguments */
     int arg_labeled[MAX_PARAMS] = {0};  /* Track which args have labels */
     int arg_count = 0;
     int paren_depth = 1;
     int arg_index = 0;
     size_t scan_j = j;
-    
+
     while (scan_j < count && paren_depth > 0 && arg_index < MAX_PARAMS) {
         if (children[scan_j]->type != AST_TOKEN) {
             scan_j++;
             continue;
         }
-        
+
         Token *t = &children[scan_j]->token;
-        
+
         /* Track parentheses */
         if (t->type == TOKEN_PUNCTUATION) {
             if (token_text_equals(t, "(")) {
@@ -249,7 +249,7 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                 arg_index++;
             }
         }
-        
+
         /* Check if this argument has a label */
         if (paren_depth == 1 && t->type == TOKEN_IDENTIFIER) {
             size_t k = skip_whitespace(children, count, scan_j + 1);
@@ -259,17 +259,17 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                 arg_labeled[arg_index] = 1;
             }
         }
-        
+
         scan_j++;
     }
-    
+
     /* Check for ambiguous consecutive same-type parameters */
     if (func_info && arg_count >= 2) {
         for (int i = 0; i < func_info->param_count - 1 && i < arg_count - 1; i++) {
             /* Check if consecutive parameters have the same type */
             if (func_info->params[i].type && func_info->params[i + 1].type &&
                 strcmp(func_info->params[i].type, func_info->params[i + 1].type) == 0) {
-                
+
                 /* Check if both arguments are unlabeled */
                 if (!arg_labeled[i] && !arg_labeled[i + 1]) {
                     /* Found ambiguous parameters - issue error */
@@ -277,7 +277,7 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                     if (func_info->params[i].name && func_info->params[i + 1].name) {
                         char error_msg[256];
                         char suggestion[128];
-                        snprintf(suggestion, sizeof(suggestion), 
+                        snprintf(suggestion, sizeof(suggestion),
                                 "%s(%s = ..., %s = ...)",
                                 func_name,
                                 func_info->params[i].name,
@@ -291,19 +291,19 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
             }
         }
     }
-    
+
     /* Second pass: transform named arguments */
     paren_depth = 1;
     arg_index = 0;
-    
+
     while (j < count && paren_depth > 0) {
         if (children[j]->type != AST_TOKEN) {
             j++;
             continue;
         }
-        
+
         Token *t = &children[j]->token;
-        
+
         /* Track parentheses */
         if (t->type == TOKEN_PUNCTUATION) {
             if (token_text_equals(t, "(")) {
@@ -315,17 +315,17 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                 arg_index++;
             }
         }
-        
+
         /* Look for pattern: identifier = value */
         if (paren_depth == 1 && t->type == TOKEN_IDENTIFIER) {
             size_t k = skip_whitespace(children, count, j + 1);
             if (k < count && children[k]->type == AST_TOKEN &&
                 children[k]->token.type == TOKEN_OPERATOR &&
                 token_text_equals(&children[k]->token, "=")) {
-                
+
                 /* This is a named argument! */
                 const char *label = t->text;
-                
+
                 /* Validate the label matches the expected parameter name */
                 if (func_info) {
                     if (arg_index < func_info->param_count) {
@@ -344,13 +344,13 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                     /* Function not found - might be external or defined later */
                     /* We'll allow it but can't validate */
                 }
-                
+
                 /* Strip the label, =, and any whitespace after = */
                 /* Strip the label */
                 free(t->text);
                 t->text = strdup("");
                 t->length = 0;
-                
+
                 /* Strip whitespace between label and = */
                 for (size_t m = j + 1; m < k; m++) {
                     if (children[m]->type == AST_TOKEN &&
@@ -360,12 +360,12 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                         children[m]->token.length = 0;
                     }
                 }
-                
+
                 /* Strip the = operator */
                 free(children[k]->token.text);
                 children[k]->token.text = strdup("");
                 children[k]->token.length = 0;
-                
+
                 /* Strip whitespace after = */
                 size_t m = k + 1;
                 while (m < count && children[m]->type == AST_TOKEN &&
@@ -377,7 +377,7 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
                 }
             }
         }
-        
+
         j++;
     }
 }
@@ -387,48 +387,48 @@ void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, co
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     g_filename = filename;
     g_source = source;
     g_function_count = 0;
-    
+
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
-    
+
     /* First pass: scan for function declarations */
     scan_function_declarations(children, count);
-    
+
     /* Second pass: transform function calls with named arguments */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
-        
+
         /* Look for function call pattern: identifier ( */
         size_t j = skip_whitespace(children, count, i + 1);
         if (j >= count) continue;
         if (children[j]->type != AST_TOKEN) continue;
         if (!token_text_equals(&children[j]->token, "(")) continue;
-        
+
         /* Check if this is NOT a function declaration */
         int is_declaration = 0;
         for (int k = (int)i - 1; k >= 0 && k >= (int)i - 10; k--) {
             if (children[k]->type != AST_TOKEN) continue;
-            if (children[k]->token.type == TOKEN_WHITESPACE || 
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
                 children[k]->token.type == TOKEN_COMMENT) continue;
-            
+
             if (is_type_token(&children[k]->token)) {
                 is_declaration = 1;
                 break;
             }
             break;
         }
-        
+
         if (!is_declaration) {
             /* This is a function call */
             transform_function_call(children, count, i);
         }
     }
-    
+
     /* Cleanup */
     for (int i = 0; i < g_function_count; i++) {
         free(g_functions[i].name);
