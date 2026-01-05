@@ -225,6 +225,7 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
             }
             
             /* Check for const keyword - forbidden in CZar */
+            /* This handles both standalone const and mut+const conflicts */
             if (token->type == TOKEN_KEYWORD && strcmp(token->text, "const") == 0) {
                 /* Look back for mut */
                 int has_mut = 0;
