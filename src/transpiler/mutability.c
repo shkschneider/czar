@@ -105,9 +105,264 @@ static int is_followed_by_pointer(ASTNode **children, size_t count, size_t type_
     return strcmp(children[next_idx]->token.text, "*") == 0;
 }
 
-/* Validate mutability rules - mut parameters must be pointers */
+/* Structure to track function parameters and their mutability */
+typedef struct {
+    char **param_names;
+    int *param_is_mutable;  /* 1 if mut, 0 if immutable */
+    int *param_is_pointer;  /* 1 if pointer type */
+    size_t count;
+    size_t capacity;
+} ParamTracker;
+
+static ParamTracker *tracker = NULL;
+
+/* Initialize parameter tracker */
+static void init_param_tracker(void) {
+    if (!tracker) {
+        tracker = malloc(sizeof(ParamTracker));
+        if (tracker) {
+            tracker->param_names = NULL;
+            tracker->param_is_mutable = NULL;
+            tracker->param_is_pointer = NULL;
+            tracker->count = 0;
+            tracker->capacity = 0;
+        }
+    }
+}
+
+/* Clear parameter tracker */
+static void clear_param_tracker(void) {
+    if (tracker) {
+        for (size_t i = 0; i < tracker->count; i++) {
+            free(tracker->param_names[i]);
+        }
+        free(tracker->param_names);
+        free(tracker->param_is_mutable);
+        free(tracker->param_is_pointer);
+        tracker->count = 0;
+    }
+}
+
+/* Free parameter tracker */
+static void free_param_tracker(void) {
+    if (tracker) {
+        clear_param_tracker();
+        free(tracker);
+        tracker = NULL;
+    }
+}
+
+/* Add a parameter to tracker */
+static void add_param(const char *name, int is_mutable, int is_pointer) {
+    if (!tracker) return;
+    
+    /* Ensure capacity */
+    if (tracker->count >= tracker->capacity) {
+        size_t new_cap = (tracker->capacity == 0) ? 8 : tracker->capacity * 2;
+        char **new_names = realloc(tracker->param_names, new_cap * sizeof(char *));
+        int *new_mut = realloc(tracker->param_is_mutable, new_cap * sizeof(int));
+        int *new_ptr = realloc(tracker->param_is_pointer, new_cap * sizeof(int));
+        
+        if (!new_names || !new_mut || !new_ptr) {
+            free(new_names);
+            free(new_mut);
+            free(new_ptr);
+            return;
+        }
+        
+        tracker->param_names = new_names;
+        tracker->param_is_mutable = new_mut;
+        tracker->param_is_pointer = new_ptr;
+        tracker->capacity = new_cap;
+    }
+    
+    tracker->param_names[tracker->count] = strdup(name);
+    tracker->param_is_mutable[tracker->count] = is_mutable;
+    tracker->param_is_pointer[tracker->count] = is_pointer;
+    tracker->count++;
+}
+
+/* Check if a parameter is immutable */
+static int is_immutable_param(const char *name, int *is_pointer) {
+    if (!tracker) return 0;
+    
+    for (size_t i = 0; i < tracker->count; i++) {
+        if (strcmp(tracker->param_names[i], name) == 0) {
+            if (is_pointer) {
+                *is_pointer = tracker->param_is_pointer[i];
+            }
+            return !tracker->param_is_mutable[i];
+        }
+    }
+    return 0;
+}
+
+/* Scan and track function parameters */
+static void scan_function_params(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) return;
+    
+    clear_param_tracker();
+    
+    /* Look for function definitions and track their parameters */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        if (ast->children[i]->type != AST_TOKEN) continue;
+        
+        Token *token = &ast->children[i]->token;
+        
+        /* Look for patterns like: type identifier ( params ) { */
+        /* This is simplified - looks for ( after identifier, then scans params until ) */
+        if (token->type == TOKEN_IDENTIFIER || token->type == TOKEN_KEYWORD) {
+            /* Check if this might be a function name by looking for ( after it */
+            size_t paren_idx = skip_ws(ast->children, ast->child_count, i + 1);
+            if (paren_idx < ast->child_count &&
+                ast->children[paren_idx]->type == AST_TOKEN &&
+                strcmp(ast->children[paren_idx]->token.text, "(") == 0) {
+                
+                /* Found function, scan parameters */
+                size_t param_start = paren_idx + 1;
+                int paren_depth = 1;
+                int has_mut = 0;
+                int is_pointer = 0;
+                char *param_name = NULL;
+                
+                for (size_t j = param_start; j < ast->child_count && paren_depth > 0; j++) {
+                    if (ast->children[j]->type != AST_TOKEN) continue;
+                    
+                    Token *pt = &ast->children[j]->token;
+                    
+                    if (strcmp(pt->text, "(") == 0) {
+                        paren_depth++;
+                    } else if (strcmp(pt->text, ")") == 0) {
+                        paren_depth--;
+                        if (paren_depth == 0 && param_name) {
+                            add_param(param_name, has_mut, is_pointer);
+                        }
+                    } else if (strcmp(pt->text, ",") == 0) {
+                        if (param_name) {
+                            add_param(param_name, has_mut, is_pointer);
+                            param_name = NULL;
+                            has_mut = 0;
+                            is_pointer = 0;
+                        }
+                    } else if (pt->type == TOKEN_IDENTIFIER && strcmp(pt->text, "mut") == 0) {
+                        has_mut = 1;
+                    } else if (strcmp(pt->text, "*") == 0) {
+                        is_pointer = 1;
+                    } else if (pt->type == TOKEN_IDENTIFIER &&
+                              strcmp(pt->text, "mut") != 0 &&
+                              strcmp(pt->text, "const") != 0) {
+                        /* This could be a type or parameter name */
+                        /* Simple heuristic: if we've seen a type already, this is the param name */
+                        size_t prev_idx = j;
+                        if (prev_idx > param_start + 1) {
+                            /* Not the first token, likely a param name */
+                            param_name = pt->text;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Validate no modifications to immutable parameters in function bodies */
+static void validate_no_immutable_modifications(ASTNode *ast, const char *filename, const char *source) {
+    if (!ast) return;
+    
+    /* Look for assignment patterns */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        if (ast->children[i]->type != AST_TOKEN) continue;
+        
+        Token *token = &ast->children[i]->token;
+        
+        /* Look for = assignments (but not == comparisons or other compound assignments) */
+        if (strcmp(token->text, "=") == 0) {
+            /* Check what's being assigned to */
+            /* Look backward for the target of assignment */
+            for (int j = (int)i - 1; j >= 0 && j >= (int)i - 10; j--) {
+                if (ast->children[j]->type != AST_TOKEN) continue;
+                if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
+                    ast->children[j]->token.type == TOKEN_COMMENT) continue;
+                
+                Token *target = &ast->children[j]->token;
+                
+                /* Check for patterns:
+                 * 1. *identifier = ... (dereferencing pointer parameter) 
+                 * 2. identifier->field = ... (accessing through pointer)
+                 * Note: We DON'T check "identifier =" as reassigning a pointer-to-const is valid in C
+                 */
+                
+                /* Pattern 2: identifier->field = */
+                if (strcmp(target->text, "->") == 0 || strcmp(target->text, ".") == 0) {
+                    /* Find the identifier before -> or . */
+                    for (int k = j - 1; k >= 0 && k >= j - 5; k--) {
+                        if (ast->children[k]->type != AST_TOKEN) continue;
+                        if (ast->children[k]->token.type == TOKEN_WHITESPACE ||
+                            ast->children[k]->token.type == TOKEN_COMMENT) continue;
+                        
+                        if (ast->children[k]->token.type == TOKEN_IDENTIFIER) {
+                            int is_ptr = 0;
+                            if (is_immutable_param(ast->children[k]->token.text, &is_ptr) && is_ptr) {
+                                char error_msg[512];
+                                snprintf(error_msg, sizeof(error_msg),
+                                        "Cannot modify through immutable pointer parameter '%s'. "
+                                        "Parameters without 'mut' are const and cannot be used to modify data.",
+                                        ast->children[k]->token.text);
+                                cz_error(filename, source, token->line, error_msg);
+                            }
+                        }
+                        break;
+                    }
+                    break;
+                }
+                
+                /* Pattern 1: *identifier = */
+                if (strcmp(target->text, "*") == 0) {
+                    /* Find the identifier after * */
+                    size_t id_idx = skip_ws(ast->children, ast->child_count, j + 1);
+                    if (id_idx < ast->child_count &&
+                        ast->children[id_idx]->type == AST_TOKEN &&
+                        ast->children[id_idx]->token.type == TOKEN_IDENTIFIER) {
+                        
+                        int is_ptr = 0;
+                        if (is_immutable_param(ast->children[id_idx]->token.text, &is_ptr) && is_ptr) {
+                            char error_msg[512];
+                            snprintf(error_msg, sizeof(error_msg),
+                                    "Cannot modify through immutable pointer parameter '%s'. "
+                                    "Parameters without 'mut' are const and cannot be used to modify data.",
+                                    ast->children[id_idx]->token.text);
+                            cz_error(filename, source, token->line, error_msg);
+                        }
+                    }
+                    break;
+                }
+                
+                /* Stop at statement boundaries */
+                if (strcmp(target->text, ";") == 0 || strcmp(target->text, "{") == 0 ||
+                    strcmp(target->text, "}") == 0) {
+                    break;
+                }
+                
+                break; /* Process only the immediate left side of = */
+            }
+        }
+    }
+    
+    /* Recursively validate children */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        validate_no_immutable_modifications(ast->children[i], filename, source);
+    }
+}
+
+/* Validate mutability rules - mut parameters must be pointers and immutable params cannot modify data */
 void transpiler_validate_mutability(ASTNode *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) return;
+    
+    /* Initialize parameter tracker */
+    init_param_tracker();
+    
+    /* Scan function parameters to track mutability */
+    scan_function_params(ast);
     
     /* Look for 'mut' keywords in function parameters */
     for (size_t i = 0; i < ast->child_count; i++) {
@@ -134,6 +389,12 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
             }
         }
     }
+    
+    /* Validate no modifications through immutable pointer parameters */
+    validate_no_immutable_modifications(ast, filename, source);
+    
+    /* Clean up parameter tracker */
+    free_param_tracker();
 }
 
 /* Check if we're looking at the start of a parameter (after opening paren or comma) */
