@@ -53,7 +53,8 @@ static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
         size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
         ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
         if (!new_children) {
-            /* Memory allocation failed - this is a fatal error */
+            /* Memory allocation failed - this is a fatal error
+             * No file context available at this point in parsing */
             cz_error("", "", 0, ERR_MEMORY_ALLOCATION_FAILED_IN_AST_NODE);
             return;
         }
