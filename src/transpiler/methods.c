@@ -126,12 +126,15 @@ static int is_struct_type(const char *name) {
 static void clear_tracking(void) {
     for (size_t i = 0; i < method_count; i++) {
         free(methods[i].struct_name);
+        methods[i].struct_name = NULL;
         free(methods[i].method_name);
+        methods[i].method_name = NULL;
     }
     method_count = 0;
 
     for (size_t i = 0; i < struct_type_count; i++) {
         free(struct_types[i].name);
+        struct_types[i].name = NULL;
     }
     struct_type_count = 0;
 }
@@ -854,4 +857,9 @@ void transpiler_transform_methods(ASTNode *ast) {
 
     /* Pass 3: Transform method calls */
     transform_method_calls(ast);
+}
+
+/* Cleanup method tracking - call this before program exit */
+void transpiler_methods_cleanup(void) {
+    clear_tracking();
 }

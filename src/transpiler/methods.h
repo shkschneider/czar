@@ -14,3 +14,6 @@
 
 /* Transform struct method declarations and calls */
 void transpiler_transform_methods(ASTNode *ast);
+
+/* Cleanup method tracking - call before program exit */
+void transpiler_methods_cleanup(void);

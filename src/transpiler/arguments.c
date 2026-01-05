@@ -34,7 +34,7 @@ typedef struct {
 } FunctionInfo;
 
 /* Global tracking */
-static FunctionInfo g_functions[MAX_FUNCTIONS];
+static FunctionInfo g_functions[MAX_FUNCTIONS] = {0};
 static int g_function_count = 0;
 
 /* Helper function to check if token text matches */

@@ -34,7 +34,7 @@ typedef struct {
 } EnumInfo;
 
 /* Global enum registry */
-static EnumInfo g_enums[MAX_ENUMS];
+static EnumInfo g_enums[MAX_ENUMS] = {0};
 static int g_enum_count = 0;
 
 /* Global context for error reporting */

@@ -27,7 +27,7 @@ typedef struct {
 } TrackedIdentifier;
 
 /* Global state for tracking identifiers */
-static TrackedIdentifier tracked_ids[MAX_TRACKED_IDENTIFIERS];
+static TrackedIdentifier tracked_ids[MAX_TRACKED_IDENTIFIERS] = {0};
 static size_t tracked_count = 0;
 
 /* Add an identifier to tracking */

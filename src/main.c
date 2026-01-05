@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "transpiler.h"
+#include "transpiler/methods.h"
 #include "errors.h"
 
 int main(int argc, char *argv[]) {
@@ -125,6 +126,7 @@ int main(int argc, char *argv[]) {
     }
     ast_node_free(ast);
     free(input_buffer);
+    transpiler_methods_cleanup();
 
     return 0;
 }
