@@ -24,20 +24,22 @@ int main(int argc, char *argv[]) {
     /* Open input file */
     FILE *input = fopen(input_file, "r");
     if (!input) {
-        fprintf(stderr, "Error: " ERR_CANNOT_OPEN_INPUT_FILE "\n", input_file);
+        char error_msg[512];
+        snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_INPUT_FILE, input_file);
+        cz_error(input_file, "", 0, error_msg);
         return 1;
     }
 
     /* Read entire input file into memory */
     if (fseek(input, 0, SEEK_END) != 0) {
-        fprintf(stderr, "Error: " ERR_FAILED_TO_SEEK_INPUT_FILE "\n");
+        cz_error(input_file, "", 0, ERR_FAILED_TO_SEEK_INPUT_FILE);
         fclose(input);
         return 1;
     }
 
     long input_size = ftell(input);
     if (input_size < 0) {
-        fprintf(stderr, "Error: " ERR_FAILED_TO_GET_INPUT_FILE_SIZE "\n");
+        cz_error(input_file, "", 0, ERR_FAILED_TO_GET_INPUT_FILE_SIZE);
         fclose(input);
         return 1;
     }
@@ -50,7 +52,9 @@ int main(int argc, char *argv[]) {
         if (output_file) {
             output = fopen(output_file, "w");
             if (!output) {
-                fprintf(stderr, "Error: " ERR_CANNOT_OPEN_OUTPUT_FILE "\n", output_file);
+                char error_msg[512];
+                snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_OUTPUT_FILE, output_file);
+                cz_error(output_file, "", 0, error_msg);
                 return 1;
             }
             fclose(output);
@@ -59,14 +63,14 @@ int main(int argc, char *argv[]) {
     }
 
     if (fseek(input, 0, SEEK_SET) != 0) {
-        fprintf(stderr, "Error: " ERR_FAILED_TO_SEEK_INPUT_FILE "\n");
+        cz_error(input_file, "", 0, ERR_FAILED_TO_SEEK_INPUT_FILE);
         fclose(input);
         return 1;
     }
 
     char *input_buffer = malloc(input_size + 1);
     if (!input_buffer) {
-        fprintf(stderr, "Error: " ERR_MEMORY_ALLOCATION_FAILED "\n");
+        cz_error(input_file, "", 0, ERR_MEMORY_ALLOCATION_FAILED);
         fclose(input);
         return 1;
     }
@@ -86,7 +90,7 @@ int main(int argc, char *argv[]) {
     /* Parse input into AST */
     ASTNode *ast = parser_parse(&parser);
     if (!ast) {
-        fprintf(stderr, "Error: " ERR_FAILED_TO_PARSE_INPUT "\n");
+        cz_error(input_file, "", 0, ERR_FAILED_TO_PARSE_INPUT);
         free(input_buffer);
         return 1;
     }
@@ -103,7 +107,9 @@ int main(int argc, char *argv[]) {
     if (output_file) {
         output = fopen(output_file, "w");
         if (!output) {
-            fprintf(stderr, "Error: " ERR_CANNOT_OPEN_OUTPUT_FILE "\n", output_file);
+            char error_msg[512];
+            snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_OUTPUT_FILE, output_file);
+            cz_error(output_file, "", 0, error_msg);
             ast_node_free(ast);
             free(input_buffer);
             return 1;

@@ -54,7 +54,7 @@ static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
         ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
         if (!new_children) {
             /* Memory allocation failed - this is a fatal error */
-            fprintf(stderr, "Error: " ERR_MEMORY_ALLOCATION_FAILED_IN_AST_NODE "\n");
+            cz_error("", "", 0, ERR_MEMORY_ALLOCATION_FAILED_IN_AST_NODE);
             return;
         }
         parent->children = new_children;

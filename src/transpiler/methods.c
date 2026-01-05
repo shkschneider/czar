@@ -42,7 +42,9 @@ static size_t struct_type_count = 0;
 /* Add a method to tracking */
 static void track_method(const char *struct_name, const char *method_name) {
     if (method_count >= MAX_METHODS) {
-        fprintf(stderr, "Warning: " WARN_MAX_METHOD_TRACKING_LIMIT "\n", MAX_METHODS);
+        char warn_msg[256];
+        snprintf(warn_msg, sizeof(warn_msg), WARN_MAX_METHOD_TRACKING_LIMIT, MAX_METHODS);
+        cz_warning("", "", 0, warn_msg);
         return;
     }
 
@@ -85,7 +87,9 @@ static int is_tracked_method(const char *struct_name, const char *method_name) {
 /* Add a struct type to tracking */
 static void track_struct_type(const char *name) {
     if (struct_type_count >= MAX_STRUCT_TYPES) {
-        fprintf(stderr, "Warning: " WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT "\n", MAX_STRUCT_TYPES);
+        char warn_msg[256];
+        snprintf(warn_msg, sizeof(warn_msg), WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT, MAX_STRUCT_TYPES);
+        cz_warning("", "", 0, warn_msg);
         return;
     }
 

@@ -150,8 +150,10 @@ static char *generate_prefixed_name(const char *enum_name, const char *value_nam
 static void register_enum(const char *enum_name, EnumMember *members, int member_count) {
     if (g_enum_count >= MAX_ENUMS) {
         /* Warn about capacity limit - validation may be incomplete */
-        fprintf(stderr, "[CZAR] WARNING: " WARN_MAX_ENUM_TRACKING_LIMIT "\n",
+        char warn_msg[512];
+        snprintf(warn_msg, sizeof(warn_msg), WARN_MAX_ENUM_TRACKING_LIMIT,
                 MAX_ENUMS, enum_name);
+        cz_warning("", "", 0, warn_msg);
         return;
     }
 
