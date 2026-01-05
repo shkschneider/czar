@@ -32,3 +32,10 @@ void cz_warning(const char *filename, const char *source, int line, const char *
 #define WARN_MAX_ENUM_TRACKING_LIMIT \
     "Maximum number of tracked enums (%d) reached. " \
     "Exhaustiveness checking may be incomplete for enum '%s'."
+
+/* Mutability Warnings */
+#define WARN_CONST_IN_CZAR_SOURCE \
+    "'const' keyword found in CZar source code. " \
+    "In CZar, use omitting 'mut' instead of 'const'. Stripping 'const' and proceeding."
+#define WARN_MEMORY_ALLOCATION_FAILED_MUTABILITY \
+    "Failed to allocate memory during mutability transformation"

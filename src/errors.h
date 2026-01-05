@@ -49,3 +49,5 @@ void cz_error(const char *filename, const char *source, int line, const char *me
 #define ERR_FOR_LOOP_IMMUTABLE_COUNTER "For-loop counter '%s' must be mutable. Use: for (mut %s ...)"
 #define ERR_STRUCT_FIELD_MUT_QUALIFIER "Struct fields cannot have 'mut' qualifier. Mutability is determined by the struct instance."
 #define ERR_IMMUTABLE_STRUCT_FIELD "Cannot modify field of immutable struct '%s'. Add 'mut' qualifier to make it mutable: mut %s"
+#define ERR_MUT_CONST_CONFLICT "'mut' and 'const' cannot be used together on the same variable"
+#define ERR_MUT_PARAM_MUST_BE_POINTER "mut parameters must be pointers. Use 'mut Type* param' not 'mut Type param'"
