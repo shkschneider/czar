@@ -18,7 +18,7 @@ int main(void) {
     printf("\n--- Testing format strings ---\n");
 
     int value = 42;
-    const char *text = "test";
+    char *text = "test";
     Log.info("Integer: %d, String: %s", value, text);
     Log.warning("Pointer: %p, Hex: 0x%x", (void*)&value, value);
 

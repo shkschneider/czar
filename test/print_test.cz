@@ -5,7 +5,7 @@ int main(void) {
 
     /* Test 1: Simple string with {} placeholder */
     printf("--- Test 1: Simple {} placeholder ---\n");
-    const char *name = "CZar";
+    char *name = "CZar";
     printf("%s", cz_format("Hello {}\n", name));
 
     /* Test 2: Multiple {} placeholders */
@@ -46,8 +46,8 @@ int main(void) {
 
     /* Test 7: String formatting */
     printf("\n--- Test 7: String formatting ---\n");
-    const char *greeting = "Hello";
-    const char *world = "World";
+    char *greeting = "Hello";
+    char *world = "World";
     printf("%s", cz_format("{} {}!\n", greeting, world));
 
     /* Test 8: Zero arguments (just format string) */

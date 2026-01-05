@@ -70,9 +70,9 @@ void test_numeric_limits(void) {
 
 /* Test runtime macros */
 void test_runtime_macros(void) {
-    const char* file = __FILE__;
+    char* file = __FILE__;
     int line = __LINE__;
-    const char* func = __func__;
+    char* func = __func__;
 
     printf("Runtime macros test: OK\n");
     printf("  __FILE__: %s\n", file);

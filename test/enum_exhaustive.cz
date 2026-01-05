@@ -10,7 +10,7 @@ enum Color {
     COLOR_BLUE
 };
 
-const char* color_name(enum Color c) {
+char* color_name(enum Color c) {
     switch (c) {
     case COLOR_RED:
         return "Red";

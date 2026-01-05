@@ -82,7 +82,7 @@ void test_all_types(void) {
 }
 
 /* Example using __FILE__, __LINE__, __func__ macros */
-void trace_function(const char* operation) {
+void trace_function(char* operation) {
     fprintf(stderr, "[TRACE] %s:%d in %s() - %s\n",
             __FILE__, __LINE__, __func__, operation);
 }
