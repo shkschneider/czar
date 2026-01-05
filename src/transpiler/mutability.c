@@ -159,8 +159,11 @@ void transpiler_transform_mutability(ASTNode *ast) {
                     free(token->text);
                     token->text = strdup("");
                     if (!token->text) {
-                        fprintf(stderr, "[CZAR] Warning: Failed to allocate memory\n");
-                        token->text = "";
+                        fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for empty string\n");
+                        token->text = malloc(1);
+                        if (token->text) {
+                            token->text[0] = '\0';
+                        }
                     }
                     token->length = 0;
                     
@@ -172,8 +175,11 @@ void transpiler_transform_mutability(ASTNode *ast) {
                         free(ws_token->text);
                         ws_token->text = strdup("");
                         if (!ws_token->text) {
-                            fprintf(stderr, "[CZAR] Warning: Failed to allocate memory\n");
-                            ws_token->text = "";
+                            fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for empty string\n");
+                            ws_token->text = malloc(1);
+                            if (ws_token->text) {
+                                ws_token->text[0] = '\0';
+                            }
                         }
                         ws_token->length = 0;
                     }
