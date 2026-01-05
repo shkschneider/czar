@@ -3,15 +3,73 @@
  * Struct typedef transformation implementation (transpiler/structs.c)
  *
  * Handles automatic typedef generation for named structs.
- * Transforms: struct Name { ... }; into typedef struct { ... } Name;
+ * Transforms: struct Name { ... }; into typedef struct Name_s { ... } Name_t;
  */
 
 #define _POSIX_C_SOURCE 200809L
 
 #include "structs.h"
+#include "struct_names.h"
+#include "../errors.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+/* Validate that 'struct Name' is not used outside of definitions */
+void transpiler_validate_struct_usage(ASTNode *ast, const char *filename, const char *source) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    /* Look for pattern: struct identifier (not followed by {) */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        if (i + 2 >= ast->child_count) continue;
+
+        ASTNode *n1 = ast->children[i];
+        ASTNode *n2 = ast->children[i + 1];
+        ASTNode *n3 = ast->children[i + 2];
+
+        if (n1->type != AST_TOKEN || n2->type != AST_TOKEN || n3->type != AST_TOKEN) {
+            continue;
+        }
+
+        Token *t1 = &n1->token;
+        Token *t2 = &n2->token;
+        Token *t3 = &n3->token;
+
+        /* Check for: struct <whitespace> identifier */
+        if (t1->type == TOKEN_IDENTIFIER && t1->text && strcmp(t1->text, "struct") == 0 &&
+            t2->type == TOKEN_WHITESPACE &&
+            t3->type == TOKEN_IDENTIFIER) {
+
+            /* Look ahead to check if this is a definition (followed by {) */
+            int is_definition = 0;
+            for (size_t j = i + 3; j < ast->child_count && j < i + 10; j++) {
+                if (ast->children[j]->type == AST_TOKEN) {
+                    Token *tj = &ast->children[j]->token;
+                    if (tj->type == TOKEN_WHITESPACE || tj->type == TOKEN_COMMENT) {
+                        continue;
+                    }
+                    if (tj->type == TOKEN_PUNCTUATION && tj->text && strcmp(tj->text, "{") == 0) {
+                        is_definition = 1;
+                        break;
+                    }
+                    /* If we find anything else, it's not a definition */
+                    break;
+                }
+            }
+
+            /* If not a definition, this is an error */
+            if (!is_definition) {
+                char error_msg[512];
+                snprintf(error_msg, sizeof(error_msg),
+                        "Invalid use of 'struct %s'. In CZar, use '%s' directly (the typedef name).",
+                        t3->text, t3->text);
+                cz_error(filename, source, t1->line, error_msg);
+            }
+        }
+    }
+}
 
 /* Transform named struct declarations into typedef structs */
 void transpiler_transform_structs(ASTNode *ast) {
@@ -97,10 +155,10 @@ void transpiler_transform_structs(ASTNode *ast) {
             }
 
             /* Now we have a valid struct definition from i to closing_brace_idx */
-            /* Transform: struct Name { ... } to typedef struct Name { ... } Name */
-            /* This allows both "struct Name" and "Name" to be used */
+            /* Transform: struct Name { ... } to typedef struct Name_s { ... } Name_t */
+            /* This uses the _s suffix for the struct tag and _t for the typedef */
 
-            /* Step 1: Save the struct name (t3->text) - we'll need it twice */
+            /* Step 1: Save the struct name (t3->text) */
             char *struct_name = strdup(t3->text);
             if (!struct_name) {
                 continue; /* Memory allocation failed */
@@ -113,11 +171,21 @@ void transpiler_transform_structs(ASTNode *ast) {
                 t1->text = new_text;
                 t1->length = strlen(new_text);
             }
+            
+            /* Register this struct name for transformation */
+            struct_names_add(struct_name);
 
-            /* Step 3: Keep the struct name after struct keyword (DON'T make it anonymous) */
-            /* This allows "struct Name" to still work */
+            /* Step 3: Modify struct name to add _s suffix */
+            size_t name_len = strlen(struct_name);
+            char *struct_tag = malloc(name_len + 3); /* +3 for "_s" and null */
+            if (struct_tag) {
+                snprintf(struct_tag, name_len + 3, "%s_s", struct_name);
+                free(t3->text);
+                t3->text = struct_tag;
+                t3->length = strlen(struct_tag);
+            }
 
-            /* Step 4: After the closing brace, add the typedef name */
+            /* Step 4: After the closing brace, add the typedef name with _t suffix */
             /* Look for whitespace and semicolon after closing brace */
             size_t semicolon_idx = 0;
             for (size_t j = closing_brace_idx + 1; j < ast->child_count && j < closing_brace_idx + 5; j++) {
@@ -131,11 +199,18 @@ void transpiler_transform_structs(ASTNode *ast) {
             }
 
             if (semicolon_idx > 0) {
-                /* Insert the struct name before the semicolon */
-                /* Find the token right before semicolon (should be whitespace or closing brace) */
+                /* Insert the typedef name with _t suffix before the semicolon */
                 size_t insert_pos = semicolon_idx;
 
-                /* We need to insert: " Name" before the semicolon */
+                /* Create typedef name: Name_t */
+                char *typedef_name = malloc(name_len + 3); /* +3 for "_t" and null */
+                if (!typedef_name) {
+                    free(struct_name);
+                    continue;
+                }
+                snprintf(typedef_name, name_len + 3, "%s_t", struct_name);
+
+                /* We need to insert: " Name_t" before the semicolon */
                 /* Create a new token for the space */
                 ASTNode *space_node = malloc(sizeof(ASTNode));
                 if (space_node) {
@@ -150,13 +225,13 @@ void transpiler_transform_structs(ASTNode *ast) {
                     space_node->child_capacity = 0;
                 }
 
-                /* Create a new token for the name */
+                /* Create a new token for the typedef name */
                 ASTNode *name_node = malloc(sizeof(ASTNode));
                 if (name_node) {
                     name_node->type = AST_TOKEN;
                     name_node->token.type = TOKEN_IDENTIFIER;
-                    name_node->token.text = struct_name; /* Transfer ownership */
-                    name_node->token.length = strlen(struct_name);
+                    name_node->token.text = typedef_name; /* Transfer ownership */
+                    name_node->token.length = strlen(typedef_name);
                     name_node->token.line = t1->line;
                     name_node->token.column = 0;
                     name_node->children = NULL;

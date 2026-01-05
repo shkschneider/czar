@@ -18,6 +18,7 @@
 #include "transpiler/casts.h"
 #include "transpiler/autodereference.h"
 #include "transpiler/structs.h"
+#include "transpiler/struct_names.h"
 #include "transpiler/methods.h"
 #include "transpiler/enums.h"
 #include "transpiler/unreachable.h"
@@ -77,31 +78,43 @@ static void transform_node(ASTNode *node) {
                 /* If even fallback fails, keep original _ (may cause C compilation error) */
             }
         } else {
-            /* Check if this identifier is a CZar type */
-            const char *c_type = transpiler_get_c_type(node->token.text);
-            if (c_type) {
-                /* Replace CZar type with C type */
-                char *new_text = strdup(c_type);
+            /* Check if this identifier is a registered struct name */
+            const char *typedef_name = struct_names_get_typedef(node->token.text);
+            if (typedef_name) {
+                /* Replace with typedef name (Point -> Point_t) */
+                char *new_text = strdup(typedef_name);
                 if (new_text) {
                     free(node->token.text);
                     node->token.text = new_text;
-                    node->token.length = strlen(c_type);
+                    node->token.length = strlen(typedef_name);
                 }
-                /* If strdup fails, keep the original text */
             } else {
-                /* Check if this identifier is a CZar constant */
-                const char *c_constant = transpiler_get_c_constant(node->token.text);
-                if (c_constant) {
-                    /* Replace CZar constant with C constant */
-                    char *new_text = strdup(c_constant);
+                /* Check if this identifier is a CZar type */
+                const char *c_type = transpiler_get_c_type(node->token.text);
+                if (c_type) {
+                    /* Replace CZar type with C type */
+                    char *new_text = strdup(c_type);
                     if (new_text) {
                         free(node->token.text);
                         node->token.text = new_text;
-                        node->token.length = strlen(c_constant);
+                        node->token.length = strlen(c_type);
                     }
                     /* If strdup fails, keep the original text */
                 } else {
-                    /* Check if this identifier is a CZar function */
+                    /* Check if this identifier is a CZar constant */
+                    const char *c_constant = transpiler_get_c_constant(node->token.text);
+                    if (c_constant) {
+                        /* Replace CZar constant with C constant */
+                        char *new_text = strdup(c_constant);
+                        if (new_text) {
+                            free(node->token.text);
+                            node->token.text = new_text;
+                            node->token.length = strlen(c_constant);
+                        }
+                        /* If strdup fails, keep the original text */
+                    } else {
+                        /* Check if this identifier is a CZar function */
+                    }
                 }
             }
         }
@@ -133,6 +146,9 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Validate function declarations (empty parameter lists) */
     transpiler_validate_functions(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Validate struct usage (no 'struct Name' outside definitions) */
+    transpiler_validate_struct_usage(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Transform function declarations (main return type, empty parameter lists to void) */
     transpiler_transform_functions(transpiler->ast);
