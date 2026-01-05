@@ -506,6 +506,24 @@ void transpiler_transform_mutability(ASTNode *ast) {
                         continue;
                     }
 
+                    /* Check if this is a function return type by looking ahead for identifier followed by ( */
+                    int is_function_return = 0;
+                    size_t look_ahead = skip_ws(ast->children, ast->child_count, i + 1);
+                    if (look_ahead < ast->child_count && ast->children[look_ahead]->type == AST_TOKEN &&
+                        ast->children[look_ahead]->token.type == TOKEN_IDENTIFIER) {
+                        /* Found identifier after *, check if followed by ( */
+                        size_t after_id = skip_ws(ast->children, ast->child_count, look_ahead + 1);
+                        if (after_id < ast->child_count && ast->children[after_id]->type == AST_TOKEN &&
+                            strcmp(ast->children[after_id]->token.text, "(") == 0) {
+                            is_function_return = 1;
+                        }
+                    }
+
+                    /* Skip function return types - don't add const to pointer in return type */
+                    if (is_function_return) {
+                        continue;
+                    }
+
                     /* Check if preceded by mut anywhere in this declaration (look back for mut, stopping at ; or { or }) */
                     int has_mut_in_decl = 0;
                     for (int j = (int)i - 1; j >= 0 && j >= (int)i - 20; j--) {
