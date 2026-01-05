@@ -51,3 +51,4 @@ void cz_error(const char *filename, const char *source, int line, const char *me
 #define ERR_IMMUTABLE_STRUCT_FIELD "Cannot modify field of immutable struct '%s'. Add 'mut' qualifier to make it mutable: mut %s"
 #define ERR_MUT_CONST_CONFLICT "'mut' and 'const' cannot be used together on the same variable"
 #define ERR_MUT_PARAM_MUST_BE_POINTER "mut parameters must be pointers. Use 'mut Type* param' not 'mut Type param'"
+#define ERR_CONST_IN_CZAR_SOURCE "'const' keyword is not allowed in CZar source code. In CZar, omit 'mut' instead of using 'const'."

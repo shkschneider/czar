@@ -204,10 +204,7 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
                         }
                         if (ast->children[j]->token.type == TOKEN_KEYWORD &&
                             strcmp(ast->children[j]->token.text, "const") == 0) {
-                            char error_msg[256];
-                            snprintf(error_msg, sizeof(error_msg),
-                                    "'mut' and 'const' cannot be used together on the same variable");
-                            cz_error(filename, source, token->line, error_msg);
+                            cz_error(filename, source, token->line, ERR_MUT_CONST_CONFLICT);
                         }
                         break;
                     }
@@ -222,17 +219,15 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
                     /* Check if the type is followed by a pointer (*) */
                     if (!is_followed_by_pointer(ast->children, ast->child_count, type_idx)) {
                         /* mut parameter is not a pointer - ERROR */
-                        char error_msg[256];
-                        snprintf(error_msg, sizeof(error_msg),
-                                "mut parameters must be pointers. Use 'mut Type* param' not 'mut Type param'");
-                        cz_error(filename, source, token->line, error_msg);
+                        cz_error(filename, source, token->line, ERR_MUT_PARAM_MUST_BE_POINTER);
                     }
                 }
             }
             
-            /* Check for const and mut appearing together (reverse direction) */
+            /* Check for const keyword - forbidden in CZar */
             if (token->type == TOKEN_KEYWORD && strcmp(token->text, "const") == 0) {
                 /* Look back for mut */
+                int has_mut = 0;
                 for (int j = (int)i - 1; j >= 0 && j >= (int)i - 10; j--) {
                     if (ast->children[j]->type == AST_TOKEN) {
                         if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
@@ -241,13 +236,16 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
                         }
                         if (ast->children[j]->token.type == TOKEN_IDENTIFIER &&
                             strcmp(ast->children[j]->token.text, "mut") == 0) {
-                            char error_msg[256];
-                            snprintf(error_msg, sizeof(error_msg),
-                                    "'mut' and 'const' cannot be used together on the same variable");
-                            cz_error(filename, source, token->line, error_msg);
+                            has_mut = 1;
+                            cz_error(filename, source, token->line, ERR_MUT_CONST_CONFLICT);
                         }
                         break;
                     }
+                }
+                
+                /* If not preceded by mut, error on standalone const */
+                if (!has_mut) {
+                    cz_error(filename, source, token->line, ERR_CONST_IN_CZAR_SOURCE);
                 }
             }
         }
@@ -527,7 +525,7 @@ void transpiler_transform_mutability(ASTNode *ast) {
             }
         }
         
-        /* PASS 2: Strip 'mut' keyword and 'const' keyword (with warning) */
+        /* PASS 2: Strip 'mut' keyword */
         for (size_t i = 0; i < ast->child_count; i++) {
             if (ast->children[i]->type == AST_TOKEN) {
                 Token *token = &ast->children[i]->token;
@@ -540,7 +538,7 @@ void transpiler_transform_mutability(ASTNode *ast) {
                     free(token->text);
                     token->text = strdup("");
                     if (!token->text) {
-                        fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for empty string\n");
+                        cz_warning(NULL, NULL, token->line, WARN_MEMORY_ALLOCATION_FAILED_MUTABILITY);
                         token->text = malloc(1);
                         if (token->text) {
                             token->text[0] = '\0';
@@ -556,60 +554,13 @@ void transpiler_transform_mutability(ASTNode *ast) {
                         free(ws_token->text);
                         ws_token->text = strdup("");
                         if (!ws_token->text) {
-                            fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for empty string\n");
+                            cz_warning(NULL, NULL, ws_token->line, WARN_MEMORY_ALLOCATION_FAILED_MUTABILITY);
                             ws_token->text = malloc(1);
                             if (ws_token->text) {
                                 ws_token->text[0] = '\0';
                             }
                         }
                         ws_token->length = 0;
-                    }
-                }
-                
-                /* Look for user-written 'const' keyword (not ones we added) */
-                /* Strip with warning - const should never appear in CZar source */
-                if (token->type == TOKEN_KEYWORD &&
-                    strcmp(token->text, "const") == 0) {
-                    
-                    /* Check if this const was added by us in Pass 1 or is from user code */
-                    /* Heuristic: if preceded by whitespace or at start, likely from user */
-                    /* For simplicity, we'll just warn about all user-level const usage */
-                    int looks_like_user_const = 1;
-                    
-                    /* If we reach here, it's a const from the original CZar code */
-                    if (looks_like_user_const) {
-                        fprintf(stderr, "[CZAR] Warning on line %d: 'const' keyword found in CZar source code. "
-                                       "In CZar, use omitting 'mut' instead of 'const'. Stripping 'const' and proceeding.\n",
-                                token->line);
-                        
-                        /* Remove 'const' keyword */
-                        free(token->text);
-                        token->text = strdup("");
-                        if (!token->text) {
-                            fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for empty string\n");
-                            token->text = malloc(1);
-                            if (token->text) {
-                                token->text[0] = '\0';
-                            }
-                        }
-                        token->length = 0;
-                        
-                        /* Also remove following whitespace */
-                        if (i + 1 < ast->child_count &&
-                            ast->children[i + 1]->type == AST_TOKEN &&
-                            ast->children[i + 1]->token.type == TOKEN_WHITESPACE) {
-                            Token *ws_token = &ast->children[i + 1]->token;
-                            free(ws_token->text);
-                            ws_token->text = strdup("");
-                            if (!ws_token->text) {
-                                fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for empty string\n");
-                                ws_token->text = malloc(1);
-                                if (ws_token->text) {
-                                    ws_token->text[0] = '\0';
-                                }
-                            }
-                            ws_token->length = 0;
-                        }
                     }
                 }
             }
