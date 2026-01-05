@@ -34,9 +34,9 @@ typedef struct {
 } StructType;
 
 /* Global state for tracking methods and struct types */
-static MethodInfo methods[MAX_METHODS];
+static MethodInfo methods[MAX_METHODS] = {0};
 static size_t method_count = 0;
-static StructType struct_types[MAX_STRUCT_TYPES];
+static StructType struct_types[MAX_STRUCT_TYPES] = {0};
 static size_t struct_type_count = 0;
 
 /* Add a method to tracking */
