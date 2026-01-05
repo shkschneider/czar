@@ -1,5 +1,5 @@
 /*
- * CZar - C semantic authority layer  
+ * CZar - C semantic authority layer
  * Struct names tracking header (transpiler/struct_names.h)
  *
  * Tracks defined struct names for transformation.
