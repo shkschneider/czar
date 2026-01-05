@@ -103,39 +103,59 @@ static int is_in_function_params(ASTNode **children, size_t idx) {
 
 /* Check if this is a variable declaration context (not in function parameters, not in struct fields) */
 static int is_variable_declaration(ASTNode **children, size_t count, size_t type_idx) {
-    /* Check if we're inside a struct definition (look backward for struct keyword + opening brace) */
-    int in_struct = 0;
-    int brace_count = 0;
-    for (int k = (int)type_idx - 1; k >= 0 && k >= (int)type_idx - 50; k--) {
-        if (children[k]->type == AST_TOKEN) {
-            const char *ktext = children[k]->token.text;
-            if (strcmp(ktext, "}") == 0) {
-                brace_count++;
-            } else if (strcmp(ktext, "{") == 0) {
-                brace_count--;
-                if (brace_count < 0) {
-                    /* Found opening brace, check if it's part of struct definition */
-                    for (int m = k - 1; m >= 0 && m >= k - 10; m--) {
-                        if (children[m]->type == AST_TOKEN) {
-                            if (children[m]->token.type == TOKEN_WHITESPACE ||
-                                children[m]->token.type == TOKEN_COMMENT) {
-                                continue;
-                            }
-                            if (children[m]->token.type == TOKEN_KEYWORD &&
-                                strcmp(children[m]->token.text, "struct") == 0) {
-                                in_struct = 1;
-                            }
-                            break;
-                        }
+    /* Simple approach: Check if we're inside braces that follow 'struct' keyword */
+    /* Count braces - if we're inside braces and there's a 'struct' before the opening brace, skip */
+    int brace_depth = 0;
+    int found_struct_before_braces = 0;
+    
+    /* Scan backward from current position */
+    for (int i = (int)type_idx - 1; i >= 0; i--) {
+        if (children[i]->type != AST_TOKEN) continue;
+        
+        const char *text = children[i]->token.text;
+        
+        /* Track brace depth (we're going backwards, so closing brace increases depth) */
+        if (strcmp(text, "}") == 0) {
+            brace_depth++;
+        } else if (strcmp(text, "{") == 0) {
+            brace_depth--;
+            
+            /* If we just exited a brace level and found we're at brace_depth 0,
+             * check if this opening brace was preceded by 'struct' */
+            if (brace_depth < 0) {
+                /* We're inside this brace pair - check if it's a struct */
+                for (int j = i - 1; j >= 0 && j >= i - 50; j--) {
+                    if (children[j]->type != AST_TOKEN) continue;
+                    
+                    if (children[j]->token.type == TOKEN_WHITESPACE ||
+                        children[j]->token.type == TOKEN_COMMENT) {
+                        continue;
                     }
+                    
+                    /* Found 'struct' keyword */
+                    if (children[j]->token.type == TOKEN_KEYWORD &&
+                        strcmp(children[j]->token.text, "struct") == 0) {
+                        found_struct_before_braces = 1;
+                        break;
+                    }
+                    
+                    /* Keep scanning past identifiers (struct name) and typedef */
+                    if (children[j]->token.type == TOKEN_IDENTIFIER ||
+                        (children[j]->token.type == TOKEN_KEYWORD &&
+                         strcmp(children[j]->token.text, "typedef") == 0)) {
+                        continue;
+                    }
+                    
+                    /* Hit something else, stop */
                     break;
                 }
+                break;  /* Stop scanning - we found the brace pair we're in */
             }
         }
     }
-
-    /* If inside struct definition, this is a field, not a variable */
-    if (in_struct) {
+    
+    /* If we found struct before braces, this is a struct field, not a variable */
+    if (found_struct_before_braces) {
         return 0;
     }
 
@@ -451,6 +471,41 @@ void transpiler_transform_mutability(ASTNode *ast) {
 
                 /* Look for * (pointer) tokens */
                 if (strcmp(token->text, "*") == 0) {
+                    /* First check if this * is part of a type declaration (not a dereference) */
+                    /* * is in a declaration if preceded by a type keyword/identifier */
+                    int is_type_decl = 0;
+                    for (int j = (int)i - 1; j >= 0 && j >= (int)i - 10; j--) {
+                        if (ast->children[j]->type == AST_TOKEN) {
+                            if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
+                                ast->children[j]->token.type == TOKEN_COMMENT) {
+                                continue;
+                            }
+                            /* Check if preceded by a type (keyword or identifier) */
+                            if (ast->children[j]->token.type == TOKEN_KEYWORD ||
+                                ast->children[j]->token.type == TOKEN_IDENTIFIER) {
+                                const char *jtext = ast->children[j]->token.text;
+                                /* Common C type keywords and CZar types */
+                                if (strcmp(jtext, "void") == 0 || strcmp(jtext, "int") == 0 ||
+                                    strcmp(jtext, "char") == 0 || strcmp(jtext, "float") == 0 ||
+                                    strcmp(jtext, "double") == 0 || strcmp(jtext, "short") == 0 ||
+                                    strcmp(jtext, "long") == 0 || strcmp(jtext, "signed") == 0 ||
+                                    strcmp(jtext, "unsigned") == 0 ||
+                                    strncmp(jtext, "u", 1) == 0 ||  /* u8, u16, u32, u64, uint* */
+                                    strncmp(jtext, "i", 1) == 0 ||  /* i8, i16, i32, i64, int* */
+                                    strncmp(jtext, "f", 1) == 0 ||  /* f32, f64 */
+                                    (isupper(jtext[0]) && strstr(jtext, "_t"))) {  /* Type_t typedefs */
+                                    is_type_decl = 1;
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    /* Only process if this is a type declaration */
+                    if (!is_type_decl) {
+                        continue;
+                    }
+
                     /* Check if preceded by mut anywhere in this declaration (look back for mut, stopping at ; or { or }) */
                     int has_mut_in_decl = 0;
                     for (int j = (int)i - 1; j >= 0 && j >= (int)i - 20; j--) {
