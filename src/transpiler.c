@@ -48,6 +48,60 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
     transpiler_reset_unused_counter();
 }
 
+/* Transform struct names in usage (but not in method syntax) */
+static void transform_struct_names_in_ast(ASTNode *node) {
+    if (!node) return;
+    
+    /* For translation units, process children to find patterns */
+    if (node->type == AST_TRANSLATION_UNIT) {
+        for (size_t i = 0; i < node->child_count; i++) {
+            /* Check if this identifier is followed by a dot (method syntax) */
+            if (i + 1 < node->child_count &&
+                node->children[i]->type == AST_TOKEN &&
+                node->children[i]->token.type == TOKEN_IDENTIFIER) {
+                
+                /* Look ahead to see if next non-whitespace token is a dot */
+                int followed_by_dot = 0;
+                for (size_t j = i + 1; j < node->child_count && j < i + 5; j++) {
+                    if (node->children[j]->type == AST_TOKEN) {
+                        if (node->children[j]->token.type == TOKEN_WHITESPACE ||
+                            node->children[j]->token.type == TOKEN_COMMENT) {
+                            continue;
+                        }
+                        if (node->children[j]->token.type == TOKEN_PUNCTUATION &&
+                            node->children[j]->token.text &&
+                            strcmp(node->children[j]->token.text, ".") == 0) {
+                            followed_by_dot = 1;
+                        }
+                        break;
+                    }
+                }
+                
+                /* If not followed by dot, check if it's a struct name and transform */
+                if (!followed_by_dot) {
+                    const char *typedef_name = struct_names_get_typedef(node->children[i]->token.text);
+                    if (typedef_name) {
+                        char *new_text = strdup(typedef_name);
+                        if (new_text) {
+                            free(node->children[i]->token.text);
+                            node->children[i]->token.text = new_text;
+                            node->children[i]->token.length = strlen(typedef_name);
+                        }
+                    }
+                }
+            }
+            
+            /* Recursively process children */
+            transform_struct_names_in_ast(node->children[i]);
+        }
+    } else {
+        /* For other node types, just recurse */
+        for (size_t i = 0; i < node->child_count; i++) {
+            transform_struct_names_in_ast(node->children[i]);
+        }
+    }
+}
+
 /* Transform AST node recursively */
 static void transform_node(ASTNode *node) {
     if (!node) {
@@ -78,43 +132,31 @@ static void transform_node(ASTNode *node) {
                 /* If even fallback fails, keep original _ (may cause C compilation error) */
             }
         } else {
-            /* Check if this identifier is a registered struct name */
-            const char *typedef_name = struct_names_get_typedef(node->token.text);
-            if (typedef_name) {
-                /* Replace with typedef name (Point -> Point_t) */
-                char *new_text = strdup(typedef_name);
+            /* Check if this identifier is a CZar type */
+            const char *c_type = transpiler_get_c_type(node->token.text);
+            if (c_type) {
+                /* Replace CZar type with C type */
+                char *new_text = strdup(c_type);
                 if (new_text) {
                     free(node->token.text);
                     node->token.text = new_text;
-                    node->token.length = strlen(typedef_name);
+                    node->token.length = strlen(c_type);
                 }
+                /* If strdup fails, keep the original text */
             } else {
-                /* Check if this identifier is a CZar type */
-                const char *c_type = transpiler_get_c_type(node->token.text);
-                if (c_type) {
-                    /* Replace CZar type with C type */
-                    char *new_text = strdup(c_type);
+                /* Check if this identifier is a CZar constant */
+                const char *c_constant = transpiler_get_c_constant(node->token.text);
+                if (c_constant) {
+                    /* Replace CZar constant with C constant */
+                    char *new_text = strdup(c_constant);
                     if (new_text) {
                         free(node->token.text);
                         node->token.text = new_text;
-                        node->token.length = strlen(c_type);
+                        node->token.length = strlen(c_constant);
                     }
                     /* If strdup fails, keep the original text */
                 } else {
-                    /* Check if this identifier is a CZar constant */
-                    const char *c_constant = transpiler_get_c_constant(node->token.text);
-                    if (c_constant) {
-                        /* Replace CZar constant with C constant */
-                        char *new_text = strdup(c_constant);
-                        if (new_text) {
-                            free(node->token.text);
-                            node->token.text = new_text;
-                            node->token.length = strlen(c_constant);
-                        }
-                        /* If strdup fails, keep the original text */
-                    } else {
-                        /* Check if this identifier is a CZar function */
-                    }
+                    /* Check if this identifier is a CZar function */
                 }
             }
         }
@@ -153,14 +195,17 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform function declarations (main return type, empty parameter lists to void) */
     transpiler_transform_functions(transpiler->ast);
 
+    /* Transform struct methods (before struct typedef transformation) */
+    transpiler_transform_methods(transpiler->ast);
+
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
 
     /* Transform struct initialization syntax */
     transpiler_transform_struct_init(transpiler->ast);
 
-    /* Transform struct methods (before autodereference) */
-    transpiler_transform_methods(transpiler->ast);
+    /* Transform struct names in usage (Name -> Name_t), but not in method syntax */
+    transform_struct_names_in_ast(transpiler->ast);
 
     /* Transform member access operators (. to -> for pointers) */
     transpiler_transform_autodereference(transpiler->ast);
