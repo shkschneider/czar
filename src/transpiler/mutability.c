@@ -136,15 +136,81 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
     }
 }
 
+/* Check if we're looking at the start of a parameter (after opening paren or comma) */
+static int is_param_start(ASTNode **children, size_t idx) {
+    /* Look backward for ( or , */
+    for (int i = (int)idx - 1; i >= 0 && i >= (int)idx - 10; i--) {
+        if (children[i]->type == AST_TOKEN) {
+            if (children[i]->token.type == TOKEN_WHITESPACE ||
+                children[i]->token.type == TOKEN_COMMENT) {
+                continue;
+            }
+            const char *text = children[i]->token.text;
+            if (strcmp(text, "(") == 0 || strcmp(text, ",") == 0) {
+                return 1;
+            }
+            /* If we find something else first, it's not param start */
+            return 0;
+        }
+    }
+    return 0;
+}
+
+/* Helper function to create a new token node */
+static ASTNode *create_token_node(TokenType type, const char *text, int line) {
+    ASTNode *node = malloc(sizeof(ASTNode));
+    if (!node) return NULL;
+    
+    node->type = AST_TOKEN;
+    node->token.type = type;
+    node->token.text = strdup(text);
+    if (!node->token.text) {
+        free(node);
+        return NULL;
+    }
+    node->token.length = strlen(text);
+    node->token.line = line;
+    node->token.column = 0;
+    node->children = NULL;
+    node->child_count = 0;
+    node->child_capacity = 0;
+    
+    return node;
+}
+
+/* Insert a node into the AST at the specified position */
+static int insert_node_at(ASTNode *ast, size_t position, ASTNode *node) {
+    /* Ensure capacity */
+    if (ast->child_count + 1 > ast->child_capacity) {
+        size_t new_capacity = (ast->child_capacity == 0) ? 16 : ast->child_capacity * 2;
+        ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+        if (!new_children) {
+            return 0; /* Allocation failed */
+        }
+        ast->children = new_children;
+        ast->child_capacity = new_capacity;
+    }
+    
+    /* Shift elements to make room */
+    for (size_t i = ast->child_count; i > position; i--) {
+        ast->children[i] = ast->children[i - 1];
+    }
+    
+    /* Insert the node */
+    ast->children[position] = node;
+    ast->child_count++;
+    
+    return 1;
+}
+
 /* Transform mutability keywords */
 void transpiler_transform_mutability(ASTNode *ast) {
     if (!ast) return;
 
     if (ast->type == AST_TRANSLATION_UNIT) {
-        /* Simple transformation: Strip 'mut' keyword */
-        /* Adding 'const' for non-mut parameters is complex and requires
-         * full parameter boundary detection. For now, we let developers
-         * understand intent through mut keyword presence/absence.
+        /* Two transformations:
+         * 1. Strip 'mut' keyword (making it mutable in C)
+         * 2. Add 'const' for parameters without 'mut' (making them immutable in C)
          */
         
         for (size_t i = 0; i < ast->child_count; i++) {
@@ -182,6 +248,83 @@ void transpiler_transform_mutability(ASTNode *ast) {
                             }
                         }
                         ws_token->length = 0;
+                    }
+                }
+                /* Look for type keywords in function parameter context (without preceding 'mut') */
+                else if (is_in_function_params(ast->children, i) &&
+                         is_param_start(ast->children, i) &&
+                         (token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER)) {
+                    
+                    /* Check if this looks like a type (common types or identifiers that could be typedefs) */
+                    /* EXCLUDE void - it cannot be qualified with const */
+                    const char *text = token->text;
+                    int is_type = (strcmp(text, "int") == 0 ||
+                                  strcmp(text, "char") == 0 ||
+                                  strcmp(text, "float") == 0 ||
+                                  strcmp(text, "double") == 0 ||
+                                  strncmp(text, "u", 1) == 0 ||  /* u8, u16, u32, u64 */
+                                  strncmp(text, "i", 1) == 0 ||  /* i8, i16, i32, i64 */
+                                  strcmp(text, "bool") == 0 ||
+                                  strcmp(text, "size_t") == 0 ||
+                                  /* Also check for common identifier patterns (struct typedefs) */
+                                  (token->type == TOKEN_IDENTIFIER && isupper(text[0])));
+                    
+                    if (is_type) {
+                        /* Check if NOT preceded by 'mut' or 'const' (look back, skipping whitespace) */
+                        int has_mut = 0;
+                        int has_const = 0;
+                        for (int j = (int)i - 1; j >= 0 && j >= (int)i - 5; j--) {
+                            if (ast->children[j]->type == AST_TOKEN) {
+                                if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
+                                    ast->children[j]->token.type == TOKEN_COMMENT) {
+                                    continue;
+                                }
+                                if (ast->children[j]->token.type == TOKEN_IDENTIFIER &&
+                                    strcmp(ast->children[j]->token.text, "mut") == 0) {
+                                    has_mut = 1;
+                                }
+                                if (ast->children[j]->token.type == TOKEN_KEYWORD &&
+                                    strcmp(ast->children[j]->token.text, "const") == 0) {
+                                    has_const = 1;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        /* If no 'mut' and no 'const', insert a 'const' token before the type */
+                        if (!has_mut && !has_const) {
+                            ASTNode *const_node = create_token_node(TOKEN_KEYWORD, "const", token->line);
+                            ASTNode *space_node = create_token_node(TOKEN_WHITESPACE, " ", token->line);
+                            
+                            if (const_node && space_node) {
+                                /* Insert const and space before the current position */
+                                if (insert_node_at(ast, i, const_node) &&
+                                    insert_node_at(ast, i + 1, space_node)) {
+                                    /* Adjust loop counter since we inserted 2 nodes */
+                                    i += 2;
+                                } else {
+                                    /* Failed to insert, clean up */
+                                    if (const_node) {
+                                        if (const_node->token.text) free(const_node->token.text);
+                                        free(const_node);
+                                    }
+                                    if (space_node) {
+                                        if (space_node->token.text) free(space_node->token.text);
+                                        free(space_node);
+                                    }
+                                }
+                            } else {
+                                /* Failed to create nodes, clean up */
+                                if (const_node) {
+                                    if (const_node->token.text) free(const_node->token.text);
+                                    free(const_node);
+                                }
+                                if (space_node) {
+                                    if (space_node->token.text) free(space_node->token.text);
+                                    free(space_node);
+                                }
+                            }
+                        }
                     }
                 }
             }

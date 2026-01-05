@@ -18,7 +18,6 @@
 #include "transpiler/casts.h"
 #include "transpiler/autodereference.h"
 #include "transpiler/structs.h"
-#include "transpiler/struct_names.h"
 #include "transpiler/methods.h"
 #include "transpiler/enums.h"
 #include "transpiler/unreachable.h"
