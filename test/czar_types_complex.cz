@@ -19,9 +19,9 @@ typedef u64 MyBigInt;
 
 /* Test in arrays */
 void test_arrays(void) {
-    u8 buffer[256] = {0};
-    i32 values[10] = {0};
-    f64 coordinates[3] = {0};
+    mut u8 buffer[256] = {0};
+    mut i32 values[10] = {0};
+    mut f64 coordinates[3] = {0};
 
     buffer[0] = 1;
     values[0] = -42;
@@ -33,8 +33,8 @@ void test_arrays(void) {
 
 /* Test in pointers */
 void test_pointers(void) {
-    u32 value = 42;
-    u32 *ptr = &value;
+    mut u32 value = 42;
+    mut u32 *ptr = &value;
     i64 large = 1000000;
 
     printf("Pointers: *ptr=%u, large=%lld\n", *ptr, (long long)large);

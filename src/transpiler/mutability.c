@@ -98,6 +98,79 @@ static int is_in_function_params(ASTNode **children, size_t idx) {
     return 0;
 }
 
+/* Check if this is a variable declaration context (not in function parameters, not in struct fields) */
+static int is_variable_declaration(ASTNode **children, size_t count, size_t type_idx) {
+    /* Check if we're inside a struct definition (look backward for struct keyword + opening brace) */
+    int in_struct = 0;
+    int brace_count = 0;
+    for (int k = (int)type_idx - 1; k >= 0 && k >= (int)type_idx - 50; k--) {
+        if (children[k]->type == AST_TOKEN) {
+            const char *ktext = children[k]->token.text;
+            if (strcmp(ktext, "}") == 0) {
+                brace_count++;
+            } else if (strcmp(ktext, "{") == 0) {
+                brace_count--;
+                if (brace_count < 0) {
+                    /* Found opening brace, check if it's part of struct definition */
+                    for (int m = k - 1; m >= 0 && m >= k - 10; m--) {
+                        if (children[m]->type == AST_TOKEN) {
+                            if (children[m]->token.type == TOKEN_WHITESPACE ||
+                                children[m]->token.type == TOKEN_COMMENT) {
+                                continue;
+                            }
+                            if (children[m]->token.type == TOKEN_KEYWORD &&
+                                strcmp(children[m]->token.text, "struct") == 0) {
+                                in_struct = 1;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
+    /* If inside struct definition, this is a field, not a variable */
+    if (in_struct) {
+        return 0;
+    }
+    
+    /* Must have identifier after type */
+    size_t next_idx = skip_ws(children, count, type_idx + 1);
+    
+    /* Skip optional pointer */
+    if (next_idx < count && children[next_idx]->type == AST_TOKEN &&
+        strcmp(children[next_idx]->token.text, "*") == 0) {
+        next_idx = skip_ws(children, count, next_idx + 1);
+    }
+    
+    /* Check if next token is an identifier (variable name) */
+    if (next_idx >= count || children[next_idx]->type != AST_TOKEN ||
+        children[next_idx]->token.type != TOKEN_IDENTIFIER) {
+        return 0;
+    }
+    
+    /* Check what follows the identifier */
+    size_t after_id = skip_ws(children, count, next_idx + 1);
+    if (after_id >= count || children[after_id]->type != AST_TOKEN) {
+        return 0;
+    }
+    
+    const char *after_text = children[after_id]->token.text;
+    
+    /* Variable declarations typically have = or ; after the identifier */
+    /* Also check for [ for array declarations */
+    if (strcmp(after_text, "=") == 0 || 
+        strcmp(after_text, ";") == 0 ||
+        strcmp(after_text, "[") == 0 ||
+        strcmp(after_text, ",") == 0) {  /* Multiple declarations */
+        return 1;
+    }
+    
+    return 0;
+}
+
 /* Check if next non-whitespace token is a pointer (*) */
 static int is_followed_by_pointer(ASTNode **children, size_t count, size_t type_idx) {
     size_t next_idx = skip_ws(children, count, type_idx + 1);
@@ -469,11 +542,208 @@ void transpiler_transform_mutability(ASTNode *ast) {
     if (!ast) return;
 
     if (ast->type == AST_TRANSLATION_UNIT) {
-        /* Two transformations:
-         * 1. Strip 'mut' keyword (making it mutable in C)
-         * 2. Add 'const' for parameters without 'mut' (making them immutable in C)
+        /* Two-pass transformation:
+         * Pass 1: Add 'const' for variables/parameters without 'mut' 
+         * Pass 2: Strip 'mut' keyword 
+         * This ordering ensures we can detect mut correctly before stripping it
          */
         
+        /* PASS 1: Add const for non-mut variables/parameters */
+        for (size_t i = 0; i < ast->child_count; i++) {
+            if (ast->children[i]->type == AST_TOKEN) {
+                Token *token = &ast->children[i]->token;
+                
+                /* Look for type keywords (without preceding 'mut') in:
+                 * - Function parameters
+                 * - Local variable declarations
+                 * - Struct instances
+                 * BUT NOT in struct field definitions
+                 */
+                if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER)) {
+                    int in_params = is_in_function_params(ast->children, i);
+                    int in_var_decl = is_variable_declaration(ast->children, ast->child_count, i);
+                    
+                    /* Skip if neither in params nor in var decl */
+                    if (!in_params && !in_var_decl) {
+                        continue;
+                    }
+                    
+                    /* Only process if in function parameters OR in variable declaration */
+                    if ((in_params && is_param_start(ast->children, i)) || in_var_decl) {
+                        /* Check if this looks like a type (common types or identifiers that could be typedefs) */
+                        /* EXCLUDE void - it cannot be qualified with const */
+                        const char *text = token->text;
+                        int is_type = (strcmp(text, "int") == 0 ||
+                                      strcmp(text, "char") == 0 ||
+                                      strcmp(text, "float") == 0 ||
+                                      strcmp(text, "double") == 0 ||
+                                      strncmp(text, "u", 1) == 0 ||  /* u8, u16, u32, u64 */
+                                      strncmp(text, "i", 1) == 0 ||  /* i8, i16, i32, i64 */
+                                      strcmp(text, "bool") == 0 ||
+                                      strcmp(text, "size_t") == 0 ||
+                                      /* Also check for common identifier patterns (struct typedefs) */
+                                      (token->type == TOKEN_IDENTIFIER && isupper(text[0])));
+                        
+                        if (is_type) {
+                            /* Check if NOT preceded by 'mut' or 'const' (look back, skipping whitespace) */
+                            int has_mut = 0;
+                            int has_const = 0;
+                            int has_struct = 0;
+                            for (int j = (int)i - 1; j >= 0 && j >= (int)i - 5; j--) {
+                                if (ast->children[j]->type == AST_TOKEN) {
+                                    if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
+                                        ast->children[j]->token.type == TOKEN_COMMENT) {
+                                        continue;
+                                    }
+                                    if (ast->children[j]->token.type == TOKEN_IDENTIFIER &&
+                                        strcmp(ast->children[j]->token.text, "mut") == 0) {
+                                        has_mut = 1;
+                                    }
+                                    if (ast->children[j]->token.type == TOKEN_KEYWORD &&
+                                        strcmp(ast->children[j]->token.text, "const") == 0) {
+                                        has_const = 1;
+                                    }
+                                    if (ast->children[j]->token.type == TOKEN_KEYWORD &&
+                                        strcmp(ast->children[j]->token.text, "struct") == 0) {
+                                        has_struct = 1;
+                                    }
+                                    break;
+                                }
+                            }
+                            
+                            /* Check if this type ends with _t (typedef convention) */
+                            size_t text_len = strlen(text);
+                            int is_typedef = (text_len >= 2 && strcmp(text + text_len - 2, "_t") == 0);
+                            
+                            /* If uppercase but not a _t typedef, skip const addition 
+                             * (likely a bare struct name like Point, not Point_t) */
+                            if (token->type == TOKEN_IDENTIFIER && isupper(text[0]) && !is_typedef) {
+                                /* Skip - don't add const to bare struct names */
+                                continue;
+                            }
+                            
+                            /* If no 'mut' and no 'const' and no 'struct', insert a 'const' token before the type */
+                            if (!has_mut && !has_const && !has_struct) {
+                                ASTNode *const_node = create_token_node(TOKEN_KEYWORD, "const", token->line);
+                                ASTNode *space_node = create_token_node(TOKEN_WHITESPACE, " ", token->line);
+                                
+                                if (const_node && space_node) {
+                                    /* Insert const and space before the current position */
+                                    if (insert_node_at(ast, i, const_node) &&
+                                        insert_node_at(ast, i + 1, space_node)) {
+                                        /* Adjust loop counter since we inserted 2 nodes */
+                                        i += 2;
+                                    } else {
+                                        /* Failed to insert, clean up */
+                                        if (const_node) {
+                                            if (const_node->token.text) free(const_node->token.text);
+                                            free(const_node);
+                                        }
+                                        if (space_node) {
+                                            if (space_node->token.text) free(space_node->token.text);
+                                            free(space_node);
+                                        }
+                                    }
+                                } else {
+                                    /* Failed to create nodes, clean up */
+                                    if (const_node) {
+                                        if (const_node->token.text) free(const_node->token.text);
+                                        free(const_node);
+                                    }
+                                    if (space_node) {
+                                        if (space_node->token.text) free(space_node->token.text);
+                                        free(space_node);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /* PASS 1.5: Add const after * for non-mut pointers to make pointer itself const */
+        for (size_t i = 0; i < ast->child_count; i++) {
+            if (ast->children[i]->type == AST_TOKEN) {
+                Token *token = &ast->children[i]->token;
+                
+                /* Look for * (pointer) tokens */
+                if (strcmp(token->text, "*") == 0) {
+                    /* Check if preceded by mut anywhere in this declaration (look back for mut, stopping at ; or { or }) */
+                    int has_mut_in_decl = 0;
+                    for (int j = (int)i - 1; j >= 0 && j >= (int)i - 20; j--) {
+                        if (ast->children[j]->type == AST_TOKEN) {
+                            const char *jtext = ast->children[j]->token.text;
+                            
+                            /* Stop at statement/block boundaries */
+                            if (strcmp(jtext, ";") == 0 || strcmp(jtext, "{") == 0 || 
+                                strcmp(jtext, "}") == 0 || strcmp(jtext, ")") == 0 ||
+                                strcmp(jtext, ",") == 0) {
+                                break;
+                            }
+                            
+                            if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
+                                ast->children[j]->token.type == TOKEN_COMMENT) {
+                                continue;
+                            }
+                            if (ast->children[j]->token.type == TOKEN_IDENTIFIER &&
+                                strcmp(jtext, "mut") == 0) {
+                                has_mut_in_decl = 1;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    /* If no mut in this declaration, check if const already after */
+                    if (!has_mut_in_decl) {
+                        size_t next_idx = skip_ws(ast->children, ast->child_count, i + 1);
+                        int has_const_after = 0;
+                        if (next_idx < ast->child_count && ast->children[next_idx]->type == AST_TOKEN &&
+                            ast->children[next_idx]->token.type == TOKEN_KEYWORD &&
+                            strcmp(ast->children[next_idx]->token.text, "const") == 0) {
+                            has_const_after = 1;
+                        }
+                        
+                        /* If no const after, add it to make pointer itself const */
+                        if (!has_const_after) {
+                            ASTNode *space_node = create_token_node(TOKEN_WHITESPACE, " ", token->line);
+                            ASTNode *const_node = create_token_node(TOKEN_KEYWORD, "const", token->line);
+                            
+                            if (space_node && const_node) {
+                                /* Insert space and const after the * */
+                                if (insert_node_at(ast, i + 1, space_node) &&
+                                    insert_node_at(ast, i + 2, const_node)) {
+                                    /* Adjust loop counter since we inserted 2 nodes */
+                                    i += 2;
+                                } else {
+                                    /* Failed to insert, clean up */
+                                    if (space_node) {
+                                        if (space_node->token.text) free(space_node->token.text);
+                                        free(space_node);
+                                    }
+                                    if (const_node) {
+                                        if (const_node->token.text) free(const_node->token.text);
+                                        free(const_node);
+                                    }
+                                }
+                            } else {
+                                /* Failed to create nodes, clean up */
+                                if (space_node) {
+                                    if (space_node->token.text) free(space_node->token.text);
+                                    free(space_node);
+                                }
+                                if (const_node) {
+                                    if (const_node->token.text) free(const_node->token.text);
+                                    free(const_node);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /* PASS 2: Strip 'mut' keyword */
         for (size_t i = 0; i < ast->child_count; i++) {
             if (ast->children[i]->type == AST_TOKEN) {
                 Token *token = &ast->children[i]->token;
@@ -509,83 +779,6 @@ void transpiler_transform_mutability(ASTNode *ast) {
                             }
                         }
                         ws_token->length = 0;
-                    }
-                }
-                /* Look for type keywords in function parameter context (without preceding 'mut') */
-                else if (is_in_function_params(ast->children, i) &&
-                         is_param_start(ast->children, i) &&
-                         (token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER)) {
-                    
-                    /* Check if this looks like a type (common types or identifiers that could be typedefs) */
-                    /* EXCLUDE void - it cannot be qualified with const */
-                    const char *text = token->text;
-                    int is_type = (strcmp(text, "int") == 0 ||
-                                  strcmp(text, "char") == 0 ||
-                                  strcmp(text, "float") == 0 ||
-                                  strcmp(text, "double") == 0 ||
-                                  strncmp(text, "u", 1) == 0 ||  /* u8, u16, u32, u64 */
-                                  strncmp(text, "i", 1) == 0 ||  /* i8, i16, i32, i64 */
-                                  strcmp(text, "bool") == 0 ||
-                                  strcmp(text, "size_t") == 0 ||
-                                  /* Also check for common identifier patterns (struct typedefs) */
-                                  (token->type == TOKEN_IDENTIFIER && isupper(text[0])));
-                    
-                    if (is_type) {
-                        /* Check if NOT preceded by 'mut' or 'const' (look back, skipping whitespace) */
-                        int has_mut = 0;
-                        int has_const = 0;
-                        for (int j = (int)i - 1; j >= 0 && j >= (int)i - 5; j--) {
-                            if (ast->children[j]->type == AST_TOKEN) {
-                                if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
-                                    ast->children[j]->token.type == TOKEN_COMMENT) {
-                                    continue;
-                                }
-                                if (ast->children[j]->token.type == TOKEN_IDENTIFIER &&
-                                    strcmp(ast->children[j]->token.text, "mut") == 0) {
-                                    has_mut = 1;
-                                }
-                                if (ast->children[j]->token.type == TOKEN_KEYWORD &&
-                                    strcmp(ast->children[j]->token.text, "const") == 0) {
-                                    has_const = 1;
-                                }
-                                break;
-                            }
-                        }
-                        
-                        /* If no 'mut' and no 'const', insert a 'const' token before the type */
-                        if (!has_mut && !has_const) {
-                            ASTNode *const_node = create_token_node(TOKEN_KEYWORD, "const", token->line);
-                            ASTNode *space_node = create_token_node(TOKEN_WHITESPACE, " ", token->line);
-                            
-                            if (const_node && space_node) {
-                                /* Insert const and space before the current position */
-                                if (insert_node_at(ast, i, const_node) &&
-                                    insert_node_at(ast, i + 1, space_node)) {
-                                    /* Adjust loop counter since we inserted 2 nodes */
-                                    i += 2;
-                                } else {
-                                    /* Failed to insert, clean up */
-                                    if (const_node) {
-                                        if (const_node->token.text) free(const_node->token.text);
-                                        free(const_node);
-                                    }
-                                    if (space_node) {
-                                        if (space_node->token.text) free(space_node->token.text);
-                                        free(space_node);
-                                    }
-                                }
-                            } else {
-                                /* Failed to create nodes, clean up */
-                                if (const_node) {
-                                    if (const_node->token.text) free(const_node->token.text);
-                                    free(const_node);
-                                }
-                                if (space_node) {
-                                    if (space_node->token.text) free(space_node->token.text);
-                                    free(space_node);
-                                }
-                            }
-                        }
                     }
                 }
             }
