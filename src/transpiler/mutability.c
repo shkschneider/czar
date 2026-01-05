@@ -103,10 +103,9 @@ static int is_in_function_params(ASTNode **children, size_t idx) {
 
 /* Check if this is a variable declaration context (not in function parameters, not in struct fields) */
 static int is_variable_declaration(ASTNode **children, size_t count, size_t type_idx) {
-    /* Simple approach: Check if we're inside braces that follow 'struct' keyword */
-    /* Count braces - if we're inside braces and there's a 'struct' before the opening brace, skip */
+    /* Check if we're inside struct field declaration by looking for 
+     * surrounding braces with 'struct' or 'typedef struct' before them */
     int brace_depth = 0;
-    int found_struct_before_braces = 0;
     
     /* Scan backward from current position */
     for (int i = (int)type_idx - 1; i >= 0; i--) {
@@ -114,17 +113,14 @@ static int is_variable_declaration(ASTNode **children, size_t count, size_t type
         
         const char *text = children[i]->token.text;
         
-        /* Track brace depth (we're going backwards, so closing brace increases depth) */
+        /* Track brace depth (going backwards, so } increases depth) */
         if (strcmp(text, "}") == 0) {
             brace_depth++;
         } else if (strcmp(text, "{") == 0) {
             brace_depth--;
-            
-            /* If we just exited a brace level and found we're at brace_depth 0,
-             * check if this opening brace was preceded by 'struct' */
             if (brace_depth < 0) {
-                /* We're inside this brace pair - check if it's a struct */
-                for (int j = i - 1; j >= 0 && j >= i - 50; j--) {
+                /* We found the opening brace we're inside - check what's before it */
+                for (int j = i - 1; j >= 0 && j >= i - 100; j--) {
                     if (children[j]->type != AST_TOKEN) continue;
                     
                     if (children[j]->token.type == TOKEN_WHITESPACE ||
@@ -132,31 +128,35 @@ static int is_variable_declaration(ASTNode **children, size_t count, size_t type
                         continue;
                     }
                     
-                    /* Found 'struct' keyword */
+                    /* Check for 'struct' keyword - this is a struct definition */
                     if (children[j]->token.type == TOKEN_KEYWORD &&
                         strcmp(children[j]->token.text, "struct") == 0) {
-                        found_struct_before_braces = 1;
-                        break;
+                        return 0;  /* Inside struct, don't add const to fields */
                     }
                     
-                    /* Keep scanning past identifiers (struct name) and typedef */
-                    if (children[j]->token.type == TOKEN_IDENTIFIER ||
-                        (children[j]->token.type == TOKEN_KEYWORD &&
-                         strcmp(children[j]->token.text, "typedef") == 0)) {
+                    /* Check for '_s' suffix (struct tag like Point_s) */
+                    if (children[j]->token.type == TOKEN_IDENTIFIER) {
+                        size_t len = strlen(children[j]->token.text);
+                        if (len >= 2 && strcmp(children[j]->token.text + len - 2, "_s") == 0) {
+                            return 0;  /* Inside struct, don't add const to fields */
+                        }
+                        /* Continue checking for typedef or struct before this identifier */
                         continue;
                     }
                     
-                    /* Hit something else, stop */
+                    /* Check for typedef keyword */
+                    if (children[j]->token.type == TOKEN_KEYWORD &&
+                        strcmp(children[j]->token.text, "typedef") == 0) {
+                        /* Keep looking for struct */
+                        continue;
+                    }
+                    
+                    /* Hit something else, not a struct definition */
                     break;
                 }
-                break;  /* Stop scanning - we found the brace pair we're in */
+                break;  /* Found our enclosing brace, stop */
             }
         }
-    }
-    
-    /* If we found struct before braces, this is a struct field, not a variable */
-    if (found_struct_before_braces) {
-        return 0;
     }
 
     /* Must have identifier after type */
