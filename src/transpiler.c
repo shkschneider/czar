@@ -5,8 +5,7 @@
  * Transforms AST by applying CZar-specific transformations.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "cz.h"
 #include "transpiler.h"
 #include "errors.h"
 #include "warnings.h"
@@ -50,7 +49,7 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
 /* Transform struct names in usage (but not in method syntax) */
 static void transform_struct_names_in_ast(ASTNode *node) {
     if (!node) return;
-    
+
     /* For translation units, process children to find patterns */
     if (node->type == AST_TRANSLATION_UNIT) {
         for (size_t i = 0; i < node->child_count; i++) {
@@ -58,7 +57,7 @@ static void transform_struct_names_in_ast(ASTNode *node) {
             if (i + 1 < node->child_count &&
                 node->children[i]->type == AST_TOKEN &&
                 node->children[i]->token.type == TOKEN_IDENTIFIER) {
-                
+
                 /* Look ahead to see if next non-whitespace token is a dot */
                 int followed_by_dot = 0;
                 for (size_t j = i + 1; j < node->child_count && j < i + 5; j++) {
@@ -75,7 +74,7 @@ static void transform_struct_names_in_ast(ASTNode *node) {
                         break;
                     }
                 }
-                
+
                 /* If not followed by dot, check if it's a struct name and transform */
                 if (!followed_by_dot) {
                     const char *typedef_name = struct_names_get_typedef(node->children[i]->token.text);
@@ -89,7 +88,7 @@ static void transform_struct_names_in_ast(ASTNode *node) {
                     }
                 }
             }
-            
+
             /* Recursively process children */
             transform_struct_names_in_ast(node->children[i]);
         }

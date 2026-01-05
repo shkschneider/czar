@@ -5,8 +5,7 @@
  * Handles special _ variable to suppress unused warnings.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "unused.h"
 #include <stdio.h>
 #include <stdlib.h>

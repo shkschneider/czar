@@ -4,7 +4,7 @@ CZar - an empowering semantic and authority layer for C
 
 > Rules, without replacing the kingdom.
 
-_CZar consumes `.cz` files, analyses and rewrites the C AST and emits **portable C11** that you compile with your usual toolchain._
+_CZar consumes `.cz` files, analyses and rewrites the C AST and emits **portable** C11/POSIX.1‑2008 that you compile with your usual toolchain._
 
 ## Why
 

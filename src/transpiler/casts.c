@@ -10,8 +10,7 @@
  * - Enforced explicit narrowing casts
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "casts.h"
 #include "../transpiler.h"
 #include "../errors.h"

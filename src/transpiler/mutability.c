@@ -7,8 +7,7 @@
  * Let the C compiler do the heavy checking.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "mutability.h"
 #include "../errors.h"
 #include "../warnings.h"
@@ -37,19 +36,19 @@ static int is_in_function_params(ASTNode **children, size_t idx) {
     for (int i = (int)idx - 1; i >= 0 && i >= (int)idx - 30; i--) {
         if (children[i]->type == AST_TOKEN) {
             const char *text = children[i]->token.text;
-            
+
             /* Check for statement/block terminators - we're not in function params */
             if (strcmp(text, ";") == 0 || strcmp(text, "{") == 0 || strcmp(text, "}") == 0) {
                 return 0;
             }
-            
+
             /* Check for for/while/if keywords - not function params */
             if (children[i]->token.type == TOKEN_KEYWORD &&
-                (strcmp(text, "for") == 0 || strcmp(text, "while") == 0 || 
+                (strcmp(text, "for") == 0 || strcmp(text, "while") == 0 ||
                  strcmp(text, "if") == 0 || strcmp(text, "switch") == 0)) {
                 return 0;
             }
-            
+
             /* Track parentheses */
             if (strcmp(text, ")") == 0) {
                 paren_count++;
@@ -59,7 +58,7 @@ static int is_in_function_params(ASTNode **children, size_t idx) {
                     /* Found opening paren, check if it's a function declaration */
                     for (int j = i - 1; j >= 0 && j >= i - 10; j--) {
                         if (children[j]->type == AST_TOKEN) {
-                            if (children[j]->token.type == TOKEN_WHITESPACE || 
+                            if (children[j]->token.type == TOKEN_WHITESPACE ||
                                 children[j]->token.type == TOKEN_COMMENT) {
                                 continue;
                             }
@@ -134,44 +133,44 @@ static int is_variable_declaration(ASTNode **children, size_t count, size_t type
             }
         }
     }
-    
+
     /* If inside struct definition, this is a field, not a variable */
     if (in_struct) {
         return 0;
     }
-    
+
     /* Must have identifier after type */
     size_t next_idx = skip_ws(children, count, type_idx + 1);
-    
+
     /* Skip optional pointer */
     if (next_idx < count && children[next_idx]->type == AST_TOKEN &&
         strcmp(children[next_idx]->token.text, "*") == 0) {
         next_idx = skip_ws(children, count, next_idx + 1);
     }
-    
+
     /* Check if next token is an identifier (variable name) */
     if (next_idx >= count || children[next_idx]->type != AST_TOKEN ||
         children[next_idx]->token.type != TOKEN_IDENTIFIER) {
         return 0;
     }
-    
+
     /* Check what follows the identifier */
     size_t after_id = skip_ws(children, count, next_idx + 1);
     if (after_id >= count || children[after_id]->type != AST_TOKEN) {
         return 0;
     }
-    
+
     const char *after_text = children[after_id]->token.text;
-    
+
     /* Variable declarations typically have = or ; after the identifier */
     /* Also check for [ for array declarations */
-    if (strcmp(after_text, "=") == 0 || 
+    if (strcmp(after_text, "=") == 0 ||
         strcmp(after_text, ";") == 0 ||
         strcmp(after_text, "[") == 0 ||
         strcmp(after_text, ",") == 0) {  /* Multiple declarations */
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -187,12 +186,12 @@ static int is_followed_by_pointer(ASTNode **children, size_t count, size_t type_
 /* Validate mutability rules */
 void transpiler_validate_mutability(ASTNode *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) return;
-    
+
     /* Look for 'mut' keywords in function parameters */
     for (size_t i = 0; i < ast->child_count; i++) {
         if (ast->children[i]->type == AST_TOKEN) {
             Token *token = &ast->children[i]->token;
-            
+
             /* Check for mut and const appearing together */
             if (token->type == TOKEN_IDENTIFIER && strcmp(token->text, "mut") == 0) {
                 /* Look ahead for const */
@@ -209,13 +208,13 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
                         break;
                     }
                 }
-                
+
                 /* Check if in function parameters and followed by pointer */
                 if (is_in_function_params(ast->children, i)) {
                     /* Check if followed by a type */
                     size_t type_idx = skip_ws(ast->children, ast->child_count, i + 1);
                     if (type_idx >= ast->child_count || ast->children[type_idx]->type != AST_TOKEN) continue;
-                    
+
                     /* Check if the type is followed by a pointer (*) */
                     if (!is_followed_by_pointer(ast->children, ast->child_count, type_idx)) {
                         /* mut parameter is not a pointer - ERROR */
@@ -223,7 +222,7 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
                     }
                 }
             }
-            
+
             /* Check for const keyword - forbidden in CZar */
             /* This handles both standalone const and mut+const conflicts */
             if (token->type == TOKEN_KEYWORD && strcmp(token->text, "const") == 0) {
@@ -243,7 +242,7 @@ void transpiler_validate_mutability(ASTNode *ast, const char *filename, const ch
                         break;
                     }
                 }
-                
+
                 /* If not preceded by mut, error on standalone const */
                 if (!has_mut) {
                     cz_error(filename, source, token->line, ERR_CONST_IN_CZAR_SOURCE);
@@ -277,7 +276,7 @@ static int is_param_start(ASTNode **children, size_t idx) {
 static ASTNode *create_token_node(TokenType type, const char *text, int line) {
     ASTNode *node = malloc(sizeof(ASTNode));
     if (!node) return NULL;
-    
+
     node->type = AST_TOKEN;
     node->token.type = type;
     node->token.text = strdup(text);
@@ -291,7 +290,7 @@ static ASTNode *create_token_node(TokenType type, const char *text, int line) {
     node->children = NULL;
     node->child_count = 0;
     node->child_capacity = 0;
-    
+
     return node;
 }
 
@@ -307,16 +306,16 @@ static int insert_node_at(ASTNode *ast, size_t position, ASTNode *node) {
         ast->children = new_children;
         ast->child_capacity = new_capacity;
     }
-    
+
     /* Shift elements to make room */
     for (size_t i = ast->child_count; i > position; i--) {
         ast->children[i] = ast->children[i - 1];
     }
-    
+
     /* Insert the node */
     ast->children[position] = node;
     ast->child_count++;
-    
+
     return 1;
 }
 
@@ -326,16 +325,16 @@ void transpiler_transform_mutability(ASTNode *ast) {
 
     if (ast->type == AST_TRANSLATION_UNIT) {
         /* Two-pass transformation:
-         * Pass 1: Add 'const' for variables/parameters without 'mut' 
-         * Pass 2: Strip 'mut' keyword 
+         * Pass 1: Add 'const' for variables/parameters without 'mut'
+         * Pass 2: Strip 'mut' keyword
          * This ordering ensures we can detect mut correctly before stripping it
          */
-        
+
         /* PASS 1: Add const for non-mut variables/parameters */
         for (size_t i = 0; i < ast->child_count; i++) {
             if (ast->children[i]->type == AST_TOKEN) {
                 Token *token = &ast->children[i]->token;
-                
+
                 /* Look for type keywords (without preceding 'mut') in:
                  * - Function parameters
                  * - Local variable declarations
@@ -345,12 +344,12 @@ void transpiler_transform_mutability(ASTNode *ast) {
                 if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER)) {
                     int in_params = is_in_function_params(ast->children, i);
                     int in_var_decl = is_variable_declaration(ast->children, ast->child_count, i);
-                    
+
                     /* Skip if neither in params nor in var decl */
                     if (!in_params && !in_var_decl) {
                         continue;
                     }
-                    
+
                     /* Only process if in function parameters OR in variable declaration */
                     if ((in_params && is_param_start(ast->children, i)) || in_var_decl) {
                         /* Check if this looks like a type (common types or identifiers that could be typedefs) */
@@ -366,7 +365,7 @@ void transpiler_transform_mutability(ASTNode *ast) {
                                       strcmp(text, "size_t") == 0 ||
                                       /* Also check for common identifier patterns (struct typedefs) */
                                       (token->type == TOKEN_IDENTIFIER && isupper(text[0])));
-                        
+
                         if (is_type) {
                             /* Check if NOT preceded by 'mut' or 'const' (look back, skipping whitespace) */
                             int has_mut = 0;
@@ -393,23 +392,23 @@ void transpiler_transform_mutability(ASTNode *ast) {
                                     break;
                                 }
                             }
-                            
+
                             /* Check if this type ends with _t (typedef convention) */
                             size_t text_len = strlen(text);
                             int is_typedef = (text_len >= 2 && strcmp(text + text_len - 2, "_t") == 0);
-                            
-                            /* If uppercase but not a _t typedef, skip const addition 
+
+                            /* If uppercase but not a _t typedef, skip const addition
                              * (likely a bare struct name like Point, not Point_t) */
                             if (token->type == TOKEN_IDENTIFIER && isupper(text[0]) && !is_typedef) {
                                 /* Skip - don't add const to bare struct names */
                                 continue;
                             }
-                            
+
                             /* If no 'mut' and no 'const' and no 'struct', insert a 'const' token before the type */
                             if (!has_mut && !has_const && !has_struct) {
                                 ASTNode *const_node = create_token_node(TOKEN_KEYWORD, "const", token->line);
                                 ASTNode *space_node = create_token_node(TOKEN_WHITESPACE, " ", token->line);
-                                
+
                                 if (const_node && space_node) {
                                     /* Insert const and space before the current position */
                                     if (insert_node_at(ast, i, const_node) &&
@@ -444,12 +443,12 @@ void transpiler_transform_mutability(ASTNode *ast) {
                 }
             }
         }
-        
+
         /* PASS 1.5: Add const after * for non-mut pointers to make pointer itself const */
         for (size_t i = 0; i < ast->child_count; i++) {
             if (ast->children[i]->type == AST_TOKEN) {
                 Token *token = &ast->children[i]->token;
-                
+
                 /* Look for * (pointer) tokens */
                 if (strcmp(token->text, "*") == 0) {
                     /* Check if preceded by mut anywhere in this declaration (look back for mut, stopping at ; or { or }) */
@@ -457,14 +456,14 @@ void transpiler_transform_mutability(ASTNode *ast) {
                     for (int j = (int)i - 1; j >= 0 && j >= (int)i - 20; j--) {
                         if (ast->children[j]->type == AST_TOKEN) {
                             const char *jtext = ast->children[j]->token.text;
-                            
+
                             /* Stop at statement/block boundaries */
-                            if (strcmp(jtext, ";") == 0 || strcmp(jtext, "{") == 0 || 
+                            if (strcmp(jtext, ";") == 0 || strcmp(jtext, "{") == 0 ||
                                 strcmp(jtext, "}") == 0 || strcmp(jtext, ")") == 0 ||
                                 strcmp(jtext, ",") == 0) {
                                 break;
                             }
-                            
+
                             if (ast->children[j]->token.type == TOKEN_WHITESPACE ||
                                 ast->children[j]->token.type == TOKEN_COMMENT) {
                                 continue;
@@ -476,7 +475,7 @@ void transpiler_transform_mutability(ASTNode *ast) {
                             }
                         }
                     }
-                    
+
                     /* If no mut in this declaration, check if const already after */
                     if (!has_mut_in_decl) {
                         size_t next_idx = skip_ws(ast->children, ast->child_count, i + 1);
@@ -486,12 +485,12 @@ void transpiler_transform_mutability(ASTNode *ast) {
                             strcmp(ast->children[next_idx]->token.text, "const") == 0) {
                             has_const_after = 1;
                         }
-                        
+
                         /* If no const after, add it to make pointer itself const */
                         if (!has_const_after) {
                             ASTNode *space_node = create_token_node(TOKEN_WHITESPACE, " ", token->line);
                             ASTNode *const_node = create_token_node(TOKEN_KEYWORD, "const", token->line);
-                            
+
                             if (space_node && const_node) {
                                 /* Insert space and const after the * */
                                 if (insert_node_at(ast, i + 1, space_node) &&
@@ -525,16 +524,16 @@ void transpiler_transform_mutability(ASTNode *ast) {
                 }
             }
         }
-        
+
         /* PASS 2: Strip 'mut' keyword */
         for (size_t i = 0; i < ast->child_count; i++) {
             if (ast->children[i]->type == AST_TOKEN) {
                 Token *token = &ast->children[i]->token;
-                
+
                 /* Look for 'mut' keyword */
                 if (token->type == TOKEN_IDENTIFIER &&
                     strcmp(token->text, "mut") == 0) {
-                    
+
                     /* Remove 'mut' keyword */
                     free(token->text);
                     token->text = strdup("");
@@ -546,7 +545,7 @@ void transpiler_transform_mutability(ASTNode *ast) {
                         }
                     }
                     token->length = 0;
-                    
+
                     /* Also remove following whitespace */
                     if (i + 1 < ast->child_count &&
                         ast->children[i + 1]->type == AST_TOKEN &&
