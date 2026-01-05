@@ -26,14 +26,24 @@ static MutParamContext g_mut_params = {NULL, 0, 0};
 
 /* Add a mut parameter to the context */
 static void add_mut_param(const char *name) {
+    if (!name) return;
+    
     if (g_mut_params.count >= g_mut_params.capacity) {
         size_t new_capacity = g_mut_params.capacity == 0 ? 8 : g_mut_params.capacity * 2;
         char **new_names = realloc(g_mut_params.param_names, new_capacity * sizeof(char*));
-        if (!new_names) return;
+        if (!new_names) {
+            fprintf(stderr, "[CZAR] Warning: Failed to expand mut param tracking\n");
+            return;
+        }
         g_mut_params.param_names = new_names;
         g_mut_params.capacity = new_capacity;
     }
-    g_mut_params.param_names[g_mut_params.count++] = strdup(name);
+    char *name_copy = strdup(name);
+    if (!name_copy) {
+        fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for mut param name\n");
+        return;
+    }
+    g_mut_params.param_names[g_mut_params.count++] = name_copy;
 }
 
 /* Check if a name is a mut parameter */
@@ -156,30 +166,38 @@ static void transform_mut_parameter(ASTNode **children, size_t count, size_t mut
     
     /* Remove 'mut' keyword */
     Token *mut_token = &children[mut_idx]->token;
-    free(mut_token->text);
-    mut_token->text = strdup("");
-    mut_token->length = 0;
+    char *empty_mut = strdup("");
+    if (empty_mut) {
+        free(mut_token->text);
+        mut_token->text = empty_mut;
+        mut_token->length = 0;
+    }
     
     /* Remove whitespace after mut */
     if (mut_idx + 1 < count &&
         children[mut_idx + 1]->type == AST_TOKEN &&
         children[mut_idx + 1]->token.type == TOKEN_WHITESPACE) {
         Token *ws_token = &children[mut_idx + 1]->token;
-        free(ws_token->text);
-        ws_token->text = strdup("");
-        ws_token->length = 0;
+        char *empty_ws = strdup("");
+        if (empty_ws) {
+            free(ws_token->text);
+            ws_token->text = empty_ws;
+            ws_token->length = 0;
+        }
     }
     
     /* Add pointer (*) after the type */
     /* We need to insert a * token. For simplicity, prepend it to the parameter name */
     Token *name_token = &children[name_idx]->token;
     char *new_name = malloc(strlen(name_token->text) + 2);
-    if (new_name) {
-        sprintf(new_name, "*%s", name_token->text);
-        free(name_token->text);
-        name_token->text = new_name;
-        name_token->length = strlen(new_name);
+    if (!new_name) {
+        fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for pointer parameter name\n");
+        return;
     }
+    sprintf(new_name, "*%s", name_token->text);
+    free(name_token->text);
+    name_token->text = new_name;
+    name_token->length = strlen(new_name);
 }
 
 /* Transform operations on mut parameters: x + 1 -> *x + 1, x = ... -> *x = ... */
@@ -207,12 +225,14 @@ static void transform_mut_param_operations(ASTNode **children, size_t count, siz
     /* Prepend * to the identifier */
     Token *id_token = &children[i]->token;
     char *new_text = malloc(strlen(id_token->text) + 2);
-    if (new_text) {
-        sprintf(new_text, "*%s", id_token->text);
-        free(id_token->text);
-        id_token->text = new_text;
-        id_token->length = strlen(new_text);
+    if (!new_text) {
+        fprintf(stderr, "[CZAR] Warning: Failed to allocate memory for dereference\n");
+        return;
     }
+    sprintf(new_text, "*%s", id_token->text);
+    free(id_token->text);
+    id_token->text = new_text;
+    id_token->length = strlen(new_text);
 }
 static void transform_member_access(ASTNode **children, size_t count, size_t i) {
     /* Check if this is param_name */
@@ -296,18 +316,24 @@ void transpiler_transform_mutability(ASTNode *ast) {
                             transform_mut_parameter(ast->children, ast->child_count, i);
                         } else {
                             /* Just remove 'mut' keyword for local variables */
-                            free(token->text);
-                            token->text = strdup("");
-                            token->length = 0;
+                            char *empty_local = strdup("");
+                            if (empty_local) {
+                                free(token->text);
+                                token->text = empty_local;
+                                token->length = 0;
+                            }
                             
                             /* Also remove following whitespace */
                             if (i + 1 < ast->child_count &&
                                 ast->children[i + 1]->type == AST_TOKEN &&
                                 ast->children[i + 1]->token.type == TOKEN_WHITESPACE) {
                                 Token *ws_token = &ast->children[i + 1]->token;
-                                free(ws_token->text);
-                                ws_token->text = strdup("");
-                                ws_token->length = 0;
+                                char *empty_local_ws = strdup("");
+                                if (empty_local_ws) {
+                                    free(ws_token->text);
+                                    ws_token->text = empty_local_ws;
+                                    ws_token->length = 0;
+                                }
                             }
                         }
                     }
