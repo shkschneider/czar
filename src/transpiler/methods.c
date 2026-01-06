@@ -58,13 +58,19 @@ static void track_method(const char *struct_name, const char *method_name) {
         }
     }
 
-    /* Add new method */
+    /* Add new method - ensure entry is clean first */
+    methods[method_count].struct_name = NULL;
+    methods[method_count].method_name = NULL;
+    
     char *struct_name_copy = strdup(struct_name);
     char *method_name_copy = strdup(method_name);
     if (!struct_name_copy || !method_name_copy) {
         /* Memory allocation failed, clean up and return */
         free(struct_name_copy);
         free(method_name_copy);
+        /* Ensure the entry remains NULL */
+        methods[method_count].struct_name = NULL;
+        methods[method_count].method_name = NULL;
         return;
     }
 
@@ -102,9 +108,13 @@ static void track_struct_type(const char *name) {
         }
     }
 
-    /* Add new struct type */
+    /* Add new struct type - ensure entry is clean first */
+    struct_types[struct_type_count].name = NULL;
+    
     char *name_copy = strdup(name);
     if (!name_copy) {
+        /* Ensure the entry remains NULL */
+        struct_types[struct_type_count].name = NULL;
         return;
     }
 
