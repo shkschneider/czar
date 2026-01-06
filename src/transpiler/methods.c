@@ -364,15 +364,23 @@ static void transform_method_declarations(ASTNode *ast) {
             n1->token.length = strlen(new_name);
 
             /* Remove the dot and method name tokens */
-            /* Mark them for removal by setting text to NULL */
+            /* Mark them for removal by setting text to empty string */
             if (dot_node->token.text) {
                 free(dot_node->token.text);
                 dot_node->token.text = strdup("");
+                if (!dot_node->token.text) {
+                    dot_node->token.text = malloc(1);
+                    if (dot_node->token.text) dot_node->token.text[0] = '\0';
+                }
                 dot_node->token.length = 0;
             }
             if (method_node->token.text) {
                 free(method_node->token.text);
                 method_node->token.text = strdup("");
+                if (!method_node->token.text) {
+                    method_node->token.text = malloc(1);
+                    if (method_node->token.text) method_node->token.text[0] = '\0';
+                }
                 method_node->token.length = 0;
             }
         }
@@ -406,6 +414,13 @@ static void transform_method_declarations(ASTNode *ast) {
         ptr_node->type = AST_TOKEN;
         ptr_node->token.type = TOKEN_OPERATOR;
         ptr_node->token.text = strdup("*");
+        if (!ptr_node->token.text) {
+            ptr_node->token.text = malloc(2);
+            if (ptr_node->token.text) {
+                ptr_node->token.text[0] = '*';
+                ptr_node->token.text[1] = '\0';
+            }
+        }
         ptr_node->token.length = 1;
         ptr_node->token.line = n1->token.line;
         ptr_node->token.column = 0;
@@ -424,6 +439,13 @@ static void transform_method_declarations(ASTNode *ast) {
         space_node->type = AST_TOKEN;
         space_node->token.type = TOKEN_WHITESPACE;
         space_node->token.text = strdup(" ");
+        if (!space_node->token.text) {
+            space_node->token.text = malloc(2);
+            if (space_node->token.text) {
+                space_node->token.text[0] = ' ';
+                space_node->token.text[1] = '\0';
+            }
+        }
         space_node->token.length = 1;
         space_node->token.line = n1->token.line;
         space_node->token.column = 0;
@@ -443,6 +465,12 @@ static void transform_method_declarations(ASTNode *ast) {
         self_node->type = AST_TOKEN;
         self_node->token.type = TOKEN_IDENTIFIER;
         self_node->token.text = strdup("self");
+        if (!self_node->token.text) {
+            self_node->token.text = malloc(5);
+            if (self_node->token.text) {
+                strcpy(self_node->token.text, "self");
+            }
+        }
         self_node->token.length = 4;
         self_node->token.line = n1->token.line;
         self_node->token.column = 0;
@@ -466,6 +494,13 @@ static void transform_method_declarations(ASTNode *ast) {
             comma_node->type = AST_TOKEN;
             comma_node->token.type = TOKEN_PUNCTUATION;
             comma_node->token.text = strdup(",");
+            if (!comma_node->token.text) {
+                comma_node->token.text = malloc(2);
+                if (comma_node->token.text) {
+                    comma_node->token.text[0] = ',';
+                    comma_node->token.text[1] = '\0';
+                }
+            }
             comma_node->token.length = 1;
             comma_node->token.line = n1->token.line;
             comma_node->token.column = 0;
@@ -486,6 +521,13 @@ static void transform_method_declarations(ASTNode *ast) {
             comma_space_node->type = AST_TOKEN;
             comma_space_node->token.type = TOKEN_WHITESPACE;
             comma_space_node->token.text = strdup(" ");
+            if (!comma_space_node->token.text) {
+                comma_space_node->token.text = malloc(2);
+                if (comma_space_node->token.text) {
+                    comma_space_node->token.text[0] = ' ';
+                    comma_space_node->token.text[1] = '\0';
+                }
+            }
             comma_space_node->token.length = 1;
             comma_space_node->token.line = n1->token.line;
             comma_space_node->token.column = 0;
@@ -650,11 +692,19 @@ static void transform_method_calls(ASTNode *ast) {
                     if (dot_node->token.text) {
                         free(dot_node->token.text);
                         dot_node->token.text = strdup("");
+                        if (!dot_node->token.text) {
+                            dot_node->token.text = malloc(1);
+                            if (dot_node->token.text) dot_node->token.text[0] = '\0';
+                        }
                         dot_node->token.length = 0;
                     }
                     if (method_node->token.text) {
                         free(method_node->token.text);
                         method_node->token.text = strdup("");
+                        if (!method_node->token.text) {
+                            method_node->token.text = malloc(1);
+                            if (method_node->token.text) method_node->token.text[0] = '\0';
+                        }
                         method_node->token.length = 0;
                     }
                 }
@@ -684,11 +734,19 @@ static void transform_method_calls(ASTNode *ast) {
         if (dot_node->token.text) {
             free(dot_node->token.text);
             dot_node->token.text = strdup("");
+            if (!dot_node->token.text) {
+                dot_node->token.text = malloc(1);
+                if (dot_node->token.text) dot_node->token.text[0] = '\0';
+            }
             dot_node->token.length = 0;
         }
         if (method_node->token.text) {
             free(method_node->token.text);
             method_node->token.text = strdup("");
+            if (!method_node->token.text) {
+                method_node->token.text = malloc(1);
+                if (method_node->token.text) method_node->token.text[0] = '\0';
+            }
             method_node->token.length = 0;
         }
 
@@ -731,6 +789,13 @@ static void transform_method_calls(ASTNode *ast) {
         addr_node->type = AST_TOKEN;
         addr_node->token.type = TOKEN_OPERATOR;
         addr_node->token.text = strdup("&");
+        if (!addr_node->token.text) {
+            addr_node->token.text = malloc(2);
+            if (addr_node->token.text) {
+                addr_node->token.text[0] = '&';
+                addr_node->token.text[1] = '\0';
+            }
+        }
         addr_node->token.length = 1;
         addr_node->token.line = n1->token.line;
         addr_node->token.column = 0;
@@ -768,6 +833,13 @@ static void transform_method_calls(ASTNode *ast) {
             comma_node->type = AST_TOKEN;
             comma_node->token.type = TOKEN_PUNCTUATION;
             comma_node->token.text = strdup(",");
+            if (!comma_node->token.text) {
+                comma_node->token.text = malloc(2);
+                if (comma_node->token.text) {
+                    comma_node->token.text[0] = ',';
+                    comma_node->token.text[1] = '\0';
+                }
+            }
             comma_node->token.length = 1;
             comma_node->token.line = n1->token.line;
             comma_node->token.column = 0;
@@ -785,6 +857,13 @@ static void transform_method_calls(ASTNode *ast) {
             comma_space_node->type = AST_TOKEN;
             comma_space_node->token.type = TOKEN_WHITESPACE;
             comma_space_node->token.text = strdup(" ");
+            if (!comma_space_node->token.text) {
+                comma_space_node->token.text = malloc(2);
+                if (comma_space_node->token.text) {
+                    comma_space_node->token.text[0] = ' ';
+                    comma_space_node->token.text[1] = '\0';
+                }
+            }
             comma_space_node->token.length = 1;
             comma_space_node->token.line = n1->token.line;
             comma_space_node->token.column = 0;
