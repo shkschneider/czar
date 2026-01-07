@@ -1,0 +1,51 @@
+#include <stdint.h>
+#include <stdio.h>
+
+/*
+ * Test new struct typedef format: typedef struct Name_s { ... } Name_t;
+ * This test verifies:
+ * 1. Struct tag is Name_s
+ * 2. Typedef is Name_t
+ * 3. Alias Name is available for convenience
+ * 4. Methods use base name: Name_method (not Name_t_method)
+ */
+
+/* Define a struct - should generate typedef struct Vec2_s { ... } Vec2_t; */
+struct Vec2 {
+    u8 x;
+    u8 y;
+};
+
+/* Method using base name */
+u8 Vec2.length() {
+    return self.x + self.y;
+}
+
+int main(void) {
+    /* Test 1: Use base name typedef (Vec2) */
+    Vec2 v1 = {0};
+    v1.x = 3;
+    v1.y = 4;
+    u8 len1 = v1.length();
+    cz_assert(len1 == 7);
+    printf("Test 1 passed: Can use Vec2 (base name typedef)\n");
+
+    /* Test 2: Use _t typedef (Vec2_t) */
+    Vec2_t v2 = {0};
+    v2.x = 5;
+    v2.y = 6;
+    u8 len2 = v2.length();
+    cz_assert(len2 == 11);
+    printf("Test 2 passed: Can use Vec2_t (_t typedef)\n");
+
+    /* Test 3: Method name uses base name (Vec2_length, not Vec2_t_length) */
+    Vec2 v3 = {0};
+    v3.x = 2;
+    v3.y = 3;
+    u8 len3 = Vec2_length(&v3);
+    cz_assert(len3 == 5);
+    printf("Test 3 passed: Method uses base name Vec2_length\n");
+
+    printf("All struct typedef format tests passed!\n");
+    return 0;
+}
