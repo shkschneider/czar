@@ -269,9 +269,9 @@ void transpiler_transform_mutability(ASTNode *ast) {
     }
     
     /* Insert const tokens in reverse order to maintain position validity */
-    for (int idx = (int)insert_count - 1; idx >= 0; idx--) {
-        size_t pos = insert_positions[idx];
-        ASTNode *const_node = create_token_node("const", TOKEN_IDENTIFIER);
+    for (size_t idx = insert_count; idx > 0; idx--) {
+        size_t pos = insert_positions[idx - 1];
+        ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
         ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
         
         if (const_node && space_node) {
