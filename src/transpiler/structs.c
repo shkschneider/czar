@@ -4,6 +4,7 @@
  *
  * Handles automatic typedef generation for named structs.
  * Transforms: struct Name { ... }; into typedef struct Name_s { ... } Name_t;
+ * Replaces all uses of Name with Name_t in generated C code.
  * Methods use the base name: Name_method (not Name_t_method)
  */
 
@@ -13,6 +14,43 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+/* Maximum number of struct types we can track */
+#define MAX_STRUCT_TYPES 256
+
+/* Tracked struct type names */
+static char *tracked_struct_types[MAX_STRUCT_TYPES];
+static size_t tracked_struct_count = 0;
+
+/* Track a struct type name */
+static void track_struct_name(const char *name) {
+    if (tracked_struct_count >= MAX_STRUCT_TYPES) {
+        return;
+    }
+    
+    /* Check if already tracked */
+    for (size_t i = 0; i < tracked_struct_count; i++) {
+        if (tracked_struct_types[i] && strcmp(tracked_struct_types[i], name) == 0) {
+            return;
+        }
+    }
+    
+    /* Add new struct type */
+    tracked_struct_types[tracked_struct_count] = strdup(name);
+    if (tracked_struct_types[tracked_struct_count]) {
+        tracked_struct_count++;
+    }
+}
+
+/* Check if an identifier is a tracked struct type */
+static int is_tracked_struct(const char *name) {
+    for (size_t i = 0; i < tracked_struct_count; i++) {
+        if (tracked_struct_types[i] && strcmp(tracked_struct_types[i], name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /* Transform named struct declarations into typedef structs */
 void transpiler_transform_structs(ASTNode *ast) {
@@ -212,140 +250,11 @@ void transpiler_transform_structs(ASTNode *ast) {
                     ast->children[insert_pos + 1] = name_node;
                     ast->child_count += 2;
 
-                    /* Step 5: Add "typedef Name_t Name;" after the semicolon for backward compatibility */
-                    /* This allows code to use "Name" instead of "Name_t" */
-                    size_t after_semicolon = semicolon_idx + 3; /* +2 for Name_t we added, +1 to be after semicolon */
-                    
-                    /* Create nodes for: \ntypedef Name_t Name; */
-                    ASTNode *newline_node = malloc(sizeof(ASTNode));
-                    ASTNode *typedef_kw_node = malloc(sizeof(ASTNode));
-                    ASTNode *space1_node = malloc(sizeof(ASTNode));
-                    ASTNode *name_t_node = malloc(sizeof(ASTNode));
-                    ASTNode *space2_node = malloc(sizeof(ASTNode));
-                    ASTNode *base_name_node = malloc(sizeof(ASTNode));
-                    ASTNode *semi_node = malloc(sizeof(ASTNode));
-                    
-                    if (newline_node && typedef_kw_node && space1_node && name_t_node && 
-                        space2_node && base_name_node && semi_node) {
-                        
-                        /* Newline */
-                        newline_node->type = AST_TOKEN;
-                        newline_node->token.type = TOKEN_WHITESPACE;
-                        newline_node->token.text = strdup("\n");
-                        newline_node->token.length = 1;
-                        newline_node->token.line = t1->line;
-                        newline_node->token.column = 0;
-                        newline_node->children = NULL;
-                        newline_node->child_count = 0;
-                        newline_node->child_capacity = 0;
-                        
-                        /* "typedef" keyword */
-                        typedef_kw_node->type = AST_TOKEN;
-                        typedef_kw_node->token.type = TOKEN_IDENTIFIER;
-                        typedef_kw_node->token.text = strdup("typedef");
-                        typedef_kw_node->token.length = 7;
-                        typedef_kw_node->token.line = t1->line;
-                        typedef_kw_node->token.column = 0;
-                        typedef_kw_node->children = NULL;
-                        typedef_kw_node->child_count = 0;
-                        typedef_kw_node->child_capacity = 0;
-                        
-                        /* Space */
-                        space1_node->type = AST_TOKEN;
-                        space1_node->token.type = TOKEN_WHITESPACE;
-                        space1_node->token.text = strdup(" ");
-                        space1_node->token.length = 1;
-                        space1_node->token.line = t1->line;
-                        space1_node->token.column = 0;
-                        space1_node->children = NULL;
-                        space1_node->child_count = 0;
-                        space1_node->child_capacity = 0;
-                        
-                        /* "Name_t" */
-                        name_t_node->type = AST_TOKEN;
-                        name_t_node->token.type = TOKEN_IDENTIFIER;
-                        name_t_node->token.text = strdup(typedef_name);
-                        name_t_node->token.length = strlen(typedef_name);
-                        name_t_node->token.line = t1->line;
-                        name_t_node->token.column = 0;
-                        name_t_node->children = NULL;
-                        name_t_node->child_count = 0;
-                        name_t_node->child_capacity = 0;
-                        
-                        /* Space */
-                        space2_node->type = AST_TOKEN;
-                        space2_node->token.type = TOKEN_WHITESPACE;
-                        space2_node->token.text = strdup(" ");
-                        space2_node->token.length = 1;
-                        space2_node->token.line = t1->line;
-                        space2_node->token.column = 0;
-                        space2_node->children = NULL;
-                        space2_node->child_count = 0;
-                        space2_node->child_capacity = 0;
-                        
-                        /* "Name" (base name) */
-                        base_name_node->type = AST_TOKEN;
-                        base_name_node->token.type = TOKEN_IDENTIFIER;
-                        base_name_node->token.text = strdup(struct_name);
-                        base_name_node->token.length = strlen(struct_name);
-                        base_name_node->token.line = t1->line;
-                        base_name_node->token.column = 0;
-                        base_name_node->children = NULL;
-                        base_name_node->child_count = 0;
-                        base_name_node->child_capacity = 0;
-                        
-                        /* Semicolon */
-                        semi_node->type = AST_TOKEN;
-                        semi_node->token.type = TOKEN_PUNCTUATION;
-                        semi_node->token.text = strdup(";");
-                        semi_node->token.length = 1;
-                        semi_node->token.line = t1->line;
-                        semi_node->token.column = 0;
-                        semi_node->children = NULL;
-                        semi_node->child_count = 0;
-                        semi_node->child_capacity = 0;
-                        
-                        /* Grow array to accommodate 7 new nodes */
-                        size_t final_count = ast->child_count + 7;
-                        if (final_count > ast->child_capacity) {
-                            size_t new_capacity = final_count * 2;
-                            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
-                            if (new_children) {
-                                ast->children = new_children;
-                                ast->child_capacity = new_capacity;
-                            } else {
-                                /* Cleanup on failure */
-                                free(newline_node);
-                                free(typedef_kw_node);
-                                free(space1_node);
-                                free(name_t_node);
-                                free(space2_node);
-                                free(base_name_node);
-                                free(semi_node);
-                                free(struct_name);
-                                i = semicolon_idx + 2;
-                                continue;
-                            }
-                        }
-                        
-                        /* Shift elements */
-                        for (size_t j = ast->child_count; j > after_semicolon; j--) {
-                            ast->children[j + 6] = ast->children[j - 1];
-                        }
-                        
-                        /* Insert the alias typedef */
-                        ast->children[after_semicolon] = newline_node;
-                        ast->children[after_semicolon + 1] = typedef_kw_node;
-                        ast->children[after_semicolon + 2] = space1_node;
-                        ast->children[after_semicolon + 3] = name_t_node;
-                        ast->children[after_semicolon + 4] = space2_node;
-                        ast->children[after_semicolon + 5] = base_name_node;
-                        ast->children[after_semicolon + 6] = semi_node;
-                        ast->child_count += 7;
-                    }
+                    /* Track this struct name for later replacement */
+                    track_struct_name(struct_name);
 
                     /* Skip ahead so we don't process this struct again */
-                    i = semicolon_idx + 9; /* +2 for Name_t, +7 for alias typedef */
+                    i = semicolon_idx + 2; /* +2 for Name_t we added */
                     
                     /* Free struct_name as we've created Name_s and Name_t separately */
                     free(struct_name);
@@ -549,6 +458,40 @@ void transpiler_transform_struct_init(ASTNode *ast) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/* Replace all uses of tracked struct names with their _t variants
+ * For example: Vec2 -> Vec2_t
+ * This ensures the generated C code uses the typedef names consistently
+ */
+void transpiler_replace_struct_names(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    /* Walk through all tokens and replace struct type names */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        if (ast->children[i]->type != AST_TOKEN) {
+            continue;
+        }
+
+        Token *token = &ast->children[i]->token;
+        
+        /* Check if this is an identifier that matches a tracked struct type */
+        if (token->type == TOKEN_IDENTIFIER && token->text && is_tracked_struct(token->text)) {
+            /* Replace Name with Name_t */
+            size_t name_len = strlen(token->text);
+            char *new_name = malloc(name_len + 3); /* "_t" + null terminator */
+            if (new_name) {
+                strcpy(new_name, token->text);
+                strcat(new_name, "_t");
+                
+                free(token->text);
+                token->text = new_name;
+                token->length = strlen(new_name);
             }
         }
     }
