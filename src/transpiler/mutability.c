@@ -296,15 +296,18 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
     }
     
     /* Pass 2: Add 'const' to type identifiers that are not marked as mutable */
-    /* For now, we'll be very conservative and only add const to function parameters */
-    /* We detect function parameters by looking for the pattern: type identifier( */
+    /* For pointers: add const to both type and pointer (const Type * const p) */
     
-    /* Build a list of positions where we need to insert const, then insert in reverse */
+    /* Build lists of positions where we need to insert const */
     size_t *insert_positions = malloc(count * sizeof(size_t));
+    size_t *insert_after_star = malloc(count * sizeof(size_t)); /* For const after * */
     size_t insert_count = 0;
+    size_t insert_after_star_count = 0;
     
-    if (!insert_positions) {
+    if (!insert_positions || !insert_after_star) {
         free(is_mutable);
+        free(insert_positions);
+        free(insert_after_star);
         return; /* Out of memory */
     }
     
@@ -380,11 +383,9 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                     }
                 }
                 
-                /* For pointers, skip for now - they need special handling */
-                /* To make pointer immutable, we need: const Type * const p */
-                /* For now, only handle non-pointer parameters */
+                /* Handle pointers: add const to both type and pointer */
+                /* Pattern: Type *p becomes const Type * const p */
                 int is_pointer = token_equals(next_tok, "*");
-                if (is_pointer) continue;
                 
                 /* Skip if marked as mutable */
                 if (is_mutable[j]) continue;
@@ -396,13 +397,52 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                     }
                 }
                 
-                /* Add to insert list */
+                /* Add to insert list for const before type */
                 insert_positions[insert_count++] = j;
+                
+                /* For pointers, also need const after * */
+                if (is_pointer) {
+                    /* Record position after * for const insertion */
+                    /* This creates: const Type * const p */
+                    insert_after_star[insert_after_star_count++] = next_idx;
+                }
             }
         }
     }
     
-    /* Insert const tokens in reverse order to maintain position validity */
+    /* Insert const after * for pointer parameters FIRST (in reverse order) */
+    /* Do this before inserting const before type, to avoid position shifts */
+    for (size_t idx = insert_after_star_count; idx > 0; idx--) {
+        size_t pos = insert_after_star[idx - 1];
+        /* Insert after the * token: need space, then const, then space */
+        ASTNode *space1_node = create_token_node(" ", TOKEN_WHITESPACE);
+        ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
+        ASTNode *space2_node = create_token_node(" ", TOKEN_WHITESPACE);
+        
+        if (space1_node && const_node && space2_node) {
+            /* Insert after position pos (which is the * token) */
+            /* Need to insert at pos + 1 */
+            insert_node_at(ast, pos + 1, space1_node);
+            insert_node_at(ast, pos + 2, const_node);
+            insert_node_at(ast, pos + 3, space2_node);
+        } else {
+            /* Cleanup on failure */
+            if (space1_node) {
+                if (space1_node->token.text) free(space1_node->token.text);
+                free(space1_node);
+            }
+            if (const_node) {
+                if (const_node->token.text) free(const_node->token.text);
+                free(const_node);
+            }
+            if (space2_node) {
+                if (space2_node->token.text) free(space2_node->token.text);
+                free(space2_node);
+            }
+        }
+    }
+    
+    /* Insert const tokens before type in reverse order to maintain position validity */
     for (size_t idx = insert_count; idx > 0; idx--) {
         size_t pos = insert_positions[idx - 1];
         ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
@@ -425,5 +465,6 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
     }
     
     free(insert_positions);
+    free(insert_after_star);
     free(is_mutable);
 }
