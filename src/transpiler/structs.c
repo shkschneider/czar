@@ -466,6 +466,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
 /* Replace all uses of tracked struct names with their _t variants
  * For example: Vec2 -> Vec2_t
  * This ensures the generated C code uses the typedef names consistently
+ * Special case: "struct Name" becomes "struct Name_s" (uses struct tag)
  */
 void transpiler_replace_struct_names(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
@@ -482,13 +483,50 @@ void transpiler_replace_struct_names(ASTNode *ast) {
         
         /* Check if this is an identifier that matches a tracked struct type */
         if (token->type == TOKEN_IDENTIFIER && token->text && is_tracked_struct(token->text)) {
-            /* Replace Name with Name_t */
+            /* Check if the previous non-whitespace token is "struct" keyword */
+            int after_struct_keyword = 0;
+            for (size_t j = i; j > 0; j--) {
+                size_t prev_idx = j - 1;
+                if (ast->children[prev_idx]->type == AST_TOKEN) {
+                    Token *prev_token = &ast->children[prev_idx]->token;
+                    
+                    /* Skip whitespace and comments */
+                    if (prev_token->type == TOKEN_WHITESPACE || prev_token->type == TOKEN_COMMENT) {
+                        continue;
+                    }
+                    
+                    /* Check if previous token is "struct" */
+                    if (prev_token->type == TOKEN_IDENTIFIER && prev_token->text &&
+                        strcmp(prev_token->text, "struct") == 0) {
+                        after_struct_keyword = 1;
+                    }
+                    
+                    /* We found a non-whitespace token, stop looking */
+                    break;
+                }
+            }
+            
+            /* Replace Name with appropriate suffix */
             size_t name_len = strlen(token->text);
-            char *new_name = malloc(name_len + 3); /* "_t" + null terminator */
+            char *new_name;
+            
+            if (after_struct_keyword) {
+                /* After "struct", use _s suffix for struct tag */
+                new_name = malloc(name_len + 3); /* "_s" + null terminator */
+                if (new_name) {
+                    strcpy(new_name, token->text);
+                    strcat(new_name, "_s");
+                }
+            } else {
+                /* Otherwise, use _t suffix for typedef */
+                new_name = malloc(name_len + 3); /* "_t" + null terminator */
+                if (new_name) {
+                    strcpy(new_name, token->text);
+                    strcat(new_name, "_t");
+                }
+            }
+            
             if (new_name) {
-                strcpy(new_name, token->text);
-                strcat(new_name, "_t");
-                
                 free(token->text);
                 token->text = new_name;
                 token->length = strlen(new_name);
