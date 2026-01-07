@@ -52,8 +52,13 @@ static const char *get_source_line(const char *source, int line_num, char *buffe
 
 /* Report a CZar warning */
 void cz_warning(const char *filename, const char *source, int line, const char *message) {
-    fprintf(stdout, "[CZAR] WARNING at %s:%d: %s\n",
-            filename ? filename : "<unknown>", line, message);
+    /* If no source context provided, this is an operational warning */
+    if (!filename && line == 0) {
+        fprintf(stdout, "[CZAR] WARNING: %s\n", message);
+    } else {
+        fprintf(stdout, "[CZAR] WARNING at %s:%d: %s\n",
+                filename ? filename : "<unknown>", line, message);
+    }
 
     /* Try to show the problematic line */
     char line_buffer[512];
