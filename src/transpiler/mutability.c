@@ -245,22 +245,35 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 }
             }
             
-            /* Check if this is a parameter type that was marked as mutable */
-            if (param_tok->type == TOKEN_IDENTIFIER && is_type_keyword(param_tok->text)) {
+            /* Check if this is a parameter type (use syntax to detect) */
+            /* In parameter lists, pattern is: Type name or Type *name */
+            /* So any identifier followed by * or another identifier is a type */
+            if (param_tok->type == TOKEN_IDENTIFIER) {
+                /* Look ahead to see what follows */
+                size_t next_idx = skip_whitespace(children, count, j + 1);
+                if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
+                
+                Token *next_tok = &children[next_idx]->token;
+                
+                /* Check if followed by * (pointer) or identifier (parameter name) */
+                if (!token_equals(next_tok, "*") && next_tok->type != TOKEN_IDENTIFIER) {
+                    continue; /* Not a type pattern */
+                }
+                
                 /* Skip void */
                 if (token_equals(param_tok, "void")) continue;
                 
+                /* Skip enum/struct keywords - they're not the type name themselves */
+                if (token_equals(param_tok, "enum") || token_equals(param_tok, "struct") || 
+                    token_equals(param_tok, "union")) {
+                    continue;
+                }
+                
+                /* Check if this is a pointer type */
+                int is_pointer = token_equals(next_tok, "*");
+                
                 /* Check if this parameter is marked as mutable */
                 if (is_mutable[j]) {
-                    /* Check if this is a pointer type - look ahead for * */
-                    size_t next_idx = skip_whitespace(children, count, j + 1);
-                    int is_pointer = 0;
-                    if (next_idx < count && children[next_idx]->type == AST_TOKEN) {
-                        if (token_equals(&children[next_idx]->token, "*")) {
-                            is_pointer = 1;
-                        }
-                    }
-                    
                     /* Error if mutable but not a pointer */
                     if (!is_pointer) {
                         cz_error(filename, source, param_tok->line,
@@ -323,19 +336,42 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 }
             }
             
-            /* Check if this is a parameter type */
-            if (param_tok->type == TOKEN_IDENTIFIER && is_type_keyword(param_tok->text)) {
+            /* Check if this is a parameter type (use syntax to detect) */
+            /* In parameter lists, pattern is: Type name or Type *name */
+            /* So any identifier followed by * or another identifier is a type */
+            if (param_tok->type == TOKEN_IDENTIFIER) {
+                /* Look ahead to see what follows */
+                size_t next_idx = skip_whitespace(children, count, j + 1);
+                if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
+                
+                Token *next_tok = &children[next_idx]->token;
+                
+                /* Check if followed by * (pointer) or identifier (parameter name) */
+                if (!token_equals(next_tok, "*") && next_tok->type != TOKEN_IDENTIFIER) {
+                    continue; /* Not a type pattern */
+                }
+                
                 /* Skip void */
                 if (token_equals(param_tok, "void")) continue;
                 
-                /* Check if this is a pointer type - look ahead for * */
-                size_t next_idx = skip_whitespace(children, count, j + 1);
-                int is_pointer = 0;
-                if (next_idx < count && children[next_idx]->type == AST_TOKEN) {
-                    if (token_equals(&children[next_idx]->token, "*")) {
-                        is_pointer = 1;
+                /* Skip enum/struct keywords - they're not the type name themselves */
+                if (token_equals(param_tok, "enum") || token_equals(param_tok, "struct") || 
+                    token_equals(param_tok, "union")) {
+                    continue;
+                }
+                
+                /* Skip if preceded by enum/struct/union - this is a tag name, not the type */
+                size_t prev_idx;
+                if (find_prev_token(children, j, &prev_idx)) {
+                    Token *prev_tok = &children[prev_idx]->token;
+                    if (token_equals(prev_tok, "enum") || token_equals(prev_tok, "struct") || 
+                        token_equals(prev_tok, "union")) {
+                        continue;
                     }
                 }
+                
+                /* Check if this is a pointer type */
+                int is_pointer = token_equals(next_tok, "*");
                 
                 /* Skip pointers for now - they need special handling */
                 if (is_pointer) continue;
@@ -344,7 +380,6 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 if (is_mutable[j]) continue;
                 
                 /* Skip if already has const */
-                size_t prev_idx;
                 if (find_prev_token(children, j, &prev_idx)) {
                     if (token_equals(&children[prev_idx]->token, "const")) {
                         continue;
