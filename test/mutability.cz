@@ -1,0 +1,105 @@
+#include <stdio.h>
+#include <stdint.h>
+
+/* Test mutability feature
+ * In CZar:
+ * - Everything is immutable (const) by default
+ * - Use 'mut' keyword to make mutable
+ * - 'mut' is stripped in generated C
+ * - No 'mut' becomes 'const' in C
+ */
+
+struct Point {
+    i32 x;
+    i32 y;
+};
+
+/* Test 1: Immutable local variable */
+void test_immutable_local() {
+    u8 a = 5;
+    /* a = 6; would cause error in C compilation */
+    printf("immutable a = %u\n", a);
+}
+
+/* Test 2: Mutable local variable */
+void test_mutable_local() {
+    mut u8 b = 10;
+    b = 20; /* OK - mutable */
+    printf("mutable b = %u\n", b);
+}
+
+/* Test 3: Immutable struct */
+void test_immutable_struct() {
+    Point p = {0};
+    /* p.x = 1; would cause error - immutable struct */
+    printf("immutable point: (%d, %d)\n", p.x, p.y);
+}
+
+/* Test 4: Mutable struct */
+void test_mutable_struct() {
+    mut Point p = {0};
+    p.x = 10;
+    p.y = 20;
+    printf("mutable point: (%d, %d)\n", p.x, p.y);
+}
+
+/* Test 5: Immutable function parameter */
+void test_func_immutable_param(u8 val) {
+    /* val = 10; would cause error */
+    printf("immutable param: %u\n", val);
+}
+
+/* Test 6: Mutable function parameter */
+void test_func_mutable_param(mut u8 val) {
+    val = 100; /* OK - mutable */
+    printf("mutable param: %u\n", val);
+}
+
+/* Test 7: Immutable pointer parameter */
+void test_func_immutable_ptr(Point *p) {
+    /* Cannot modify p or p's members - read-only */
+    printf("immutable ptr: (%d, %d)\n", p->x, p->y);
+}
+
+/* Test 8: Mutable pointer parameter */
+void test_func_mutable_ptr(mut Point *p) {
+    p->x = 30; /* OK - mutable */
+    p->y = 40;
+    printf("mutable ptr: (%d, %d)\n", p->x, p->y);
+}
+
+/* Test 9: Struct method - self is always mutable */
+void Point.set(i32 new_x, i32 new_y) {
+    self.x = new_x; /* OK - self is mutable in methods */
+    self.y = new_y;
+}
+
+i32 Point.sum() {
+    return self.x + self.y;
+}
+
+int main(void) {
+    printf("=== CZar Mutability Tests ===\n");
+    
+    test_immutable_local();
+    test_mutable_local();
+    test_immutable_struct();
+    test_mutable_struct();
+    test_func_immutable_param(42);
+    test_func_mutable_param(50);
+    
+    Point p = {0};
+    test_func_immutable_ptr(&p);
+    
+    mut Point p2 = {0};
+    test_func_mutable_ptr(&p2);
+    printf("Modified p2: (%d, %d)\n", p2.x, p2.y);
+    
+    p2.set(100, 200);
+    printf("After set: (%d, %d)\n", p2.x, p2.y);
+    i32 s = p2.sum();
+    printf("Sum: %d\n", s);
+    
+    printf("=== All Tests Passed ===\n");
+    return 0;
+}
