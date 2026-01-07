@@ -1,0 +1,34 @@
+#include <stdio.h>
+
+/* Test struct definition */
+struct Point {
+    i32 x;
+    i32 y;
+};
+
+/* Test function to modify point (must be pointer) */
+void modify_point(mut Point* p) {
+    p->x = 10;  /* OK - parameter is mutable pointer */
+    p->y = 20;
+}
+
+int main(void) {
+    /* Test 1: Immutable struct - cannot modify fields */
+    Point p1 = {0};
+    printf("p1: (%d, %d)\n", p1.x, p1.y);
+    /* p1.x = 5; */  /* This would error */
+    
+    /* Test 2: Mutable struct - can modify fields */
+    mut Point p2 = {0};
+    p2.x = 100;
+    p2.y = 200;
+    printf("p2: (%d, %d)\n", p2.x, p2.y);
+    
+    /* Test 3: Pass to function (must use & for mut parameters) */
+    mut Point p3 = {0};
+    modify_point(&p3);
+    printf("p3 after modify: (%d, %d)\n", p3.x, p3.y);
+    
+    printf("Struct field mutability test: OK\n");
+    return 0;
+}

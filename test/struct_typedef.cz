@@ -28,7 +28,7 @@ void set_point(Point* p, i32 x, i16 y) {
 
 /* Function returning the typedef name */
 Point create_point(i32 x, i32 y) {
-    Point point = {0};
+    mut Point point = {0};
     point.x = x;
     point.y = y;
     return point;
@@ -54,7 +54,7 @@ int main(void) {
     printf("Test 2 passed: Can return Point from function\n");
 
     /* Test 3: Use Color typedef */
-    Color red = {0};
+    mut Color red = {0};
     red.r = 255;
     red.g = 0;
     red.b = 0;
