@@ -54,7 +54,7 @@ void test_mixed(void) {
 int main(void) {
     printf("Complex CZar types test\n");
 
-    struct Point p = {0};
+    Point p = {0};
     p.x = 10;
     p.y = 20;
     printf("Point: x=%d, y=%d\n", p.x, p.y);
