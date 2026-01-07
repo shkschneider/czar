@@ -239,7 +239,7 @@ static int is_type_keyword(Token *token) {
     }
 
     /* C keywords */
-    if (token->type == TOKEN_KEYWORD &&
+    if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
         (strcmp(text, "void") == 0 ||
          strcmp(text, "char") == 0 ||
          strcmp(text, "int") == 0 ||
@@ -344,6 +344,25 @@ void transpiler_transform_mutability(ASTNode *ast) {
             continue;
         }
 
+        /* Skip if preceded by another type keyword (multi-word types like unsigned long) */
+        size_t prev_idx = i;
+        while (prev_idx > 0) {
+            prev_idx--;
+            if (ast->children[prev_idx]->type != AST_TOKEN) break;
+            Token *prev_token = &ast->children[prev_idx]->token;
+            
+            if (prev_token->type == TOKEN_WHITESPACE || prev_token->type == TOKEN_COMMENT) {
+                continue;
+            }
+            
+            /* If previous non-whitespace token is a type keyword, skip adding const */
+            if (is_type_keyword(prev_token)) {
+                goto skip_multi_word_type;
+            }
+            
+            break;
+        }
+
         /* Skip if this is a 'self' parameter (methods need mutable self) */
         if (is_self_parameter(ast->children, ast->child_count, i)) {
             continue;
@@ -354,6 +373,87 @@ void transpiler_transform_mutability(ASTNode *ast) {
             continue;
         }
 
+        /* Skip if this is part of a cast expression: (Type) or (Type1 Type2) */
+        /* Look backward to find if we're inside parentheses */
+        int in_parens = 0;
+        for (size_t j = i; j > 0 && j > (i > 30 ? i - 30 : 0); j--) {
+            if (ast->children[j-1]->type != AST_TOKEN) continue;
+            const char *prev_text = ast->children[j-1]->token.text;
+            
+            if (strcmp(prev_text, ")") == 0) {
+                break;  /* Hit a closing paren before finding opening */
+            }
+            if (strcmp(prev_text, "(") == 0) {
+                in_parens = 1;
+                break;
+            }
+        }
+        
+        if (in_parens) {
+            /* Check if everything between ( and next ) is types/keywords */
+            /* This indicates a cast expression */
+            size_t forward_idx = i + 1;
+            int found_close_paren = 0;
+            int only_types = 1;
+            
+            while (forward_idx < ast->child_count && forward_idx < i + 20) {
+                if (ast->children[forward_idx]->type != AST_TOKEN) break;
+                Token *fwd_token = &ast->children[forward_idx]->token;
+                const char *fwd_text = fwd_token->text;
+                
+                if (strcmp(fwd_text, ")") == 0) {
+                    found_close_paren = 1;
+                    break;
+                }
+                
+                /* Allow type keywords, *, and whitespace */
+                if (fwd_token->type != TOKEN_WHITESPACE &&
+                    fwd_token->type != TOKEN_COMMENT &&
+                    strcmp(fwd_text, "*") != 0 &&
+                    !is_type_keyword(fwd_token)) {
+                    only_types = 0;
+                    break;
+                }
+                
+                forward_idx++;
+            }
+            
+            if (found_close_paren && only_types) {
+                continue;  /* Skip const for cast expressions */
+            }
+        }
+
+        /* Don't add const to 'void' in function parameters like func(void) or main(void) */
+        if (strcmp(token->text, "void") == 0) {
+            /* Check if this void is a sole parameter (void) or main(void) pattern */
+            /* Look backward for ( - only check recent tokens */
+            int found_open_paren = 0;
+            size_t start_j = (i > 10) ? (i - 10) : 0;
+            for (size_t j = i; j > start_j; j--) {
+                if (ast->children[j-1]->type != AST_TOKEN) continue;
+                const char *prev_text = ast->children[j-1]->token.text;
+                TokenType prev_type = ast->children[j-1]->token.type;
+                
+                if (strcmp(prev_text, "(") == 0) {
+                    found_open_paren = 1;
+                    break;
+                }
+                /* If we hit something that's not whitespace/comment, stop */
+                if (prev_type != TOKEN_WHITESPACE && prev_type != TOKEN_COMMENT) {
+                    break;
+                }
+            }
+            
+            if (found_open_paren) {
+                /* Look forward for ) */
+                size_t next_idx = skip_ws(ast->children, ast->child_count, i + 1);
+                if (next_idx < ast->child_count && ast->children[next_idx]->type == AST_TOKEN &&
+                    strcmp(ast->children[next_idx]->token.text, ")") == 0) {
+                    continue;  /* Skip const for func(void) */
+                }
+            }
+        }
+
         /* Add const by modifying the token text */
         char *new_text = malloc(strlen(token->text) + 7);  /* "const " + text + \0 */
         if (new_text) {
@@ -362,6 +462,9 @@ void transpiler_transform_mutability(ASTNode *ast) {
             token->text = new_text;
             token->length = strlen(new_text);
         }
+
+skip_multi_word_type:
+        continue;
     }
 
     /* Pass 1.5: Add const after * for non-mut pointer variables/parameters */
