@@ -56,19 +56,6 @@ static int is_type_keyword(const char *text) {
 }
 
 /* Check if token is a type identifier (keyword or struct name) */
-__attribute__((unused)) static int is_type_identifier(Token *token) {
-    if (!token || token->type != TOKEN_IDENTIFIER) {
-        return 0;
-    }
-    /* Check known type keywords */
-    if (is_type_keyword(token->text)) {
-        return 1;
-    }
-    /* For now, only recognize known types to be safe */
-    /* Struct types and user-defined types will need more context */
-    return 0;
-}
-
 /* Skip whitespace and comments */
 static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
     while (i < count) {
@@ -100,7 +87,7 @@ static int find_prev_token(ASTNode **children, size_t current, size_t *result) {
 }
 
 /* Create a new token node */
-__attribute__((unused)) static ASTNode *create_token_node(const char *text, TokenType type) {
+static ASTNode *create_token_node(const char *text, TokenType type) {
     ASTNode *node = malloc(sizeof(ASTNode));
     if (!node) return NULL;
     
@@ -124,7 +111,7 @@ __attribute__((unused)) static ASTNode *create_token_node(const char *text, Toke
 }
 
 /* Insert a node at position in AST children */
-__attribute__((unused)) static int insert_node_at(ASTNode *ast, size_t pos, ASTNode *new_node) {
+static int insert_node_at(ASTNode *ast, size_t pos, ASTNode *new_node) {
     if (!ast || !new_node || pos > ast->child_count) {
         return 0;
     }
@@ -216,9 +203,10 @@ void transpiler_transform_mutability(ASTNode *ast) {
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
     
-    /* Pass 1: Find and remove 'mut' keywords */
-    /* For now, we only strip 'mut' and don't automatically add 'const' */
-    /* This is a simpler first implementation to avoid breaking existing code */
+    /* Pass 1: Mark types following 'mut' for mutable access, and mark 'mut' for deletion */
+    int *is_mutable = calloc(count, sizeof(int));
+    if (!is_mutable) return; /* Out of memory */
+    
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
@@ -234,13 +222,120 @@ void transpiler_transform_mutability(ASTNode *ast) {
         
         if (children[j]->type == AST_TOKEN && 
             children[j]->token.type == TOKEN_IDENTIFIER) {
-            /* This is the type following 'mut' - it's already mutable */
-            /* Remove the 'mut' keyword */
+            /* Mark the type at position j as mutable */
+            is_mutable[j] = 1;
+            /* Mark 'mut' for deletion */
             mark_for_deletion(children[i]);
         }
     }
     
-    /* TODO: Pass 2: Add 'const' to type identifiers that don't have 'mut' */
-    /* This requires more sophisticated context analysis to avoid breaking things */
-    /* For now, everything without 'mut' remains as-is (C default is mutable) */
+    /* Pass 2: Add 'const' to type identifiers that are not marked as mutable */
+    /* For now, we'll be very conservative and only add const to function parameters */
+    /* We detect function parameters by looking for the pattern: type identifier( */
+    
+    /* Build a list of positions where we need to insert const, then insert in reverse */
+    size_t *insert_positions = malloc(count * sizeof(size_t));
+    size_t insert_count = 0;
+    
+    if (!insert_positions) {
+        free(is_mutable);
+        return; /* Out of memory */
+    }
+    
+    /* Scan for function declarations and mark parameter types for const insertion */
+    for (size_t i = 0; i + 2 < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok_type = &children[i]->token;
+        
+        /* Check if this looks like: type identifier( pattern */
+        /* This is more reliable for detecting function declarations */
+        if (tok_type->type != TOKEN_IDENTIFIER) continue;
+        
+        /* Check if it's a type keyword (could also be return type) */
+        if (!is_type_keyword(tok_type->text)) continue;
+        
+        /* Look ahead for identifier */
+        size_t name_idx = skip_whitespace(children, count, i + 1);
+        if (name_idx >= count) continue;
+        if (children[name_idx]->type != AST_TOKEN) continue;
+        if (children[name_idx]->token.type != TOKEN_IDENTIFIER) continue;
+        
+        /* Look ahead for ( */
+        size_t paren_idx = skip_whitespace(children, count, name_idx + 1);
+        if (paren_idx >= count) continue;
+        if (children[paren_idx]->type != AST_TOKEN) continue;
+        if (!token_equals(&children[paren_idx]->token, "(")) continue;
+        
+        /* Found function declaration! Now scan the parameter list */
+        int depth = 1;
+        for (size_t j = paren_idx + 1; j < count && depth > 0; j++) {
+            if (children[j]->type != AST_TOKEN) continue;
+            Token *param_tok = &children[j]->token;
+            
+            if (param_tok->type == TOKEN_PUNCTUATION) {
+                if (token_equals(param_tok, "(")) depth++;
+                else if (token_equals(param_tok, ")")) {
+                    depth--;
+                    if (depth == 0) break; /* End of parameter list */
+                }
+            }
+            
+            /* Check if this is a parameter type */
+            if (param_tok->type == TOKEN_IDENTIFIER && is_type_keyword(param_tok->text)) {
+                /* Skip void */
+                if (token_equals(param_tok, "void")) continue;
+                
+                /* Check if this is a pointer type - look ahead for * */
+                size_t next_idx = skip_whitespace(children, count, j + 1);
+                int is_pointer = 0;
+                if (next_idx < count && children[next_idx]->type == AST_TOKEN) {
+                    if (token_equals(&children[next_idx]->token, "*")) {
+                        is_pointer = 1;
+                    }
+                }
+                
+                /* Skip pointers for now - they need special handling */
+                if (is_pointer) continue;
+                
+                /* Skip if marked as mutable */
+                if (is_mutable[j]) continue;
+                
+                /* Skip if already has const */
+                size_t prev_idx;
+                if (find_prev_token(children, j, &prev_idx)) {
+                    if (token_equals(&children[prev_idx]->token, "const")) {
+                        continue;
+                    }
+                }
+                
+                /* Add to insert list */
+                insert_positions[insert_count++] = j;
+            }
+        }
+    }
+    
+    /* Insert const tokens in reverse order to maintain position validity */
+    for (int idx = (int)insert_count - 1; idx >= 0; idx--) {
+        size_t pos = insert_positions[idx];
+        ASTNode *const_node = create_token_node("const", TOKEN_IDENTIFIER);
+        ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
+        
+        if (const_node && space_node) {
+            insert_node_at(ast, pos, const_node);
+            insert_node_at(ast, pos + 1, space_node);
+        } else {
+            /* Cleanup on failure */
+            if (const_node) {
+                if (const_node->token.text) free(const_node->token.text);
+                free(const_node);
+            }
+            if (space_node) {
+                if (space_node->token.text) free(space_node->token.text);
+                free(space_node);
+            }
+        }
+    }
+    
+    free(insert_positions);
+    free(is_mutable);
 }

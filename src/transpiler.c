@@ -139,10 +139,6 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform struct initialization syntax */
     transpiler_transform_struct_init(transpiler->ast);
 
-    /* Transform mutability (mut keyword and const insertion) */
-    /* Must run before struct methods to properly handle self parameter */
-    transpiler_transform_mutability(transpiler->ast);
-
     /* Transform struct methods (before autodereference) */
     transpiler_transform_methods(transpiler->ast, transpiler->filename, transpiler->source);
 
@@ -166,6 +162,10 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Transform named arguments (strip labels) - must run before type transformations */
     transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Transform mutability (mut keyword and const insertion) */
+    /* Must run after named arguments but before type transformations */
+    transpiler_transform_mutability(transpiler->ast);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
