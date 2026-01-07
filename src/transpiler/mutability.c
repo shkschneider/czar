@@ -74,8 +74,71 @@ static int is_inside_struct_definition(ASTNode **children, size_t idx) {
     return 0;
 }
 
+/* Check if this type is a function return type */
+static int is_function_return_type(ASTNode **children, size_t count, size_t type_idx) {
+    /* Strategy: Look forward to see if we have: Type identifier ( (no * between type and identifier) */
+    size_t idx = type_idx + 1;
+    int saw_pointer = 0;
+    
+    /* Skip whitespace and track pointer markers */
+    while (idx < count && children[idx]->type == AST_TOKEN) {
+        const char *text = children[idx]->token.text;
+        TokenType type = children[idx]->token.type;
+        
+        if (type == TOKEN_WHITESPACE || type == TOKEN_COMMENT) {
+            idx++;
+            continue;
+        }
+        
+        if (strcmp(text, "*") == 0) {
+            saw_pointer = 1;
+            idx++;
+            continue;
+        }
+        
+        /* If we hit an identifier */
+        if (type == TOKEN_IDENTIFIER) {
+            /* If we saw a pointer marker, this is likely a pointer variable, not a function */
+            if (saw_pointer) {
+                return 0;
+            }
+            
+            /* Check if identifier is followed by '(' */
+            size_t next_idx = idx + 1;
+            while (next_idx < count && children[next_idx]->type == AST_TOKEN &&
+                   (children[next_idx]->token.type == TOKEN_WHITESPACE ||
+                    children[next_idx]->token.type == TOKEN_COMMENT)) {
+                next_idx++;
+            }
+            
+            if (next_idx < count && children[next_idx]->type == AST_TOKEN) {
+                const char *next_text = children[next_idx]->token.text;
+                if (next_text && strcmp(next_text, "(") == 0) {
+                    return 1;  /* Type identifier( pattern - function return type */
+                }
+            }
+            
+            /* Identifier not followed by '(' - could be complex signature.
+             * Be conservative for non-pointer returns */
+            if (!saw_pointer) {
+                return 1;  /* Assume function return type */
+            }
+        }
+        
+        /* Hit something else, not a function return type */
+        break;
+    }
+    
+    return 0;
+}
+
 /* Check if this is a variable/parameter declaration context */
 static int is_declaration_context(ASTNode **children, size_t count, size_t type_idx) {
+    /* Skip function return types */
+    if (is_function_return_type(children, count, type_idx)) {
+        return 0;
+    }
+    
     /* Look at what follows the type */
     size_t next_idx = skip_ws(children, count, type_idx + 1);
     if (next_idx >= count || children[next_idx]->type != AST_TOKEN) {
