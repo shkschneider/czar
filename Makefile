@@ -27,7 +27,7 @@ test/%: test/%.cz $(OUT)
 	@./$(OUT) $< $<.c >/dev/null
 	@$(CC) $(CFLAGS) -c $<.c -o $<.o
 	@$(CC) $(CFLAGS) $<.o $(LDFLAGS) -o $@
-	@./$@ >/dev/null 2>/dev/null || { rc=$$?; echo "FAILURE: tests/$*.out exited $$rc"; exit $$rc; }
+	@./$@ >/dev/null 2>/dev/null
 .PHONY: test $(TESTS)
 
 # Cleanup
