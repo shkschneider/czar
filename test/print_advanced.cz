@@ -11,7 +11,7 @@ int main(void) {
     /* Example 2: Multiple values */
     printf("\n--- Example 2: Multiple Values ---\n");
     int age = 25;
-    const char *city = "Paris";
+    char *city = "Paris";
     printf("%s", cz_format("{} is {} years old and lives in {}\n", "Alice", age, city));
     
     /* Example 3: Named placeholders for clarity */
@@ -35,8 +35,8 @@ int main(void) {
     
     /* Example 6: String concatenation style */
     printf("\n--- Example 6: String Building ---\n");
-    const char *first = "Hello";
-    const char *second = "World";
+    char *first = "Hello";
+    char *second = "World";
     printf("%s", cz_format("{}, {}!\n", first, second));
     
     /* Example 7: No arguments */

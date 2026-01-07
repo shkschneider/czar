@@ -2,7 +2,7 @@
 
 #pragma czar safety default
 
-void greet(const char* name) {
+void greet(char* name) {
     #pragma czar diagnostic unused-var=warn
     printf("Hello, %s from CZar v0.1!\n", name);
 }

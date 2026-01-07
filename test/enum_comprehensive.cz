@@ -20,7 +20,7 @@ enum ErrorCode {
 };
 
 /* Function with exhaustive switch on Direction */
-const char* direction_name(enum Direction dir) {
+char* direction_name(enum Direction dir) {
     switch (dir) {
     case DIR_NORTH: return "North";
     case DIR_SOUTH: return "South";
@@ -31,7 +31,7 @@ const char* direction_name(enum Direction dir) {
 }
 
 /* Function with exhaustive switch on ErrorCode */
-const char* error_message(enum ErrorCode code) {
+char* error_message(enum ErrorCode code) {
     switch (code) {
     case ERR_OK:
         return "Success";
@@ -44,7 +44,7 @@ const char* error_message(enum ErrorCode code) {
 }
 
 /* Function demonstrating that switches on non-enums don't require exhaustiveness */
-const char* int_category(i32 n) {
+char* int_category(i32 n) {
     switch (n) {
     case 0:
         return "Zero";

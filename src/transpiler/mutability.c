@@ -159,7 +159,7 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
     
-    /* Pass 0: Warn about redundant const usage (everything is const by default) */
+    /* Pass 0: Error on const usage (everything is const by default, use mut for mutable) */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
@@ -168,8 +168,18 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         
         /* Check if this is 'const' keyword in source */
         if (token_equals(tok, "const")) {
-            cz_warning(filename, source, tok->line, 
-                "Redundant 'const' keyword. In CZar, everything is immutable by default. Use 'mut' for mutable declarations.");
+            cz_error(filename, source, tok->line, 
+                "Invalid 'const' keyword. In CZar, everything is immutable by default. Use 'mut' for mutable declarations.");
+            /* Mark const for deletion to maintain consistent mut philosophy */
+            mark_for_deletion(children[i]);
+            
+            /* Also mark any whitespace tokens after const for deletion */
+            size_t j = i + 1;
+            while (j < count && children[j]->type == AST_TOKEN && 
+                   children[j]->token.type == TOKEN_WHITESPACE) {
+                mark_for_deletion(children[j]);
+                j++;
+            }
         }
     }
     
@@ -370,10 +380,10 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                     }
                 }
                 
-                /* Check if this is a pointer type */
+                /* For pointers, skip for now - they need special handling */
+                /* To make pointer immutable, we need: const Type * const p */
+                /* For now, only handle non-pointer parameters */
                 int is_pointer = token_equals(next_tok, "*");
-                
-                /* Skip pointers for now - they need special handling */
                 if (is_pointer) continue;
                 
                 /* Skip if marked as mutable */

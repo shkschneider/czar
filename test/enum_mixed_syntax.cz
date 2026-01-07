@@ -11,7 +11,7 @@ enum Color {
 };
 
 /* Using scoped syntax (preferred - no warnings) */
-const char* color_name_scoped(enum Color c) {
+char* color_name_scoped(enum Color c) {
     switch (c) {
     case Color.RED:
         return "Red";
@@ -25,7 +25,7 @@ const char* color_name_scoped(enum Color c) {
 }
 
 /* Using unscoped syntax (generates warnings) */
-const char* color_name_unscoped(enum Color c) {
+char* color_name_unscoped(enum Color c) {
     switch (c) {
     case RED:
         return "Red";
