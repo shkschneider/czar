@@ -18,6 +18,7 @@
 #include "../cz.h"
 #include "mutability.h"
 #include "../warnings.h"
+#include "../errors.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -201,6 +202,71 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 if (children[k]->type == AST_TOKEN && 
                     children[k]->token.type == TOKEN_WHITESPACE) {
                     mark_for_deletion(children[k]);
+                }
+            }
+        }
+    }
+    
+    /* Pass 1.5: Validate that 'mut' is only used on pointer parameters */
+    /* Scan for function declarations and check parameters marked as mutable */
+    for (size_t i = 0; i + 2 < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok_type = &children[i]->token;
+        
+        /* Check if this looks like: type identifier( pattern */
+        if (tok_type->type != TOKEN_IDENTIFIER) continue;
+        
+        /* Check if it's a type keyword (could also be return type) */
+        if (!is_type_keyword(tok_type->text)) continue;
+        
+        /* Look ahead for identifier */
+        size_t name_idx = skip_whitespace(children, count, i + 1);
+        if (name_idx >= count) continue;
+        if (children[name_idx]->type != AST_TOKEN) continue;
+        if (children[name_idx]->token.type != TOKEN_IDENTIFIER) continue;
+        
+        /* Look ahead for ( */
+        size_t paren_idx = skip_whitespace(children, count, name_idx + 1);
+        if (paren_idx >= count) continue;
+        if (children[paren_idx]->type != AST_TOKEN) continue;
+        if (!token_equals(&children[paren_idx]->token, "(")) continue;
+        
+        /* Found function declaration! Now scan the parameter list */
+        int depth = 1;
+        for (size_t j = paren_idx + 1; j < count && depth > 0; j++) {
+            if (children[j]->type != AST_TOKEN) continue;
+            Token *param_tok = &children[j]->token;
+            
+            if (param_tok->type == TOKEN_PUNCTUATION) {
+                if (token_equals(param_tok, "(")) depth++;
+                else if (token_equals(param_tok, ")")) {
+                    depth--;
+                    if (depth == 0) break; /* End of parameter list */
+                }
+            }
+            
+            /* Check if this is a parameter type that was marked as mutable */
+            if (param_tok->type == TOKEN_IDENTIFIER && is_type_keyword(param_tok->text)) {
+                /* Skip void */
+                if (token_equals(param_tok, "void")) continue;
+                
+                /* Check if this parameter is marked as mutable */
+                if (is_mutable[j]) {
+                    /* Check if this is a pointer type - look ahead for * */
+                    size_t next_idx = skip_whitespace(children, count, j + 1);
+                    int is_pointer = 0;
+                    if (next_idx < count && children[next_idx]->type == AST_TOKEN) {
+                        if (token_equals(&children[next_idx]->token, "*")) {
+                            is_pointer = 1;
+                        }
+                    }
+                    
+                    /* Error if mutable but not a pointer */
+                    if (!is_pointer) {
+                        cz_error(filename, source, param_tok->line,
+                            "Mutable parameter must be a pointer to have side effects. "
+                            "Non-pointer parameters are passed by value. Use pointer type or remove 'mut'.");
+                    }
                 }
             }
         }
