@@ -122,6 +122,30 @@ static int has_mut_before(ASTNode **children, size_t idx) {
     return 0;
 }
 
+/* Check if this type declaration is for a 'self' parameter */
+static int is_self_parameter(ASTNode **children, size_t count, size_t type_idx) {
+    /* Look forward for 'self' identifier after the type */
+    size_t idx = skip_ws(children, count, type_idx + 1);
+    
+    /* Skip pointer markers */
+    while (idx < count && children[idx]->type == AST_TOKEN) {
+        if (strcmp(children[idx]->token.text, "*") == 0) {
+            idx = skip_ws(children, count, idx + 1);
+        } else {
+            break;
+        }
+    }
+    
+    /* Check if the next identifier is 'self' */
+    if (idx < count && children[idx]->type == AST_TOKEN &&
+        children[idx]->token.type == TOKEN_IDENTIFIER &&
+        strcmp(children[idx]->token.text, "self") == 0) {
+        return 1;
+    }
+    
+    return 0;
+}
+
 /* Check if this is a CZar type that will be transformed later */
 static int is_czar_type(const char *text) {
     return (strcmp(text, "u8") == 0 ||
@@ -251,6 +275,11 @@ void transpiler_transform_mutability(ASTNode *ast) {
 
         /* Skip if preceded by 'mut' */
         if (has_mut_before(ast->children, i)) {
+            continue;
+        }
+
+        /* Skip if this is a 'self' parameter (methods need mutable self) */
+        if (is_self_parameter(ast->children, ast->child_count, i)) {
             continue;
         }
 
