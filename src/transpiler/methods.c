@@ -187,7 +187,17 @@ static void scan_struct_definitions(ASTNode *ast) {
                     if (brace_token->type == TOKEN_PUNCTUATION && brace_token->text &&
                         strcmp(brace_token->text, "{") == 0) {
                         /* This is a struct definition */
-                        track_struct_type(name_token->text);
+                        /* Extract base name if it ends with _s (from new typedef format) */
+                        char *base_name = strdup(name_token->text);
+                        if (base_name) {
+                            size_t len = strlen(base_name);
+                            if (len > 2 && strcmp(base_name + len - 2, "_s") == 0) {
+                                /* Remove _s suffix to get base name for methods */
+                                base_name[len - 2] = '\0';
+                            }
+                            track_struct_type(base_name);
+                            free(base_name);
+                        }
 
                         /* Find closing brace and check for typedef name */
                         int brace_depth = 0;
@@ -216,8 +226,17 @@ static void scan_struct_definitions(ASTNode *ast) {
                             if (typedef_name_node && typedef_name_node->type == AST_TOKEN) {
                                 Token *typedef_name_token = &typedef_name_node->token;
                                 if (typedef_name_token->type == TOKEN_IDENTIFIER && typedef_name_token->text) {
-                                    /* Track the typedef name too */
-                                    track_struct_type(typedef_name_token->text);
+                                    /* Track the typedef name too, stripping _t suffix if present */
+                                    char *typedef_base = strdup(typedef_name_token->text);
+                                    if (typedef_base) {
+                                        size_t len = strlen(typedef_base);
+                                        if (len > 2 && strcmp(typedef_base + len - 2, "_t") == 0) {
+                                            /* Remove _t suffix to get base name for methods */
+                                            typedef_base[len - 2] = '\0';
+                                        }
+                                        track_struct_type(typedef_base);
+                                        free(typedef_base);
+                                    }
                                 }
                             }
                         }
