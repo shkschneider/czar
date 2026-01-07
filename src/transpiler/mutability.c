@@ -118,11 +118,8 @@ static int is_function_return_type(ASTNode **children, size_t count, size_t type
                 }
             }
             
-            /* Identifier not followed by '(' - could be complex signature.
-             * Be conservative for non-pointer returns */
-            if (!saw_pointer) {
-                return 1;  /* Assume function return type */
-            }
+            /* Identifier not followed by '(' - it's a variable, not a function */
+            return 0;
         }
         
         /* Hit something else, not a function return type */
@@ -229,6 +226,12 @@ static int is_czar_type(const char *text) {
 static int is_type_keyword(Token *token) {
     const char *text = token->text;
     size_t len = strlen(text);
+
+    /* Strip "const " prefix if present */
+    if (strncmp(text, "const ", 6) == 0) {
+        text += 6;
+        len -= 6;
+    }
 
     /* Skip CZar types - they will be transformed later and we can't modify them */
     if (is_czar_type(text)) {
@@ -359,6 +362,120 @@ void transpiler_transform_mutability(ASTNode *ast) {
             token->text = new_text;
             token->length = strlen(new_text);
         }
+    }
+
+    /* Pass 1.5: Add const after * for non-mut pointer variables/parameters */
+    for (size_t i = 0; i < ast->child_count; i++) {
+        if (ast->children[i]->type != AST_TOKEN) continue;
+        Token *token = &ast->children[i]->token;
+
+        /* Look for * that might need const after it */
+        if (strcmp(token->text, "*") != 0) continue;
+
+        /* Skip if preceded by 'mut' (need to check before the type) */
+        /* Look back to find the type token */
+        size_t type_idx = i;
+        while (type_idx > 0) {
+            type_idx--;
+            if (ast->children[type_idx]->type != AST_TOKEN) continue;
+            Token *prev_token = &ast->children[type_idx]->token;
+            
+            /* Skip whitespace */
+            if (prev_token->type == TOKEN_WHITESPACE || prev_token->type == TOKEN_COMMENT) {
+                continue;
+            }
+            
+            /* Found the type */
+            if (is_type_keyword(prev_token) || 
+                (prev_token->type == TOKEN_IDENTIFIER && strstr(prev_token->text, "const ") == prev_token->text)) {
+                /* Check if this type has mut before it */
+                if (has_mut_before(ast->children, type_idx)) {
+                    goto skip_pointer_const;
+                }
+                break;
+            }
+            
+            /* Hit something else */
+            break;
+        }
+
+        /* Skip if this is a function return type pointer */
+        /* Walk back to find the start of this declaration */
+        int paren_depth = 0;
+        for (int j = (int)i - 1; j >= 0 && j >= (int)i - 20; j--) {
+            if (ast->children[j]->type != AST_TOKEN) continue;
+            const char *text = ast->children[j]->token.text;
+            
+            if (strcmp(text, ")") == 0) paren_depth++;
+            else if (strcmp(text, "(") == 0) paren_depth--;
+            
+            /* If we hit a type and are not inside parens */
+            if (paren_depth == 0 && is_type_keyword(&ast->children[j]->token)) {
+                /* Check if this type is a function return type */
+                if (is_function_return_type(ast->children, ast->child_count, j)) {
+                    goto skip_pointer_const;
+                }
+                break;
+            }
+        }
+
+        /* Skip if inside struct definition */
+        if (is_inside_struct_definition(ast->children, i)) {
+            goto skip_pointer_const;
+        }
+
+        /* Skip if this is a cast expression: (Type*) */
+        /* Check if preceded by '(' */
+        size_t check_idx = i;
+        int found_open_paren = 0;
+        while (check_idx > 0) {
+            check_idx--;
+            if (ast->children[check_idx]->type != AST_TOKEN) continue;
+            Token *check_token = &ast->children[check_idx]->token;
+            
+            if (check_token->type == TOKEN_WHITESPACE || check_token->type == TOKEN_COMMENT) {
+                continue;
+            }
+            
+            if (strcmp(check_token->text, "(") == 0) {
+                found_open_paren = 1;
+            }
+            break;
+        }
+        
+        if (found_open_paren) {
+            /* Check if followed by ')' after optional whitespace */
+            size_t close_idx = skip_ws(ast->children, ast->child_count, i + 1);
+            if (close_idx < ast->child_count && ast->children[close_idx]->type == AST_TOKEN &&
+                strcmp(ast->children[close_idx]->token.text, ")") == 0) {
+                goto skip_pointer_const;  /* It's a cast: (Type*) */
+            }
+        }
+
+        /* Check if followed by identifier (variable/parameter name) */
+        size_t next_idx = skip_ws(ast->children, ast->child_count, i + 1);
+        if (next_idx >= ast->child_count || ast->children[next_idx]->type != AST_TOKEN) {
+            goto skip_pointer_const;
+        }
+        
+        Token *next_token = &ast->children[next_idx]->token;
+        
+        /* Must be followed by identifier or another * */
+        if (next_token->type != TOKEN_IDENTIFIER && strcmp(next_token->text, "*") != 0) {
+            goto skip_pointer_const;
+        }
+
+        /* Add " const" after the * by modifying token text */
+        char *new_text = malloc(strlen(token->text) + 7);  /* "* const" */
+        if (new_text) {
+            sprintf(new_text, "* const");
+            free(token->text);
+            token->text = new_text;
+            token->length = strlen(new_text);
+        }
+
+skip_pointer_const:
+        continue;
     }
 
     /* Pass 2: Strip mut keyword */
