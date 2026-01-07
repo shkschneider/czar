@@ -416,34 +416,37 @@ void transpiler_transform_mutability(ASTNode *ast) {
             }
         }
 
-        /* Don't add const to 'void' in function parameters like func(void) or main(void) */
+        /* Special handling for 'void' keyword */
         if (strcmp(token->text, "void") == 0) {
-            /* Check if this void is a sole parameter (void) or main(void) pattern */
-            /* Look backward for ( - only check recent tokens */
-            int found_open_paren = 0;
-            size_t start_j = (i > 10) ? (i - 10) : 0;
-            for (size_t j = i; j > start_j; j--) {
-                if (ast->children[j-1]->type != AST_TOKEN) continue;
-                const char *prev_text = ast->children[j-1]->token.text;
-                TokenType prev_type = ast->children[j-1]->token.type;
+            /* Check if this is the sole parameter: func(void) */
+            int is_sole_param = 0;
+            
+            /* Look backward for ( */
+            size_t back_idx = i;
+            while (back_idx > 0 && back_idx > (i > 10 ? i - 10 : 0)) {
+                back_idx--;
+                if (ast->children[back_idx]->type != AST_TOKEN) break;
+                Token *back_token = &ast->children[back_idx]->token;
                 
-                if (strcmp(prev_text, "(") == 0) {
-                    found_open_paren = 1;
-                    break;
+                if (back_token->type == TOKEN_WHITESPACE || back_token->type == TOKEN_COMMENT) {
+                    continue;
                 }
-                /* If we hit something that's not whitespace/comment, stop */
-                if (prev_type != TOKEN_WHITESPACE && prev_type != TOKEN_COMMENT) {
-                    break;
+                
+                if (strcmp(back_token->text, "(") == 0) {
+                    /* Found (, now check if void is followed by ) */
+                    size_t fwd_idx = skip_ws(ast->children, ast->child_count, i + 1);
+                    if (fwd_idx < ast->child_count && ast->children[fwd_idx]->type == AST_TOKEN &&
+                        strcmp(ast->children[fwd_idx]->token.text, ")") == 0) {
+                        is_sole_param = 1;
+                    }
                 }
+                break;
             }
             
-            if (found_open_paren) {
-                /* Look forward for ) */
-                size_t next_idx = skip_ws(ast->children, ast->child_count, i + 1);
-                if (next_idx < ast->child_count && ast->children[next_idx]->type == AST_TOKEN &&
-                    strcmp(ast->children[next_idx]->token.text, ")") == 0) {
-                    continue;  /* Skip const for func(void) */
-                }
+            /* Only add const if it's the sole parameter pattern */
+            /* Otherwise skip (return types, non-param contexts) */
+            if (!is_sole_param) {
+                continue;
             }
         }
 
@@ -559,6 +562,31 @@ skip_multi_word_type:
         /* Must be followed by identifier or another * */
         if (next_token->type != TOKEN_IDENTIFIER && strcmp(next_token->text, "*") != 0) {
             goto skip_pointer_const;
+        }
+        
+        /* Additional check: make sure we're in a declaration context, not an expression */
+        /* In declarations, * is preceded by a type. In expressions, it's preceded by operators/punctuation */
+        /* Look back to find what's before this * (skipping whitespace) */
+        size_t prev_check = i;
+        int found_type_before = 0;
+        while (prev_check > 0) {
+            prev_check--;
+            if (ast->children[prev_check]->type != AST_TOKEN) break;
+            Token *prev_check_token = &ast->children[prev_check]->token;
+            
+            if (prev_check_token->type == TOKEN_WHITESPACE || prev_check_token->type == TOKEN_COMMENT) {
+                continue;
+            }
+            
+            /* Check if it's a type keyword */
+            if (is_type_keyword(prev_check_token)) {
+                found_type_before = 1;
+            }
+            break;
+        }
+        
+        if (!found_type_before) {
+            goto skip_pointer_const;  /* Not a declaration, it's an expression */
         }
 
         /* Add " const" after the * by modifying token text */
