@@ -1,0 +1,12 @@
+#include <stdio.h>
+
+int main(void) {
+    /* Test mutable for loop counter - should work */
+    for (mut u32 i = 0; i < 10; i++) {
+        printf("%u ", i);
+    }
+    printf("\n");
+
+    printf("For loop test: OK\n");
+    return 0;
+}
