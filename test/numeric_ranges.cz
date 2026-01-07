@@ -34,7 +34,7 @@ int main(void) {
     printf("=== CZar v0.3 Type System Demo ===\n\n");
 
     /* Test Vec2 structure */
-    struct Vec2 v = {0};  /* Zero-initialized */
+    mut Vec2 v = {0};  /* Zero-initialized */
     v.x = 10;
     v.y = 20;
     printf("Vec2: (%d, %d)\n", v.x, v.y);

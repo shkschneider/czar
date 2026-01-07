@@ -319,6 +319,14 @@ void transpiler_transform_mutability(ASTNode *ast) {
         if (ast->children[i]->type != AST_TOKEN) continue;
         Token *token = &ast->children[i]->token;
 
+        /* Check if this could be a function return type (before type keyword check) */
+        /* This catches custom types that aren't in is_type_keyword() */
+        if (token->type == TOKEN_IDENTIFIER || token->type == TOKEN_KEYWORD) {
+            if (is_function_return_type(ast->children, ast->child_count, i)) {
+                continue;  /* Skip function return types */
+            }
+        }
+
         /* Look for type keywords that might need const */
         if (!is_type_keyword(token)) continue;
 

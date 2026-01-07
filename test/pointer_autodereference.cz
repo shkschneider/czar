@@ -13,33 +13,33 @@ struct Point {
 };
 
 /* Test function with pointer parameter */
-void modify_point(struct Point* p) {
+void modify_point(mut Point* p) {
     /* New CZar syntax: use . on pointer (auto-dereferences) */
     p.x = 100;
     p.y = 200;
 }
 
 /* Test function with non-pointer parameter */
-void print_point(struct Point pt) {
+void print_point(Point pt) {
     /* Regular struct access with . (not a pointer, so no transformation) */
     printf("Point: (%d, %d)\n", pt.x, pt.y);
 }
 
 /* Test function using old C syntax (should still work) */
-void reset_point(struct Point* p) {
+void reset_point(mut Point* p) {
     /* Old C syntax: use -> on pointer (no transformation needed) */
     p->x = 0;
     p->y = 0;
 }
 
 /* Test reading pointer members */
-i32 distance(struct Point* p) {
+i32 distance(Point* p) {
     /* Auto-dereference for reading */
     return p.x + p.y;
 }
 
 int main(void) {
-    struct Point pt = {0};
+    mut Point pt = {0};
 
     /* Test 1: Auto-dereference for writing */
     modify_point(&pt);

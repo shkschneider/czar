@@ -16,8 +16,8 @@ struct Color {
 };
 
 /* Initialize a color with bounds checking */
-struct Color make_color(u32 r, u32 g, u32 b, u32 a) {
-    struct Color c = {0};  /* Zero-initialized */
+Color make_color(u32 r, u32 g, u32 b, u32 a) {
+    mut Color c = {0};  /* Zero-initialized */
 
     /* Clamp values to valid range using limit constants */
     c.r = (r > U8_MAX) ? U8_MAX : cast<u8>(r);
@@ -29,7 +29,7 @@ struct Color make_color(u32 r, u32 g, u32 b, u32 a) {
 }
 
 /* Validate color using ASSERTions */
-void validate_color(struct Color* c) {
+void validate_color(Color* c) {
     cz_assert(c != NULL);
     /* Note: r, g, b, a are u8 types, so they're inherently in range [0, 255] */
 }
@@ -52,7 +52,7 @@ struct AllTypes {
 
 /* Initialize all types to their min/max values */
 void test_all_types(void) {
-    struct AllTypes types = {0};  /* Zero-initialized */
+    mut AllTypes types = {0};  /* Zero-initialized */
 
     /* Set to max values */
     types.u8_field = U8_MAX;
@@ -110,8 +110,8 @@ int main(void) {
 
     /* Test 1: Color struct with bounds checking */
     printf("Test 1: Color struct\n");
-    struct Color red = make_color(255, 0, 0, 255);
-    struct Color overflow = make_color(300, 400, 500, 255);  /* Values clamped */
+    Color red = make_color(255, 0, 0, 255);
+    Color overflow = make_color(300, 400, 500, 255);  /* Values clamped */
     validate_color(&red);
     validate_color(&overflow);
     printf("  red: rgba(%u, %u, %u, %u)\n", red.r, red.g, red.b, red.a);
@@ -145,7 +145,7 @@ int main(void) {
 
     /* Test 5: Zero-initialization */
     printf("\nTest 5: Zero-initialization\n");
-    struct AllTypes zero_test = {0};
+    AllTypes zero_test = {0};
     cz_assert(zero_test.u32_field == 0);
     cz_assert(zero_test.i32_field == 0);
     cz_assert(zero_test.f32_field == 0.0f);
