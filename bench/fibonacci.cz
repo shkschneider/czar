@@ -15,7 +15,7 @@ u32 main(int argc, char **argv) {
     if (argc < 2) {
         return 1;
     }
-    for (u32 i = 1; i < argc; i++) {
+    for (mut u32 i = 1; i < argc; i++) {
         u32 n = atoi(argv[i]);
         printf("fib(%d) = %d\n", n, fib(n));
     }

@@ -11,6 +11,7 @@ SOURCES_CZ = $(patsubst %.cz,%.cz.c,$(wildcard *.cz))
 OBJECTS    = $(SOURCES_C:.c=.o) $(SOURCES_CZ:.c=.o)
 
 all: $(CZ) $(OUT)
+	@echo
 	@./$(OUT)
 
 $(CZ):

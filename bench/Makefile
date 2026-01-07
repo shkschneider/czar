@@ -5,11 +5,13 @@ CFLAGS     = -std=c11 -Wall -Wextra -O2
 LDFLAGS    = -lc
 OUT_C      = c.out
 OUT_CZ     = cz.out
-TEST       = 11 22 33 42
+TESTS      = 11 22 33 42
 
-# https://github.com/sharkdp/hyperfine
 all: $(CZ) $(OUT_C) $(OUT_CZ)
-	hyperfine --warmup 1 "./$(OUT_C) $(TEST)" "./$(OUT_CZ) $(TEST)"
+ifeq ($(shell command -v hyperfine 2>/dev/null),)
+	$(error "E: github.com/sharkdp/hyperfine not found!")
+endif
+	hyperfine --warmup 1 "./$(OUT_C) $(TESTS)" "./$(OUT_CZ) $(TESTS)"
 
 $(CZ):
 	$(MAKE) -C .. -B
