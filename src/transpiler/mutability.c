@@ -204,6 +204,7 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
             children[j]->token.type == TOKEN_IDENTIFIER) {
             /* Mark the type at position j as mutable */
             is_mutable[j] = 1;
+            fprintf(stderr, "DEBUG Pass1: Marked position %zu ('%s') as mutable\n", j, children[j]->token.text);
             /* Mark 'mut' for deletion */
             mark_for_deletion(children[i]);
             
