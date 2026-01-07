@@ -10,18 +10,27 @@ CZar implements explicit mutability where **everything is immutable by default**
 
 ### What Works
 
-1. **Function Parameters (non-pointer types)**
+1. **Function Parameters (pointer types for mutable parameters)**
    ```c
    // CZar
-   void func(u8 a, mut u8 b) { ... }
+   void func(u8 a, mut u8 *b) { 
+       *b = 10;  // OK - b is mutable pointer
+   }
    
    // Generated C
-   void func(const uint8_t a, uint8_t b) { ... }
+   void func(const uint8_t a, uint8_t *b) { 
+       *b = 10;
+   }
    ```
 
 2. **`mut` Keyword Stripping**
-   - `mut Type` → `Type` in generated C
+   - `mut Type *` → `Type *` in generated C
    - The `mut` keyword is recognized and removed from the output
+
+3. **Error on Non-Pointer Mutable Parameters**
+   - `mut` on non-pointer function parameters causes an error
+   - Rationale: Non-pointer parameters are passed by value, so modifications have no side effects
+   - To modify a value, pass it as a pointer with `mut`
 
 ### Current Limitations
 
@@ -32,8 +41,8 @@ The following are **not yet implemented** but are planned for future versions:
    - Planned: `u8 x = 5;` → `const uint8_t x = 5;`
    - Rationale: Deferred to avoid breaking existing code
 
-2. **Pointer Types**
-   - Currently: Pointers are not handled
+2. **Pointer Const Qualifiers**
+   - Currently: Only the pointee mutability is controlled
    - Planned: `Type *p` → `const Type * const p` (const pointer to const data)
    - Challenge: Requires sophisticated analysis to handle both pointer and pointee mutability
 
@@ -56,18 +65,24 @@ void process(u8 value) {
     printf("%u\n", value);
 }
 
-// Mutable parameter (explicit mut)
-void increment(mut u8 value) {
-    value = value + 1;  // OK - value is mutable
-    printf("%u\n", value);
+// Mutable parameter - MUST be a pointer
+void increment(mut u8 *value) {
+    *value = *value + 1;  // OK - value is mutable pointer
+    printf("%u\n", *value);
+}
+
+// ERROR: mut on non-pointer parameter
+void invalid(mut u8 value) {
+    // ERROR: Mutable parameter must be a pointer to have side effects
+    value = value + 1;
 }
 ```
 
 ### Mixed Parameters
 ```c
-void compute(u8 input, mut u8 output) {
-    // input is const, output is mutable
-    output = input * 2;
+void compute(u8 input, mut u8 *output) {
+    // input is const, output is mutable pointer
+    *output = input * 2;
 }
 ```
 

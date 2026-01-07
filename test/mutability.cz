@@ -49,26 +49,20 @@ void test_func_immutable_param(u8 val) {
     printf("immutable param: %u\n", val);
 }
 
-/* Test 6: Mutable function parameter */
-void test_func_mutable_param(mut u8 val) {
-    val = 100; /* OK - mutable */
-    printf("mutable param: %u\n", val);
-}
-
-/* Test 7: Immutable pointer parameter */
+/* Test 6: Immutable pointer parameter */
 void test_func_immutable_ptr(Point *p) {
     /* Cannot modify p or p's members - read-only */
     printf("immutable ptr: (%d, %d)\n", p->x, p->y);
 }
 
-/* Test 8: Mutable pointer parameter */
+/* Test 7: Mutable pointer parameter */
 void test_func_mutable_ptr(mut Point *p) {
     p->x = 30; /* OK - mutable */
     p->y = 40;
     printf("mutable ptr: (%d, %d)\n", p->x, p->y);
 }
 
-/* Test 9: Struct method - self is always mutable */
+/* Test 8: Struct method - self is always mutable */
 void Point.set(i32 new_x, i32 new_y) {
     self.x = new_x; /* OK - self is mutable in methods */
     self.y = new_y;
@@ -86,7 +80,6 @@ int main(void) {
     test_immutable_struct();
     test_mutable_struct();
     test_func_immutable_param(42);
-    test_func_mutable_param(50);
     
     Point p = {0};
     test_func_immutable_ptr(&p);

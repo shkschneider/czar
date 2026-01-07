@@ -5,6 +5,8 @@
  * Test basic mutability feature
  * - mut keyword is stripped
  * - const is added to non-pointer function parameters without mut
+ * - mut on non-pointer parameters causes an error (no side effects)
+ * - mut must be used with pointers for parameters
  */
 
 /* Function with immutable parameters */
@@ -13,25 +15,29 @@ void test_const_params(u8 a, i16 b) {
     printf("a=%u, b=%d\n", a, b);
 }
 
-/* Function with mutable parameter */
-void test_mut_param(mut u8 x) {
-    x = x + 1;  /* OK - x is mutable */
-    printf("x=%u\n", x);
+/* Function with mutable parameter (must be pointer) */
+void test_mut_param(mut u8 *x) {
+    *x = *x + 1;  /* OK - x is mutable pointer */
+    printf("x=%u\n", *x);
 }
 
 /* Function with mixed parameters */
-void test_mixed(u8 immutable, mut u8 mutable) {
+void test_mixed(u8 immutable, mut u8 *mutable) {
     /* immutable is const, cannot modify */
-    mutable = mutable * 2;  /* OK */
-    printf("immutable=%u, mutable=%u\n", immutable, mutable);
+    *mutable = immutable * 2;  /* OK */
+    printf("immutable=%u, mutable=%u\n", immutable, *mutable);
 }
 
 int main(void) {
     printf("=== Mutability Test ===\n");
     
     test_const_params(10, -5);
-    test_mut_param(42);
-    test_mixed(immutable = 5, mutable = 10);
+    
+    mut u8 value = 42;
+    test_mut_param(&value);
+    
+    mut u8 mutable_val = 10;
+    test_mixed(immutable = 5, mutable = &mutable_val);
     
     printf("=== All Tests Passed ===\n");
     return 0;
