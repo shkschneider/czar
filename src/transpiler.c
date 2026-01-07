@@ -24,6 +24,7 @@
 #include "transpiler/functions.h"
 #include "transpiler/arguments.h"
 #include "transpiler/pragma.h"
+#include "transpiler/mutability.h"
 #include "runtime/assert.h"
 #include "runtime/format.h"
 #include "runtime/log.h"
@@ -137,6 +138,10 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Transform struct initialization syntax */
     transpiler_transform_struct_init(transpiler->ast);
+
+    /* Transform mutability (mut keyword and const insertion) */
+    /* Must run before struct methods to properly handle self parameter */
+    transpiler_transform_mutability(transpiler->ast);
 
     /* Transform struct methods (before autodereference) */
     transpiler_transform_methods(transpiler->ast, transpiler->filename, transpiler->source);
