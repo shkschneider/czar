@@ -4,7 +4,7 @@
 
 /* Test that non-enum switches work normally */
 
-const char* number_name(i32 n) {
+char* number_name(i32 n) {
     switch (n) {
     case 0:
         return "Zero";
