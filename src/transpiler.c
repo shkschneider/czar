@@ -165,7 +165,7 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Transform mutability (mut keyword and const insertion) */
     /* Must run after named arguments but before type transformations */
-    transpiler_transform_mutability(transpiler->ast);
+    transpiler_transform_mutability(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);

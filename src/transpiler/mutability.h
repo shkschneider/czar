@@ -14,4 +14,4 @@
 #include "../parser.h"
 
 /* Transform mutability keywords in AST */
-void transpiler_transform_mutability(ASTNode *ast);
+void transpiler_transform_mutability(ASTNode *ast, const char *filename, const char *source);
