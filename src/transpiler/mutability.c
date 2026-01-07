@@ -76,9 +76,8 @@ static int is_inside_struct_definition(ASTNode **children, size_t idx) {
 
 /* Check if this type is a function return type */
 static int is_function_return_type(ASTNode **children, size_t count, size_t type_idx) {
-    /* Strategy: Look forward to see if we have: Type identifier ( (no * between type and identifier) */
+    /* Strategy: Look forward to see if we have: Type identifier( pattern */
     size_t idx = type_idx + 1;
-    int saw_pointer = 0;
     
     /* Skip whitespace and track pointer markers */
     while (idx < count && children[idx]->type == AST_TOKEN) {
@@ -91,18 +90,12 @@ static int is_function_return_type(ASTNode **children, size_t count, size_t type
         }
         
         if (strcmp(text, "*") == 0) {
-            saw_pointer = 1;
             idx++;
             continue;
         }
         
         /* If we hit an identifier */
         if (type == TOKEN_IDENTIFIER) {
-            /* If we saw a pointer marker, this is likely a pointer variable, not a function */
-            if (saw_pointer) {
-                return 0;
-            }
-            
             /* Check if identifier is followed by '(' */
             size_t next_idx = idx + 1;
             while (next_idx < count && children[next_idx]->type == AST_TOKEN &&
@@ -114,7 +107,7 @@ static int is_function_return_type(ASTNode **children, size_t count, size_t type
             if (next_idx < count && children[next_idx]->type == AST_TOKEN) {
                 const char *next_text = children[next_idx]->token.text;
                 if (next_text && strcmp(next_text, "(") == 0) {
-                    return 1;  /* Type identifier( pattern - function return type */
+                    return 1;  /* Type identifier( pattern - function return type (including pointers) */
                 }
             }
             
@@ -569,9 +562,9 @@ skip_multi_word_type:
         }
 
         /* Add " const" after the * by modifying token text */
-        char *new_text = malloc(strlen(token->text) + 7);  /* "* const" */
+        char *new_text = malloc(strlen(token->text) + 8);  /* "* const " with trailing space */
         if (new_text) {
-            sprintf(new_text, "* const");
+            sprintf(new_text, "* const ");
             free(token->text);
             token->text = new_text;
             token->length = strlen(new_text);
