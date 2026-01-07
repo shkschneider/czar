@@ -31,7 +31,7 @@ void Vec2.set(u8 new_x, u8 new_y) {
 
 /* Method returning struct */
 Vec2 Vec2.add(Vec2 other) {
-    mut Vec2 result = {0};
+    Vec2 result = {0};
     result.x = self.x + other.x;
     result.y = self.y + other.y;
     return result;
@@ -56,7 +56,7 @@ void Counter.addDelta(i32 delta) {
 
 int main(void) {
     /* Test 1: Basic method call */
-    mut Vec2 v = {0};
+    Vec2 v = {0};
     v.x = 3;
     v.y = 4;
     u8 len = v.length();
@@ -70,7 +70,7 @@ int main(void) {
     printf("Test 2 passed: Method with parameters v.set(5, 6)\n");
 
     /* Test 3: Method returning struct */
-    mut Vec2 v2 = {0};
+    Vec2 v2 = {0};
     v2.x = 1;
     v2.y = 2;
     Vec2 v3 = v.add(v2);
@@ -79,7 +79,7 @@ int main(void) {
     printf("Test 3 passed: Method returning struct v.add(v2)\n");
 
     /* Test 4: Static method call */
-    mut Vec2 v4 = {0};
+    Vec2 v4 = {0};
     v4.x = 2;
     v4.y = 3;
     u8 len2 = Vec2.length(&v4);
@@ -87,7 +87,7 @@ int main(void) {
     printf("Test 4 passed: Static method call Vec2.length(&v4) = %u\n", len2);
 
     /* Test 5: Multiple structs with methods */
-    mut Counter c = {0};
+    Counter c = {0};
     c.value = 10;
     i32 val = c.get();
     cz_assert(val == 10);
