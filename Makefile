@@ -2,16 +2,14 @@
 CC     ?= cc -v
 STD    ?= c11#-D_POSIX_C_SOURCE=200809L
 OPT    ?= O2
-CFLAGS := -std=$(STD) -Wall -Wextra -Wno-unknown-pragmas -$(OPT)
+CFLAGS := -std=$(STD) -Wall -Wextra -Werror -Wno-unknown-pragmas -$(OPT)
 LDFLAGS = -static -lc
 OUT    ?= build/cz
 
+# Binary
 SOURCES = $(wildcard src/*.c) $(wildcard src/**/*.c)
 OBJECTS = $(patsubst src/%.c,build/%.o,$(SOURCES))
-
-# Binary
 all: $(OUT)
-	@echo
 	@file ./$(OUT)
 $(OUT): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUT)
@@ -20,17 +18,11 @@ build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 .PHONY: all
 
-# Tests: test FILE=...
-TESTS = $(wildcard tests/*.cz)
-ifdef FILE
-test: $(OUT)
-	@$(MAKE) $(basename $(FILE)).out
-else
-test: $(TESTS:.cz=.out) $(OUT)
-	@echo
+# Tests
+TESTS = $(wildcard test/*.cz)
+test: $(OUT) $(TESTS:.cz=) $(OUT)
 	@echo "All tests passed."
-endif
-tests/%.out: tests/%.cz $(OUT)
+test/%: test/%.cz $(OUT)
 	@echo "- $@"
 	@./$(OUT) $< $<.c >/dev/null
 	@$(CC) $(CFLAGS) -c $<.c -o $<.o
@@ -40,9 +32,10 @@ tests/%.out: tests/%.cz $(OUT)
 
 # Cleanup
 stat:
-	@find src -type f -name "*.c" | xargs wc -l | cut -c2-
-	@find tests -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz' "{}"
+	@find ./src -type f -name "*.c" | xargs wc -l | cut -c2- | sort -n
+	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz' "{}"
 clean:
-	@rm -rvf ./build
-	@rm -vf ./tests/*.pp.cz ./tests/*.cz.c ./tests/*.o ./tests/*.out
-.PHONY: clean
+	@rm -rvf ./build/
+	@rm -vf ./test/*.pp.cz ./test/*.cz.c ./test/*.o
+	@find ./test -type f -executable -exec rm -vf {} \;
+.PHONY: stat clean

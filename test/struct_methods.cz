@@ -7,7 +7,7 @@
  *   RetType StructName.method_name(params) { ... }
  * This is syntax sugar for:
  *   RetType StructName_method_name(StructName* self, params) { ... }
- * 
+ *
  * Calling methods:
  *   instance.method(args) -> StructName_method(&instance, args)
  *   StructName.method(&instance, args) -> StructName_method(&instance, args)

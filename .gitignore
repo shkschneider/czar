@@ -1,7 +1,4 @@
 /build
-*.out
-*.cz.c
-*.pp.cz
-*.pp.c
-*.o
+test/*
+!test/*.cz
 _codeql_detected_source_root
