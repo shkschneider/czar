@@ -13,4 +13,4 @@
 #include "../parser.h"
 
 /* Transform struct method declarations and calls */
-void transpiler_transform_methods(ASTNode *ast);
+void transpiler_transform_methods(ASTNode *ast, const char *filename, const char *source);

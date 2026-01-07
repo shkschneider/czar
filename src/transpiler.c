@@ -140,7 +140,7 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_transform_struct_init(transpiler->ast);
 
     /* Transform struct methods (before autodereference) */
-    transpiler_transform_methods(transpiler->ast);
+    transpiler_transform_methods(transpiler->ast, transpiler->filename, transpiler->source);
 
     /* Replace struct names with _t variants in generated C code */
     /* Must be AFTER method transformations to preserve base names in methods */

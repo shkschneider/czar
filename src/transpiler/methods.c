@@ -40,10 +40,16 @@ static size_t method_count = 0;
 static StructType struct_types[MAX_STRUCT_TYPES];
 static size_t struct_type_count = 0;
 
+/* Global context for error/warning reporting */
+static const char *g_filename = NULL;
+static const char *g_source = NULL;
+
 /* Add a method to tracking */
 static void track_method(const char *struct_name, const char *method_name) {
     if (method_count >= MAX_METHODS) {
-        fprintf(stderr, "Warning: " WARN_MAX_METHOD_TRACKING_LIMIT "\n", MAX_METHODS);
+        char warning_msg[256];
+        snprintf(warning_msg, sizeof(warning_msg), WARN_MAX_METHOD_TRACKING_LIMIT, MAX_METHODS);
+        cz_warning(g_filename, g_source, 0, warning_msg);
         return;
     }
 
@@ -86,7 +92,9 @@ static int is_tracked_method(const char *struct_name, const char *method_name) {
 /* Add a struct type to tracking */
 static void track_struct_type(const char *name) {
     if (struct_type_count >= MAX_STRUCT_TYPES) {
-        fprintf(stderr, "Warning: " WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT "\n", MAX_STRUCT_TYPES);
+        char warning_msg[256];
+        snprintf(warning_msg, sizeof(warning_msg), WARN_MAX_STRUCT_TYPE_TRACKING_LIMIT, MAX_STRUCT_TYPES);
+        cz_warning(g_filename, g_source, 0, warning_msg);
         return;
     }
 
@@ -844,10 +852,14 @@ static void transform_method_calls(ASTNode *ast) {
 }
 
 /* Transform struct method declarations and calls */
-void transpiler_transform_methods(ASTNode *ast) {
+void transpiler_transform_methods(ASTNode *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
+
+    /* Store context for error/warning reporting */
+    g_filename = filename;
+    g_source = source;
 
     clear_tracking();
 
