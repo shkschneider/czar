@@ -148,52 +148,6 @@ static void mark_for_deletion(ASTNode *node) {
     }
 }
 
-/* Check if we're in a struct method declaration context (looking for . before method name) */
-__attribute__((unused)) static int is_in_method_declaration(ASTNode **children, size_t count, size_t type_pos) {
-    /* Look ahead for pattern: Type.method_name( */
-    size_t i = skip_whitespace(children, count, type_pos + 1);
-    if (i >= count) return 0;
-    if (!token_equals(&children[i]->token, ".")) return 0;
-    
-    i = skip_whitespace(children, count, i + 1);
-    if (i >= count) return 0;
-    if (children[i]->token.type != TOKEN_IDENTIFIER) return 0;
-    
-    i = skip_whitespace(children, count, i + 1);
-    if (i >= count) return 0;
-    if (!token_equals(&children[i]->token, "(")) return 0;
-    
-    return 1;
-}
-
-/* Check if context suggests this is a declaration (not a call or expression) */
-__attribute__((unused)) static int is_declaration_context(ASTNode **children, size_t count __attribute__((unused)), size_t type_pos) {
-    /* Look backward for declaration indicators */
-    size_t prev_idx;
-    if (!find_prev_token(children, type_pos, &prev_idx)) {
-        return 1; /* At start, likely a declaration */
-    }
-    
-    Token *prev = &children[prev_idx]->token;
-    
-    /* After these keywords, we expect a declaration */
-    if (token_equals(prev, "static") || token_equals(prev, "extern") ||
-        token_equals(prev, "const") || token_equals(prev, "volatile") ||
-        token_equals(prev, "{") || token_equals(prev, ";") ||
-        token_equals(prev, ",") || token_equals(prev, "(")) {
-        return 1;
-    }
-    
-    /* After return/cast/operators, not a declaration */
-    if (token_equals(prev, "return") || token_equals(prev, "=") ||
-        token_equals(prev, "+") || token_equals(prev, "-") ||
-        token_equals(prev, "*") || token_equals(prev, "/")) {
-        return 0;
-    }
-    
-    return 1;
-}
-
 /* Transform mutability in AST */
 void transpiler_transform_mutability(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {

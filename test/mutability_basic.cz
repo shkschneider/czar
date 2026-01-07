@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <stdint.h>
+
+/*
+ * Test basic mutability feature
+ * - mut keyword is stripped
+ * - const is added to non-pointer function parameters without mut
+ */
+
+/* Function with immutable parameters */
+void test_const_params(u8 a, i16 b) {
+    /* a and b should be const - cannot modify */
+    printf("a=%u, b=%d\n", a, b);
+}
+
+/* Function with mutable parameter */
+void test_mut_param(mut u8 x) {
+    x = x + 1;  /* OK - x is mutable */
+    printf("x=%u\n", x);
+}
+
+/* Function with mixed parameters */
+void test_mixed(u8 immutable, mut u8 mutable) {
+    /* immutable is const, cannot modify */
+    mutable = mutable * 2;  /* OK */
+    printf("immutable=%u, mutable=%u\n", immutable, mutable);
+}
+
+int main(void) {
+    printf("=== Mutability Test ===\n");
+    
+    test_const_params(10, -5);
+    test_mut_param(42);
+    test_mixed(immutable = 5, mutable = 10);
+    
+    printf("=== All Tests Passed ===\n");
+    return 0;
+}
