@@ -17,6 +17,7 @@
 
 #include "../cz.h"
 #include "mutability.h"
+#include "../warnings.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -149,13 +150,27 @@ static void mark_for_deletion(ASTNode *node) {
 }
 
 /* Transform mutability in AST */
-void transpiler_transform_mutability(ASTNode *ast) {
+void transpiler_transform_mutability(ASTNode *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
     
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
+    
+    /* Pass 0: Warn about redundant const usage (everything is const by default) */
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
+        
+        Token *tok = &children[i]->token;
+        
+        /* Check if this is 'const' keyword in source */
+        if (token_equals(tok, "const")) {
+            cz_warning(filename, source, tok->line, 
+                "Redundant 'const' keyword. In CZar, everything is immutable by default. Use 'mut' for mutable declarations.");
+        }
+    }
     
     /* Pass 1: Mark types following 'mut' for mutable access, and mark 'mut' for deletion */
     int *is_mutable = calloc(count, sizeof(int));
@@ -180,6 +195,14 @@ void transpiler_transform_mutability(ASTNode *ast) {
             is_mutable[j] = 1;
             /* Mark 'mut' for deletion */
             mark_for_deletion(children[i]);
+            
+            /* Also mark any whitespace tokens between mut and type for deletion */
+            for (size_t k = i + 1; k < j; k++) {
+                if (children[k]->type == AST_TOKEN && 
+                    children[k]->token.type == TOKEN_WHITESPACE) {
+                    mark_for_deletion(children[k]);
+                }
+            }
         }
     }
     
