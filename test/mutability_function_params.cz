@@ -1,0 +1,32 @@
+#include <stdio.h>
+
+/* Test function with immutable parameter */
+void test_immutable_param(u32 x) {
+    printf("Immutable param: %u\n", x);
+    /* x = 10; */ /* This should error if uncommented */
+}
+
+/* Test function with mutable parameter (must be pointer) */
+void test_mutable_param(mut u32* x) {
+    *x = *x + 1;  /* OK - parameter is mutable pointer */
+    printf("Mutable param modified to: %u\n", *x);
+}
+
+/* Test function with mixed parameters */
+void test_mixed_params(u32 a, mut u32* b) {
+    printf("Immutable a: %u\n", a);
+    *b = *b * 2;  /* OK - b is mutable pointer */
+    printf("Mutable b modified to: %u\n", *b);
+    /* a = 5; */ /* This should error if uncommented */
+}
+
+int main(void) {
+    mut u32 val = 42;
+    
+    test_immutable_param(val);
+    test_mutable_param(&val);  /* Must use & for mut parameter */
+    test_mixed_params(a = 10, b = &val);  /* Second param is mut, needs & */
+    
+    printf("Function parameter mutability test: OK\n");
+    return 0;
+}
