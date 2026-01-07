@@ -6,8 +6,7 @@
  * Transforms: struct Name { ... }; into typedef struct { ... } Name;
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "structs.h"
 #include <stdlib.h>
 #include <string.h>
@@ -229,7 +228,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
 
         /* Found =, now look for what comes after (skipping whitespace) */
         size_t next_idx = i + 1;
-        while (next_idx < ast->child_count && 
+        while (next_idx < ast->child_count &&
                ast->children[next_idx]->type == AST_TOKEN &&
                ast->children[next_idx]->token.type == TOKEN_WHITESPACE) {
             next_idx++;
@@ -249,13 +248,13 @@ void transpiler_transform_struct_init(ASTNode *ast) {
             strcmp(next->token.text, "{") == 0) {
             /* Check if followed by } */
             size_t close_idx = next_idx + 1;
-            while (close_idx < ast->child_count && 
+            while (close_idx < ast->child_count &&
                    ast->children[close_idx]->type == AST_TOKEN &&
                    ast->children[close_idx]->token.type == TOKEN_WHITESPACE) {
                 close_idx++;
             }
 
-            if (close_idx < ast->child_count && 
+            if (close_idx < ast->child_count &&
                 ast->children[close_idx]->type == AST_TOKEN &&
                 ast->children[close_idx]->token.type == TOKEN_PUNCTUATION &&
                 ast->children[close_idx]->token.text &&
@@ -308,22 +307,22 @@ void transpiler_transform_struct_init(ASTNode *ast) {
         else if (next->token.type == TOKEN_IDENTIFIER) {
             /* Look for { after the identifier */
             size_t brace_idx = next_idx + 1;
-            while (brace_idx < ast->child_count && 
+            while (brace_idx < ast->child_count &&
                    ast->children[brace_idx]->type == AST_TOKEN &&
                    ast->children[brace_idx]->token.type == TOKEN_WHITESPACE) {
                 brace_idx++;
             }
 
-            if (brace_idx < ast->child_count && 
+            if (brace_idx < ast->child_count &&
                 ast->children[brace_idx]->type == AST_TOKEN &&
                 ast->children[brace_idx]->token.type == TOKEN_PUNCTUATION &&
                 ast->children[brace_idx]->token.text &&
                 strcmp(ast->children[brace_idx]->token.text, "{") == 0) {
-                
+
                 /* This is StructName { ... } pattern */
                 /* Check what's inside the braces */
                 size_t inside_idx = brace_idx + 1;
-                while (inside_idx < ast->child_count && 
+                while (inside_idx < ast->child_count &&
                        ast->children[inside_idx]->type == AST_TOKEN &&
                        ast->children[inside_idx]->token.type == TOKEN_WHITESPACE) {
                     inside_idx++;
@@ -331,8 +330,8 @@ void transpiler_transform_struct_init(ASTNode *ast) {
 
                 /* Check if empty */
                 int is_empty = 0;
-                
-                if (inside_idx < ast->child_count && 
+
+                if (inside_idx < ast->child_count &&
                     ast->children[inside_idx]->type == AST_TOKEN) {
                     if (ast->children[inside_idx]->token.type == TOKEN_PUNCTUATION &&
                         ast->children[inside_idx]->token.text &&
@@ -349,7 +348,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
 
                 /* If empty, add 0 */
                 if (is_empty) {
-                    
+
                     ASTNode *zero_node = malloc(sizeof(ASTNode));
                     if (zero_node) {
                         zero_node->type = AST_TOKEN;

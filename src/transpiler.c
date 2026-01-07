@@ -5,8 +5,7 @@
  * Transforms AST by applying CZar-specific transformations.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "cz.h"
 #include "transpiler.h"
 #include "errors.h"
 #include "warnings.h"

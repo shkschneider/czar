@@ -5,6 +5,7 @@
  * Handles CZar type to C type transformations.
  */
 
+#include "../cz.h"
 #include "types.h"
 #include <string.h>
 #include <stddef.h>

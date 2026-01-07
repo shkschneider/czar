@@ -1,10 +1,11 @@
 /*
  * CZar - C semantic authority layer
  * Lexer implementation (lexer.c)
- * 
+ *
  * Tokenizes C source code into a stream of tokens.
  */
 
+#include "cz.h"
 #include "lexer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -74,7 +75,7 @@ static Token make_token(Lexer *lexer, TokenType type, size_t start, size_t lengt
     token.length = length;
     token.line = lexer->line;
     token.column = lexer->column;
-    
+
     /* Allocate and copy token text */
     token.text = malloc(length + 1);
     if (token.text) {
@@ -84,7 +85,7 @@ static Token make_token(Lexer *lexer, TokenType type, size_t start, size_t lengt
         /* Memory allocation failed - set length to 0 to indicate error */
         token.length = 0;
     }
-    
+
     return token;
 }
 
@@ -95,16 +96,16 @@ static Token lex_identifier(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     while (is_identifier_char(peek(lexer), 0)) {
         advance(lexer);
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_IDENTIFIER, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -114,7 +115,7 @@ static Token lex_number(Lexer *lexer) {
     int start_line = lexer->line;
     int start_column = lexer->column;
     int is_binary = 0;
-    
+
     /* Handle hex numbers */
     if (peek(lexer) == '0' && (peek_at(lexer, 1) == 'x' || peek_at(lexer, 1) == 'X')) {
         advance(lexer); /* 0 */
@@ -136,7 +137,7 @@ static Token lex_number(Lexer *lexer) {
         while (isdigit(peek(lexer)) || peek(lexer) == '_') {
             advance(lexer);
         }
-        
+
         /* Handle decimal point */
         if (peek(lexer) == '.' && isdigit(peek_at(lexer, 1))) {
             advance(lexer); /* . */
@@ -144,7 +145,7 @@ static Token lex_number(Lexer *lexer) {
                 advance(lexer);
             }
         }
-        
+
         /* Handle exponent */
         if (peek(lexer) == 'e' || peek(lexer) == 'E') {
             advance(lexer);
@@ -156,12 +157,12 @@ static Token lex_number(Lexer *lexer) {
             }
         }
     }
-    
+
     /* Handle suffix (f, F, l, L, u, U, etc.) */
     char suffix[10] = {0};
     int suffix_len = 0;
-    while (peek(lexer) && (tolower(peek(lexer)) == 'f' || 
-                           tolower(peek(lexer)) == 'l' || 
+    while (peek(lexer) && (tolower(peek(lexer)) == 'f' ||
+                           tolower(peek(lexer)) == 'l' ||
                            tolower(peek(lexer)) == 'u')) {
         if (suffix_len < 9) {
             suffix[suffix_len++] = peek(lexer);
@@ -169,12 +170,12 @@ static Token lex_number(Lexer *lexer) {
         advance(lexer);
     }
     suffix[suffix_len] = '\0';
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_NUMBER, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     /* Process the token text */
     if (token.text) {
         /* First, remove underscores */
@@ -188,22 +189,22 @@ static Token lex_number(Lexer *lexer) {
         }
         *dst = '\0';
         size_t clean_length = dst - token.text;
-        
+
         /* Convert binary to decimal */
         if (is_binary && clean_length > 2) {
             unsigned long long value = 0;
             const char *binary_digits = token.text + 2; /* Skip "0b" */
-            
+
             /* Calculate decimal value */
             while (*binary_digits && (*binary_digits == '0' || *binary_digits == '1')) {
                 value = (value << 1) | (*binary_digits - '0');
                 binary_digits++;
             }
-            
+
             /* Convert to decimal string and append suffix - buffer sized for max u64 + suffix */
             char decimal_str[32]; /* Enough for 20 digit u64 + suffix */
             snprintf(decimal_str, sizeof(decimal_str), "%llu%s", value, suffix);
-            
+
             /* Update token text */
             free(token.text);
             token.text = malloc(strlen(decimal_str) + 1);
@@ -219,7 +220,7 @@ static Token lex_number(Lexer *lexer) {
             token.length = clean_length;
         }
     }
-    
+
     return token;
 }
 
@@ -228,9 +229,9 @@ static Token lex_string(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     advance(lexer); /* opening " */
-    
+
     while (peek(lexer) && peek(lexer) != '"') {
         if (peek(lexer) == '\\') {
             advance(lexer); /* escape */
@@ -241,16 +242,16 @@ static Token lex_string(Lexer *lexer) {
             advance(lexer);
         }
     }
-    
+
     if (peek(lexer) == '"') {
         advance(lexer); /* closing " */
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_STRING, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -259,9 +260,9 @@ static Token lex_char(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     advance(lexer); /* opening ' */
-    
+
     while (peek(lexer) && peek(lexer) != '\'') {
         if (peek(lexer) == '\\') {
             advance(lexer); /* escape */
@@ -272,16 +273,16 @@ static Token lex_char(Lexer *lexer) {
             advance(lexer);
         }
     }
-    
+
     if (peek(lexer) == '\'') {
         advance(lexer); /* closing ' */
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_CHAR, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -290,19 +291,19 @@ static Token lex_line_comment(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     advance(lexer); /* / */
     advance(lexer); /* / */
-    
+
     while (peek(lexer) && peek(lexer) != '\n') {
         advance(lexer);
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_COMMENT, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -311,10 +312,10 @@ static Token lex_block_comment(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     advance(lexer); /* / */
     advance(lexer); /* * */
-    
+
     while (peek(lexer)) {
         if (peek(lexer) == '*' && peek_at(lexer, 1) == '/') {
             advance(lexer); /* * */
@@ -323,12 +324,12 @@ static Token lex_block_comment(Lexer *lexer) {
         }
         advance(lexer);
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_COMMENT, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -337,9 +338,9 @@ static Token lex_preprocessor(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     advance(lexer); /* # */
-    
+
     /* Read until end of line, handling line continuations */
     while (peek(lexer)) {
         if (peek(lexer) == '\\' && peek_at(lexer, 1) == '\n') {
@@ -352,12 +353,12 @@ static Token lex_preprocessor(Lexer *lexer) {
             advance(lexer);
         }
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_PREPROCESSOR, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -369,13 +370,13 @@ static Token lex_operator(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     char c = peek(lexer);
     advance(lexer);
-    
+
     /* Handle multi-character operators */
     char next = peek(lexer);
-    
+
     /* Two-character operators */
     if ((c == '+' && next == '+') || (c == '-' && next == '-') ||
         (c == '+' && next == '=') || (c == '-' && next == '=') ||
@@ -388,7 +389,7 @@ static Token lex_operator(Lexer *lexer) {
         (c == '<' && next == '<') || (c == '>' && next == '>') ||
         (c == '-' && next == '>')) {
         advance(lexer);
-        
+
         /* Three-character operators */
         char next2 = peek(lexer);
         if ((c == '<' && next == '<' && next2 == '=') ||
@@ -396,19 +397,19 @@ static Token lex_operator(Lexer *lexer) {
             advance(lexer);
         }
     }
-    
+
     size_t length = lexer->position - start;
-    
+
     /* Determine if it's punctuation or operator */
     TokenType type = TOKEN_OPERATOR;
     if (strchr(PUNCTUATION_CHARS, c)) {
         type = TOKEN_PUNCTUATION;
     }
-    
+
     Token token = make_token(lexer, type, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -417,16 +418,16 @@ static Token lex_whitespace(Lexer *lexer) {
     size_t start = lexer->position;
     int start_line = lexer->line;
     int start_column = lexer->column;
-    
+
     while (peek(lexer) && isspace(peek(lexer))) {
         advance(lexer);
     }
-    
+
     size_t length = lexer->position - start;
     Token token = make_token(lexer, TOKEN_WHITESPACE, start, length);
     token.line = start_line;
     token.column = start_column;
-    
+
     return token;
 }
 
@@ -441,21 +442,21 @@ Token lexer_next_token(Lexer *lexer) {
         token.column = lexer->column;
         return token;
     }
-    
+
     char c = peek(lexer);
     int line = lexer->line;
     int column = lexer->column;
-    
+
     /* Whitespace */
     if (isspace(c)) {
         return lex_whitespace(lexer);
     }
-    
+
     /* Preprocessor directive */
     if (c == '#') {
         return lex_preprocessor(lexer);
     }
-    
+
     /* Comments */
     if (c == '/' && peek_at(lexer, 1) == '/') {
         return lex_line_comment(lexer);
@@ -463,38 +464,38 @@ Token lexer_next_token(Lexer *lexer) {
     if (c == '/' && peek_at(lexer, 1) == '*') {
         return lex_block_comment(lexer);
     }
-    
+
     /* String literal */
     if (c == '"') {
         return lex_string(lexer);
     }
-    
+
     /* Character literal */
     if (c == '\'') {
         return lex_char(lexer);
     }
-    
+
     /* Number */
     if (isdigit(c) || (c == '.' && isdigit(peek_at(lexer, 1)))) {
         return lex_number(lexer);
     }
-    
+
     /* Identifier or keyword */
     if (is_identifier_char(c, 1)) {
         return lex_identifier(lexer);
     }
-    
+
     /* Operator or punctuation */
     if (strchr("+-*/%&|^!<>=~?:;,(){}[].", c)) {
         return lex_operator(lexer);
     }
-    
+
     /* Unknown token */
     size_t start = lexer->position;
     advance(lexer);
     Token token = make_token(lexer, TOKEN_UNKNOWN, start, 1);
     token.line = line;
     token.column = column;
-    
+
     return token;
 }

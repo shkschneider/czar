@@ -8,8 +8,7 @@
  * - Static method calls: StructName.method(&v) -> StructName_method(&v)
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "methods.h"
 #include "../warnings.h"
 #include <stdlib.h>

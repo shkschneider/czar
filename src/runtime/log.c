@@ -5,8 +5,7 @@
  * Emits runtime logging support in generated C code.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "log.h"
 #include <stdlib.h>
 #include <string.h>

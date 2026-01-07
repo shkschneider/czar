@@ -6,8 +6,7 @@
  * This transforms pointer.member to pointer->member automatically.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "autodereference.h"
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +35,7 @@ static void track_identifier(const char *name, int is_pointer, size_t position) 
     if (tracked_count >= MAX_TRACKED_IDENTIFIERS) {
         return; /* Tracking limit reached */
     }
-    
+
     /* Check if already tracked - update if so (keep the earliest declaration) */
     for (size_t i = 0; i < tracked_count; i++) {
         if (tracked_ids[i].name && strcmp(tracked_ids[i].name, name) == 0) {
@@ -48,13 +47,13 @@ static void track_identifier(const char *name, int is_pointer, size_t position) 
             return;
         }
     }
-    
+
     /* Add new tracking entry */
     char *name_copy = strdup(name);
     if (!name_copy) {
         return; /* Memory allocation failed, cannot track */
     }
-    
+
     tracked_ids[tracked_count].name = name_copy;
     tracked_ids[tracked_count].is_pointer = is_pointer;
     tracked_ids[tracked_count].declaration_index = position;
@@ -98,22 +97,22 @@ static void scan_for_pointers(ASTNode *node) {
     if (!node) {
         return;
     }
-    
+
     if (node->type == AST_TRANSLATION_UNIT) {
         int paren_depth = 0;
         int in_function_params = 0;
         int brace_depth = 0;
-        
+
         /* Track brace depth to know when we're in a function body */
         /* Track paren depth to know when we're in function parameters */
         /* Only track pointer parameters from function declarations */
-        
+
         for (size_t i = 0; i < node->child_count; i++) {
             ASTNode *child = node->children[i];
             if (child->type != AST_TOKEN) continue;
-            
+
             Token *tok = &child->token;
-            
+
             /* Track braces for scope */
             if (tok->type == TOKEN_PUNCTUATION) {
                 if (strcmp(tok->text, "{") == 0) {
@@ -122,7 +121,7 @@ static void scan_for_pointers(ASTNode *node) {
                     brace_depth--;
                 }
             }
-            
+
             /* Track parentheses */
             if (tok->type == TOKEN_PUNCTUATION) {
                 if (strcmp(tok->text, "(") == 0) {
@@ -150,7 +149,7 @@ static void scan_for_pointers(ASTNode *node) {
                     }
                 }
             }
-            
+
             /* Only track pointers in function parameter lists */
             if (in_function_params && paren_depth > 0 && brace_depth == 0) {
                 /* Look for pointer operator * */
@@ -159,7 +158,7 @@ static void scan_for_pointers(ASTNode *node) {
                     for (size_t j = i + 1; j < node->child_count && j < i + TOKEN_SEARCH_WINDOW; j++) {
                         ASTNode *next_node = node->children[j];
                         if (next_node->type != AST_TOKEN) continue;
-                        
+
                         Token *next = &next_node->token;
                         if (next->type == TOKEN_WHITESPACE) {
                             continue; /* Skip whitespace */
@@ -181,29 +180,29 @@ static void transform_autodereference_node(ASTNode *node) {
     if (!node || node->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     /* Look for patterns: identifier . identifier */
     for (size_t i = 0; i < node->child_count; i++) {
         if (i + 2 >= node->child_count) {
             continue; /* Need at least 3 tokens for member access */
         }
-        
+
         ASTNode *left_node = node->children[i];
         ASTNode *op_node = node->children[i + 1];
         ASTNode *right_node = node->children[i + 2];
-        
+
         /* Check if this is a member access pattern */
         if (left_node->type == AST_TOKEN && op_node->type == AST_TOKEN && right_node->type == AST_TOKEN) {
             Token *left = &left_node->token;
             Token *op = &op_node->token;
             Token *right = &right_node->token;
-            
+
             /* Check for: identifier . identifier */
-            if (left->type == TOKEN_IDENTIFIER && 
-                op->type == TOKEN_OPERATOR && 
+            if (left->type == TOKEN_IDENTIFIER &&
+                op->type == TOKEN_OPERATOR &&
                 op->text && strcmp(op->text, ".") == 0 &&
                 right->type == TOKEN_IDENTIFIER) {
-                
+
                 /* Check if left side is a tracked pointer at this position */
                 if (is_tracked_pointer_at(left->text, i)) {
                     /* Transform . to -> */
@@ -225,13 +224,13 @@ void transpiler_transform_autodereference(ASTNode *ast) {
     if (!ast) {
         return;
     }
-    
+
     /* Clear previous tracking state */
     clear_tracking();
-    
+
     /* First pass: scan for pointer declarations */
     scan_for_pointers(ast);
-    
+
     /* Second pass: transform member access operators */
     transform_autodereference_node(ast);
 }

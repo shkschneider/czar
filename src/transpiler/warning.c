@@ -5,8 +5,7 @@
  * Handles warning reporting with source code context.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "../warnings.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -6,8 +6,7 @@
  * Provides cz_format() function with mustache-like template support.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "format.h"
 #include <stdlib.h>
 #include <string.h>

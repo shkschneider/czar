@@ -3,6 +3,7 @@
  * Main entry point for the cz tool
  */
 
+#include "cz.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,14 +34,14 @@ int main(int argc, char *argv[]) {
         fclose(input);
         return 1;
     }
-    
+
     long input_size = ftell(input);
     if (input_size < 0) {
         fprintf(stderr, "Error: " ERR_FAILED_TO_GET_INPUT_FILE_SIZE "\n");
         fclose(input);
         return 1;
     }
-    
+
     /* Handle empty input file */
     if (input_size == 0) {
         fclose(input);
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
         }
         return 0;
     }
-    
+
     if (fseek(input, 0, SEEK_SET) != 0) {
         fprintf(stderr, "Error: " ERR_FAILED_TO_SEEK_INPUT_FILE "\n");
         fclose(input);

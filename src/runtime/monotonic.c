@@ -6,8 +6,7 @@
  * Provides cz_monotonic_clock_ns() function for high-resolution timing.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "monotonic.h"
 #include <stdlib.h>
 #include <string.h>

@@ -6,8 +6,7 @@
  * Replaces FIXME("msg") with direct fprintf+abort using .cz file location.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "fixme.h"
 #include <stdlib.h>
 #include <string.h>
@@ -34,14 +33,14 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
 /* Extract string content from a string token (removes quotes) */
 static char *extract_string_content(const char *str_with_quotes) {
     if (!str_with_quotes) return strdup("");
-    
+
     size_t len = strlen(str_with_quotes);
     if (len < 2) return strdup("");
-    
+
     /* Remove surrounding quotes */
     char *result = malloc(len - 1);
     if (!result) return strdup("");
-    
+
     strncpy(result, str_with_quotes + 1, len - 2);
     result[len - 2] = '\0';
     return result;
@@ -51,13 +50,13 @@ static char *extract_string_content(const char *str_with_quotes) {
 static const char *find_function_name(ASTNode **children, size_t count, size_t current_pos) {
     int brace_depth = 0;
     const char *function_name = NULL;
-    
+
     /* Scan from start to find which function we're in */
     for (size_t i = 0; i < current_pos && i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *tok = &children[i]->token;
-        
+
         if (tok->type == TOKEN_PUNCTUATION) {
             if (token_text_equals(tok, "{")) {
                 brace_depth++;
@@ -95,7 +94,7 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
             }
         }
     }
-    
+
     return (brace_depth > 0) ? function_name : NULL;
 }
 
@@ -104,29 +103,29 @@ void transpiler_expand_fixme(ASTNode *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT || !filename) {
         return;
     }
-    
+
     /* Scan for FIXME(...) patterns */
     for (size_t i = 0; i < ast->child_count; i++) {
         if (ast->children[i]->type != AST_TOKEN) continue;
         if (ast->children[i]->token.type != TOKEN_IDENTIFIER) continue;
-        
+
         Token *tok = &ast->children[i]->token;
         if (!token_text_equals(tok, "FIXME")) continue;
-        
+
         /* Found FIXME, check for ( ... ) */
         size_t j = skip_whitespace(ast->children, ast->child_count, i + 1);
         if (j >= ast->child_count) continue;
         if (ast->children[j]->type != AST_TOKEN) continue;
         if (!token_text_equals(&ast->children[j]->token, "(")) continue;
-        
+
         /* Find the message string argument */
         size_t k = skip_whitespace(ast->children, ast->child_count, j + 1);
         if (k >= ast->child_count) continue;
         if (ast->children[k]->type != AST_TOKEN) continue;
         if (ast->children[k]->token.type != TOKEN_STRING) continue;
-        
+
         char *msg_content = extract_string_content(ast->children[k]->token.text);
-        
+
         /* Find closing ) */
         size_t closing_paren = skip_whitespace(ast->children, ast->child_count, k + 1);
         if (closing_paren >= ast->child_count) {
@@ -137,29 +136,29 @@ void transpiler_expand_fixme(ASTNode *ast, const char *filename) {
             free(msg_content);
             continue;
         }
-        
+
         /* Get location info from the original FIXME token */
         int line = tok->line;
         const char *func_name = find_function_name(ast->children, ast->child_count, i);
         if (!func_name) func_name = "<unknown>";
-        
+
         /* Build the replacement code */
         char replacement_code[1024];
         snprintf(replacement_code, sizeof(replacement_code),
                  "{ fprintf(stderr, \"%s:%d: %s: FIXME: %s\\n\"); abort(); }",
                  filename, line, func_name, msg_content);
-        
+
         free(msg_content);
-        
+
         /* Replace tokens from i to closing_paren with the inline code */
         char *replacement_text = strdup(replacement_code);
         if (!replacement_text) continue;
-        
+
         free(ast->children[i]->token.text);
         ast->children[i]->token.text = replacement_text;
         ast->children[i]->token.length = strlen(replacement_text);
         ast->children[i]->token.type = TOKEN_PUNCTUATION;
-        
+
         /* Remove tokens from i+1 to closing_paren (inclusive) */
         size_t tokens_to_remove = closing_paren - i;
         for (size_t m = i + 1; m <= closing_paren && m < ast->child_count; m++) {
@@ -168,7 +167,7 @@ void transpiler_expand_fixme(ASTNode *ast, const char *filename) {
             }
             free(ast->children[m]);
         }
-        
+
         /* Shift remaining tokens */
         for (size_t m = i + 1; m + tokens_to_remove < ast->child_count; m++) {
             ast->children[m] = ast->children[m + tokens_to_remove];

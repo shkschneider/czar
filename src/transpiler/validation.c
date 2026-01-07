@@ -5,6 +5,7 @@
  * Validates CZar semantic rules and reports errors.
  */
 
+#include "../cz.h"
 #include "validation.h"
 #include "../transpiler.h"
 #include "../errors.h"

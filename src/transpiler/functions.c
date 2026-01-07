@@ -5,8 +5,7 @@
  * Handles function-related transformations and validations.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "functions.h"
 #include "../warnings.h"
 #include <stdlib.h>
@@ -59,7 +58,7 @@ void transpiler_validate_functions(ASTNode *ast, const char *filename, const cha
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
 
         Token *tok = &children[i]->token;
-        
+
         /* Look for function name followed by ( */
         size_t j = skip_whitespace(children, count, i + 1);
         if (j >= count) continue;
@@ -71,11 +70,11 @@ void transpiler_validate_functions(ASTNode *ast, const char *filename, const cha
         int is_function_decl = 0;
         for (int k = (int)i - 1; k >= 0 && k >= (int)i - 10; k--) {
             if (children[k]->type != AST_TOKEN) continue;
-            if (children[k]->token.type == TOKEN_WHITESPACE || 
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
                 children[k]->token.type == TOKEN_COMMENT) continue;
-            
+
             /* Check if previous token is a type keyword or identifier */
-            if (children[k]->token.type == TOKEN_KEYWORD || 
+            if (children[k]->token.type == TOKEN_KEYWORD ||
                 children[k]->token.type == TOKEN_IDENTIFIER) {
                 const char *text = children[k]->token.text;
                 if (strcmp(text, "void") == 0 || strcmp(text, "int") == 0 ||
@@ -120,7 +119,7 @@ void transpiler_validate_functions(ASTNode *ast, const char *filename, const cha
                 }
             }
             /* Check if there's any content between parens */
-            if (children[j]->type == AST_TOKEN && 
+            if (children[j]->type == AST_TOKEN &&
                 children[j]->token.type != TOKEN_WHITESPACE &&
                 children[j]->token.type != TOKEN_COMMENT) {
                 has_content = 1;
@@ -155,10 +154,10 @@ void transpiler_transform_functions(ASTNode *ast) {
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
 
         Token *tok = &children[i]->token;
-        
+
         /* Check if this is 'main' function */
         int is_main = (strcmp(tok->text, "main") == 0);
-        
+
         /* Look for function name followed by ( */
         size_t j = skip_whitespace(children, count, i + 1);
         if (j >= count) continue;
@@ -170,11 +169,11 @@ void transpiler_transform_functions(ASTNode *ast) {
         int return_type_idx = -1;
         for (int k = (int)i - 1; k >= 0 && k >= (int)i - 10; k--) {
             if (children[k]->type != AST_TOKEN) continue;
-            if (children[k]->token.type == TOKEN_WHITESPACE || 
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
                 children[k]->token.type == TOKEN_COMMENT) continue;
-            
+
             /* Check if previous token is a type */
-            if (children[k]->token.type == TOKEN_KEYWORD || 
+            if (children[k]->token.type == TOKEN_KEYWORD ||
                 children[k]->token.type == TOKEN_IDENTIFIER) {
                 return_type_idx = k;
                 break;
@@ -187,7 +186,7 @@ void transpiler_transform_functions(ASTNode *ast) {
         /* Transform main() return type to int if it's u32 or other type */
         if (is_main) {
             Token *return_type = &children[return_type_idx]->token;
-            if (strcmp(return_type->text, "u32") != 0 && 
+            if (strcmp(return_type->text, "u32") != 0 &&
                 strcmp(return_type->text, "int") != 0) {
                 /* Already int or something else, skip */
             } else if (strcmp(return_type->text, "u32") == 0 ||
@@ -256,7 +255,7 @@ void transpiler_transform_functions(ASTNode *ast) {
                 }
             }
             /* Check if there's any content between parens */
-            if (children[j]->type == AST_TOKEN && 
+            if (children[j]->type == AST_TOKEN &&
                 children[j]->token.type != TOKEN_WHITESPACE &&
                 children[j]->token.type != TOKEN_COMMENT) {
                 has_content = 1;

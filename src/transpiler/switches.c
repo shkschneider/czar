@@ -5,8 +5,7 @@
  * Handles generic switch statement transformations and validation.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "switches.h"
 #include "../transpiler.h"
 #include "../errors.h"
@@ -46,13 +45,13 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 static void validate_switch_case_control_flow_internal(ASTNode **children, size_t count, size_t switch_pos) {
     /* Find the switch body */
     size_t i = skip_whitespace(children, count, switch_pos + 1);
-    
+
     /* Skip switch expression: ( ... ) */
     if (i >= count || children[i]->type != AST_TOKEN ||
         !token_text_equals(&children[i]->token, "(")) {
         return;
     }
-    
+
     int paren_depth = 1;
     i++;
     while (i < count && paren_depth > 0) {
@@ -63,17 +62,17 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
         }
         i++;
     }
-    
+
     i = skip_whitespace(children, count, i);
-    
+
     /* Find opening brace */
     if (i >= count || children[i]->type != AST_TOKEN ||
         !token_text_equals(&children[i]->token, "{")) {
         return;
     }
-    
+
     size_t switch_body_start = i;
-    
+
     /* Find closing brace */
     int brace_depth = 1;
     i++;
@@ -89,18 +88,18 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
         }
         i++;
     }
-    
+
     /* Scan for case/default labels and validate control flow */
     for (i = switch_body_start; i < switch_body_end; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         Token *tok = &children[i]->token;
-        
+
         /* Look for case or default */
         if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
             (strcmp(tok->text, "case") == 0 || strcmp(tok->text, "default") == 0)) {
-            
+
             size_t case_start = i;
-            
+
             /* Find the colon after case/default */
             size_t j = i + 1;
             while (j < count) {  /* Search in full AST, not just switch body */
@@ -112,16 +111,16 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                 j++;
                 if (j >= switch_body_end) break;  /* But still stop at switch end */
             }
-            
+
             if (j >= switch_body_end || j >= count) {
                 continue;
             }
-            
+
             /* Now scan from after the colon to the next case/default/closing brace */
             j = skip_whitespace(children, count, j + 1);
             size_t case_body_start = j;
             size_t case_body_end = switch_body_end;
-            
+
             /* Find the end of this case (next case/default or closing brace) */
             int inner_brace_depth = 0;
             while (j < switch_body_end) {
@@ -129,9 +128,9 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                     j++;
                     continue;
                 }
-                
+
                 Token *t = &children[j]->token;
-                
+
                 /* Track braces to avoid false positives in nested blocks */
                 if (t->type == TOKEN_PUNCTUATION) {
                     if (token_text_equals(t, "{")) inner_brace_depth++;
@@ -143,7 +142,7 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                         }
                     }
                 }
-                
+
                 /* Check for next case/default at same nesting level */
                 if (inner_brace_depth == 0 &&
                     (t->type == TOKEN_KEYWORD || t->type == TOKEN_IDENTIFIER) &&
@@ -151,16 +150,16 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                     case_body_end = j;
                     break;
                 }
-                
+
                 j++;
             }
-            
+
             /* Now validate that the case body has explicit control flow */
             int has_control_flow = 0;
             for (j = case_body_start; j < case_body_end; j++) {
                 if (children[j]->type != AST_TOKEN) continue;
                 Token *t = &children[j]->token;
-                
+
                 /* Check for control flow keywords */
                 if ((t->type == TOKEN_KEYWORD || t->type == TOKEN_IDENTIFIER) &&
                     (strcmp(t->text, "break") == 0 ||
@@ -174,7 +173,7 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                     break;
                 }
             }
-            
+
             /* Report error if no control flow found */
             if (!has_control_flow && case_body_end > case_body_start) {
                 /* Skip empty cases (allowed to fall through to next case) */
@@ -185,7 +184,7 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                         Token *t = &children[j]->token;
                         /* Consider only meaningful tokens */
                         if (t->type != TOKEN_WHITESPACE && t->type != TOKEN_COMMENT &&
-                            !(t->type == TOKEN_PUNCTUATION && (token_text_equals(t, ";") || 
+                            !(t->type == TOKEN_PUNCTUATION && (token_text_equals(t, ";") ||
                                                                 token_text_equals(t, "{") ||
                                                                 token_text_equals(t, "}")))) {
                             is_empty = 0;
@@ -193,7 +192,7 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                         }
                     }
                 }
-                
+
                 if (!is_empty && non_whitespace_count > 0) {
                     char error_msg[512];
                     snprintf(error_msg, sizeof(error_msg),
@@ -201,7 +200,7 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
                     cz_error(g_filename, g_source, children[case_start]->token.line, error_msg);
                 }
             }
-            
+
             /* Skip to the end of this case to continue scanning */
             i = case_body_end > 0 ? case_body_end - 1 : i;
         }
@@ -213,18 +212,18 @@ void transpiler_validate_switch_case_control_flow(ASTNode *ast, const char *file
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
-    
+
     g_filename = filename;
     g_source = source;
-    
+
     ASTNode **children = ast->children;
     size_t count = ast->child_count;
-    
+
     /* Scan for switch statements */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         Token *tok = &children[i]->token;
-        
+
         /* Look for switch keyword */
         if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
             strcmp(tok->text, "switch") == 0) {
@@ -289,7 +288,7 @@ void transpiler_transform_switch_continue_to_fallthrough(ASTNode *ast) {
 static ASTNode *create_token_node(TokenType type, const char *text, int line, int column) {
     ASTNode *node = malloc(sizeof(ASTNode));
     if (!node) return NULL;
-    
+
     node->type = AST_TOKEN;
     node->token.type = type;
     node->token.text = strdup(text);
@@ -303,7 +302,7 @@ static ASTNode *create_token_node(TokenType type, const char *text, int line, in
     node->children = NULL;
     node->child_count = 0;
     node->child_capacity = 0;
-    
+
     return node;
 }
 
@@ -312,7 +311,7 @@ static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
     if (!parent || !child || position > parent->child_count) {
         return 0;
     }
-    
+
     /* Grow children array if needed */
     if (parent->child_count >= parent->child_capacity) {
         size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
@@ -323,12 +322,12 @@ static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
         parent->children = new_children;
         parent->child_capacity = new_capacity;
     }
-    
+
     /* Shift elements to make room */
     for (size_t i = parent->child_count; i > position; i--) {
         parent->children[i] = parent->children[i - 1];
     }
-    
+
     parent->children[position] = child;
     parent->child_count++;
     return 1;
@@ -339,13 +338,13 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
     int brace_depth = 0;
     const char *function_name = NULL;
     const char *last_function_name = NULL;
-    
+
     /* Scan from start to find which function we're in at current_pos */
     for (size_t i = 0; i < current_pos && i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        
+
         Token *tok = &children[i]->token;
-        
+
         if (tok->type == TOKEN_PUNCTUATION) {
             if (token_text_equals(tok, "{")) {
                 brace_depth++;
@@ -355,9 +354,9 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
                 for (int j = (int)i - 1; j >= 0 && j >= (int)i - 30; j--) {
                     if (children[j]->type != AST_TOKEN) continue;
                     Token *jtok = &children[j]->token;
-                    
+
                     if (jtok->type == TOKEN_WHITESPACE || jtok->type == TOKEN_COMMENT) continue;
-                    
+
                     /* Look for closing paren ) */
                     if (jtok->type == TOKEN_PUNCTUATION && token_text_equals(jtok, ")")) {
                         /* Found ), now look back for identifier before matching ( */
@@ -366,7 +365,7 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
                         for (int k = j - 1; k >= 0 && k >= j - 30; k--) {
                             if (children[k]->type != AST_TOKEN) continue;
                             Token *ktok = &children[k]->token;
-                            
+
                             if (ktok->type == TOKEN_PUNCTUATION) {
                                 if (token_text_equals(ktok, ")")) paren_depth_local++;
                                 else if (token_text_equals(ktok, "(")) {
@@ -412,7 +411,7 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
             }
         }
     }
-    
+
     return function_name;
 }
 
@@ -432,15 +431,15 @@ void transpiler_insert_switch_default_cases(ASTNode *ast, const char *filename) 
         /* Look for "switch" keyword */
         if ((token->type == TOKEN_KEYWORD || token->type == TOKEN_IDENTIFIER) &&
             strcmp(token->text, "switch") == 0) {
-            
+
             /* Find the switch expression */
             size_t j = skip_whitespace(children, count, i + 1);
-            
+
             if (j >= count || children[j]->type != AST_TOKEN ||
                 !token_text_equals(&children[j]->token, "(")) {
                 continue;
             }
-            
+
             /* Find closing paren and opening brace */
             int paren_depth = 1;
             j++;
@@ -452,17 +451,17 @@ void transpiler_insert_switch_default_cases(ASTNode *ast, const char *filename) 
                 }
                 j++;
             }
-            
+
             j = skip_whitespace(children, count, j);
-            
+
             /* Find switch body braces */
             if (j >= count || children[j]->type != AST_TOKEN ||
                 !token_text_equals(&children[j]->token, "{")) {
                 continue;
             }
-            
+
             size_t switch_body_start = j;
-            
+
             /* Find closing brace */
             int brace_depth = 1;
             j++;
@@ -480,14 +479,14 @@ void transpiler_insert_switch_default_cases(ASTNode *ast, const char *filename) 
                 }
                 j++;
             }
-            
+
             /* Check if there's a default */
             int has_default = 0;
-            
+
             for (size_t k = switch_body_start; k < switch_body_end; k++) {
                 if (children[k]->type != AST_TOKEN) continue;
                 Token *tok = &children[k]->token;
-                
+
                 /* Check for default */
                 if ((tok->type == TOKEN_KEYWORD || tok->type == TOKEN_IDENTIFIER) &&
                     strcmp(tok->text, "default") == 0) {
@@ -495,33 +494,33 @@ void transpiler_insert_switch_default_cases(ASTNode *ast, const char *filename) 
                     break;
                 }
             }
-            
+
             /* If no default, insert one */
             if (!has_default) {
                 int line = children[switch_body_end]->token.line;
                 /* Find function name at the switch statement location */
                 const char *func_name = find_function_name(children, count, switch_body_start);
                 if (!func_name) func_name = "<unknown>";
-                
+
                 /* Insert: default: { fprintf(stderr, "file:line: func: Unreachable code reached: \n"); abort(); } */
                 /* Build nodes in forward order */
                 ASTNode *nodes[20];
                 int node_count = 0;
-                
+
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_KEYWORD, "default", line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, ":", line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, " ", line, 0);
-                
+
                 /* Create inline expansion: { fprintf(stderr, "...\n"); abort(); } */
                 char inline_code[512];
                 snprintf(inline_code, sizeof(inline_code),
                          "{ fprintf(stderr, \"%s:%d: %s: Unreachable code reached: \\n\"); abort(); }",
                          filename ? filename : "<unknown>", line, func_name);
-                
+
                 nodes[node_count++] = create_token_node(TOKEN_PUNCTUATION, inline_code, line, 0);
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);
-                
+
                 /* Insert all nodes in reverse order before the closing brace */
                 for (int n = node_count - 1; n >= 0; n--) {
                     if (nodes[n] && !ast_insert_child(ast, switch_body_end, nodes[n])) {

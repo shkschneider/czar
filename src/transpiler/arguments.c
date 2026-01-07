@@ -5,8 +5,7 @@
  * Handles named arguments (labels only) transformation.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
+#include "../cz.h"
 #include "arguments.h"
 #include "../errors.h"
 #include <stdlib.h>
@@ -404,7 +403,7 @@ void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, co
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
 
         const char *identifier = children[i]->token.text;
-        
+
         /* Skip control flow keywords that use parentheses but are not function calls */
         if (identifier && (strcmp(identifier, "for") == 0 ||
                           strcmp(identifier, "while") == 0 ||
