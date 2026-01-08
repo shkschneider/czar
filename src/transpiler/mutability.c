@@ -403,6 +403,8 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 }
                 
                 /* Add to insert list for const before type */
+                /* insert_positions array has size count, so this is safe */
+                /* (there can't be more parameters than total tokens) */
                 if (insert_count < count) {
                     insert_positions[insert_count++] = j;
                 }
