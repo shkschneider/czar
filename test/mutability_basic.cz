@@ -30,15 +30,15 @@ void test_mixed(u8 immutable, mut u8 *mutable) {
 
 int main(void) {
     printf("=== Mutability Test ===\n");
-    
+
     test_const_params(10, -5);
-    
+
     mut u8 value = 42;
     test_mut_param(&value);
-    
+
     mut u8 mutable_val = 10;
     test_mixed(immutable = 5, mutable = &mutable_val);
-    
+
     printf("=== All Tests Passed ===\n");
     return 0;
 }

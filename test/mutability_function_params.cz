@@ -21,7 +21,7 @@ void test_mixed_params(u32 a, mut u32* b) {
 }
 
 int main(void) {
-    u32 val = 42;
+    mut u32 val = 42;
 
     test_immutable_param(val);
     test_mutable_param(&val);
