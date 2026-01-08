@@ -33,7 +33,8 @@ test/%: test/%.cz $(OUT)
 # Cleanup
 stat:
 	@find ./src -type f -name "*.c" | xargs wc -l | cut -c2- | sort -n
-	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz' "{}"
+	@grep -Ro ';' ./src/ | wc -l | xargs -I{} printf '%5d statements\n' "{}"
+	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@rm -rvf ./build/
 	@rm -vf ./test/*.pp.cz ./test/*.cz.c ./test/*.o
