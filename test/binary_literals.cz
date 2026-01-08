@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <assert.h>
 
 int main(void) {
     /* Basic binary literals */
@@ -34,19 +35,19 @@ int main(void) {
     u64 _ = 0b1111ULL;   /* 15ULL */
 
     /* Actual test - verify conversions */
-    cz_assert(byte == 255);
-    cz_assert(nibble == 15);
-    cz_assert(zero == 0);
-    cz_assert(one == 1);
-    cz_assert(byte_sep == 255);
-    cz_assert(word == 65280);
-    cz_assert(upper == 240);
-    cz_assert(upper_sep == 240);
-    cz_assert(all_set == 255);
-    cz_assert(all_clear == 0);
-    cz_assert(high_nibble == 240);
-    cz_assert(low_nibble == 15);
-    cz_assert(alternating == 170);
+    assert(byte == 255);
+    assert(nibble == 15);
+    assert(zero == 0);
+    assert(one == 1);
+    assert(byte_sep == 255);
+    assert(word == 65280);
+    assert(upper == 240);
+    assert(upper_sep == 240);
+    assert(all_set == 255);
+    assert(all_clear == 0);
+    assert(high_nibble == 240);
+    assert(low_nibble == 15);
+    assert(alternating == 170);
 
     printf("All binary literal tests passed!\n");
     return 0;

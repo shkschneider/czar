@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -14,10 +15,10 @@ int main(void) {
     usize uninitialized_usize = 0;
 
     /* Verify they are zero */
-    cz_assert(uninitialized_u32 == 0);
-    cz_assert(uninitialized_i32 == 0);
-    cz_assert(uninitialized_f32 == 0.0f);
-    cz_assert(uninitialized_usize == 0);
+    assert(uninitialized_u32 == 0);
+    assert(uninitialized_i32 == 0);
+    assert(uninitialized_f32 == 0.0f);
+    assert(uninitialized_usize == 0);
 
     printf("Zero-initialization enforcement test: OK\n");
 

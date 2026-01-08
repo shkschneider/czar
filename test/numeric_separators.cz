@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -19,11 +20,11 @@ int main(void) {
     f32 large_float = 1_234.567_890f;
 
     /* Verify values are correct */
-    cz_assert(million == 1000000);
-    cz_assert(billion == 1000000000);
-    cz_assert(thousand == 1000);
-    cz_assert(hex_val == 0xDEADBEEF);
-    cz_assert(hex_small == 0xFF00FF);
+    assert(million == 1000000);
+    assert(billion == 1000000000);
+    assert(thousand == 1000);
+    assert(hex_val == 0xDEADBEEF);
+    assert(hex_small == 0xFF00FF);
 
     printf("million = %u\n", million);
     printf("billion = %llu\n", (unsigned long long)billion);

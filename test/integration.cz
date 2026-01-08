@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,7 +31,7 @@ Color make_color(u32 r, u32 g, u32 b, u32 a) {
 
 /* Validate color using ASSERTions */
 void validate_color(Color* c) {
-    cz_assert(c != NULL);
+    assert(c != NULL);
     /* Note: r, g, b, a are u8 types, so they're inherently in range [0, 255] */
 }
 
@@ -75,8 +76,8 @@ void test_all_types(void) {
     types.isize_field = ISIZE_MIN;
 
     /* Verify */
-    cz_assert(types.u8_field == U8_MAX);
-    cz_assert(types.i32_field == I32_MIN);
+    assert(types.u8_field == U8_MAX);
+    assert(types.i32_field == I32_MIN);
 
     printf("All types test: OK\n");
 }
@@ -133,33 +134,33 @@ int main(void) {
     printf("\nTest 4: Safe operations\n");
     i32 result1 = safe_divide(numerator = 10, denominator = 2);
     printf("  10 / 2 = %d\n", result1);
-    cz_assert(result1 == 5);
+    assert(result1 == 5);
 
     i32 result2 = safe_divide(numerator = 10, denominator = 0);
     printf("  10 / 0 = %d (handled safely)\n", result2);
-    cz_assert(result2 == 0);
+    assert(result2 == 0);
 
     i32 result3 = safe_divide(numerator = I32_MIN, denominator = -1);
     printf("  I32_MIN / -1 = %d (overflow handled)\n", result3);
-    cz_assert(result3 == I32_MAX);
+    assert(result3 == I32_MAX);
 
     /* Test 5: Zero-initialization */
     printf("\nTest 5: Zero-initialization\n");
     AllTypes zero_test = {0};
-    cz_assert(zero_test.u32_field == 0);
-    cz_assert(zero_test.i32_field == 0);
-    cz_assert(zero_test.f32_field == 0.0f);
+    assert(zero_test.u32_field == 0);
+    assert(zero_test.i32_field == 0);
+    assert(zero_test.f32_field == 0.0f);
     printf("  Zero-initialization: OK\n");
 
     /* Test 6: Limit constants */
     printf("\nTest 6: Limit constants\n");
-    cz_assert(U8_MIN == 0);
-    cz_assert(U8_MAX == 255);
-    cz_assert(I8_MIN == -128);
-    cz_assert(I8_MAX == 127);
-    cz_assert(I32_MIN < 0);
-    cz_assert(I32_MAX > 0);
-    cz_assert(I32_MAX > I16_MAX);
+    assert(U8_MIN == 0);
+    assert(U8_MAX == 255);
+    assert(I8_MIN == -128);
+    assert(I8_MAX == 127);
+    assert(I32_MIN < 0);
+    assert(I32_MAX > 0);
+    assert(I32_MAX > I16_MAX);
     printf("  Limit constants: OK\n");
 
     printf("\n=== All integration tests passed! ===\n");
