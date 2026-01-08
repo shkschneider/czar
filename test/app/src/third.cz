@@ -1,0 +1,4 @@
+// Third file in src module
+bool third_test(void) {
+    return true;
+}
