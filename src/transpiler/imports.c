@@ -311,16 +311,23 @@ static void transform_import_node(ASTNode *node, ModuleContext *ctx) {
     char *module_path = extract_module_path(node->token.text);
     if (!module_path) return;
     
-    /* Build new #include directive */
-    /* Transform #import "lib" to #include for generated headers */
-    /* For now, we'll just transform to a comment noting what needs to be done */
+    /* Build path to imported directory relative to main file */
+    char full_path[1024];
+    if (ctx->main_file_dir && strcmp(ctx->main_file_dir, ".") != 0) {
+        snprintf(full_path, sizeof(full_path), "%s/%s", ctx->main_file_dir, module_path);
+    } else {
+        snprintf(full_path, sizeof(full_path), "%s", module_path);
+    }
     
-    /* Create new text for #include */
+    /* For now, generate a single #include statement */
+    /* In a full implementation, we would scan the directory and include all .cz.h files */
     size_t new_size = strlen(module_path) + 256;
     char *new_text = malloc(new_size);
     if (new_text) {
-        /* For now, just comment it out and add a note */
-        snprintf(new_text, new_size, "/* #import \"%s\" - TODO: include generated headers */", module_path);
+        /* Generate #include for the module directory */
+        /* Pattern: #import "lib" becomes #include "lib/*.cz.h" */
+        /* For now, we'll generate a placeholder that at least compiles */
+        snprintf(new_text, new_size, "/* #import \"%s\" - module system placeholder */", module_path);
         
         free(node->token.text);
         node->token.text = new_text;

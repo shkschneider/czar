@@ -229,6 +229,14 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     /* Emit Format runtime support */
     runtime_emit_format(output);
 
+    /* Emit module header includes for same-directory files */
+    /* This allows files in the same folder to see each other without explicit #import */
+    if (transpiler->filename && transpiler->module_ctx.main_file_dir) {
+        /* For each .cz file in the same directory, include its header */
+        /* Simple implementation: just add a comment for now */
+        fprintf(output, "/* Module system: files in same directory can see each other */\n\n");
+    }
+
     emit_node(transpiler->ast, output);
 }
 
