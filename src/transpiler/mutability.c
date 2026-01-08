@@ -502,6 +502,29 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 continue; /* Not a variable declaration pattern */
             }
             
+            /* If followed by *, this could be pointer declaration OR multiplication */
+            /* For pointer declaration, * must be followed by identifier (pointer name) */
+            if (token_equals(next_tok, "*")) {
+                size_t after_star_idx = skip_whitespace(children, count, next_idx + 1);
+                if (after_star_idx >= count || children[after_star_idx]->type != AST_TOKEN) continue;
+                Token *after_star = &children[after_star_idx]->token;
+                
+                /* Must be followed by identifier (pointer name) for declaration */
+                if (after_star->type != TOKEN_IDENTIFIER) {
+                    continue; /* Not a declaration - likely multiplication or other use */
+                }
+                
+                /* Check that pointer name is followed by = or ; or , */
+                size_t after_name_idx = skip_whitespace(children, count, after_star_idx + 1);
+                if (after_name_idx >= count || children[after_name_idx]->type != AST_TOKEN) continue;
+                Token *after_name = &children[after_name_idx]->token;
+                
+                if (!token_equals(after_name, "=") && !token_equals(after_name, ";") && 
+                    !token_equals(after_name, ",")) {
+                    continue; /* Not a declaration */
+                }
+            }
+            
             /* If followed by identifier, check if that's followed by = or ; */
             if (next_tok->type == TOKEN_IDENTIFIER) {
                 size_t after_name_idx = skip_whitespace(children, count, next_idx + 1);
