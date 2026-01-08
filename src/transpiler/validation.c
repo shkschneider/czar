@@ -17,10 +17,6 @@
 /* Maximum lookback distance for finding struct/union/enum keywords before braces */
 #define MAX_LOOKBACK_TOKENS 30
 
-/* Global context for error reporting */
-static const char *g_filename = NULL;
-static const char *g_source = NULL;
-
 /* Check if token text matches */
 static int token_text_equals(Token *token, const char *text) {
     if (!token || !token->text || !text) {

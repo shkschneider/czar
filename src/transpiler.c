@@ -33,6 +33,10 @@
 #include <string.h>
 #include <ctype.h>
 
+/* Global context for error/warning reporting */
+const char *g_filename = NULL;
+const char *g_source = NULL;
+
 /* Initialize transpiler with AST */
 void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename, const char *source) {
     transpiler->ast = ast;

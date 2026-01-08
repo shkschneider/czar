@@ -39,10 +39,6 @@ static size_t method_count = 0;
 static StructType struct_types[MAX_STRUCT_TYPES];
 static size_t struct_type_count = 0;
 
-/* Global context for error/warning reporting */
-static const char *g_filename = NULL;
-static const char *g_source = NULL;
-
 /* Add a method to tracking */
 static void track_method(const char *struct_name, const char *method_name) {
     if (method_count >= MAX_METHODS) {
