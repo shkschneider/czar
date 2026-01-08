@@ -184,6 +184,10 @@ static void scan_function_declarations(ASTNode **children, size_t count) {
                         children[k]->token.type == TOKEN_IDENTIFIER) {
                         params[param_count].name = children[k]->token.text;
                         params[param_count].type = strdup(param_type);
+                        if (!params[param_count].type) {
+                            /* Memory allocation failed, skip this parameter */
+                            continue;
+                        }
                         param_count++;
                     }
                 }

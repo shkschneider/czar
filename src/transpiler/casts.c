@@ -199,6 +199,9 @@ static char *extract_template_type(ASTNode **children, size_t count, size_t star
     }
 
     char *type_name = strdup(children[i]->token.text);
+    if (!type_name) {
+        return NULL;
+    }
     i = skip_whitespace(children, count, i + 1);
 
     /* Expect > */
@@ -357,6 +360,9 @@ void transpiler_transform_casts(ASTNode *ast) {
             }
             size_t type_idx = j;
             char *type_name = strdup(children[type_idx]->token.text);
+            if (!type_name) {
+                continue;
+            }
 
             j = skip_whitespace(children, count, j + 1);
 

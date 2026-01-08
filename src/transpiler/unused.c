@@ -24,7 +24,11 @@ char *transpiler_transform_unused_identifier(void) {
         return NULL;
     }
 
-    return strdup(buffer);
+    char *result = strdup(buffer);
+    if (!result) {
+        return NULL;
+    }
+    return result;
 }
 
 /* Reset the unused counter (for each translation unit) */

@@ -207,12 +207,13 @@ static void transform_autodereference_node(ASTNode *node) {
                 if (is_tracked_pointer_at(left->text, i)) {
                     /* Transform . to -> */
                     char *new_text = strdup("->");
-                    if (new_text) {
-                        free(op->text);
-                        op->text = new_text;
-                        op->length = strlen(new_text);
+                    if (!new_text) {
+                        /* Memory allocation failed, leave unchanged */
+                        continue;
                     }
-                    /* If strdup fails, leave the original text unchanged */
+                    free(op->text);
+                    op->text = new_text;
+                    op->length = strlen(new_text);
                 }
             }
         }

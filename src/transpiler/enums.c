@@ -120,7 +120,11 @@ static char *generate_prefixed_name(const char *enum_name, const char *value_nam
 
     /* If already prefixed, return copy of original */
     if (has_enum_prefix(enum_name, value_name)) {
-        return strdup(value_name);
+        char *result = strdup(value_name);
+        if (!result) {
+            return NULL;
+        }
+        return result;
     }
 
     /* Convert enum name to uppercase */
