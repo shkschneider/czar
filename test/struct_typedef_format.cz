@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 #include <stdio.h>
 
 /*
@@ -27,7 +28,7 @@ int main(void) {
     v1.x = 3;
     v1.y = 4;
     u8 len1 = v1.length();
-    cz_assert(len1 == 7);
+    assert(len1 == 7);
     printf("Test 1 passed: Can use Vec2 in CZar code\n");
 
     /* Test 2: Use Vec2_t explicitly (also becomes Vec2_t in C) */
@@ -35,7 +36,7 @@ int main(void) {
     v2.x = 5;
     v2.y = 6;
     u8 len2 = v2.length();
-    cz_assert(len2 == 11);
+    assert(len2 == 11);
     printf("Test 2 passed: Can use Vec2_t explicitly\n");
 
     /* Test 3: Method name uses base name (Vec2_length, not Vec2_t_length) */
@@ -43,7 +44,7 @@ int main(void) {
     v3.x = 2;
     v3.y = 3;
     u8 len3 = Vec2_length(&v3);
-    cz_assert(len3 == 5);
+    assert(len3 == 5);
     printf("Test 3 passed: Method uses base name Vec2_length\n");
 
     printf("All struct typedef format tests passed!\n");
