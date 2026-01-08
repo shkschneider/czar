@@ -5,9 +5,8 @@
  * Parses tokens into an Abstract Syntax Tree (AST).
  */
 
-#include "cz.h"
 #include "parser.h"
-#include "errors.h"
+#include "src/errors.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

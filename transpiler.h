@@ -8,7 +8,7 @@
 #pragma once
 
 #include "parser.h"
-#include "transpiler/pragma.h"
+#include "src/pragma.h"
 #include <stdio.h>
 
 /* Transpiler structure */

@@ -8,7 +8,7 @@
  * Methods use the base name: Name_method (not Name_t_method)
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "structs.h"
 #include <stdlib.h>
 #include <string.h>
@@ -26,14 +26,14 @@ static void track_struct_name(const char *name) {
     if (tracked_struct_count >= MAX_STRUCT_TYPES) {
         return;
     }
-    
+
     /* Check if already tracked */
     for (size_t i = 0; i < tracked_struct_count; i++) {
         if (tracked_struct_types[i] && strcmp(tracked_struct_types[i], name) == 0) {
             return;
         }
     }
-    
+
     /* Add new struct type */
     tracked_struct_types[tracked_struct_count] = strdup(name);
     if (!tracked_struct_types[tracked_struct_count]) {
@@ -163,7 +163,7 @@ void transpiler_transform_structs(ASTNode *ast) {
             if (struct_name_s) {
                 strcpy(struct_name_s, struct_name);
                 strcat(struct_name_s, "_s");
-                
+
                 /* Replace the identifier with Name_s */
                 free(t3->text);
                 t3->text = struct_name_s;
@@ -258,7 +258,7 @@ void transpiler_transform_structs(ASTNode *ast) {
 
                     /* Skip ahead so we don't process this struct again */
                     i = semicolon_idx + 2; /* +2 for Name_t we added */
-                    
+
                     /* Free struct_name as we've created Name_s and Name_t separately */
                     free(struct_name);
                 } else {
@@ -483,7 +483,7 @@ void transpiler_replace_struct_names(ASTNode *ast) {
         }
 
         Token *token = &ast->children[i]->token;
-        
+
         /* Check if this is an identifier that matches a tracked struct type */
         if (token->type == TOKEN_IDENTIFIER && token->text && is_tracked_struct(token->text)) {
             /* Check if the previous non-whitespace token is "struct" keyword */
@@ -492,27 +492,27 @@ void transpiler_replace_struct_names(ASTNode *ast) {
                 size_t prev_idx = j - 1;
                 if (ast->children[prev_idx]->type == AST_TOKEN) {
                     Token *prev_token = &ast->children[prev_idx]->token;
-                    
+
                     /* Skip whitespace and comments */
                     if (prev_token->type == TOKEN_WHITESPACE || prev_token->type == TOKEN_COMMENT) {
                         continue;
                     }
-                    
+
                     /* Check if previous token is "struct" */
                     if (prev_token->type == TOKEN_IDENTIFIER && prev_token->text &&
                         strcmp(prev_token->text, "struct") == 0) {
                         after_struct_keyword = 1;
                     }
-                    
+
                     /* We found a non-whitespace token, stop looking */
                     break;
                 }
             }
-            
+
             /* Replace Name with appropriate suffix */
             size_t name_len = strlen(token->text);
             char *new_name;
-            
+
             if (after_struct_keyword) {
                 /* After "struct", use _s suffix for struct tag */
                 new_name = malloc(name_len + 3); /* "_s" + null terminator */
@@ -528,7 +528,7 @@ void transpiler_replace_struct_names(ASTNode *ast) {
                     strcat(new_name, "_t");
                 }
             }
-            
+
             if (new_name) {
                 free(token->text);
                 token->text = new_name;

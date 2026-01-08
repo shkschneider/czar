@@ -5,10 +5,10 @@
  * Handles generic switch statement transformations and validation.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "switches.h"
 #include "../transpiler.h"
-#include "../errors.h"
+#include "errors.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

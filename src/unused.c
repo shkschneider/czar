@@ -5,7 +5,7 @@
  * Handles special _ variable to suppress unused warnings.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "unused.h"
 #include <stdio.h>
 #include <stdlib.h>

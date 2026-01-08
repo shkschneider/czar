@@ -5,7 +5,7 @@
  * Parses and handles #pragma czar directives.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "pragma.h"
 #include <string.h>
 #include <ctype.h>

@@ -5,9 +5,9 @@
  * Handles function-related transformations and validations.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "functions.h"
-#include "../warnings.h"
+#include "warnings.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

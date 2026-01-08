@@ -8,9 +8,9 @@
  * - Static method calls: StructName.method(&v) -> StructName_method(&v)
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "methods.h"
-#include "../warnings.h"
+#include "warnings.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
