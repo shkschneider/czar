@@ -1,0 +1,10 @@
+i32 add(i32 a, i32 b) {
+    mut i32 sum = 0;
+    sum = a;
+    sum = sum + b;
+    return sum;
+}
+
+i32 get_forty_two(void) {
+    return 42;
+}
