@@ -204,7 +204,6 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
             children[j]->token.type == TOKEN_IDENTIFIER) {
             /* Mark the type at position j as mutable */
             is_mutable[j] = 1;
-            fprintf(stderr, "DEBUG Pass1: Marked position %zu ('%s') as mutable\n", j, children[j]->token.text);
             /* Mark 'mut' for deletion */
             mark_for_deletion(children[i]);
             
@@ -354,6 +353,11 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
             /* In parameter lists, pattern is: Type name or Type *name */
             /* So any identifier followed by * or another identifier is a type */
             if (param_tok->type == TOKEN_IDENTIFIER) {
+                /* Skip tokens marked for deletion (empty text) */
+                if (param_tok->text == NULL || param_tok->text[0] == '\0') {
+                    continue;
+                }
+                
                 /* Look ahead to see what follows */
                 size_t next_idx = skip_whitespace(children, count, j + 1);
                 if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
@@ -399,7 +403,9 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 }
                 
                 /* Add to insert list for const before type */
-                insert_positions[insert_count++] = j;
+                if (insert_count < count) {
+                    insert_positions[insert_count++] = j;
+                }
                 
                 /* For pointers, also need const after * */
                 if (is_pointer) {
@@ -411,10 +417,40 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         }
     }
     
-    /* Insert const after * for pointer parameters FIRST (in reverse order) */
-    /* Do this before inserting const before type, to avoid position shifts */
+    /* Insert const tokens before type FIRST (in reverse order) */
+    for (size_t idx = insert_count; idx > 0; idx--) {
+        size_t pos = insert_positions[idx - 1];
+        ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
+        ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
+        
+        if (const_node && space_node) {
+            insert_node_at(ast, pos, const_node);
+            insert_node_at(ast, pos + 1, space_node);
+        } else {
+            /* Cleanup on failure */
+            if (const_node) {
+                if (const_node->token.text) free(const_node->token.text);
+                free(const_node);
+            }
+            if (space_node) {
+                if (space_node->token.text) free(space_node->token.text);
+                free(space_node);
+            }
+        }
+    }
+    
+    /* Then insert const after * for pointer parameters (in reverse order) */
+    /* Positions need adjustment: for each "before type" const inserted at position < pos, add 2 to pos */
     for (size_t idx = insert_after_star_count; idx > 0; idx--) {
         size_t pos = insert_after_star[idx - 1];
+        
+        /* Adjust position for any "before type" consts inserted before this position */
+        for (size_t i = 0; i < insert_count; i++) {
+            if (insert_positions[i] < pos) {
+                pos += 2; /* Each "before type" const adds 2 tokens */
+            }
+        }
+        
         /* Insert after the * token: need space, then const, then space */
         ASTNode *space1_node = create_token_node(" ", TOKEN_WHITESPACE);
         ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
@@ -439,28 +475,6 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
             if (space2_node) {
                 if (space2_node->token.text) free(space2_node->token.text);
                 free(space2_node);
-            }
-        }
-    }
-    
-    /* Insert const tokens before type in reverse order to maintain position validity */
-    for (size_t idx = insert_count; idx > 0; idx--) {
-        size_t pos = insert_positions[idx - 1];
-        ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
-        ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
-        
-        if (const_node && space_node) {
-            insert_node_at(ast, pos, const_node);
-            insert_node_at(ast, pos + 1, space_node);
-        } else {
-            /* Cleanup on failure */
-            if (const_node) {
-                if (const_node->token.text) free(const_node->token.text);
-                free(const_node);
-            }
-            if (space_node) {
-                if (space_node->token.text) free(space_node->token.text);
-                free(space_node);
             }
         }
     }

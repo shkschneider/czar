@@ -70,15 +70,14 @@ void test_numeric_limits(void) {
 
 /* Test runtime macros */
 void test_runtime_macros(void) {
-    const char* file = __FILE__;
     int line = __LINE__;
-    const char* func = __func__;
+    printf("Runtime macros test - file: %s, line: %d, func: %s\n", __FILE__, line, __func__);
 
     printf("Runtime macros test: OK\n");
-    printf("  __FILE__: %s\n", file);
+    printf("  __FILE__: %s\n", __FILE__);
     printf("  __LINE__: %d\n", line);
-    printf("  __func__: %s\n", func);
-    (void)file; (void)line; (void)func;
+    printf("  __func__: %s\n", __func__);
+    (void)line;
 }
 
 /* Test cz_assert - only tests passing case */

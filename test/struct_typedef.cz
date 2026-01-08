@@ -21,7 +21,7 @@ struct Color {
 };
 
 /* Function using the typedef name (without struct keyword) */
-void set_point(Point* p, i32 x, i16 y) {
+void set_point(mut Point* p, i32 x, i16 y) {
     p.x = x;
     p.y = y;
 }
