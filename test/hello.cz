@@ -1,8 +1,0 @@
-#include <stdint.h>
-#include <stddef.h>
-#include <stdio.h>
-
-int main(void) {
-    printf("Hello from CZar!\n");
-    return 0;
-}

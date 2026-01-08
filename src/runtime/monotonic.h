@@ -14,4 +14,4 @@ void runtime_emit_monotonic(FILE *output);
 
 unsigned long long cz_monotonic_clock_ns(void);
 unsigned long long cz_monotonic_timer_ns(void);
-void cz_nanosleep(void);
+void cz_nanosleep(unsigned long long nanoseconds);

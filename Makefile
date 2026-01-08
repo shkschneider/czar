@@ -25,8 +25,9 @@ test: $(OUT) $(TESTS:.cz=) $(OUT)
 test/%: test/%.cz $(OUT)
 	@echo "- $@"
 	@./$(OUT) $< >/dev/null
-	@$(CC) $(CFLAGS) -c $<.c -o $<.o
-	@$(CC) $(CFLAGS) $<.o $(LDFLAGS) -o $@
+	@$(CC) $(CFLAGS) -I$(dir $<) -c $<.c -o $<.o
+	@$(CC) $(CFLAGS) -I$(dir $<) -c $(dir $<)cz.c -o $(dir $<)cz.o
+	@$(CC) $(CFLAGS) $<.o $(dir $<)cz.o $(LDFLAGS) -o $@
 	@./$@ >/dev/null 2>/dev/null
 .PHONY: test $(TESTS)
 
@@ -37,6 +38,7 @@ stat:
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@rm -rvf ./build/
-	@rm -vf ./test/*.pp.cz ./test/*.cz.c ./test/*.o ./test/*.cz.h
+	@rm -vf ./test/*.pp.cz ./test/*.cz.c ./test/*.cz.h ./test/*.o ./test/cz.c ./test/cz.h
+	@rm -vf ./test/app/*.cz.c ./test/app/*.cz.h ./test/app/*.o ./test/app/cz.c ./test/app/cz.h
 	@find ./test -type f -executable -exec rm -vf {} \;
 .PHONY: stat clean

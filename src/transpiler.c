@@ -214,23 +214,9 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
         return;
     }
 
-    /* Emit POSIX feature test macro first, before any includes */
-    fprintf(output, "/* CZar - Enable POSIX features */\n");
-    fprintf(output, "#ifndef _POSIX_C_SOURCE\n");
-    fprintf(output, "#define _POSIX_C_SOURCE 199309L\n");
-    fprintf(output, "#endif\n\n");
-
-    /* Inject runtime macro definitions at the beginning */
-    runtime_emit_assert(output);
-
-    /* Emit Monotonic Clock/Timer runtime support (needed by log) */
-    runtime_emit_monotonic(output);
-
-    /* Emit Log runtime support using pragma debug mode setting */
-    runtime_emit_log(output, transpiler->pragma_ctx.debug_mode);
-
-    /* Emit Format runtime support */
-    runtime_emit_format(output);
+    /* Include the CZar runtime header instead of emitting runtime inline */
+    fprintf(output, "/* CZar Runtime */\n");
+    fprintf(output, "#include \"cz.h\"\n\n");
 
     /* Emit module header includes for same-directory files */
     /* This allows files in the same folder to see each other without explicit #import */
