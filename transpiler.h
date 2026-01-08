@@ -28,3 +28,9 @@ void transpiler_transform(Transpiler *transpiler);
 /* Emit transformed AST as C code to output file */
 void transpiler_emit(Transpiler *transpiler, FILE *output);
 
+/* Emit transformed AST as C header file (declarations only) */
+void transpiler_emit_header(Transpiler *transpiler, FILE *output);
+
+/* Emit transformed AST as C source file (implementations only) */
+void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *header_name);
+
