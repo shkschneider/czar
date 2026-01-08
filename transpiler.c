@@ -196,16 +196,24 @@ static char* resolve_module_path(const char *source_filename, const char *module
 
     char *source_dir = dirname(source_copy);
 
-    /* Build full path: source_dir/module_path */
-    size_t full_path_len = strlen(source_dir) + strlen(module_path) + 2; /* +2 for / and \0 */
-    char *full_path = malloc(full_path_len);
-    if (!full_path) {
-        free(source_copy);
+    /* Copy the dirname result since dirname may modify the input string */
+    char *source_dir_copy = strdup(source_dir);
+    free(source_copy);
+
+    if (!source_dir_copy) {
         return NULL;
     }
 
-    snprintf(full_path, full_path_len, "%s/%s", source_dir, module_path);
-    free(source_copy);
+    /* Build full path: source_dir/module_path */
+    size_t full_path_len = strlen(source_dir_copy) + strlen(module_path) + 2; /* +2 for / and \0 */
+    char *full_path = malloc(full_path_len);
+    if (!full_path) {
+        free(source_dir_copy);
+        return NULL;
+    }
+
+    snprintf(full_path, full_path_len, "%s/%s", source_dir_copy, module_path);
+    free(source_dir_copy);
 
     return full_path;
 }
@@ -325,6 +333,9 @@ static void emit_node(ASTNode *node, FILE *output, const char *source_filename) 
                                 fwrite(rest, 1, rest_len, output);
                             }
                             return;
+                        } else {
+                            /* Memory allocation failed - emit warning and continue with default */
+                            fprintf(output, "/* Warning: memory allocation failed for import directive */\n");
                         }
                     }
                 }
@@ -629,9 +640,9 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
             char *dir_path = dirname(filename_copy);
 
             /* Get just the filename without directory */
-            char *filename_copy2 = strdup(transpiler->filename);
-            if (filename_copy2) {
-                const char *base_name = basename(filename_copy2);
+            char *basename_copy = strdup(transpiler->filename);
+            if (basename_copy) {
+                const char *base_name = basename(basename_copy);
 
                 /* Open directory and scan for other .cz files */
                 DIR *dir = opendir(dir_path);
@@ -654,7 +665,7 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
 
                     closedir(dir);
                 }
-                free(filename_copy2);
+                free(basename_copy);
             }
             free(filename_copy);
         }
