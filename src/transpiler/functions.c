@@ -190,6 +190,10 @@ void transpiler_transform_functions(ASTNode *ast) {
                 /* Replace with int */
                 free(return_type->text);
                 return_type->text = strdup("int");
+                if (!return_type->text) {
+                    /* Memory allocation failed, skip this function */
+                    continue;
+                }
                 return_type->length = 3;
             }
         }

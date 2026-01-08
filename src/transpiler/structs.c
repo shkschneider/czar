@@ -36,9 +36,11 @@ static void track_struct_name(const char *name) {
     
     /* Add new struct type */
     tracked_struct_types[tracked_struct_count] = strdup(name);
-    if (tracked_struct_types[tracked_struct_count]) {
-        tracked_struct_count++;
+    if (!tracked_struct_types[tracked_struct_count]) {
+        /* Memory allocation failed */
+        return;
     }
+    tracked_struct_count++;
 }
 
 /* Check if an identifier is a tracked struct type */
@@ -147,11 +149,13 @@ void transpiler_transform_structs(ASTNode *ast) {
 
             /* Step 2: Replace "struct" with "typedef struct" */
             char *new_text = strdup("typedef struct");
-            if (new_text) {
-                free(t1->text);
-                t1->text = new_text;
-                t1->length = strlen(new_text);
+            if (!new_text) {
+                free(struct_name);
+                continue; /* Memory allocation failed */
             }
+            free(t1->text);
+            t1->text = new_text;
+            t1->length = strlen(new_text);
 
             /* Step 3: Append "_s" to the struct name (e.g., Name -> Name_s) */
             size_t struct_name_len = strlen(struct_name);
