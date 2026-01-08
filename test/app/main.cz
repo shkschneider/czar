@@ -2,7 +2,7 @@
 #include "functions.cz.h"
 #include "lib/structs.cz.h"
 
-int main(void) {
+u32 main(void) {
     add(10, 20);
     create_point(5, 10);
     return 0;

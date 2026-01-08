@@ -16,12 +16,11 @@
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <input_file.cz>\n", argv[0]);
-        fprintf(stderr, "Generates: <input_file.cz.c> and <input_file.cz.h>\n");
         return 1;
     }
 
     const char *input_file = argv[1];
-    
+
     /* Auto-generate output filename: input.cz -> input.cz.c */
     char output_file_buf[512];
     snprintf(output_file_buf, sizeof(output_file_buf), "%s.c", input_file);
@@ -122,10 +121,10 @@ int main(int argc, char *argv[]) {
     /* Emit transformed AST */
     transpiler_emit(&transpiler, output);
     fclose(output);
-    
+
     /* Split the generated .c file into .h (declarations) and .c (implementations) */
     transpiler_split_c_file(output_file);
-    
+
     /* Clean up */
     ast_node_free(ast);
     free(input_buffer);

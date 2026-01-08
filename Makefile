@@ -19,7 +19,7 @@ build/%.o: src/%.c
 .PHONY: all
 
 # Tests
-TESTS = $(wildcard test/*.cz)
+TESTS = $(wildcard test/*.cz) $(wildcard test/*/*.cz)
 test: $(OUT) $(TESTS:.cz=) $(OUT)
 	@echo "All tests passed."
 test/%: test/%.cz $(OUT)
