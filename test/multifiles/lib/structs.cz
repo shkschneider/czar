@@ -3,7 +3,17 @@ struct Point {
     i32 y;
 };
 
+enum Color {
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_BLUE
+};
+
 Point create_point(i32 x, i32 y) {
     Point p = { .x = x, .y = y };
     return p;
+}
+
+enum Color get_default_color(void) {
+    return COLOR_RED;
 }

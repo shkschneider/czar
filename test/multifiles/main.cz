@@ -1,7 +1,8 @@
-// Test file: main function that uses functions from same directory
-// According to new requirements, files in same folder should work without #import
+// Test multi-file with #import
+#import "lib"
 
 int main(void) {
     i32 result = add(10, 20);
+    create_point(5, 10);
     return 0;
 }

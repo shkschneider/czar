@@ -36,5 +36,8 @@ void transpiler_extract_imports(ASTNode *ast, ModuleContext *ctx);
 /* Generate header file (.cz.h) for a .cz file */
 int transpiler_generate_header(const char *cz_file_path, const char *output_header_path);
 
+/* Split a generated .cz.c file into .cz.h (declarations) and update .cz.c (implementations + include) */
+int transpiler_split_c_file(const char *c_file_path);
+
 /* Transform #import directives to #include directives in AST */
 void transpiler_transform_imports(ASTNode *ast, ModuleContext *ctx);

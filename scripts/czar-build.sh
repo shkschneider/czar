@@ -24,54 +24,85 @@ if [ -z "$CZ_FILES" ]; then
     exit 1
 fi
 
-# Step 1: Transpile to .c
-echo "=== Transpiling ==="
+# Step 1: Transpile to .c (also generates .h automatically)
+echo "=== Transpiling (generates .c and .h) ==="
 for czfile in $CZ_FILES; do
-    echo "  $czfile -> ${czfile}.c"
+    echo "  $czfile -> ${czfile}.c + ${czfile}.h"
     "$CZ_BIN" "$czfile" "${czfile}.c"
 done
 
-# Step 2: Generate headers from .c files with proper types
-echo "=== Generating headers ==="
+# Step 2: Transform #import directives to #include
+echo "=== Transforming #import directives ==="
 for czfile in $CZ_FILES; do
-    hfile="${czfile}.h"
-    echo "  ${czfile}.c -> $hfile"
-    {
-        echo "/* Generated header */"
-        echo "#pragma once"
-        echo "#include <stdint.h>"
-        echo "#include <stddef.h>"
-        echo "#include <stdbool.h>"
-        echo ""
-        grep -E '^[a-zA-Z_][a-zA-Z0-9_]+ [a-zA-Z_][a-zA-Z0-9_]+\([^)]*\) \{$' "${czfile}.c" | sed 's/ {$/;/' || true
-    } > "$hfile"
+    cfile="${czfile}.c"
+    
+    # Check if file has #import directives (comments that start with /* #import)
+    if grep -q '/\* #import' "$cfile"; then
+        echo "  Processing imports in: $cfile"
+        tmpfile="${cfile}.tmp"
+        
+        # Process each #import comment
+        awk -v dir="$DIR" '
+            /\/\* #import "([^"]+)" / {
+                # Extract the import path
+                match($0, /"([^"]+)"/, arr)
+                import_path = arr[1]
+                
+                # Find all .cz.h files in that directory
+                cmd = "find " dir "/" import_path " -maxdepth 1 -name \"*.cz.h\" 2>/dev/null | sort"
+                includes = ""
+                while ((cmd | getline header) > 0) {
+                    # Extract just the filename
+                    n = split(header, parts, "/")
+                    filename = parts[n]
+                    includes = includes "#include \"" import_path "/" filename "\"\n"
+                }
+                close(cmd)
+                
+                if (includes != "") {
+                    printf "%s", includes
+                } else {
+                    print "/* #import \"" import_path "\" - no headers found */"
+                }
+                next
+            }
+            { print }
+        ' "$cfile" > "$tmpfile"
+        mv "$tmpfile" "$cfile"
+    fi
 done
 
-# Step 3: Add includes
-echo "=== Adding header includes ==="
+# Step 3: Add includes for same-directory headers
+echo "=== Adding same-directory header includes ==="
 for czfile in $CZ_FILES; do
     cfile="${czfile}.c"
     dir=$(dirname "$czfile")
     base=$(basename "$czfile" .cz)
     
+    # Find all .h files in the same directory (excluding own header)
     headers=$(find "$dir" -maxdepth 1 -name "*.cz.h" ! -name "${base}.cz.h" 2>/dev/null || true)
     
     if [ -n "$headers" ]; then
+        echo "  Adding includes to: $cfile"
         tmpfile="${cfile}.tmp"
-        awk -v dir="$dir" '
-            /^int main\(/ || /^[a-z]/ && NR > 300 && !done {
-                for (h in ARGV) {
-                    if (ARGV[h] ~ /\.h$/) {
-                        n = split(ARGV[h], parts, "/")
-                        print "#include \"" parts[n] "\""
+        
+        # Insert includes after the self-include
+        awk -v headers="$headers" '
+            /#include.*\.cz\.h/ && !done {
+                print
+                # Add other headers from same directory
+                n = split(headers, h, " ")
+                for (i=1; i<=n; i++) {
+                    if (h[i] != "") {
+                        m = split(h[i], parts, "/")
+                        print "#include \"" parts[m] "\""
                     }
                 }
-                print ""
                 done = 1
-                delete ARGV
+                next
             }
             { print }
-        ' "$cfile" $headers > "$tmpfile"
+        ' "$cfile" > "$tmpfile"
         mv "$tmpfile" "$cfile"
     fi
 done

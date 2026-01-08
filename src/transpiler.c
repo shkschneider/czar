@@ -52,13 +52,7 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
     /* Extract imports from AST */
     transpiler_extract_imports(ast, &transpiler->module_ctx);
     
-    /* Generate header file for this .cz file */
-    if (filename) {
-        /* Create header filename: input.cz -> input.cz.h */
-        char header_path[1024];
-        snprintf(header_path, sizeof(header_path), "%s.h", filename);
-        transpiler_generate_header(filename, header_path);
-    }
+    /* Note: Header generation now happens after .c file is generated */
     
     /* Reset unused counter for each translation unit */
     transpiler_reset_unused_counter();

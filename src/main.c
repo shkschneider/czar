@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "transpiler.h"
+#include "transpiler/imports.h"
 #include "errors.h"
 
 int main(int argc, char *argv[]) {
@@ -122,6 +123,9 @@ int main(int argc, char *argv[]) {
     /* Clean up */
     if (output_file) {
         fclose(output);
+        
+        /* Split the generated .c file into .h (declarations) and .c (implementations) */
+        transpiler_split_c_file(output_file);
     }
     ast_node_free(ast);
     free(input_buffer);
