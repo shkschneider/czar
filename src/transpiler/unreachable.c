@@ -32,14 +32,14 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
 
 /* Extract string content from a string token (removes quotes) */
 static char *extract_string_content(const char *str_with_quotes) {
-    if (!str_with_quotes) return strdup("");
+    if (!str_with_quotes) return NULL;
 
     size_t len = strlen(str_with_quotes);
-    if (len < 2) return strdup("");
+    if (len < 2) return NULL;
 
     /* Remove surrounding quotes */
     char *result = malloc(len - 1);
-    if (!result) return strdup("");
+    if (!result) return NULL;
 
     strncpy(result, str_with_quotes + 1, len - 2);
     result[len - 2] = '\0';
@@ -126,6 +126,7 @@ void transpiler_expand_unreachable(ASTNode *ast, const char *filename) {
         if (ast->children[k]->token.type != TOKEN_STRING) continue;
 
         char *msg_content = extract_string_content(ast->children[k]->token.text);
+        if (!msg_content) continue;
 
         /* Find closing ) */
         size_t closing_paren = skip_whitespace(ast->children, ast->child_count, k + 1);
