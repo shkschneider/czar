@@ -251,7 +251,8 @@ static void emit_module_includes(const char *source_filename, const char *module
     while ((entry = readdir(dir)) != NULL) {
         /* Check if file ends with .cz */
         size_t name_len = strlen(entry->d_name);
-        if (name_len > 3 && strcmp(entry->d_name + name_len - 3, ".cz") == 0) {
+        const size_t cz_ext_len = 3; /* length of ".cz" */
+        if (name_len > cz_ext_len && strcmp(entry->d_name + name_len - cz_ext_len, ".cz") == 0) {
             /* Emit #include for this .cz file's header */
             if (found_files > 0) {
                 fprintf(output, "\n");
@@ -675,7 +676,8 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
             while ((entry = readdir(dir)) != NULL) {
                 /* Check if file ends with .cz and is not the current file */
                 size_t name_len = strlen(entry->d_name);
-                if (name_len > 3 && strcmp(entry->d_name + name_len - 3, ".cz") == 0) {
+                const size_t cz_ext_len = 3; /* length of ".cz" */
+                if (name_len > cz_ext_len && strcmp(entry->d_name + name_len - cz_ext_len, ".cz") == 0) {
                     /* Skip the current file itself */
                     if (strcmp(entry->d_name, base_name) != 0) {
                         /* Skip main.cz as it typically only exports main() */
