@@ -13,7 +13,7 @@ struct Point {
 };
 
 /* Test function with pointer parameter */
-void modify_point(Point* p) {
+void modify_point(mut Point* p) {
     /* New CZar syntax: use . on pointer (auto-dereferences) */
     p.x = 100;
     p.y = 200;
@@ -26,7 +26,7 @@ void print_point(Point pt) {
 }
 
 /* Test function using old C syntax (should still work) */
-void reset_point(Point* p) {
+void reset_point(mut Point* p) {
     /* Old C syntax: use -> on pointer (no transformation needed) */
     p->x = 0;
     p->y = 0;
