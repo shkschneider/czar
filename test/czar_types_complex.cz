@@ -34,7 +34,7 @@ void test_arrays(void) {
 /* Test in pointers */
 void test_pointers(void) {
     u32 value = 42;
-    u32 *ptr = &value;
+    u32* ptr = &value;
     i64 large = 1000000;
 
     printf("Pointers: *ptr=%u, large=%lld\n", *ptr, (long long)large);
@@ -54,7 +54,7 @@ void test_mixed(void) {
 int main(void) {
     printf("Complex CZar types test\n");
 
-    Point p = {0};
+    mut Point p = {0};
     p.x = 10;
     p.y = 20;
     printf("Point: x=%d, y=%d\n", p.x, p.y);

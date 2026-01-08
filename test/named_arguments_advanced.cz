@@ -13,22 +13,22 @@ void pointer_func(mut u8 *ptr, u8 value) {
 u32 main(void) {
     /* Test 1: Mix of named and positional */
     complex_func(a = 1, 2, 3, d = 4, 5);
-    
+
     /* Test 2: All positional */
     complex_func(10, 20, 30, 40, 50);
-    
+
     /* Test 3: All named in order */
     complex_func(a = 11, b = 22, c = 33, d = 44, e = 55);
-    
+
     /* Test 4: Pointer function with named args */
-    u8 x = 0;
+    mut u8 x = 0;
     pointer_func(ptr = &x, value = 42);
     printf("x=%d\n", x);
-    
+
     /* Test 5: Nested function calls - must use labels for same base type */
-    u8 y = 0;
+    mut u8 y = 0;
     pointer_func(ptr = &y, value = 99);
     printf("y=%d\n", y);
-    
+
     return 0;
 }

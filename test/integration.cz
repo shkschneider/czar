@@ -17,7 +17,7 @@ struct Color {
 
 /* Initialize a color with bounds checking */
 Color make_color(u32 r, u32 g, u32 b, u32 a) {
-    Color c = {0};  /* Zero-initialized */
+    mut Color c = {0};  /* Zero-initialized */
 
     /* Clamp values to valid range using limit constants */
     c.r = (r > U8_MAX) ? U8_MAX : cast<u8>(r);
@@ -52,7 +52,7 @@ struct AllTypes {
 
 /* Initialize all types to their min/max values */
 void test_all_types(void) {
-    AllTypes types = {0};  /* Zero-initialized */
+    mut AllTypes types = {0};  /* Zero-initialized */
 
     /* Set to max values */
     types.u8_field = U8_MAX;

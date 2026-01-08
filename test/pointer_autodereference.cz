@@ -39,7 +39,7 @@ i32 distance(Point* p) {
 }
 
 int main(void) {
-    Point pt = {0};
+    mut Point pt = {0};
 
     /* Test 1: Auto-dereference for writing */
     modify_point(&pt);

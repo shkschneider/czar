@@ -33,10 +33,11 @@ int main(void) {
     unsigned long long start = cz_monotonic_clock_ns();
 
     /* Do some work */
-    volatile int sum = 0;
-    for (int i = 0; i < 1000000; i++) {
+    mut u32 sum = 0;
+    for (mut u32 i = 0; i < 1000000; i++) {
         sum += i;
     }
+    printf("Operation sum %d\n", sum);
 
     unsigned long long end = cz_monotonic_clock_ns();
     unsigned long long duration = end - start;
