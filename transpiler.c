@@ -208,34 +208,53 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     emit_node(transpiler->ast, output);
 }
 
-/* Helper to check if we're at a function definition start */
+/* Helper to check if position i is at the START of a function definition */
 static int is_function_start(ASTNode **children, size_t i, size_t count) {
-    /* Look for pattern: type identifier ( ... ) { 
-     * But NOT: struct/union/enum identifier { 
-     * And NOT: typedef struct { 
+    /* Position i should be at or near the return type of the function
+     * Pattern: [type] identifier ( ... ) {
+     * But NOT: struct/union/enum/typedef ... {
      */
     if (i >= count) return 0;
     
-    /* Look for function pattern: ( ... ) { */
+    /* Skip whitespace and comments to find the first significant token */
+    while (i < count && children[i]->type == AST_TOKEN) {
+        Token *t = &children[i]->token;
+        if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
+            i++;
+            continue;
+        }
+        break;
+    }
+    if (i >= count) return 0;
+    
+    /* Check if we start with a keyword that indicates NOT a function */
+    if (children[i]->type == AST_TOKEN) {
+        Token *t = &children[i]->token;
+        
+        /* If it's a preprocessor directive, it's not a function */
+        if (t->type == TOKEN_PREPROCESSOR) {
+            return 0;
+        }
+        
+        /* If it starts with struct/union/enum/typedef, not a function */
+        if (t->type == TOKEN_KEYWORD) {
+            if ((t->length == 6 && strncmp(t->text, "struct", 6) == 0) ||
+                (t->length == 5 && strncmp(t->text, "union", 5) == 0) ||
+                (t->length == 4 && strncmp(t->text, "enum", 4) == 0) ||
+                (t->length == 7 && strncmp(t->text, "typedef", 7) == 0)) {
+                return 0;
+            }
+        }
+    }
+    
+    /* Now look for the function pattern: ( ... ) { */
     int found_open_paren = 0;
     int found_close_paren = 0;
-    size_t open_brace_pos = 0;
     
     for (size_t j = i; j < count && j < i + 100; j++) {
         if (children[j]->type != AST_TOKEN) continue;
         
         Token *t = &children[j]->token;
-        
-        /* Check for struct/union/enum/typedef keywords before we find parentheses */
-        if (!found_open_paren && t->type == TOKEN_KEYWORD) {
-            if ((t->length == 6 && strncmp(t->text, "struct", 6) == 0) ||
-                (t->length == 5 && strncmp(t->text, "union", 5) == 0) ||
-                (t->length == 4 && strncmp(t->text, "enum", 4) == 0) ||
-                (t->length == 7 && strncmp(t->text, "typedef", 7) == 0)) {
-                return 0;  /* This is a struct/union/enum/typedef, not a function */
-            }
-        }
-        
         if (t->type == TOKEN_PUNCTUATION && t->length == 1) {
             if (t->text[0] == '(') {
                 found_open_paren = 1;
@@ -243,12 +262,12 @@ static int is_function_start(ASTNode **children, size_t i, size_t count) {
                 found_close_paren = 1;
             } else if (t->text[0] == '{') {
                 if (found_open_paren && found_close_paren) {
-                    return 1;  /* Function definition: ( ... ) { */
+                    return 1;  /* Function definition: (...) { */
                 } else {
-                    return 0;  /* Brace without parentheses - struct/array/etc */
+                    return 0;  /* Brace without proper function signature */
                 }
-            } else if (t->text[0] == ';' && found_close_paren) {
-                return 0;  /* Function declaration (prototype), not definition */
+            } else if (t->text[0] == ';') {
+                return 0;  /* Semicolon before brace - not a definition */
             }
         }
     }
@@ -315,6 +334,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
     fprintf(output, "#include <stdlib.h>\n");
     fprintf(output, "#include <stdio.h>\n");
     fprintf(output, "#include <stdint.h>\n");
+    fprintf(output, "#include <stddef.h>\n");
     fprintf(output, "#include <stdbool.h>\n");
     fprintf(output, "#include <assert.h>\n");
     fprintf(output, "#include <stdarg.h>\n");
@@ -454,24 +474,23 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
         ASTNode **children = transpiler->ast->children;
         size_t count = transpiler->ast->child_count;
         
-        size_t i = 0;
-        while (i < count) {
-            /* Check if current position starts a function definition */
+        /* Scan through tokens looking for function definitions */
+        for (size_t i = 0; i < count; i++) {
+            /* Check if we're at the start of a function definition */
             if (is_function_start(children, i, count)) {
-                /* Find the end of the function */
+                /* Find the end of the function body */
                 size_t func_end = find_function_end(children, i, count);
                 
-                /* Emit the entire function */
+                /* Emit the entire function definition */
                 for (size_t j = i; j <= func_end && j < count; j++) {
                     emit_node(children[j], output);
                 }
-                fprintf(output, "\n");
+                fprintf(output, "\n\n");
                 
-                i = func_end + 1;
-            } else {
-                /* Not a function start - just skip this token */
-                i++;
+                /* Skip past the function */
+                i = func_end;
             }
+            /* Skip all other tokens - they're in the header */
         }
     }
 }
