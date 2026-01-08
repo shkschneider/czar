@@ -635,44 +635,67 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     /* Auto-include all other .cz files from the same module (directory) */
     /* Only do this if the file uses the module system (has #import directives) */
     if (transpiler->filename && has_import_directives(transpiler->ast)) {
-        char *filename_copy = strdup(transpiler->filename);
-        if (filename_copy) {
-            char *dir_path = dirname(filename_copy);
+        /* Get directory path */
+        char *dir_copy = strdup(transpiler->filename);
+        if (!dir_copy) {
+            fprintf(output, "\n");
+            goto emit_functions;
+        }
+        char *dir_result = dirname(dir_copy);
+        char *dir_path = strdup(dir_result);
+        free(dir_copy);
 
-            /* Get just the filename without directory */
-            char *basename_copy = strdup(transpiler->filename);
-            if (basename_copy) {
-                const char *base_name = basename(basename_copy);
+        if (!dir_path) {
+            fprintf(output, "\n");
+            goto emit_functions;
+        }
 
-                /* Open directory and scan for other .cz files */
-                DIR *dir = opendir(dir_path);
-                if (dir) {
-                    struct dirent *entry;
+        /* Get base filename */
+        char *basename_copy = strdup(transpiler->filename);
+        if (!basename_copy) {
+            free(dir_path);
+            fprintf(output, "\n");
+            goto emit_functions;
+        }
+        char *basename_result = basename(basename_copy);
+        char *base_name = strdup(basename_result);
+        free(basename_copy);
 
-                    while ((entry = readdir(dir)) != NULL) {
-                        /* Check if file ends with .cz and is not the current file */
-                        size_t name_len = strlen(entry->d_name);
-                        if (name_len > 3 && strcmp(entry->d_name + name_len - 3, ".cz") == 0) {
-                            /* Skip the current file itself */
-                            if (strcmp(entry->d_name, base_name) != 0) {
-                                /* Skip main.cz as it typically only exports main() */
-                                if (strcmp(entry->d_name, "main.cz") != 0) {
-                                    fprintf(output, "#include \"%s.h\"\n", entry->d_name);
-                                }
-                            }
+        if (!base_name) {
+            free(dir_path);
+            fprintf(output, "\n");
+            goto emit_functions;
+        }
+
+        /* Open directory and scan for other .cz files */
+        DIR *dir = opendir(dir_path);
+        if (dir) {
+            struct dirent *entry;
+
+            while ((entry = readdir(dir)) != NULL) {
+                /* Check if file ends with .cz and is not the current file */
+                size_t name_len = strlen(entry->d_name);
+                if (name_len > 3 && strcmp(entry->d_name + name_len - 3, ".cz") == 0) {
+                    /* Skip the current file itself */
+                    if (strcmp(entry->d_name, base_name) != 0) {
+                        /* Skip main.cz as it typically only exports main() */
+                        if (strcmp(entry->d_name, "main.cz") != 0) {
+                            fprintf(output, "#include \"%s.h\"\n", entry->d_name);
                         }
                     }
-
-                    closedir(dir);
                 }
-                free(basename_copy);
             }
-            free(filename_copy);
+
+            closedir(dir);
         }
+
+        free(base_name);
+        free(dir_path);
     }
 
     fprintf(output, "\n");
 
+emit_functions:
     /* Emit function definitions only */
     if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
         ASTNode **children = transpiler->ast->children;
