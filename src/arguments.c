@@ -5,9 +5,9 @@
  * Handles named arguments (labels only) transformation.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "arguments.h"
-#include "../errors.h"
+#include "errors.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

@@ -1,13 +1,13 @@
 /*
  * CZar - C semantic authority layer
- * Transpiler TODO expansion module (transpiler/todo.c)
+ * Transpiler FIXME expansion module (transpiler/fixme.c)
  *
- * Handles inline expansion of TODO() calls without macros.
- * Replaces TODO("msg") with direct fprintf+abort using .cz file location.
+ * Handles inline expansion of FIXME() calls without macros.
+ * Replaces FIXME("msg") with direct fprintf+abort using .cz file location.
  */
 
-#include "../cz.h"
-#include "todo.h"
+#include "cz.h"
+#include "fixme.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -98,21 +98,21 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
     return (brace_depth > 0) ? function_name : NULL;
 }
 
-/* Expand TODO() calls inline */
-void transpiler_expand_todo(ASTNode *ast, const char *filename) {
+/* Expand FIXME() calls inline */
+void transpiler_expand_fixme(ASTNode *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT || !filename) {
         return;
     }
 
-    /* Scan for TODO(...) patterns */
+    /* Scan for FIXME(...) patterns */
     for (size_t i = 0; i < ast->child_count; i++) {
         if (ast->children[i]->type != AST_TOKEN) continue;
         if (ast->children[i]->token.type != TOKEN_IDENTIFIER) continue;
 
         Token *tok = &ast->children[i]->token;
-        if (!token_text_equals(tok, "TODO")) continue;
+        if (!token_text_equals(tok, "FIXME")) continue;
 
-        /* Found TODO, check for ( ... ) */
+        /* Found FIXME, check for ( ... ) */
         size_t j = skip_whitespace(ast->children, ast->child_count, i + 1);
         if (j >= ast->child_count) continue;
         if (ast->children[j]->type != AST_TOKEN) continue;
@@ -138,7 +138,7 @@ void transpiler_expand_todo(ASTNode *ast, const char *filename) {
             continue;
         }
 
-        /* Get location info from the original TODO token */
+        /* Get location info from the original FIXME token */
         int line = tok->line;
         const char *func_name = find_function_name(ast->children, ast->child_count, i);
         if (!func_name) func_name = "<unknown>";
@@ -146,7 +146,7 @@ void transpiler_expand_todo(ASTNode *ast, const char *filename) {
         /* Build the replacement code */
         char replacement_code[1024];
         snprintf(replacement_code, sizeof(replacement_code),
-                 "{ fprintf(stderr, \"%s:%d: %s: TODO: %s\\n\"); abort(); }",
+                 "{ fprintf(stderr, \"%s:%d: %s: FIXME: %s\\n\"); abort(); }",
                  filename, line, func_name, msg_content);
 
         free(msg_content);

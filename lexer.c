@@ -5,7 +5,6 @@
  * Tokenizes C source code into a stream of tokens.
  */
 
-#include "cz.h"
 #include "lexer.h"
 #include <stdlib.h>
 #include <string.h>

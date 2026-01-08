@@ -5,12 +5,12 @@
  * Handles enum validation and exhaustiveness checking for switch statements.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "enums.h"
 #include "switches.h"
 #include "../transpiler.h"
-#include "../errors.h"
-#include "../warnings.h"
+#include "errors.h"
+#include "warnings.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

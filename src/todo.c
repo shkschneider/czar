@@ -1,13 +1,13 @@
 /*
  * CZar - C semantic authority layer
- * Transpiler unreachable expansion module (transpiler/unreachable.c)
+ * Transpiler TODO expansion module (transpiler/todo.c)
  *
- * Handles inline expansion of UNREACHABLE() calls without macros.
- * Replaces UNREACHABLE("msg") with direct fprintf+abort using .cz file location.
+ * Handles inline expansion of TODO() calls without macros.
+ * Replaces TODO("msg") with direct fprintf+abort using .cz file location.
  */
 
-#include "../cz.h"
-#include "unreachable.h"
+#include "cz.h"
+#include "todo.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -61,7 +61,6 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
             if (token_text_equals(tok, "{")) {
                 brace_depth++;
                 /* If brace_depth is 1, we just entered a top-level block (likely a function) */
-                /* Look back for function name pattern: identifier ( ... ) { */
                 if (brace_depth == 1) {
                     for (int j = (int)i - 1; j >= 0 && j >= (int)i - 30; j--) {
                         if (children[j]->type == AST_TOKEN &&
@@ -99,21 +98,21 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
     return (brace_depth > 0) ? function_name : NULL;
 }
 
-/* Expand UNREACHABLE() calls inline */
-void transpiler_expand_unreachable(ASTNode *ast, const char *filename) {
+/* Expand TODO() calls inline */
+void transpiler_expand_todo(ASTNode *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT || !filename) {
         return;
     }
 
-    /* Scan for UNREACHABLE(...) patterns */
+    /* Scan for TODO(...) patterns */
     for (size_t i = 0; i < ast->child_count; i++) {
         if (ast->children[i]->type != AST_TOKEN) continue;
         if (ast->children[i]->token.type != TOKEN_IDENTIFIER) continue;
 
         Token *tok = &ast->children[i]->token;
-        if (!token_text_equals(tok, "UNREACHABLE")) continue;
+        if (!token_text_equals(tok, "TODO")) continue;
 
-        /* Found UNREACHABLE, check for ( ... ) */
+        /* Found TODO, check for ( ... ) */
         size_t j = skip_whitespace(ast->children, ast->child_count, i + 1);
         if (j >= ast->child_count) continue;
         if (ast->children[j]->type != AST_TOKEN) continue;
@@ -139,7 +138,7 @@ void transpiler_expand_unreachable(ASTNode *ast, const char *filename) {
             continue;
         }
 
-        /* Get location info from the original UNREACHABLE token */
+        /* Get location info from the original TODO token */
         int line = tok->line;
         const char *func_name = find_function_name(ast->children, ast->child_count, i);
         if (!func_name) func_name = "<unknown>";
@@ -147,20 +146,19 @@ void transpiler_expand_unreachable(ASTNode *ast, const char *filename) {
         /* Build the replacement code */
         char replacement_code[1024];
         snprintf(replacement_code, sizeof(replacement_code),
-                 "{ fprintf(stderr, \"%s:%d: %s: Unreachable code reached: %s\\n\"); abort(); }",
+                 "{ fprintf(stderr, \"%s:%d: %s: TODO: %s\\n\"); abort(); }",
                  filename, line, func_name, msg_content);
 
         free(msg_content);
 
         /* Replace tokens from i to closing_paren with the inline code */
-        /* Create new token with the replacement */
         char *replacement_text = strdup(replacement_code);
         if (!replacement_text) continue;
 
         free(ast->children[i]->token.text);
         ast->children[i]->token.text = replacement_text;
         ast->children[i]->token.length = strlen(replacement_text);
-        ast->children[i]->token.type = TOKEN_PUNCTUATION; /* Treat as code block */
+        ast->children[i]->token.type = TOKEN_PUNCTUATION;
 
         /* Remove tokens from i+1 to closing_paren (inclusive) */
         size_t tokens_to_remove = closing_paren - i;

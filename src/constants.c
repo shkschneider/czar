@@ -5,7 +5,7 @@
  * Handles CZar constant to C constant transformations.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "constants.h"
 #include <string.h>
 #include <stddef.h>
