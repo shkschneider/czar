@@ -112,6 +112,28 @@ static ASTNode *create_token_node(const char *text, TokenType type) {
     return node;
 }
 
+/* Insertion type enum */
+typedef enum {
+    INSERT_CONST_BEFORE_TYPE,    /* Insert "const " before type */
+    INSERT_CONST_AFTER_STAR      /* Insert " const " after * */
+} InsertionType;
+
+/* Struct to track a const insertion */
+typedef struct {
+    size_t position;             /* Position to insert at */
+    InsertionType type;          /* Type of insertion */
+} ConstInsertion;
+
+/* Comparison function for qsort - sort by position descending */
+static int compare_insertions(const void *a, const void *b) {
+    const ConstInsertion *ia = (const ConstInsertion *)a;
+    const ConstInsertion *ib = (const ConstInsertion *)b;
+    /* Sort descending so we insert from highest position to lowest */
+    if (ia->position > ib->position) return -1;
+    if (ia->position < ib->position) return 1;
+    return 0;
+}
+
 /* Insert a node at position in AST children */
 static int insert_node_at(ASTNode *ast, size_t pos, ASTNode *new_node) {
     if (!ast || !new_node || pos > ast->child_count) {
@@ -297,17 +319,14 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
     
     /* Pass 2: Add 'const' to type identifiers that are not marked as mutable */
     /* For pointers: add const to both type and pointer (const Type * const p) */
+    /* Applies to both function parameters AND local variable declarations */
     
-    /* Build lists of positions where we need to insert const */
-    size_t *insert_positions = malloc(count * sizeof(size_t));
-    size_t *insert_after_star = malloc(count * sizeof(size_t)); /* For const after * */
-    size_t insert_count = 0;
-    size_t insert_after_star_count = 0;
+    /* Build list of all const insertions needed */
+    ConstInsertion *insertions = malloc(count * 2 * sizeof(ConstInsertion)); /* Max 2 per type (before + after *) */
+    size_t insertion_count = 0;
     
-    if (!insert_positions || !insert_after_star) {
+    if (!insertions) {
         free(is_mutable);
-        free(insert_positions);
-        free(insert_after_star);
         return; /* Out of memory */
     }
     
@@ -403,85 +422,217 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 }
                 
                 /* Add to insert list for const before type */
-                /* insert_positions array has size count, so this is safe */
-                /* (there can't be more parameters than total tokens) */
-                if (insert_count < count) {
-                    insert_positions[insert_count++] = j;
+                if (insertion_count < count * 2) {
+                    insertions[insertion_count].position = j;
+                    insertions[insertion_count].type = INSERT_CONST_BEFORE_TYPE;
+                    insertion_count++;
                 }
                 
                 /* For pointers, also need const after * */
                 if (is_pointer) {
-                    /* Record position after * for const insertion */
-                    /* This creates: const Type * const p */
-                    insert_after_star[insert_after_star_count++] = next_idx;
+                    if (insertion_count < count * 2) {
+                        insertions[insertion_count].position = next_idx;
+                        insertions[insertion_count].type = INSERT_CONST_AFTER_STAR;
+                        insertion_count++;
+                    }
                 }
             }
         }
     }
     
-    /* Insert const tokens before type FIRST (in reverse order) */
-    for (size_t idx = insert_count; idx > 0; idx--) {
-        size_t pos = insert_positions[idx - 1];
-        ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
-        ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
+    /* Scan for local variable declarations and mark types for const insertion */
+    /* Pattern: Type identifier = ... or Type *identifier = ... inside function bodies */
+    int brace_depth = 0;
+    int in_function_body = 0;
+    
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok = &children[i]->token;
         
-        if (const_node && space_node) {
-            insert_node_at(ast, pos, const_node);
-            insert_node_at(ast, pos + 1, space_node);
-        } else {
-            /* Cleanup on failure */
-            if (const_node) {
-                if (const_node->token.text) free(const_node->token.text);
-                free(const_node);
+        /* Track brace depth to know if we're inside a function */
+        if (tok->type == TOKEN_PUNCTUATION) {
+            if (token_equals(tok, "{")) {
+                brace_depth++;
+                /* Simple heuristic: if we see { after ) then we're entering a function body */
+                size_t prev_idx;
+                if (find_prev_token(children, i, &prev_idx)) {
+                    if (token_equals(&children[prev_idx]->token, ")")) {
+                        in_function_body = 1;
+                    }
+                }
+            } else if (token_equals(tok, "}")) {
+                brace_depth--;
+                if (brace_depth == 0) {
+                    in_function_body = 0;
+                }
             }
-            if (space_node) {
-                if (space_node->token.text) free(space_node->token.text);
-                free(space_node);
+        }
+        
+        /* Only process if inside a function body */
+        if (!in_function_body || brace_depth == 0) continue;
+        
+        /* Look for variable declarations: Type identifier = or Type identifier; */
+        if (tok->type == TOKEN_IDENTIFIER) {
+            /* Skip tokens marked for deletion (empty text) */
+            if (tok->text == NULL || tok->text[0] == '\0') {
+                continue;
+            }
+            
+            /* Skip keywords that aren't types */
+            if (token_equals(tok, "return") || token_equals(tok, "if") || 
+                token_equals(tok, "else") || token_equals(tok, "while") || 
+                token_equals(tok, "for") || token_equals(tok, "do") || 
+                token_equals(tok, "switch") || token_equals(tok, "case") ||
+                token_equals(tok, "break") || token_equals(tok, "continue") ||
+                token_equals(tok, "goto") || token_equals(tok, "sizeof") ||
+                token_equals(tok, "typedef") || token_equals(tok, "static") ||
+                token_equals(tok, "extern") || token_equals(tok, "auto") ||
+                token_equals(tok, "register") || token_equals(tok, "inline")) {
+                continue;
+            }
+            
+            /* Look ahead to see what follows */
+            size_t next_idx = skip_whitespace(children, count, i + 1);
+            if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
+            
+            Token *next_tok = &children[next_idx]->token;
+            
+            /* Check if followed by * (pointer) or identifier (variable name) */
+            if (!token_equals(next_tok, "*") && next_tok->type != TOKEN_IDENTIFIER) {
+                continue; /* Not a variable declaration pattern */
+            }
+            
+            /* If followed by identifier, check if that's followed by = or ; */
+            if (next_tok->type == TOKEN_IDENTIFIER) {
+                size_t after_name_idx = skip_whitespace(children, count, next_idx + 1);
+                if (after_name_idx >= count || children[after_name_idx]->type != AST_TOKEN) continue;
+                Token *after_name = &children[after_name_idx]->token;
+                
+                /* Must be followed by = or ; or , to be a variable declaration */
+                if (!token_equals(after_name, "=") && !token_equals(after_name, ";") && 
+                    !token_equals(after_name, ",") && !token_equals(after_name, "(")) {
+                    continue;
+                }
+                
+                /* Skip if followed by ( - that's a function call, not a declaration */
+                if (token_equals(after_name, "(")) {
+                    continue;
+                }
+            }
+            
+            /* Skip void */
+            if (token_equals(tok, "void")) continue;
+            
+            /* Skip enum/struct/union keywords */
+            if (token_equals(tok, "enum") || token_equals(tok, "struct") || 
+                token_equals(tok, "union")) {
+                continue;
+            }
+            
+            /* Skip if preceded by enum/struct/union */
+            size_t prev_idx;
+            if (find_prev_token(children, i, &prev_idx)) {
+                Token *prev_tok = &children[prev_idx]->token;
+                if (token_equals(prev_tok, "enum") || token_equals(prev_tok, "struct") || 
+                    token_equals(prev_tok, "union")) {
+                    continue;
+                }
+            }
+            
+            /* Handle pointers */
+            int is_pointer = token_equals(next_tok, "*");
+            
+            /* Skip if marked as mutable */
+            if (is_mutable[i]) continue;
+            
+            /* Skip if already has const */
+            if (find_prev_token(children, i, &prev_idx)) {
+                if (token_equals(&children[prev_idx]->token, "const")) {
+                    continue;
+                }
+            }
+            
+            /* Add to insert list for const before type */
+            if (insertion_count < count * 2) {
+                insertions[insertion_count].position = i;
+                insertions[insertion_count].type = INSERT_CONST_BEFORE_TYPE;
+                insertion_count++;
+            }
+            
+            /* For pointers, also need const after * */
+            if (is_pointer) {
+                if (insertion_count < count * 2) {
+                    insertions[insertion_count].position = next_idx;
+                    insertions[insertion_count].type = INSERT_CONST_AFTER_STAR;
+                    insertion_count++;
+                }
             }
         }
     }
     
-    /* Then insert const after * for pointer parameters (in reverse order) */
-    /* Positions need adjustment: for each "before type" const inserted at position < pos, add 2 to pos */
-    for (size_t idx = insert_after_star_count; idx > 0; idx--) {
-        size_t pos = insert_after_star[idx - 1];
+    /* Sort insertions by position (descending) so we can insert from highest to lowest */
+    /* This way, later insertions don't affect earlier positions */
+    qsort(insertions, insertion_count, sizeof(ConstInsertion), compare_insertions);
+    
+    /* Apply all insertions in order (highest position first) */
+    for (size_t idx = 0; idx < insertion_count; idx++) {
+        ConstInsertion ins = insertions[idx];
         
-        /* Adjust position for any "before type" consts inserted before this position */
-        for (size_t i = 0; i < insert_count; i++) {
-            if (insert_positions[i] < pos) {
-                pos += 2; /* Each "before type" const adds 2 tokens */
+        if (ins.type == INSERT_CONST_BEFORE_TYPE) {
+            /* Insert "const " before type */
+            ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
+            ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
+            
+            if (const_node && space_node) {
+                insert_node_at(ast, ins.position, const_node);
+                insert_node_at(ast, ins.position + 1, space_node);
+            } else {
+                /* Cleanup on failure */
+                if (const_node) {
+                    if (const_node->token.text) free(const_node->token.text);
+                    free(const_node);
+                }
+                if (space_node) {
+                    if (space_node->token.text) free(space_node->token.text);
+                    free(space_node);
+                }
             }
-        }
-        
-        /* Insert after the * token: need space, then const, then space */
-        ASTNode *space1_node = create_token_node(" ", TOKEN_WHITESPACE);
-        ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
-        ASTNode *space2_node = create_token_node(" ", TOKEN_WHITESPACE);
-        
-        if (space1_node && const_node && space2_node) {
-            /* Insert after position pos (which is the * token) */
-            /* Need to insert at pos + 1 */
-            insert_node_at(ast, pos + 1, space1_node);
-            insert_node_at(ast, pos + 2, const_node);
-            insert_node_at(ast, pos + 3, space2_node);
-        } else {
-            /* Cleanup on failure */
-            if (space1_node) {
-                if (space1_node->token.text) free(space1_node->token.text);
-                free(space1_node);
+        } else if (ins.type == INSERT_CONST_AFTER_STAR) {
+            /* Insert " const " after * */
+            /* Check if there's already whitespace after * and mark it for deletion */
+            if (ins.position + 1 < ast->child_count && ast->children[ins.position + 1]->type == AST_TOKEN &&
+                ast->children[ins.position + 1]->token.type == TOKEN_WHITESPACE) {
+                /* Mark existing whitespace for deletion to avoid double spaces */
+                mark_for_deletion(ast->children[ins.position + 1]);
             }
-            if (const_node) {
-                if (const_node->token.text) free(const_node->token.text);
-                free(const_node);
-            }
-            if (space2_node) {
-                if (space2_node->token.text) free(space2_node->token.text);
-                free(space2_node);
+            
+            /* Always insert: space + const + space */
+            ASTNode *space1_node = create_token_node(" ", TOKEN_WHITESPACE);
+            ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
+            ASTNode *space2_node = create_token_node(" ", TOKEN_WHITESPACE);
+            
+            if (space1_node && const_node && space2_node) {
+                insert_node_at(ast, ins.position + 1, space1_node);
+                insert_node_at(ast, ins.position + 2, const_node);
+                insert_node_at(ast, ins.position + 3, space2_node);
+            } else {
+                /* Cleanup */
+                if (space1_node) {
+                    if (space1_node->token.text) free(space1_node->token.text);
+                    free(space1_node);
+                }
+                if (const_node) {
+                    if (const_node->token.text) free(const_node->token.text);
+                    free(const_node);
+                }
+                if (space2_node) {
+                    if (space2_node->token.text) free(space2_node->token.text);
+                    free(space2_node);
+                }
             }
         }
     }
     
-    free(insert_positions);
-    free(insert_after_star);
+    free(insertions);
     free(is_mutable);
 }
