@@ -1,7 +1,8 @@
-#import "src" // includes all headers in src module (src/second.cz.h)
+#import "src" // includes all headers in src module
 
 u32 main(void) {
     first_test(); // declared in same module (first.cz)
     second_test(); // from ./src module
+    third_test(); // also from ./src module
     return 0;
 }
