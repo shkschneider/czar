@@ -89,6 +89,7 @@ _It might end up a separated optional `libcz.a` or reworked (with less features)
 - Detection of **unchecked** null dereferences
 - Bans dangerous C APIs
 - Enforced naming conventions
+- Mutability
 
 ---
 
