@@ -1,6 +1,9 @@
-/* Generated header for functions.cz */
+/* Generated header from test/multifiles/functions.cz */
 #pragma once
-#include <stdint.h>
 
-int32_t add(int32_t a, int32_t b);
-int32_t get_forty_two(void);
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+i32 add(i32 a, i32 b) ;
+i32 get_forty_two(void) ;

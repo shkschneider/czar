@@ -274,7 +274,7 @@ int transpiler_generate_header(const char *cz_file_path, const char *output_head
     content[bytes_read] = '\0';
     fclose(input);
     
-    /* Parse the content (simplified - just extract function and struct declarations) */
+    /* Parse the content (simplified - extract function and struct declarations) */
     FILE *output = fopen(output_header_path, "w");
     if (!output) {
         free(content);
@@ -282,6 +282,7 @@ int transpiler_generate_header(const char *cz_file_path, const char *output_head
     }
     
     /* Write header guard */
+    fprintf(output, "/* Generated header from %s */\n", cz_file_path);
     fprintf(output, "#pragma once\n\n");
     
     /* Write necessary includes for CZar types */
@@ -289,12 +290,50 @@ int transpiler_generate_header(const char *cz_file_path, const char *output_head
     fprintf(output, "#include <stddef.h>\n");
     fprintf(output, "#include <stdbool.h>\n\n");
     
-    /* Simple approach: write the whole file but remove function bodies */
-    /* This is a simplified version - ideally would parse and extract only declarations */
-    fprintf(output, "/* Generated header from %s */\n\n", cz_file_path);
-    
-    /* TODO: Properly parse and extract declarations */
-    /* For now, we'll do a simple text-based extraction */
+    /* Simple text-based extraction of declarations */
+    /* Look for function declarations: lines that contain '(' followed by ')' and '{' */
+    char *p = content;
+    while (*p) {
+        /* Skip whitespace and comments */
+        while (*p == ' ' || *p == '\t' || *p == '\n') p++;
+        if (*p == '/' && *(p+1) == '/') {
+            /* Skip line comment */
+            while (*p && *p != '\n') p++;
+            continue;
+        }
+        
+        /* Check for function definition */
+        char *line_start = p;
+        char *paren = NULL;
+        char *brace = NULL;
+        
+        /* Find '(' and '{' on the same logical line */
+        while (*p && *p != '\n' && *p != '{' && *p != ';') {
+            if (*p == '(') paren = p;
+            p++;
+        }
+        
+        if (*p == '{') brace = p;
+        
+        /* If we found both '(' and '{', this is a function definition */
+        if (paren && brace) {
+            /* Extract the function signature */
+            fprintf(output, "%.*s;\n", (int)(brace - line_start), line_start);
+            
+            /* Skip function body */
+            int brace_count = 1;
+            p++; /* Skip opening '{' */
+            while (*p && brace_count > 0) {
+                if (*p == '{') brace_count++;
+                if (*p == '}') brace_count--;
+                p++;
+            }
+        } else {
+            /* Not a function, move to next line */
+            while (*p && *p != '\n') p++;
+            if (*p == '\n') p++;
+        }
+    }
     
     free(content);
     fclose(output);
@@ -325,7 +364,7 @@ static void transform_import_node(ASTNode *node, ModuleContext *ctx) {
     char *new_text = malloc(new_size);
     if (new_text) {
         /* Generate #include for the module directory */
-        /* Pattern: #import "lib" becomes #include "lib/*.cz.h" */
+        /* Pattern: #import "lib" becomes includes for lib/ *.cz.h files */
         /* For now, we'll generate a placeholder that at least compiles */
         snprintf(new_text, new_size, "/* #import \"%s\" - module system placeholder */", module_path);
         
