@@ -3,14 +3,13 @@
  * Main entry point for the cz tool
  */
 
-#include "cz.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "lexer.h"
 #include "parser.h"
 #include "transpiler.h"
-#include "errors.h"
+#include "src/errors.h"
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {

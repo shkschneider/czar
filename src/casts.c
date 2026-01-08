@@ -10,11 +10,11 @@
  * - Enforced explicit narrowing casts
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "casts.h"
 #include "../transpiler.h"
-#include "../errors.h"
-#include "../warnings.h"
+#include "errors.h"
+#include "warnings.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -5,10 +5,10 @@
  * Validates CZar semantic rules and reports errors.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "validation.h"
 #include "../transpiler.h"
-#include "../errors.h"
+#include "errors.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

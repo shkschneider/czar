@@ -1,18 +1,18 @@
 /*
  * CZar - C semantic authority layer
- * Error reporting implementation (transpiler/error.c)
+ * Warning reporting implementation (transpiler/warning.c)
  *
- * Handles error reporting with source code context.
+ * Handles warning reporting with source code context.
  */
 
-#include "../cz.h"
-#include "../errors.h"
+#include "cz.h"
+#include "warnings.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-/* Helper function to get source line for error reporting */
+/* Helper function to get source line for warning reporting */
 static const char *get_source_line(const char *source, int line_num, char *buffer, size_t buffer_size) {
     if (!source || line_num < 1) {
         return NULL;
@@ -50,10 +50,15 @@ static const char *get_source_line(const char *source, int line_num, char *buffe
     return buffer;
 }
 
-/* Report a CZar error and exit */
-void cz_error(const char *filename, const char *source, int line, const char *message) {
-    fprintf(stderr, "[CZAR] ERROR at %s:%d: %s\n",
-            filename ? filename : "<unknown>", line, message);
+/* Report a CZar warning */
+void cz_warning(const char *filename, const char *source, int line, const char *message) {
+    /* If no source context provided, this is an operational warning */
+    if (!filename && line == 0) {
+        fprintf(stdout, "[CZAR] WARNING: %s\n", message);
+    } else {
+        fprintf(stdout, "[CZAR] WARNING at %s:%d: %s\n",
+                filename ? filename : "<unknown>", line, message);
+    }
 
     /* Try to show the problematic line */
     char line_buffer[512];
@@ -64,9 +69,7 @@ void cz_error(const char *filename, const char *source, int line, const char *me
             source_line++;
         }
         if (*source_line) {
-            fprintf(stderr, "    > %s\n", source_line);
+            fprintf(stdout, "    > %s\n", source_line);
         }
     }
-
-    exit(1);
 }

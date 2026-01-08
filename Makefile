@@ -7,7 +7,7 @@ LDFLAGS = -static -lc
 OUT    ?= build/cz
 
 # Binary
-SOURCES = $(wildcard src/*.c) $(wildcard src/**/*.c)
+SOURCES = $(wildcard *.c) $(wildcard src/*.c)
 OBJECTS = $(patsubst src/%.c,build/%.o,$(SOURCES))
 all: $(OUT)
 	@file ./$(OUT)
@@ -33,10 +33,10 @@ test/%: test/%.cz $(OUT)
 # Cleanup
 stat:
 	@find ./src -type f -name "*.c" | xargs wc -l | cut -c2- | sort -n
-	@grep -Ro ';' ./src/ | wc -l | xargs -I{} printf '%5d statements\n' "{}"
+	@grep -Ro ';' *.c ./src/ | wc -l | xargs -I{} printf '%5d statements\n' "{}"
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@rm -rvf ./build/
-	@rm -vf ./test/*.pp.cz ./test/*.cz.c ./test/*.o
+	@find ./test -type f -name "*.c" -o -name "*.h" -exec rm -vf {} \;
 	@find ./test -type f -executable -exec rm -vf {} \;
 .PHONY: stat clean

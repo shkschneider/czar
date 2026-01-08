@@ -6,7 +6,7 @@
  * This transforms pointer.member to pointer->member automatically.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "autodereference.h"
 #include <stdlib.h>
 #include <string.h>
