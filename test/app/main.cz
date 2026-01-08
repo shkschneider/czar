@@ -1,0 +1,8 @@
+#import "first" // includes first.cz.h
+#import "src/second" // includes src/second.cz.h
+
+u32 main(void) {
+    first_test(); // declared in same module
+    second_test(); // from ./src
+    return 0;
+}
