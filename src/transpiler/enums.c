@@ -37,10 +37,6 @@ typedef struct {
 static EnumInfo g_enums[MAX_ENUMS];
 static int g_enum_count = 0;
 
-/* Global context for error reporting */
-static const char *g_filename = NULL;
-static const char *g_source = NULL;
-
 /* Helper function to check if token text matches */
 static int token_text_equals(Token *token, const char *text) {
     if (!token || !token->text || !text) {

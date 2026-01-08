@@ -16,10 +16,6 @@
 #define MAX_FUNCTIONS 256
 #define MAX_PARAMS 32
 
-/* Global context for error reporting */
-static const char *g_filename = NULL;
-static const char *g_source = NULL;
-
 /* Function parameter info */
 typedef struct {
     char *name;

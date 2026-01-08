@@ -20,10 +20,6 @@
 #include <string.h>
 #include <ctype.h>
 
-/* Global context for error reporting */
-static const char *g_filename = NULL;
-static const char *g_source = NULL;
-
 /* Type information for cast analysis */
 typedef struct {
     const char *name;

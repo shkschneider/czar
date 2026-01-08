@@ -11,3 +11,7 @@
     /* Map calls to strdup(...) to MSVC's _strdup(...) */
     #define strdup _strdup
 #endif
+
+/* Global context for error/warning reporting */
+extern const char *g_filename;
+extern const char *g_source;
