@@ -1,8 +1,9 @@
-// Test multi-file with #import
-#import "lib"
+// Test multi-file project
+#include "functions.cz.h"
+#include "lib/structs.cz.h"
 
 int main(void) {
-    i32 result = add(10, 20);
+    add(10, 20);
     create_point(5, 10);
     return 0;
 }

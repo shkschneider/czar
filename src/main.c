@@ -15,17 +15,22 @@
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <input_file> [output_file]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <input_file.cz>\n", argv[0]);
+        fprintf(stderr, "Generates: <input_file.cz.c> and <input_file.cz.h>\n");
         return 1;
     }
 
     const char *input_file = argv[1];
-    const char *output_file = (argc >= 3) ? argv[2] : NULL;
+    
+    /* Auto-generate output filename: input.cz -> input.cz.c */
+    char output_file_buf[512];
+    snprintf(output_file_buf, sizeof(output_file_buf), "%s.c", input_file);
+    const char *output_file = output_file_buf;
 
     /* Open input file */
     FILE *input = fopen(input_file, "r");
     if (!input) {
-        char error_msg[512];
+        char error_msg[1024];
         snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_INPUT_FILE, input_file);
         cz_error(NULL, NULL, 0, error_msg);
         return 1;
@@ -53,7 +58,7 @@ int main(int argc, char *argv[]) {
         if (output_file) {
             output = fopen(output_file, "w");
             if (!output) {
-                char error_msg[512];
+                char error_msg[1024];
                 snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_OUTPUT_FILE, output_file);
                 cz_error(NULL, NULL, 0, error_msg);
                 return 1;
@@ -103,30 +108,25 @@ int main(int argc, char *argv[]) {
     /* Transform AST */
     transpiler_transform(&transpiler);
 
-    /* Open output file (stdout if not specified) */
-    FILE *output = stdout;
-    if (output_file) {
-        output = fopen(output_file, "w");
-        if (!output) {
-            char error_msg[512];
-            snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_OUTPUT_FILE, output_file);
-            cz_error(NULL, NULL, 0, error_msg);
-            ast_node_free(ast);
-            free(input_buffer);
-            return 1;
-        }
+    /* Open output file */
+    FILE *output = fopen(output_file, "w");
+    if (!output) {
+        char error_msg[1024];
+        snprintf(error_msg, sizeof(error_msg), ERR_CANNOT_OPEN_OUTPUT_FILE, output_file);
+        cz_error(NULL, NULL, 0, error_msg);
+        ast_node_free(ast);
+        free(input_buffer);
+        return 1;
     }
 
     /* Emit transformed AST */
     transpiler_emit(&transpiler, output);
-
+    fclose(output);
+    
+    /* Split the generated .c file into .h (declarations) and .c (implementations) */
+    transpiler_split_c_file(output_file);
+    
     /* Clean up */
-    if (output_file) {
-        fclose(output);
-        
-        /* Split the generated .c file into .h (declarations) and .c (implementations) */
-        transpiler_split_c_file(output_file);
-    }
     ast_node_free(ast);
     free(input_buffer);
 
