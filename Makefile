@@ -20,15 +20,18 @@ build/%.o: src/%.c
 
 # Tests
 TESTS = $(wildcard test/*.cz)
-test: $(OUT) $(TESTS:.cz=) $(OUT)
+test: test/app $(TESTS:.cz=)
 	@echo "All tests passed."
+test/app: $(OUT)
+	@echo "- $@"
+	$(MAKE) -C $@
 test/%: test/%.cz $(OUT)
 	@echo "- $@"
-	@./$(OUT) $< $<.c >/dev/null
+	@./$(OUT) $< >/dev/null
 	@$(CC) $(CFLAGS) -c $<.c -o $<.o
 	@$(CC) $(CFLAGS) $<.o $(LDFLAGS) -o $@
 	@./$@ >/dev/null 2>/dev/null
-.PHONY: test $(TESTS)
+.PHONY: test test/app $(TESTS)
 
 # Cleanup
 stat:
@@ -37,6 +40,6 @@ stat:
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@rm -rvf ./build/
-	@find ./test -type f -name "*.c" -o -name "*.h" -exec rm -vf {} \;
+	@find ./test \( -name "*.c" -o -name "*.h" -o -name "*.o" \) -exec rm -vf {} \;
 	@find ./test -type f -executable -exec rm -vf {} \;
 .PHONY: stat clean

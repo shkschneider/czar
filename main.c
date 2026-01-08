@@ -19,22 +19,22 @@ int main(int argc, char *argv[]) {
     }
 
     const char *input_file = argv[1];
-    
+
     /* Generate output file names */
     size_t input_len = strlen(input_file);
     char *header_file = malloc(input_len + 3);  /* .cz + .h + \0 */
     char *source_file = malloc(input_len + 3);  /* .cz + .c + \0 */
-    
+
     if (!header_file || !source_file) {
         cz_error(NULL, NULL, 0, ERR_MEMORY_ALLOCATION_FAILED);
         free(header_file);
         free(source_file);
         return 1;
     }
-    
+
     snprintf(header_file, input_len + 3, "%s.h", input_file);
     snprintf(source_file, input_len + 3, "%s.c", input_file);
-    
+
     /* Extract just the filename for the include directive */
     const char *filename_only = strrchr(input_file, '/');
     filename_only = filename_only ? filename_only + 1 : input_file;
@@ -153,7 +153,6 @@ int main(int argc, char *argv[]) {
     /* Emit header file */
     transpiler_emit_header(&transpiler, h_output);
     fclose(h_output);
-    printf("Generated: %s\n", header_file);
 
     /* Open source output file */
     FILE *c_output = fopen(source_file, "w");
@@ -172,7 +171,8 @@ int main(int argc, char *argv[]) {
     /* Emit source file */
     transpiler_emit_source(&transpiler, c_output, header_name);
     fclose(c_output);
-    printf("Generated: %s\n", source_file);
+
+    fprintf(stdout, "%s %s\n", header_file, source_file);
 
     /* Clean up */
     ast_node_free(ast);

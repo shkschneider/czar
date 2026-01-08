@@ -179,6 +179,37 @@ static void emit_node(ASTNode *node, FILE *output) {
     /* Emit token nodes */
     if (node->type == AST_TOKEN) {
         if (node->token.text && node->token.length > 0) {
+            /* Check if this is an #import directive that needs transformation */
+            if (node->token.type == TOKEN_PREPROCESSOR && 
+                node->token.length >= 7 &&
+                strncmp(node->token.text, "#import", 7) == 0) {
+                /* Transform #import "module" to #include "module.cz.h" */
+                const char *import_start = node->token.text;
+                const char *quote_start = strchr(import_start, '"');
+                
+                if (quote_start) {
+                    const char *quote_end = strchr(quote_start + 1, '"');
+                    if (quote_end) {
+                        /* Extract module name */
+                        size_t module_len = quote_end - quote_start - 1;
+                        
+                        /* Emit #include "module.cz.h" */
+                        fprintf(output, "#include \"");
+                        fwrite(quote_start + 1, 1, module_len, output);
+                        fprintf(output, ".cz.h\"");
+                        
+                        /* Emit rest of line (comments, whitespace) */
+                        const char *rest = quote_end + 1;
+                        size_t rest_len = (import_start + node->token.length) - rest;
+                        if (rest_len > 0) {
+                            fwrite(rest, 1, rest_len, output);
+                        }
+                        return;
+                    }
+                }
+            }
+            
+            /* Regular token emission */
             fwrite(node->token.text, 1, node->token.length, output);
         }
     }

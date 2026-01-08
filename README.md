@@ -61,26 +61,6 @@ CZar:
 - Named arguments
 - ...
 
-### Utilities (WIP)
-
-_This is currently runtime but not desired._
-_It might end up a separated optional `libcz.a` or reworked (with less features) or even later removed entierly._
-
-- **Standard logger**
-  - Comptime: `cz_error()`, `cz_warning()`
-  - Runtime: `cz_log_info()`, `cz_log_error()`, ...
-  - Automatic file / function / line context
-- **Print helper**
-  - `cz_print()` with mustache-like templates
-  - Supports `{}` and `{{name}}` placeholders
-  - Automatic type detection for all basic types
-- **Monotonic clock**
-  - `cz_monotonic_clock_ns` (now)
-  - `cz_monotonic_timer_ns` (elapsed)
-  - `cz_nanosleep`
-- **Arena allocator**
-- `cz_assert()`, `cz_todo()`, `cz_fixme()`, `cz_unreachable()`, ...
-
 ### Safety
 
 - Mandatory **initialization**
