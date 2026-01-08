@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <libgen.h>
 
 /* Global context for error/warning reporting */
 const char *g_filename = NULL;
@@ -170,8 +173,121 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_transform_casts(transpiler->ast);
 }
 
+/* Helper function to check if a path is a directory */
+static int is_directory(const char *path) {
+    struct stat st;
+    if (stat(path, &st) == 0) {
+        return S_ISDIR(st.st_mode);
+    }
+    return 0;
+}
+
+/* Helper function to resolve module path relative to source file */
+static char* resolve_module_path(const char *source_filename, const char *module_path) {
+    if (!source_filename || !module_path) {
+        return NULL;
+    }
+
+    /* Get directory of source file */
+    char *source_copy = strdup(source_filename);
+    if (!source_copy) {
+        return NULL;
+    }
+
+    char *source_dir = dirname(source_copy);
+
+    /* Build full path: source_dir/module_path */
+    size_t full_path_len = strlen(source_dir) + strlen(module_path) + 2; /* +2 for / and \0 */
+    char *full_path = malloc(full_path_len);
+    if (!full_path) {
+        free(source_copy);
+        return NULL;
+    }
+
+    snprintf(full_path, full_path_len, "%s/%s", source_dir, module_path);
+    free(source_copy);
+
+    return full_path;
+}
+
+/* Helper function to emit includes for all .cz files in a module directory */
+static void emit_module_includes(const char *source_filename, const char *module_path, FILE *output) {
+    /* Resolve full path to module directory */
+    char *full_module_path = resolve_module_path(source_filename, module_path);
+    if (!full_module_path) {
+        /* If path resolution fails, emit a comment */
+        fprintf(output, "/* Warning: could not resolve module path: %s */\n", module_path);
+        return;
+    }
+
+    /* Check if it's a directory */
+    if (!is_directory(full_module_path)) {
+        /* Not a directory - treat as single file import (old behavior) */
+        fprintf(output, "#include \"%s.cz.h\"", module_path);
+        free(full_module_path);
+        return;
+    }
+
+    /* Open directory and scan for .cz files */
+    DIR *dir = opendir(full_module_path);
+    if (!dir) {
+        /* Directory doesn't exist or can't be opened */
+        fprintf(output, "/* Warning: could not open module directory: %s */\n", module_path);
+        free(full_module_path);
+        return;
+    }
+
+    struct dirent *entry;
+    int found_files = 0;
+
+    while ((entry = readdir(dir)) != NULL) {
+        /* Check if file ends with .cz */
+        size_t name_len = strlen(entry->d_name);
+        if (name_len > 3 && strcmp(entry->d_name + name_len - 3, ".cz") == 0) {
+            /* Emit #include for this .cz file's header */
+            if (found_files > 0) {
+                fprintf(output, "\n");
+            }
+            fprintf(output, "#include \"%s/%s.h\"", module_path, entry->d_name);
+            found_files++;
+        }
+    }
+
+    closedir(dir);
+    free(full_module_path);
+
+    if (found_files == 0) {
+        /* No .cz files found in directory */
+        fprintf(output, "/* Warning: no .cz files found in module: %s */", module_path);
+    }
+}
+
+/* Helper function to check if AST contains any #import directives */
+static int has_import_directives(ASTNode *node) {
+    if (!node) {
+        return 0;
+    }
+
+    /* Check if this node is an #import directive */
+    if (node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR) {
+        if (node->token.length >= 7 && strncmp(node->token.text, "#import", 7) == 0) {
+            return 1;
+        }
+    }
+
+    /* Recursively check children */
+    for (size_t i = 0; i < node->child_count; i++) {
+        if (has_import_directives(node->children[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+
 /* Emit AST node recursively */
-static void emit_node(ASTNode *node, FILE *output) {
+static void emit_node(ASTNode *node, FILE *output, const char *source_filename) {
     if (!node) {
         return;
     }
@@ -183,28 +299,33 @@ static void emit_node(ASTNode *node, FILE *output) {
             if (node->token.type == TOKEN_PREPROCESSOR &&
                 node->token.length >= 7 &&
                 strncmp(node->token.text, "#import", 7) == 0) {
-                /* Transform #import "module" to #include "module.cz.h" */
+                /* Extract module path from #import "module/path" */
                 const char *import_start = node->token.text;
                 const char *quote_start = strchr(import_start, '"');
 
                 if (quote_start) {
                     const char *quote_end = strchr(quote_start + 1, '"');
                     if (quote_end) {
-                        /* Extract module name */
+                        /* Extract module path */
                         size_t module_len = quote_end - quote_start - 1;
+                        char *module_path = malloc(module_len + 1);
+                        if (module_path) {
+                            memcpy(module_path, quote_start + 1, module_len);
+                            module_path[module_len] = '\0';
 
-                        /* Emit #include "module.cz.h" */
-                        fprintf(output, "#include \"");
-                        fwrite(quote_start + 1, 1, module_len, output);
-                        fprintf(output, ".cz.h\"");
+                            /* Emit includes for all .cz files in the module */
+                            emit_module_includes(source_filename, module_path, output);
 
-                        /* Emit rest of line (comments, whitespace) */
-                        const char *rest = quote_end + 1;
-                        size_t rest_len = (import_start + node->token.length) - rest;
-                        if (rest_len > 0) {
-                            fwrite(rest, 1, rest_len, output);
+                            free(module_path);
+
+                            /* Emit rest of line (comments, whitespace) */
+                            const char *rest = quote_end + 1;
+                            size_t rest_len = (import_start + node->token.length) - rest;
+                            if (rest_len > 0) {
+                                fwrite(rest, 1, rest_len, output);
+                            }
+                            return;
                         }
-                        return;
                     }
                 }
             }
@@ -216,7 +337,7 @@ static void emit_node(ASTNode *node, FILE *output) {
 
     /* Recursively emit children */
     for (size_t i = 0; i < node->child_count; i++) {
-        emit_node(node->children[i], output);
+        emit_node(node->children[i], output, source_filename);
     }
 }
 
@@ -236,7 +357,7 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     fprintf(output, "#include <string.h>\n");
     fprintf(output, "\n");
 
-    emit_node(transpiler->ast, output);
+    emit_node(transpiler->ast, output, transpiler->filename);
 }
 
 /* Helper to check if position i is at the START of a function definition */
@@ -407,7 +528,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
 
                 /* Emit function signature (up to but not including the opening brace) */
                 for (size_t j = i; j < brace_pos; j++) {
-                    emit_node(children[j], output);
+                    emit_node(children[j], output, transpiler->filename);
                 }
 
                 /* Replace function body with semicolon for declaration */
@@ -417,11 +538,11 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                 i = find_function_end(children, brace_pos, count);
             } else {
                 /* Everything else (structs, typedefs, globals, pragmas) - emit as-is */
-                emit_node(children[i], output);
+                emit_node(children[i], output, transpiler->filename);
             }
         }
     } else {
-        emit_node(transpiler->ast, output);
+        emit_node(transpiler->ast, output, transpiler->filename);
     }
 }
 
@@ -498,7 +619,48 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     }
 
     /* Include the generated header */
-    fprintf(output, "#include \"%s\"\n\n", header_name);
+    fprintf(output, "#include \"%s\"\n", header_name);
+
+    /* Auto-include all other .cz files from the same module (directory) */
+    /* Only do this if the file uses the module system (has #import directives) */
+    if (transpiler->filename && has_import_directives(transpiler->ast)) {
+        char *filename_copy = strdup(transpiler->filename);
+        if (filename_copy) {
+            char *dir_path = dirname(filename_copy);
+
+            /* Get just the filename without directory */
+            char *filename_copy2 = strdup(transpiler->filename);
+            if (filename_copy2) {
+                const char *base_name = basename(filename_copy2);
+
+                /* Open directory and scan for other .cz files */
+                DIR *dir = opendir(dir_path);
+                if (dir) {
+                    struct dirent *entry;
+
+                    while ((entry = readdir(dir)) != NULL) {
+                        /* Check if file ends with .cz and is not the current file */
+                        size_t name_len = strlen(entry->d_name);
+                        if (name_len > 3 && strcmp(entry->d_name + name_len - 3, ".cz") == 0) {
+                            /* Skip the current file itself */
+                            if (strcmp(entry->d_name, base_name) != 0) {
+                                /* Skip main.cz as it typically only exports main() */
+                                if (strcmp(entry->d_name, "main.cz") != 0) {
+                                    fprintf(output, "#include \"%s.h\"\n", entry->d_name);
+                                }
+                            }
+                        }
+                    }
+
+                    closedir(dir);
+                }
+                free(filename_copy2);
+            }
+            free(filename_copy);
+        }
+    }
+
+    fprintf(output, "\n");
 
     /* Emit function definitions only */
     if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
@@ -514,7 +676,7 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
 
                 /* Emit the entire function definition */
                 for (size_t j = i; j <= func_end && j < count; j++) {
-                    emit_node(children[j], output);
+                    emit_node(children[j], output, transpiler->filename);
                 }
                 fprintf(output, "\n\n");
 
