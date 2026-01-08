@@ -25,6 +25,7 @@
 #include "transpiler/arguments.h"
 #include "transpiler/pragma.h"
 #include "transpiler/mutability.h"
+#include "transpiler/imports.h"
 #include "runtime/assert.h"
 #include "runtime/format.h"
 #include "runtime/log.h"
@@ -46,6 +47,10 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
     pragma_context_init(&transpiler->pragma_ctx);
     /* Parse pragmas from AST to update context */
     transpiler_parse_pragmas(ast, &transpiler->pragma_ctx);
+    /* Initialize module context */
+    module_context_init(&transpiler->module_ctx, filename);
+    /* Extract imports from AST */
+    transpiler_extract_imports(ast, &transpiler->module_ctx);
     /* Reset unused counter for each translation unit */
     transpiler_reset_unused_counter();
 }
@@ -170,6 +175,9 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform mutability (mut keyword and const insertion) */
     /* Must run after named arguments but before type transformations */
     transpiler_transform_mutability(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Transform #import directives to #include directives */
+    transpiler_transform_imports(transpiler->ast, &transpiler->module_ctx);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);

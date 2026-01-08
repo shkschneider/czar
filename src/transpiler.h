@@ -9,6 +9,7 @@
 
 #include "parser.h"
 #include "transpiler/pragma.h"
+#include "transpiler/imports.h"
 #include <stdio.h>
 
 /* Transpiler structure */
@@ -17,6 +18,7 @@ typedef struct {
     const char *filename;
     const char *source;
     PragmaContext pragma_ctx;  /* Pragma settings */
+    ModuleContext module_ctx;  /* Module/import context */
 } Transpiler;
 
 /* Initialize transpiler with AST */
