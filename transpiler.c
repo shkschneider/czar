@@ -208,3 +208,272 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     emit_node(transpiler->ast, output);
 }
 
+/* Helper to check if we're at a function definition start */
+static int is_function_start(ASTNode **children, size_t i, size_t count) {
+    /* Look for pattern: type identifier ( ... ) { 
+     * But NOT: struct/union/enum identifier { 
+     * And NOT: typedef struct { 
+     */
+    if (i >= count) return 0;
+    
+    /* Look for function pattern: ( ... ) { */
+    int found_open_paren = 0;
+    int found_close_paren = 0;
+    size_t open_brace_pos = 0;
+    
+    for (size_t j = i; j < count && j < i + 100; j++) {
+        if (children[j]->type != AST_TOKEN) continue;
+        
+        Token *t = &children[j]->token;
+        
+        /* Check for struct/union/enum/typedef keywords before we find parentheses */
+        if (!found_open_paren && t->type == TOKEN_KEYWORD) {
+            if ((t->length == 6 && strncmp(t->text, "struct", 6) == 0) ||
+                (t->length == 5 && strncmp(t->text, "union", 5) == 0) ||
+                (t->length == 4 && strncmp(t->text, "enum", 4) == 0) ||
+                (t->length == 7 && strncmp(t->text, "typedef", 7) == 0)) {
+                return 0;  /* This is a struct/union/enum/typedef, not a function */
+            }
+        }
+        
+        if (t->type == TOKEN_PUNCTUATION && t->length == 1) {
+            if (t->text[0] == '(') {
+                found_open_paren = 1;
+            } else if (t->text[0] == ')') {
+                found_close_paren = 1;
+            } else if (t->text[0] == '{') {
+                if (found_open_paren && found_close_paren) {
+                    return 1;  /* Function definition: ( ... ) { */
+                } else {
+                    return 0;  /* Brace without parentheses - struct/array/etc */
+                }
+            } else if (t->text[0] == ';' && found_close_paren) {
+                return 0;  /* Function declaration (prototype), not definition */
+            }
+        }
+    }
+    return 0;
+}
+
+/* Helper to check if node is a preprocessor directive */
+static int is_preprocessor(ASTNode *node) {
+    return node && node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR;
+}
+
+/* Helper to find end of preprocessor line (including #pragma) */
+static size_t find_preprocessor_end(ASTNode **children, size_t start, size_t count) {
+    for (size_t i = start; i < count; i++) {
+        if (children[i]->type == AST_TOKEN) {
+            Token *t = &children[i]->token;
+            /* Preprocessor directives end at newline in whitespace */
+            if (t->type == TOKEN_WHITESPACE && t->length > 0) {
+                for (size_t j = 0; j < t->length; j++) {
+                    if (t->text[j] == '\n') {
+                        return i;
+                    }
+                }
+            }
+        }
+    }
+    return start;
+}
+
+/* Helper to find the end of a function body */
+static size_t find_function_end(ASTNode **children, size_t start, size_t count) {
+    int brace_depth = 0;
+    int started = 0;
+    
+    for (size_t i = start; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        
+        Token *t = &children[i]->token;
+        if (t->type == TOKEN_PUNCTUATION && t->length == 1) {
+            if (t->text[0] == '{') {
+                brace_depth++;
+                started = 1;
+            } else if (t->text[0] == '}') {
+                brace_depth--;
+                if (started && brace_depth == 0) {
+                    return i;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+/* Emit transformed AST as C header file (declarations only) */
+void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
+    if (!transpiler || !transpiler->ast || !output) {
+        return;
+    }
+
+    /* Emit pragma once */
+    fprintf(output, "#pragma once\n\n");
+
+    /* Emit standard C includes */
+    fprintf(output, "#include <stdlib.h>\n");
+    fprintf(output, "#include <stdio.h>\n");
+    fprintf(output, "#include <stdint.h>\n");
+    fprintf(output, "#include <stdbool.h>\n");
+    fprintf(output, "#include <assert.h>\n");
+    fprintf(output, "#include <stdarg.h>\n");
+    fprintf(output, "#include <string.h>\n");
+    fprintf(output, "\n");
+
+    /* Emit everything except function bodies */
+    if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
+        ASTNode **children = transpiler->ast->children;
+        size_t count = transpiler->ast->child_count;
+        
+        for (size_t i = 0; i < count; i++) {
+            /* Skip user #include directives (already in standard includes) */
+            if (is_preprocessor(children[i])) {
+                if (children[i]->type == AST_TOKEN && 
+                    children[i]->token.type == TOKEN_PREPROCESSOR &&
+                    children[i]->token.length >= 8 &&
+                    strncmp(children[i]->token.text, "#include", 8) == 0) {
+                    size_t end = find_preprocessor_end(children, i, count);
+                    i = end;
+                    continue;
+                }
+                /* Keep other preprocessor directives like #pragma */
+            }
+            
+            /* Check if this is a function definition (has body) */
+            if (is_function_start(children, i, count)) {
+                /* Find where the opening brace is */
+                size_t brace_pos = i;
+                while (brace_pos < count) {
+                    if (children[brace_pos]->type == AST_TOKEN &&
+                        children[brace_pos]->token.type == TOKEN_PUNCTUATION &&
+                        children[brace_pos]->token.length == 1 &&
+                        children[brace_pos]->token.text[0] == '{') {
+                        break;
+                    }
+                    brace_pos++;
+                }
+                
+                /* Emit function signature (up to but not including the opening brace) */
+                for (size_t j = i; j < brace_pos; j++) {
+                    emit_node(children[j], output);
+                }
+                
+                /* Replace function body with semicolon for declaration */
+                fprintf(output, ";\n");
+                
+                /* Skip to end of function body */
+                i = find_function_end(children, brace_pos, count);
+            } else {
+                /* Everything else (structs, typedefs, globals, pragmas) - emit as-is */
+                emit_node(children[i], output);
+            }
+        }
+    } else {
+        emit_node(transpiler->ast, output);
+    }
+}
+
+/* Helper to find end of any brace block */
+static size_t find_brace_block_end(ASTNode **children, size_t start, size_t count) {
+    int brace_depth = 0;
+    int started = 0;
+    
+    for (size_t i = start; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        
+        Token *t = &children[i]->token;
+        if (t->type == TOKEN_PUNCTUATION && t->length == 1) {
+            if (t->text[0] == '{') {
+                if (!started) {
+                    /* This is the opening brace we're starting from */
+                    brace_depth = 1;
+                    started = 1;
+                } else {
+                    brace_depth++;
+                }
+            } else if (t->text[0] == '}') {
+                brace_depth--;
+                if (started && brace_depth == 0) {
+                    return i;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+/* Helper to find the start of a statement/declaration (scan backwards to previous semicolon or start) */
+static size_t find_statement_start(ASTNode **children, size_t pos, size_t count) {
+    /* Scan backwards to find the previous semicolon, closing brace, or start of file */
+    for (size_t i = (pos > 0 ? pos - 1 : 0); ; i--) {
+        if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_PUNCTUATION && children[i]->token.length == 1) {
+            char c = children[i]->token.text[0];
+            if (c == ';' || c == '}') {
+                return i + 1;  /* Start after the semicolon or brace */
+            }
+        }
+        if (i == 0) {
+            return 0;  /* Start of file */
+        }
+    }
+}
+
+/* Helper to find the end of a statement (scan forward to next semicolon or closing brace at depth 0) */
+static size_t find_statement_end(ASTNode **children, size_t start, size_t count) {
+    int brace_depth = 0;
+    for (size_t i = start; i < count; i++) {
+        if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_PUNCTUATION && children[i]->token.length == 1) {
+            char c = children[i]->token.text[0];
+            if (c == '{') {
+                brace_depth++;
+            } else if (c == '}') {
+                brace_depth--;
+                if (brace_depth <= 0) {
+                    return i;
+                }
+            } else if (c == ';' && brace_depth == 0) {
+                return i;
+            }
+        }
+    }
+    return count;
+}
+
+/* Emit transformed AST as C source file (implementations only) */
+void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *header_name) {
+    if (!transpiler || !transpiler->ast || !output) {
+        return;
+    }
+
+    /* Include the generated header */
+    fprintf(output, "#include \"%s\"\n\n", header_name);
+
+    /* Emit function definitions only */
+    if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
+        ASTNode **children = transpiler->ast->children;
+        size_t count = transpiler->ast->child_count;
+        
+        size_t i = 0;
+        while (i < count) {
+            /* Check if current position starts a function definition */
+            if (is_function_start(children, i, count)) {
+                /* Find the end of the function */
+                size_t func_end = find_function_end(children, i, count);
+                
+                /* Emit the entire function */
+                for (size_t j = i; j <= func_end && j < count; j++) {
+                    emit_node(children[j], output);
+                }
+                fprintf(output, "\n");
+                
+                i = func_end + 1;
+            } else {
+                /* Not a function start - just skip this token */
+                i++;
+            }
+        }
+    }
+}
+
+
