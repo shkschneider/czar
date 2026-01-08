@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 #include <stdio.h>
 
 /*
@@ -60,13 +61,13 @@ int main(void) {
     v.x = 3;
     v.y = 4;
     u8 len = v.length();
-    cz_assert(len == 12);
+    assert(len == 12);
     printf("Test 1 passed: Basic method call v.length() = %u\n", len);
 
     /* Test 2: Method with parameters */
     v.set(5, 6);
-    cz_assert(v.x == 5);
-    cz_assert(v.y == 6);
+    assert(v.x == 5);
+    assert(v.y == 6);
     printf("Test 2 passed: Method with parameters v.set(5, 6)\n");
 
     /* Test 3: Method returning struct */
@@ -74,8 +75,8 @@ int main(void) {
     v2.x = 1;
     v2.y = 2;
     Vec2 v3 = v.add(v2);
-    cz_assert(v3.x == 6);
-    cz_assert(v3.y == 8);
+    assert(v3.x == 6);
+    assert(v3.y == 8);
     printf("Test 3 passed: Method returning struct v.add(v2)\n");
 
     /* Test 4: Static method call */
@@ -83,18 +84,18 @@ int main(void) {
     v4.x = 2;
     v4.y = 3;
     u8 len2 = Vec2.length(&v4);
-    cz_assert(len2 == 6);
+    assert(len2 == 6);
     printf("Test 4 passed: Static method call Vec2.length(&v4) = %u\n", len2);
 
     /* Test 5: Multiple structs with methods */
     mut Counter c = {0};
     c.value = 10;
     i32 val = c.get();
-    cz_assert(val == 10);
+    assert(val == 10);
     c.increment();
-    cz_assert(c.value == 11);
+    assert(c.value == 11);
     c.addDelta(5);
-    cz_assert(c.value == 16);
+    assert(c.value == 16);
     printf("Test 5 passed: Multiple structs with methods\n");
 
     printf("All struct method tests passed!\n");

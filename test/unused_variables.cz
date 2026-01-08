@@ -4,6 +4,7 @@
  */
 
 #include <stdint.h>
+#include <assert.h>
 #include <stdio.h>
 
 int main(void) {
@@ -23,7 +24,7 @@ int main(void) {
     }
 
     /* Use the regular variable to avoid warning */
-    cz_assert(used_var == 100);
+    assert(used_var == 100);
 
     printf("Unused variable test passed!\n");
     return 0;

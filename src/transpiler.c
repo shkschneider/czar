@@ -25,10 +25,6 @@
 #include "transpiler/arguments.h"
 #include "transpiler/pragma.h"
 #include "transpiler/mutability.h"
-#include "runtime/assert.h"
-#include "runtime/format.h"
-#include "runtime/log.h"
-#include "runtime/monotonic.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -161,9 +157,6 @@ void transpiler_transform(Transpiler *transpiler) {
     transpiler_expand_todo(transpiler->ast, transpiler->filename);
     transpiler_expand_fixme(transpiler->ast, transpiler->filename);
 
-    /* Expand Log calls with #line directives for correct source locations */
-    transpiler_expand_log_calls(transpiler->ast, transpiler->filename);
-
     /* Transform named arguments (strip labels) - must run before type transformations */
     transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
 
@@ -203,23 +196,15 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
         return;
     }
 
-    /* Emit POSIX feature test macro first, before any includes */
-    fprintf(output, "/* CZar - Enable POSIX features */\n");
-    fprintf(output, "#ifndef _POSIX_C_SOURCE\n");
-    fprintf(output, "#define _POSIX_C_SOURCE 199309L\n");
-    fprintf(output, "#endif\n\n");
-
-    /* Inject runtime macro definitions at the beginning */
-    runtime_emit_assert(output);
-
-    /* Emit Monotonic Clock/Timer runtime support (needed by log) */
-    runtime_emit_monotonic(output);
-
-    /* Emit Log runtime support using pragma debug mode setting */
-    runtime_emit_log(output, transpiler->pragma_ctx.debug_mode);
-
-    /* Emit Format runtime support */
-    runtime_emit_format(output);
+    /* Emit standard C includes */
+    fprintf(output, "#include <stdlib.h>\n");
+    fprintf(output, "#include <stdio.h>\n");
+    fprintf(output, "#include <stdint.h>\n");
+    fprintf(output, "#include <stdbool.h>\n");
+    fprintf(output, "#include <assert.h>\n");
+    fprintf(output, "#include <stdarg.h>\n");
+    fprintf(output, "#include <string.h>\n");
+    fprintf(output, "\n");
 
     emit_node(transpiler->ast, output);
 }
