@@ -1,6 +1,6 @@
 /*
  * Test comprehensive compiler extension support
- * Tests: deprecated, warn_unused_result, unused
+ * Tests: deprecated, warn_unused_result, unused, pure
  */
 
 #include <stdio.h>
@@ -25,12 +25,22 @@ int calculate(void) {
     return 42;
 }
 
-/* Test 3: void functions don't get warn_unused_result */
+/* Test 3: void functions don't get warn_unused_result or pure */
 void log_message(void) {
     printf("Logging...\n");
 }
 
-/* Test 4: unused variable suppression with _ */
+/* Test 4: pure attribute (functions with no parameters) */
+int get_constant(void) {
+    return 100;
+}
+
+/* Test 5: functions with parameters don't get pure */
+int add(int a, int b) {
+    return a + b;
+}
+
+/* Test 6: unused variable suppression with _ */
 int main(void) {
     /* Using _ to suppress unused variable warnings */
     int _ = get_status();
@@ -38,6 +48,12 @@ int main(void) {
     /* Normal usage */
     int result = calculate();
     printf("Result: %d\n", result);
+    
+    int constant = get_constant();
+    printf("Constant: %d\n", constant);
+    
+    int sum = add(a = result, b = constant);
+    printf("Sum: %d\n", sum);
     
     /* void function - no warning */
     log_message();

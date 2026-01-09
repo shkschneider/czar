@@ -142,6 +142,9 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Add warn_unused_result to non-void functions */
     transpiler_add_warn_unused_result(transpiler->ast);
 
+    /* Add pure attribute to functions with no params or only immutable params */
+    transpiler_add_pure(transpiler->ast);
+
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
 
