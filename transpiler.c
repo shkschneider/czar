@@ -839,8 +839,8 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     fprintf(output, "#include \"%s\"\n", header_name);
 
     /* Auto-include all other .cz.h files from the same module (directory) */
-    /* This is now always done (not just when has_import_directives) */
-    if (transpiler->filename) {
+    /* Only do this if the file uses the module system (has #import directives) */
+    if (transpiler->filename && has_import_directives(transpiler->ast)) {
         /* Get directory path */
         char *dir_copy = strdup(transpiler->filename);
         if (!dir_copy) {

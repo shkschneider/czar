@@ -1,3 +1,8 @@
-bool third_test(void) {
+bool get_return_value(void) {
     return false;
+}
+
+// Third file in src module
+export bool third_test(void) {
+    return get_return_value();
 }

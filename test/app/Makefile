@@ -8,7 +8,7 @@ SOURCES_C  := $(filter-out %.cz.c,$(wildcard *.c))
 SOURCES_CZ := $(wildcard */*.cz) $(wildcard *.cz)
 OBJECTS    := $(SOURCES_C:.c=.o) $(SOURCES_CZ:.cz=.cz.o)
 
-all: $(OUT)
+all: $(CZ) $(OUT)
 	./$(OUT)
 
 # CZar
