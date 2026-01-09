@@ -15,7 +15,8 @@ all: $(CZ) $(OUT)
 .PRECIOUS: $(SOURCES_CZ:.cz=.cz.h) $(SOURCES_CZ:.cz=.cz.c)
 %.cz.c %.cz.h &: %.cz
 	$(CZ) $<
-%.cz.o: %.cz.c %.cz.h
+# All .cz.o files depend on all .cz.h files being generated (for auto-includes)
+%.cz.o: %.cz.c %.cz.h $(SOURCES_CZ:.cz=.cz.h)
 	$(CC) $(CFLAGS) -c $< -o $@
 .SUFFIXES:
 

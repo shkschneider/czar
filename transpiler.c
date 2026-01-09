@@ -294,6 +294,29 @@ static int has_import_directives(ASTNode *node) {
     return 0;
 }
 
+/* Check if AST contains any export keywords */
+static int has_export_declarations(ASTNode *node) {
+    if (!node) {
+        return 0;
+    }
+
+    /* Check if this node is an export keyword */
+    if (node->type == AST_TOKEN && node->token.type == TOKEN_IDENTIFIER) {
+        if (node->token.length == 6 && strncmp(node->token.text, "export", 6) == 0) {
+            return 1;
+        }
+    }
+
+    /* Recursively check children */
+    for (size_t i = 0; i < node->child_count; i++) {
+        if (has_export_declarations(node->children[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 
 /* Emit AST node recursively */
 static void emit_node(ASTNode *node, FILE *output, const char *source_filename) {
@@ -839,8 +862,47 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     fprintf(output, "#include \"%s\"\n", header_name);
 
     /* Auto-include all other .cz.h files from the same module (directory) */
-    /* Only do this if the file uses the module system (has #import directives) */
-    if (transpiler->filename && has_import_directives(transpiler->ast)) {
+    /* This happens unconditionally for module directories */
+    /* Skip for directories that look like test collections */
+    if (transpiler->filename) {
+        /* Check if this looks like a test directory that shouldn't auto-include */
+        char *dir_copy_test = strdup(transpiler->filename);
+        int skip_auto_include = 0;
+        if (dir_copy_test) {
+            char *dir_result_test = dirname(dir_copy_test);
+            char *base_dir_name = basename(dir_result_test);
+            
+            /* Skip auto-include for "test" directories (but not subdirectories like "test/app") */
+            if (strcmp(base_dir_name, "test") == 0) {
+                /* Count .cz files - if many, it's likely a test collection */
+                DIR *dir_test = opendir(dir_result_test);
+                if (dir_test) {
+                    struct dirent *entry_test;
+                    int cz_count = 0;
+                    while ((entry_test = readdir(dir_test)) != NULL) {
+                        size_t name_len = strlen(entry_test->d_name);
+                        if (name_len > 3 && strcmp(entry_test->d_name + name_len - 3, ".cz") == 0) {
+                            cz_count++;
+                            if (cz_count > 5) {
+                                /* Many test files, don't auto-include */
+                                skip_auto_include = 1;
+                                break;
+                            }
+                        }
+                    }
+                    closedir(dir_test);
+                }
+            }
+            free(dir_copy_test);
+        }
+        
+        if (skip_auto_include) {
+            fprintf(output, "\n");
+            goto emit_functions;
+        }
+    }
+    
+    if (transpiler->filename) {
         /* Get directory path */
         char *dir_copy = strdup(transpiler->filename);
         if (!dir_copy) {
@@ -877,6 +939,22 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
         DIR *dir = opendir(dir_path);
         if (dir) {
             struct dirent *entry;
+            
+            /* Determine if we need a directory prefix for includes */
+            /* If dir_path is "." we don't need a prefix, otherwise we do */
+            int need_prefix = (strcmp(dir_path, ".") != 0);
+            
+            /* Extract directory name for prefix if needed */
+            char *dir_prefix = NULL;
+            if (need_prefix) {
+                /* Get the last component of dir_path for the prefix */
+                char *dir_copy2 = strdup(dir_path);
+                if (dir_copy2) {
+                    char *base_dir = basename(dir_copy2);
+                    dir_prefix = strdup(base_dir);
+                    free(dir_copy2);
+                }
+            }
 
             while ((entry = readdir(dir)) != NULL) {
                 /* Check if file ends with .cz and is not the current file */
@@ -885,14 +963,18 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
                 if (name_len > cz_ext_len && strcmp(entry->d_name + name_len - cz_ext_len, ".cz") == 0) {
                     /* Skip the current file itself */
                     if (strcmp(entry->d_name, base_name) != 0) {
-                        /* Skip main.cz as it typically only exports main() */
-                        if (strcmp(entry->d_name, "main.cz") != 0) {
+                        if (dir_prefix) {
+                            fprintf(output, "#include \"%s/%s.h\"\n", dir_prefix, entry->d_name);
+                        } else {
                             fprintf(output, "#include \"%s.h\"\n", entry->d_name);
                         }
                     }
                 }
             }
 
+            if (dir_prefix) {
+                free(dir_prefix);
+            }
             closedir(dir);
         }
 
