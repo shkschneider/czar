@@ -13,6 +13,7 @@
 #include <stdio.h>
 
 #define ATTRIBUTE_WARN_UNUSED_RESULT "__attribute__((warn_unused_result))\n"
+#define ATTRIBUTE_PURE "__attribute__((pure))\n"
 
 /* Helper function to check if token text matches */
 static int token_text_equals(Token *token, const char *text) {
@@ -421,6 +422,208 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
         } else {
             free(attr_node->token.text);
             free(attr_node);
+        }
+    }
+}
+
+/* Add pure attribute to functions with no parameters or only immutable parameters */
+void transpiler_add_pure(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    ASTNode **children = ast->children;
+    size_t count = ast->child_count;
+
+    /* Scan for function declarations */
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
+
+        /* Look for function name followed by ( */
+        size_t j = skip_whitespace(children, count, i + 1);
+        if (j >= count) continue;
+        if (children[j]->type != AST_TOKEN) continue;
+        if (!token_text_equals(&children[j]->token, "(")) continue;
+
+        /* Check if this is a method (has . before function name) */
+        int is_method = 0;
+        for (int k = (int)i - 1; k >= 0 && k >= (int)i - 5; k--) {
+            if (children[k]->type != AST_TOKEN) continue;
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
+                children[k]->token.type == TOKEN_COMMENT) continue;
+            
+            if (children[k]->token.type == TOKEN_PUNCTUATION &&
+                children[k]->token.text &&
+                strcmp(children[k]->token.text, ".") == 0) {
+                is_method = 1;
+                break;
+            }
+            break;
+        }
+
+        if (is_method) continue; /* Skip struct methods */
+
+        /* Find return type */
+        int return_type_idx = -1;
+        for (int k = (int)i - 1; k >= 0 && k >= (int)i - 15; k--) {
+            if (children[k]->type != AST_TOKEN) continue;
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
+                children[k]->token.type == TOKEN_COMMENT) continue;
+
+            /* Skip attributes */
+            if (children[k]->token.type == TOKEN_KEYWORD &&
+                children[k]->token.text &&
+                strstr(children[k]->token.text, "__attribute__") != NULL) {
+                continue;
+            }
+
+            if (children[k]->token.type == TOKEN_KEYWORD ||
+                children[k]->token.type == TOKEN_IDENTIFIER) {
+                const char *text = children[k]->token.text;
+                if (strcmp(text, "void") == 0 || strcmp(text, "int") == 0 ||
+                    strcmp(text, "char") == 0 || strcmp(text, "short") == 0 ||
+                    strcmp(text, "long") == 0 || strcmp(text, "float") == 0 ||
+                    strcmp(text, "double") == 0 || strcmp(text, "unsigned") == 0 ||
+                    strcmp(text, "signed") == 0 || strcmp(text, "u8") == 0 ||
+                    strcmp(text, "u16") == 0 || strcmp(text, "u32") == 0 ||
+                    strcmp(text, "u64") == 0 || strcmp(text, "i8") == 0 ||
+                    strcmp(text, "i16") == 0 || strcmp(text, "i32") == 0 ||
+                    strcmp(text, "i64") == 0 || strcmp(text, "uint8_t") == 0 ||
+                    strcmp(text, "uint16_t") == 0 || strcmp(text, "uint32_t") == 0 ||
+                    strcmp(text, "uint64_t") == 0 || strcmp(text, "int8_t") == 0 ||
+                    strcmp(text, "int16_t") == 0 || strcmp(text, "int32_t") == 0 ||
+                    strcmp(text, "int64_t") == 0 || strcmp(text, "bool") == 0 ||
+                    strcmp(text, "size_t") == 0 || strcmp(text, "const") == 0 ||
+                    strcmp(text, "static") == 0 || strcmp(text, "inline") == 0 ||
+                    strcmp(text, "export") == 0) {
+                    return_type_idx = k;
+                    break;
+                }
+            }
+            break;
+        }
+
+        if (return_type_idx < 0) continue;
+
+        /* Skip void functions - pure doesn't apply to void returns */
+        if (children[return_type_idx]->token.text &&
+            strcmp(children[return_type_idx]->token.text, "void") == 0) {
+            continue;
+        }
+
+        /* Check if pure attribute is already present */
+        int has_pure = 0;
+        for (int k = return_type_idx; k < (int)i; k++) {
+            if (children[k]->type == AST_TOKEN &&
+                children[k]->token.type == TOKEN_KEYWORD &&
+                children[k]->token.text &&
+                strstr(children[k]->token.text, "pure") != NULL) {
+                has_pure = 1;
+                break;
+            }
+        }
+
+        if (has_pure) continue;
+
+        /* Analyze parameters - check if function has any real parameters */
+        /* Functions with () or (void) have no parameters */
+        size_t paren_start = j;
+        int paren_depth = 1;
+        int has_params = 0;
+        int token_count = 0; /* Count actual content tokens */
+
+        for (size_t k = paren_start + 1; k < count && paren_depth > 0; k++) {
+            if (children[k]->type != AST_TOKEN) continue;
+            
+            Token *tok = &children[k]->token;
+            
+            /* Track parentheses depth */
+            if (tok->type == TOKEN_PUNCTUATION && tok->text) {
+                if (strcmp(tok->text, "(") == 0) {
+                    paren_depth++;
+                } else if (strcmp(tok->text, ")") == 0) {
+                    paren_depth--;
+                    if (paren_depth == 0) {
+                        break;
+                    }
+                }
+                continue; /* Don't count punctuation as content */
+            }
+
+            /* Skip whitespace and comments */
+            if (tok->type == TOKEN_WHITESPACE || tok->type == TOKEN_COMMENT) {
+                continue;
+            }
+
+            /* Count non-trivial tokens */
+            token_count++;
+            
+            /* Check if it's just "void" */
+            if (token_count == 1 && tok->type == TOKEN_KEYWORD && tok->text && 
+                strcmp(tok->text, "void") == 0) {
+                /* First token is void - might be (void) which means no params */
+                continue;
+            }
+            
+            /* Found actual parameter content (not just void) */
+            has_params = 1;
+            break;
+        }
+
+        /* If we only saw "void" or nothing, no params */
+        if (token_count <= 1) {
+            has_params = 0;
+        }
+
+        /* Only add pure if function has no parameters */
+        if (!has_params) {
+            /* Insert __attribute__((pure)) before the return type */
+            ASTNode *attr_node = malloc(sizeof(ASTNode));
+            if (!attr_node) continue;
+
+            attr_node->type = AST_TOKEN;
+            attr_node->token.type = TOKEN_KEYWORD;
+            attr_node->token.text = strdup(ATTRIBUTE_PURE);
+            if (!attr_node->token.text) {
+                free(attr_node);
+                continue;
+            }
+            attr_node->token.length = strlen(attr_node->token.text);
+            attr_node->token.line = children[return_type_idx]->token.line;
+            attr_node->token.column = children[return_type_idx]->token.column;
+            attr_node->children = NULL;
+            attr_node->child_count = 0;
+            attr_node->child_capacity = 0;
+
+            /* Grow array if needed */
+            if (ast->child_count >= ast->child_capacity) {
+                size_t new_capacity = ast->child_capacity == 0 ? 8 : ast->child_capacity * 2;
+                ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                if (new_children) {
+                    ast->children = new_children;
+                    ast->child_capacity = new_capacity;
+                    children = ast->children;
+                } else {
+                    free(attr_node->token.text);
+                    free(attr_node);
+                    continue;
+                }
+            }
+
+            /* Insert at return_type_idx */
+            if (ast->child_count < ast->child_capacity) {
+                for (size_t m = ast->child_count; m > (size_t)return_type_idx; m--) {
+                    ast->children[m] = ast->children[m - 1];
+                }
+                ast->children[return_type_idx] = attr_node;
+                ast->child_count++;
+                count = ast->child_count;
+                i++; /* Adjust loop index */
+            } else {
+                free(attr_node->token.text);
+                free(attr_node);
+            }
         }
     }
 }

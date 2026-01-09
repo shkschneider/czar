@@ -17,3 +17,6 @@ void transpiler_transform_functions(ASTNode *ast);
 
 /* Add warn_unused_result attribute to non-void functions */
 void transpiler_add_warn_unused_result(ASTNode *ast);
+
+/* Add pure attribute to functions with no parameters or only immutable parameters */
+void transpiler_add_pure(ASTNode *ast);
