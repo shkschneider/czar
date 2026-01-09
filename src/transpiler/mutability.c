@@ -339,6 +339,64 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         }
     }
     
+    /* Pass 1.7: Forbid address-taking of temporaries (literals and cast expressions) */
+    /* Scan for patterns like: &(literal) or &(cast)expr */
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok = &children[i]->token;
+        
+        /* Look for & operator */
+        if (token_equals(tok, "&")) {
+            size_t next_idx = skip_whitespace(children, count, i + 1);
+            if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
+            Token *next_tok = &children[next_idx]->token;
+            
+            /* Check if followed by ( - potential temporary */
+            if (token_equals(next_tok, "(")) {
+                /* Scan ahead to see if this is a cast expression or literal */
+                size_t peek_idx = skip_whitespace(children, count, next_idx + 1);
+                if (peek_idx >= count || children[peek_idx]->type != AST_TOKEN) continue;
+                Token *peek_tok = &children[peek_idx]->token;
+                
+                /* Check for literal (number) */
+                if (peek_tok->type == TOKEN_NUMBER) {
+                    char error_msg[256];
+                    snprintf(error_msg, sizeof(error_msg),
+                        "Cannot take address of temporary value. "
+                        "Address-of operator '&' cannot be used with literals or temporary expressions. "
+                        "Assign to a variable first: e.g., 'int x = %s; int* p = &x;'",
+                        peek_tok->text);
+                    cz_error(filename, source, tok->line, error_msg);
+                }
+                
+                /* Check for cast expression: (Type)value */
+                /* Pattern: & ( Type ) expr */
+                if (peek_tok->type == TOKEN_IDENTIFIER) {
+                    /* Look ahead to see if followed by ) - could be cast */
+                    size_t after_type_idx = skip_whitespace(children, count, peek_idx + 1);
+                    if (after_type_idx < count && children[after_type_idx]->type == AST_TOKEN &&
+                        token_equals(&children[after_type_idx]->token, ")")) {
+                        /* This looks like a cast: &(Type)... */
+                        /* Check if followed by something other than an identifier */
+                        size_t after_close_idx = skip_whitespace(children, count, after_type_idx + 1);
+                        if (after_close_idx < count && children[after_close_idx]->type == AST_TOKEN) {
+                            Token *after_close = &children[after_close_idx]->token;
+                            /* If it's a number or open paren, it's likely a compound literal or cast */
+                            if (after_close->type == TOKEN_NUMBER || token_equals(after_close, "{")) {
+                                char error_msg[256];
+                                snprintf(error_msg, sizeof(error_msg),
+                                    "Cannot take address of temporary value. "
+                                    "Address-of operator '&' cannot be used with cast expressions or compound literals. "
+                                    "Assign to a variable first.");
+                                cz_error(filename, source, tok->line, error_msg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     /* Pass 1.75: Validate mutable pointers are not initialized with immutable data */
     /* Scan for patterns like: mut T* p = &var where var is immutable */
     /* Track all variable declarations and their mutability within function bodies */
