@@ -186,7 +186,6 @@ void transpiler_transform_defer(ASTNode *ast) {
             continue;
         }
         
-        
         /* Found defer keyword */
         size_t func_end_pos = 0;
         char *func_name = extract_function_name(ast->children, ast->child_count, i + 1, &func_end_pos);
@@ -214,7 +213,6 @@ void transpiler_transform_defer(ASTNode *ast) {
         int n = snprintf(buffer, sizeof(buffer),
             "__attribute__((cleanup(%s))) void *_cz_defer_%d = %s",
             func_name, defer_counter, arg);
-        
         
         if (n < 0 || n >= (int)sizeof(buffer)) {
             /* Buffer overflow, skip this defer */
@@ -247,7 +245,6 @@ void transpiler_transform_defer(ASTNode *ast) {
                 }
             }
         }
-        
         
         free(func_name);
         free(arg);
