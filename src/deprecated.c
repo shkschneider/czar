@@ -19,12 +19,11 @@
 /* Replacement attribute */
 #define DEPRECATED_ATTRIBUTE "__attribute__((deprecated)) "
 
-/* Helper to clear token text and set to empty string */
+/* Helper to clear token text (emit function handles NULL text) */
 static void clear_token_text(Token *token) {
     if (!token) return;
     free(token->text);
-    token->text = strdup("");
-    /* If strdup fails, leave as NULL - the emit function handles NULL text */
+    token->text = NULL;
     token->length = 0;
 }
 
@@ -101,7 +100,8 @@ void transpiler_transform_deprecated(ASTNode *ast) {
         Token *tok = &ast->children[i]->token;
         
         /* Check if this is a #deprecated directive */
-        if (tok->length < DEPRECATED_DIRECTIVE_LEN ||
+        if (!tok->text ||
+            tok->length < DEPRECATED_DIRECTIVE_LEN ||
             strncmp(tok->text, DEPRECATED_DIRECTIVE, DEPRECATED_DIRECTIVE_LEN) != 0) {
             continue;
         }
