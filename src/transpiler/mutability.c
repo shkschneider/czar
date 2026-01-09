@@ -850,7 +850,7 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         /* Track brace depth to know if we're inside a function */
         if (tok->type == TOKEN_PUNCTUATION) {
             if (token_equals(tok, "{")) {
-                brace_depth_global++;
+                brace_depth++;
                 /* Simple heuristic: if we see { after ) then we're entering a function body */
                 size_t prev_idx;
                 if (find_prev_token(children, i, &prev_idx)) {
@@ -859,7 +859,7 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                     }
                 }
             } else if (token_equals(tok, "}")) {
-                brace_depth_global--;
+                brace_depth--;
                 if (brace_depth == 0) {
                     in_function_body = 0;
                 }
