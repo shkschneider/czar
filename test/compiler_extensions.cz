@@ -1,0 +1,46 @@
+/*
+ * Test comprehensive compiler extension support
+ * Tests: deprecated, warn_unused_result, unused
+ */
+
+#include <stdio.h>
+
+/* Test 1: deprecated functions */
+#deprecated
+void old_api(void) {
+    printf("Old API\n");
+}
+
+#deprecated
+int legacy_function(void) {
+    return 1;
+}
+
+/* Test 2: warn_unused_result (automatic for non-void functions) */
+int get_status(void) {
+    return 0;
+}
+
+int calculate(void) {
+    return 42;
+}
+
+/* Test 3: void functions don't get warn_unused_result */
+void log_message(void) {
+    printf("Logging...\n");
+}
+
+/* Test 4: unused variable suppression with _ */
+int main(void) {
+    /* Using _ to suppress unused variable warnings */
+    int _ = get_status();
+    
+    /* Normal usage */
+    int result = calculate();
+    printf("Result: %d\n", result);
+    
+    /* void function - no warning */
+    log_message();
+    
+    return 0;
+}
