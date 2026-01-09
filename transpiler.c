@@ -131,7 +131,6 @@ void transpiler_transform(Transpiler *transpiler) {
     /* First validate the AST for CZar semantic rules */
     transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
 
-
     /* Validate cast expressions */
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
 
