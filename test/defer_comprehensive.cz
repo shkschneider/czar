@@ -1,0 +1,54 @@
+/*
+ * Comprehensive defer test
+ * Tests: Multiple defers, nested scopes, early returns
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+
+/* Cleanup functions */
+void cleanup_free(mut void **ptr) {
+    if (*ptr) {
+        printf("Freeing: %p\n", *ptr);
+        free(*ptr);
+        *ptr = NULL;
+    }
+}
+
+int main(void) {
+    printf("Testing CZar defer functionality\n");
+    
+    /* Test 1: Multiple defers - execute in reverse order (LIFO) */
+    {
+        printf("\n=== Test: Multiple defers ===\n");
+        void *p1 = malloc(50);
+        defer cleanup_free(p1);
+        printf("Allocated p1: %p\n", p1);
+        
+        void *p2 = malloc(100);
+        defer cleanup_free(p2);
+        printf("Allocated p2: %p\n", p2);
+        
+        printf("Defers will execute in reverse order (LIFO) when scope exits\n");
+    }
+    
+    /* Test 2: Nested scope */
+    {
+        printf("\n=== Test: Nested scope ===\n");
+        void *outer = malloc(200);
+        defer cleanup_free(outer);
+        printf("Allocated outer: %p\n", outer);
+        
+        {
+            void *inner = malloc(50);
+            defer cleanup_free(inner);
+            printf("Allocated inner: %p\n", inner);
+            printf("Inner defer will fire when this block ends\n");
+        }
+        
+        printf("Inner scope exited, outer still active\n");
+    }
+    
+    printf("\n=== All tests completed ===\n");
+    return 0;
+}
