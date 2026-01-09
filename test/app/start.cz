@@ -1,10 +1,9 @@
-#include <assert.h>
 #import "src"
 
-void start(void) {
-    mut Vec2 v2 = {};
+export void start(void) {
+    mut Vec2_t v2 = {};
     v2.x += 1;
     v2.y += 2;
-    mut Vec3 v3 = { x: v2.x, y: v2.y };
+    mut Vec3_t v3 = { x: v2.x, y: v2.y };
     v3.z++;
 }
