@@ -16,15 +16,15 @@
 #define DEPRECATED_DIRECTIVE "#deprecated"
 #define DEPRECATED_DIRECTIVE_LEN 11
 
+/* Replacement attribute */
+#define DEPRECATED_ATTRIBUTE "__attribute__((deprecated)) "
+
 /* Helper to clear token text and set to empty string */
 static void clear_token_text(Token *token) {
     if (!token) return;
     free(token->text);
     token->text = strdup("");
-    if (!token->text) {
-        /* If strdup fails, set to NULL to indicate empty */
-        token->text = NULL;
-    }
+    /* If strdup fails, leave as NULL - the emit function handles NULL text */
     token->length = 0;
 }
 
@@ -118,7 +118,7 @@ void transpiler_transform_deprecated(ASTNode *ast) {
         /* Check if what follows is a function declaration */
         if (is_function_declaration(ast->children, ast->child_count, next_pos)) {
             /* Replace #deprecated with __attribute__((deprecated)) followed by a space */
-            char *replacement = strdup("__attribute__((deprecated)) ");
+            char *replacement = strdup(DEPRECATED_ATTRIBUTE);
             if (replacement) {
                 free(ast->children[i]->token.text);
                 ast->children[i]->token.text = replacement;
