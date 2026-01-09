@@ -1,0 +1,28 @@
+/*
+ * Test the #deprecated compiler extension directive
+ */
+
+#include <stdio.h>
+
+#deprecated
+void old_function(void) {
+    printf("This function is deprecated\n");
+}
+
+#deprecated
+int legacy_api(int x) {
+    return x * 2;
+}
+
+void new_function(void) {
+    printf("This is the new function\n");
+}
+
+int main(void) {
+    /* We don't call deprecated functions here to avoid compiler warnings */
+    /* The transpiler converts #deprecated to __attribute__((deprecated)) */
+    /* which the C compiler will recognize and warn about when used */
+    new_function();
+    printf("Deprecated functions are marked but not called\n");
+    return 0;
+}

@@ -10,6 +10,7 @@
 #include "src/autodereference.h"
 #include "src/casts.h"
 #include "src/constants.h"
+#include "src/deprecated.h"
 #include "src/enums.h"
 #include "src/errors.h"
 #include "src/fixme.h"
@@ -119,6 +120,9 @@ void transpiler_transform(Transpiler *transpiler) {
     if (!transpiler || !transpiler->ast) {
         return;
     }
+
+    /* Transform #deprecated directives to __attribute__((deprecated)) */
+    transpiler_transform_deprecated(transpiler->ast);
 
     /* First validate the AST for CZar semantic rules */
     transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
