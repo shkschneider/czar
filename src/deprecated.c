@@ -12,6 +12,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Helper to clear token text and set to empty string */
+static void clear_token_text(Token *token) {
+    free(token->text);
+    token->text = strdup("");
+    token->length = 0;
+}
+
 /* Skip whitespace and comments */
 static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
     for (size_t i = start; i < count; i++) {
@@ -60,9 +67,9 @@ static int is_function_declaration(ASTNode **children, size_t count, size_t star
         }
 
         i++;
-        
+
         /* Stop if we hit something that's clearly not a function */
-        if (tok->type == TOKEN_PUNCTUATION && 
+        if (tok->type == TOKEN_PUNCTUATION &&
             (tok->text[0] == ';' || tok->text[0] == '{' || tok->text[0] == '}')) {
             break;
         }
@@ -94,9 +101,7 @@ void transpiler_transform_deprecated(ASTNode *ast) {
         
         if (next_pos >= ast->child_count) {
             /* Just remove the #deprecated if nothing follows */
-            free(ast->children[i]->token.text);
-            ast->children[i]->token.text = strdup("");
-            ast->children[i]->token.length = 0;
+            clear_token_text(&ast->children[i]->token);
             continue;
         }
 
@@ -108,13 +113,15 @@ void transpiler_transform_deprecated(ASTNode *ast) {
                 free(ast->children[i]->token.text);
                 ast->children[i]->token.text = replacement;
                 ast->children[i]->token.length = strlen(replacement);
-                ast->children[i]->token.type = TOKEN_IDENTIFIER;
+                /* Change to TOKEN_KEYWORD so it's treated as part of the function declaration */
+                ast->children[i]->token.type = TOKEN_KEYWORD;
+            } else {
+                /* If strdup fails, clear the token to avoid inconsistent state */
+                clear_token_text(&ast->children[i]->token);
             }
         } else {
             /* Not a function, just remove the #deprecated directive */
-            free(ast->children[i]->token.text);
-            ast->children[i]->token.text = strdup("");
-            ast->children[i]->token.length = 0;
+            clear_token_text(&ast->children[i]->token);
         }
     }
 }
