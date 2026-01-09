@@ -12,7 +12,7 @@ all: $(CZ) $(OUT)
 	./$(OUT)
 
 # CZar
-.SECONDARY: $(SOURCES_CZ:.cz=.cz.h) $(SOURCES_cz:.cz=.cz.c)
+.PRECIOUS: $(SOURCES_CZ:.cz=.cz.h) $(SOURCES_CZ:.cz=.cz.c)
 %.cz.c %.cz.h &: %.cz
 	$(CZ) $<
 %.cz.o: %.cz.c %.cz.h
