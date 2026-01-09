@@ -5,7 +5,7 @@ LDFLAGS ?= -lc
 OUT     := a.out
 
 SOURCES_C  := $(filter-out %.cz.c,$(wildcard *.c))
-SOURCES_CZ := $(wildcard */*.cz) $(wildcard *.cz)
+SOURCES_CZ := $(wildcard */*.cz) $(filter-out main.cz,$(wildcard *.cz)) main.cz
 OBJECTS    := $(SOURCES_C:.c=.o) $(SOURCES_CZ:.cz=.cz.o)
 
 all: $(CZ) $(OUT)

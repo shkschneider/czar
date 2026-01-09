@@ -1,0 +1,4 @@
+export struct Vec2 {
+    u8 x;
+    u8 y;
+};

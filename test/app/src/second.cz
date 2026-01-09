@@ -1,8 +1,0 @@
-void this_is_private(void) {
-    return;
-}
-
-// this test should generate second.cz.h and second.cz.c
-export bool second_test(void) {
-    return true;
-}
