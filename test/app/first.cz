@@ -1,4 +1,0 @@
-// this test should generate first.cz.h and first.cz.c
-export bool first_test(void) {
-    return true;
-}
