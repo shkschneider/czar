@@ -168,11 +168,30 @@ void transpiler_transform_functions(ASTNode *ast) {
             if (children[k]->token.type == TOKEN_WHITESPACE ||
                 children[k]->token.type == TOKEN_COMMENT) continue;
 
-            /* Check if previous token is a type */
+            /* Check if previous token is a type keyword or identifier */
             if (children[k]->token.type == TOKEN_KEYWORD ||
                 children[k]->token.type == TOKEN_IDENTIFIER) {
-                return_type_idx = k;
-                break;
+                const char *text = children[k]->token.text;
+                /* Only recognize actual type keywords, not other keywords like 'return' */
+                if (strcmp(text, "void") == 0 || strcmp(text, "int") == 0 ||
+                    strcmp(text, "char") == 0 || strcmp(text, "short") == 0 ||
+                    strcmp(text, "long") == 0 || strcmp(text, "float") == 0 ||
+                    strcmp(text, "double") == 0 || strcmp(text, "unsigned") == 0 ||
+                    strcmp(text, "signed") == 0 || strcmp(text, "u8") == 0 ||
+                    strcmp(text, "u16") == 0 || strcmp(text, "u32") == 0 ||
+                    strcmp(text, "u64") == 0 || strcmp(text, "i8") == 0 ||
+                    strcmp(text, "i16") == 0 || strcmp(text, "i32") == 0 ||
+                    strcmp(text, "i64") == 0 || strcmp(text, "uint8_t") == 0 ||
+                    strcmp(text, "uint16_t") == 0 || strcmp(text, "uint32_t") == 0 ||
+                    strcmp(text, "uint64_t") == 0 || strcmp(text, "int8_t") == 0 ||
+                    strcmp(text, "int16_t") == 0 || strcmp(text, "int32_t") == 0 ||
+                    strcmp(text, "int64_t") == 0 || strcmp(text, "bool") == 0 ||
+                    strcmp(text, "size_t") == 0 || strcmp(text, "const") == 0 ||
+                    strcmp(text, "static") == 0 || strcmp(text, "inline") == 0 ||
+                    strcmp(text, "export") == 0) {
+                    return_type_idx = k;
+                    break;
+                }
             }
             break;
         }
