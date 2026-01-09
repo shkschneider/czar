@@ -7,12 +7,22 @@
  * - 'mut' keyword makes things mutable
  * - Transform 'mut Type' to 'Type' (strip mut)
  * - Transform 'Type' to 'const Type' (add const)
+ *
+ * Mutability Requirements:
+ * 1. Immutable by default
+ * 2. 'mut' is transitive - applies to both pointer and data
+ * 3. Struct field declarations do NOT encode mutability
+ * 4. Mutability is only decided at the binding site
+ * 5. Immutable aliases to mutable objects become read-only views
+ * 6. Passing mutable requires mutable at caller site (enforced by C compiler)
+ * 7. No partial mutability - pointer and data are unified
  * 
  * Strategy:
  * 1. Scan for 'mut' keyword followed by type, remove 'mut'
- * 2. Scan for type declarations without 'mut', add 'const'
- * 3. Handle pointers: both pointer and pointee get const
- * 4. Special case: struct methods - self is always mutable
+ * 2. Mark both type and pointer positions as mutable (transitivity)
+ * 3. Scan for type declarations without 'mut', add 'const'
+ * 4. Handle pointers: both pointer and pointee get const if not mutable
+ * 5. Special case: struct methods - self is always mutable
  */
 
 #include "../cz.h"
@@ -226,6 +236,18 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
             children[j]->token.type == TOKEN_IDENTIFIER) {
             /* Mark the type at position j as mutable */
             is_mutable[j] = 1;
+            
+            /* Check if this is a pointer type and mark the pointer as mutable too */
+            /* This ensures transitivity: mut T* means both the type identifier token T
+             * at position j and the pointer operator * at position ptr_idx are mutable.
+             * We mark both positions to prevent const from being added to either in Pass 2. */
+            size_t ptr_idx = skip_whitespace(children, count, j + 1);
+            if (ptr_idx < count && children[ptr_idx]->type == AST_TOKEN &&
+                token_equals(&children[ptr_idx]->token, "*")) {
+                /* Mark the pointer position as mutable for transitivity */
+                is_mutable[ptr_idx] = 1;
+            }
+            
             /* Mark 'mut' for deletion */
             mark_for_deletion(children[i]);
             
@@ -428,8 +450,13 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                     insertion_count++;
                 }
                 
-                /* For pointers, also need const after * */
-                if (is_pointer) {
+                /* For pointers, also need const after * to make it fully immutable */
+                /* But only if the pointer itself is not marked as mutable (transitivity).
+                 * Mutable pointers need to allow modification of the pointed-to data,
+                 * so we don't add 'const' after the '*' in that case.
+                 * Immutable: const T * const p (cannot modify p or *p)
+                 * Mutable: T * p (can modify both p and *p) */
+                if (is_pointer && !is_mutable[next_idx]) {
                     if (insertion_count < count * 2) {
                         insertions[insertion_count].position = next_idx;
                         insertions[insertion_count].type = INSERT_CONST_AFTER_STAR;
@@ -582,8 +609,13 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                 insertion_count++;
             }
             
-            /* For pointers, also need const after * */
-            if (is_pointer) {
+            /* For pointers, also need const after * to make it fully immutable */
+            /* But only if the pointer itself is not marked as mutable (transitivity).
+             * Mutable pointers need to allow modification of the pointed-to data,
+             * so we don't add 'const' after the '*' in that case.
+             * Immutable: const T * const p (cannot modify p or *p)
+             * Mutable: T * p (can modify both p and *p) */
+            if (is_pointer && !is_mutable[next_idx]) {
                 if (insertion_count < count * 2) {
                     insertions[insertion_count].position = next_idx;
                     insertions[insertion_count].type = INSERT_CONST_AFTER_STAR;
