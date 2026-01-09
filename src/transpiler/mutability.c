@@ -339,6 +339,145 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         }
     }
     
+    /* Pass 1.75: Validate mutable pointers are not initialized with immutable data */
+    /* Scan for patterns like: mut T* p = &var where var is immutable */
+    /* Track all variable declarations and their mutability within function bodies */
+    typedef struct {
+        const char *name;
+        int is_mutable;
+        size_t position;
+    } VarDecl;
+    
+    VarDecl *var_decls = malloc(count * sizeof(VarDecl));
+    size_t var_decl_count = 0;
+    if (!var_decls) {
+        free(is_mutable);
+        return; /* Out of memory */
+    }
+    
+    /* Scan for variable declarations within function bodies */
+    int brace_depth_val = 0;
+    int in_function_body_val = 0;
+    
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok = &children[i]->token;
+        
+        /* Track brace depth */
+        if (tok->type == TOKEN_PUNCTUATION) {
+            if (token_equals(tok, "{")) {
+                brace_depth_val++;
+                size_t prev_idx;
+                if (find_prev_token(children, i, &prev_idx)) {
+                    if (token_equals(&children[prev_idx]->token, ")")) {
+                        in_function_body_val = 1;
+                        /* Reset var declarations for new function */
+                        var_decl_count = 0;
+                    }
+                }
+            } else if (token_equals(tok, "}")) {
+                brace_depth_val--;
+                if (brace_depth_val == 0) {
+                    in_function_body_val = 0;
+                    var_decl_count = 0;
+                }
+            }
+        }
+        
+        if (!in_function_body_val || brace_depth_val == 0) continue;
+        
+        /* Look for variable declarations: Type identifier = or Type *identifier = */
+        if (tok->type == TOKEN_IDENTIFIER && !token_equals(tok, "return") &&
+            !token_equals(tok, "if") && !token_equals(tok, "else") &&
+            !token_equals(tok, "while") && !token_equals(tok, "for") &&
+            !token_equals(tok, "do") && !token_equals(tok, "switch") &&
+            !token_equals(tok, "sizeof") && tok->text && tok->text[0] != '\0') {
+            
+            size_t next_idx = skip_whitespace(children, count, i + 1);
+            if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
+            Token *next_tok = &children[next_idx]->token;
+            
+            /* Pattern: Type identifier = ... (non-pointer) */
+            if (next_tok->type == TOKEN_IDENTIFIER) {
+                size_t after_name_idx = skip_whitespace(children, count, next_idx + 1);
+                if (after_name_idx >= count || children[after_name_idx]->type != AST_TOKEN) continue;
+                Token *after_name = &children[after_name_idx]->token;
+                
+                if (token_equals(after_name, "=") || token_equals(after_name, ";")) {
+                    /* Found variable declaration */
+                    if (var_decl_count < count) {
+                        var_decls[var_decl_count].name = next_tok->text;
+                        var_decls[var_decl_count].is_mutable = is_mutable[i];
+                        var_decls[var_decl_count].position = next_idx;
+                        var_decl_count++;
+                    }
+                }
+            }
+            /* Pattern: Type *identifier = ... (pointer) */
+            else if (token_equals(next_tok, "*")) {
+                size_t after_star_idx = skip_whitespace(children, count, next_idx + 1);
+                if (after_star_idx >= count || children[after_star_idx]->type != AST_TOKEN) continue;
+                Token *after_star = &children[after_star_idx]->token;
+                
+                if (after_star->type == TOKEN_IDENTIFIER) {
+                    size_t after_name_idx = skip_whitespace(children, count, after_star_idx + 1);
+                    if (after_name_idx >= count || children[after_name_idx]->type != AST_TOKEN) continue;
+                    Token *after_name = &children[after_name_idx]->token;
+                    
+                    if (token_equals(after_name, "=")) {
+                        /* Found pointer declaration with initialization */
+                        /* Check if it's mutable pointer (mut T*) */
+                        int pointer_is_mutable = is_mutable[i] && is_mutable[next_idx];
+                        
+                        if (pointer_is_mutable) {
+                            /* Check if RHS is &identifier */
+                            size_t rhs_idx = skip_whitespace(children, count, after_name_idx + 1);
+                            if (rhs_idx < count && children[rhs_idx]->type == AST_TOKEN &&
+                                token_equals(&children[rhs_idx]->token, "&")) {
+                                
+                                size_t target_idx = skip_whitespace(children, count, rhs_idx + 1);
+                                if (target_idx < count && children[target_idx]->type == AST_TOKEN &&
+                                    children[target_idx]->token.type == TOKEN_IDENTIFIER) {
+                                    
+                                    const char *target_name = children[target_idx]->token.text;
+                                    
+                                    /* Look up if target was declared immutable */
+                                    int target_is_mutable = 0;
+                                    for (size_t v = 0; v < var_decl_count; v++) {
+                                        if (strcmp(var_decls[v].name, target_name) == 0) {
+                                            target_is_mutable = var_decls[v].is_mutable;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (!target_is_mutable) {
+                                        char error_msg[512];
+                                        snprintf(error_msg, sizeof(error_msg),
+                                            "Cannot create mutable pointer to immutable data. "
+                                            "Variable '%s' is immutable, but pointer '%s' is declared as mutable. "
+                                            "Either declare '%s' as 'mut' or remove 'mut' from the pointer declaration.",
+                                            target_name, after_star->text, target_name);
+                                        cz_error(filename, source, after_star->line, error_msg);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        /* Record this pointer variable declaration */
+                        if (var_decl_count < count) {
+                            var_decls[var_decl_count].name = after_star->text;
+                            var_decls[var_decl_count].is_mutable = pointer_is_mutable;
+                            var_decls[var_decl_count].position = after_star_idx;
+                            var_decl_count++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    free(var_decls);
+    
     /* Pass 2: Add 'const' to type identifiers that are not marked as mutable */
     /* For pointers: add const to both type and pointer (const Type * const p) */
     /* Applies to both function parameters AND local variable declarations */
