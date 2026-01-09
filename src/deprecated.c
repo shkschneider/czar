@@ -72,15 +72,13 @@ static int is_function_declaration(ASTNode **children, size_t count, size_t star
                     break;
                 }
             }
+            /* Stop if we hit something that's clearly not a function */
+            if (tok->text && (tok->text[0] == ';' || tok->text[0] == '{' || tok->text[0] == '}')) {
+                break;
+            }
         }
 
         i++;
-
-        /* Stop if we hit something that's clearly not a function */
-        if (tok->type == TOKEN_PUNCTUATION && tok->text &&
-            (tok->text[0] == ';' || tok->text[0] == '{' || tok->text[0] == '}')) {
-            break;
-        }
     }
 
     return found_identifier && found_open_paren;
@@ -99,11 +97,20 @@ void transpiler_transform_deprecated(ASTNode *ast) {
 
         Token *tok = &ast->children[i]->token;
         
-        /* Check if this is a #deprecated directive */
+        /* Check if this is a #deprecated directive (exact match or followed by whitespace/newline) */
         if (!tok->text ||
             tok->length < DEPRECATED_DIRECTIVE_LEN ||
             strncmp(tok->text, DEPRECATED_DIRECTIVE, DEPRECATED_DIRECTIVE_LEN) != 0) {
             continue;
+        }
+        
+        /* Ensure it's exactly #deprecated, not #deprecated_something */
+        if (tok->length > DEPRECATED_DIRECTIVE_LEN) {
+            char next_char = tok->text[DEPRECATED_DIRECTIVE_LEN];
+            /* Only accept if followed by whitespace or end of line */
+            if (next_char != ' ' && next_char != '\t' && next_char != '\r' && next_char != '\n') {
+                continue;
+            }
         }
 
         /* Found #deprecated, check if it's followed by a function declaration */
