@@ -1,4 +1,3 @@
-// this test should generate second.cz.h and second.cz.c
 bool second_test(void) {
     return true;
 }
