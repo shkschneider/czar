@@ -283,3 +283,142 @@ void transpiler_transform_functions(ASTNode *ast) {
         }
     }
 }
+
+/* Add warn_unused_result attribute to non-void functions */
+void transpiler_add_warn_unused_result(ASTNode *ast) {
+    if (!ast || ast->type != AST_TRANSLATION_UNIT) {
+        return;
+    }
+
+    ASTNode **children = ast->children;
+    size_t count = ast->child_count;
+
+    /* Scan for function declarations */
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
+
+        /* Look for function name followed by ( */
+        size_t j = skip_whitespace(children, count, i + 1);
+        if (j >= count) continue;
+        if (children[j]->type != AST_TOKEN) continue;
+        if (!token_text_equals(&children[j]->token, "(")) continue;
+
+        /* This looks like a function */
+        /* Check if this is a function declaration by looking backward for return type */
+        int return_type_idx = -1;
+        int is_void_return = 0;
+        
+        for (int k = (int)i - 1; k >= 0 && k >= (int)i - 15; k--) {
+            if (children[k]->type != AST_TOKEN) continue;
+            if (children[k]->token.type == TOKEN_WHITESPACE ||
+                children[k]->token.type == TOKEN_COMMENT) continue;
+
+            /* Check if this is __attribute__ - skip it */
+            if (children[k]->token.type == TOKEN_KEYWORD &&
+                children[k]->token.text &&
+                strcmp(children[k]->token.text, "__attribute__") == 0) {
+                continue;
+            }
+
+            /* Check if previous token is a type keyword or identifier */
+            if (children[k]->token.type == TOKEN_KEYWORD ||
+                children[k]->token.type == TOKEN_IDENTIFIER) {
+                const char *text = children[k]->token.text;
+                
+                /* Check if it's void */
+                if (strcmp(text, "void") == 0) {
+                    is_void_return = 1;
+                    return_type_idx = k;
+                    break;
+                }
+                
+                /* Check for other return types */
+                if (strcmp(text, "int") == 0 ||
+                    strcmp(text, "char") == 0 || strcmp(text, "short") == 0 ||
+                    strcmp(text, "long") == 0 || strcmp(text, "float") == 0 ||
+                    strcmp(text, "double") == 0 || strcmp(text, "unsigned") == 0 ||
+                    strcmp(text, "signed") == 0 || strcmp(text, "u8") == 0 ||
+                    strcmp(text, "u16") == 0 || strcmp(text, "u32") == 0 ||
+                    strcmp(text, "u64") == 0 || strcmp(text, "i8") == 0 ||
+                    strcmp(text, "i16") == 0 || strcmp(text, "i32") == 0 ||
+                    strcmp(text, "i64") == 0 || strcmp(text, "uint8_t") == 0 ||
+                    strcmp(text, "uint16_t") == 0 || strcmp(text, "uint32_t") == 0 ||
+                    strcmp(text, "uint64_t") == 0 || strcmp(text, "int8_t") == 0 ||
+                    strcmp(text, "int16_t") == 0 || strcmp(text, "int32_t") == 0 ||
+                    strcmp(text, "int64_t") == 0 || strcmp(text, "bool") == 0 ||
+                    strcmp(text, "size_t") == 0 || strcmp(text, "const") == 0 ||
+                    strcmp(text, "static") == 0 || strcmp(text, "inline") == 0 ||
+                    strcmp(text, "export") == 0) {
+                    return_type_idx = k;
+                    break;
+                }
+            }
+            break;
+        }
+
+        if (return_type_idx < 0) continue;
+        if (is_void_return) continue; /* Skip void functions */
+
+        /* Check if warn_unused_result is already present */
+        int has_warn_unused_result = 0;
+        for (int k = return_type_idx; k < (int)i; k++) {
+            if (children[k]->type == AST_TOKEN &&
+                children[k]->token.type == TOKEN_KEYWORD &&
+                children[k]->token.text &&
+                strstr(children[k]->token.text, "warn_unused_result") != NULL) {
+                has_warn_unused_result = 1;
+                break;
+            }
+        }
+
+        if (has_warn_unused_result) continue; /* Already has the attribute */
+
+        /* Insert __attribute__((warn_unused_result)) before the return type */
+        ASTNode *attr_node = malloc(sizeof(ASTNode));
+        if (!attr_node) continue;
+
+        attr_node->type = AST_TOKEN;
+        attr_node->token.type = TOKEN_KEYWORD;
+        attr_node->token.text = strdup("__attribute__((warn_unused_result)) ");
+        if (!attr_node->token.text) {
+            free(attr_node);
+            continue;
+        }
+        attr_node->token.length = strlen(attr_node->token.text);
+        attr_node->token.line = children[return_type_idx]->token.line;
+        attr_node->token.column = children[return_type_idx]->token.column;
+        attr_node->children = NULL;
+        attr_node->child_count = 0;
+        attr_node->child_capacity = 0;
+
+        /* Grow array if needed */
+        if (ast->child_count >= ast->child_capacity) {
+            size_t new_capacity = ast->child_capacity == 0 ? 8 : ast->child_capacity * 2;
+            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+            if (new_children) {
+                ast->children = new_children;
+                ast->child_capacity = new_capacity;
+                children = ast->children; /* Update local pointer */
+            } else {
+                free(attr_node->token.text);
+                free(attr_node);
+                continue;
+            }
+        }
+
+        /* Insert at return_type_idx */
+        if (ast->child_count < ast->child_capacity) {
+            for (size_t m = ast->child_count; m > (size_t)return_type_idx; m--) {
+                ast->children[m] = ast->children[m - 1];
+            }
+            ast->children[return_type_idx] = attr_node;
+            ast->child_count++;
+            count = ast->child_count; /* Update local count */
+            i++; /* Adjust loop index since we inserted before current position */
+        } else {
+            free(attr_node->token.text);
+            free(attr_node);
+        }
+    }
+}

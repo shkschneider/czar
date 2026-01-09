@@ -139,6 +139,9 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform function declarations (main return type, empty parameter lists to void) */
     transpiler_transform_functions(transpiler->ast);
 
+    /* Add warn_unused_result to non-void functions */
+    transpiler_add_warn_unused_result(transpiler->ast);
+
     /* Transform named structs to typedef structs */
     transpiler_transform_structs(transpiler->ast);
 
