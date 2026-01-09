@@ -17,7 +17,7 @@
 #define DEPRECATED_DIRECTIVE_LEN 11
 
 /* Replacement attribute */
-#define DEPRECATED_ATTRIBUTE "__attribute__((deprecated)) "
+#define ATTRIBUTE_DEPRECATED "__attribute__((deprecated))\n"
 
 /* Helper to clear token text (emit function handles NULL text) */
 static void clear_token_text(Token *token) {
@@ -96,14 +96,14 @@ void transpiler_transform_deprecated(ASTNode *ast) {
         if (ast->children[i]->token.type != TOKEN_PREPROCESSOR) continue;
 
         Token *tok = &ast->children[i]->token;
-        
+
         /* Check if this is a #deprecated directive (exact match or followed by whitespace/newline) */
         if (!tok->text ||
             tok->length < DEPRECATED_DIRECTIVE_LEN ||
             strncmp(tok->text, DEPRECATED_DIRECTIVE, DEPRECATED_DIRECTIVE_LEN) != 0) {
             continue;
         }
-        
+
         /* Ensure it's exactly #deprecated, not #deprecated_something */
         if (tok->length > DEPRECATED_DIRECTIVE_LEN) {
             char next_char = tok->text[DEPRECATED_DIRECTIVE_LEN];
@@ -115,7 +115,7 @@ void transpiler_transform_deprecated(ASTNode *ast) {
 
         /* Found #deprecated, check if it's followed by a function declaration */
         size_t next_pos = skip_whitespace(ast->children, ast->child_count, i + 1);
-        
+
         if (next_pos >= ast->child_count) {
             /* Just remove the #deprecated if nothing follows */
             clear_token_text(&ast->children[i]->token);
@@ -125,7 +125,7 @@ void transpiler_transform_deprecated(ASTNode *ast) {
         /* Check if what follows is a function declaration */
         if (is_function_declaration(ast->children, ast->child_count, next_pos)) {
             /* Replace #deprecated with __attribute__((deprecated)) followed by a space */
-            char *replacement = strdup(DEPRECATED_ATTRIBUTE);
+            char *replacement = strdup(ATTRIBUTE_DEPRECATED);
             if (replacement) {
                 free(ast->children[i]->token.text);
                 ast->children[i]->token.text = replacement;

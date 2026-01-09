@@ -12,6 +12,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define ATTRIBUTE_WARN_UNUSED_RESULT "__attribute__((warn_unused_result))\n"
+
 /* Helper function to check if token text matches */
 static int token_text_equals(Token *token, const char *text) {
     if (!token || !token->text || !text) {
@@ -308,7 +310,7 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
         /* Check if this is a function declaration by looking backward for return type */
         int return_type_idx = -1;
         int is_void_return = 0;
-        
+
         for (int k = (int)i - 1; k >= 0 && k >= (int)i - 15; k--) {
             if (children[k]->type != AST_TOKEN) continue;
             if (children[k]->token.type == TOKEN_WHITESPACE ||
@@ -325,14 +327,14 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
             if (children[k]->token.type == TOKEN_KEYWORD ||
                 children[k]->token.type == TOKEN_IDENTIFIER) {
                 const char *text = children[k]->token.text;
-                
+
                 /* Check if it's void */
                 if (strcmp(text, "void") == 0) {
                     is_void_return = 1;
                     return_type_idx = k;
                     break;
                 }
-                
+
                 /* Check for other return types */
                 if (strcmp(text, "int") == 0 ||
                     strcmp(text, "char") == 0 || strcmp(text, "short") == 0 ||
@@ -380,7 +382,7 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
 
         attr_node->type = AST_TOKEN;
         attr_node->token.type = TOKEN_KEYWORD;
-        attr_node->token.text = strdup("__attribute__((warn_unused_result)) ");
+        attr_node->token.text = strdup(ATTRIBUTE_WARN_UNUSED_RESULT);
         if (!attr_node->token.text) {
             free(attr_node);
             continue;

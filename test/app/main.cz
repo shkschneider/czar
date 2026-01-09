@@ -1,4 +1,0 @@
-u32 main(void) {
-    start();
-    return 0;
-}

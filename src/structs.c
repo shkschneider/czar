@@ -14,44 +14,9 @@
 #include <string.h>
 #include <stdio.h>
 
-/* Maximum number of struct types we can track */
-#define MAX_STRUCT_TYPES 256
-
-/* Tracked struct type names */
-static char *tracked_struct_types[MAX_STRUCT_TYPES];
-static size_t tracked_struct_count = 0;
-
-/* Track a struct type name */
-static void track_struct_name(const char *name) {
-    if (tracked_struct_count >= MAX_STRUCT_TYPES) {
-        return;
-    }
-
-    /* Check if already tracked */
-    for (size_t i = 0; i < tracked_struct_count; i++) {
-        if (tracked_struct_types[i] && strcmp(tracked_struct_types[i], name) == 0) {
-            return;
-        }
-    }
-
-    /* Add new struct type */
-    tracked_struct_types[tracked_struct_count] = strdup(name);
-    if (!tracked_struct_types[tracked_struct_count]) {
-        /* Memory allocation failed */
-        return;
-    }
-    tracked_struct_count++;
-}
-
-/* Check if an identifier is a tracked struct type */
-static int is_tracked_struct(const char *name) {
-    for (size_t i = 0; i < tracked_struct_count; i++) {
-        if (tracked_struct_types[i] && strcmp(tracked_struct_types[i], name) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
+/* Note: With the simpler typedef approach (typedef struct Name {...} Name;),
+ * we no longer need to track struct names for replacement. The tracking code
+ * is kept here commented out for reference but is no longer used. */
 
 /* Transform named struct declarations into typedef structs */
 void transpiler_transform_structs(ASTNode *ast) {
@@ -137,9 +102,8 @@ void transpiler_transform_structs(ASTNode *ast) {
             }
 
             /* Now we have a valid struct definition from i to closing_brace_idx */
-            /* Transform: struct Name { ... } to typedef struct Name_s { ... } Name_t */
-            /* Also create typedef for backward compatibility: typedef struct Name_s Name_bc */
-            /* Methods use base name: Name_method (not Name_t_method) */
+            /* Transform: struct Name { ... } to typedef struct Name { ... } Name */
+            /* This allows users to use Name directly in CZar code */
 
             /* Step 1: Save the struct name (t3->text) */
             char *struct_name = strdup(t3->text);
@@ -157,20 +121,10 @@ void transpiler_transform_structs(ASTNode *ast) {
             t1->text = new_text;
             t1->length = strlen(new_text);
 
-            /* Step 3: Append "_s" to the struct name (e.g., Name -> Name_s) */
-            size_t struct_name_len = strlen(struct_name);
-            char *struct_name_s = malloc(struct_name_len + 3); /* "_s" + null terminator */
-            if (struct_name_s) {
-                strcpy(struct_name_s, struct_name);
-                strcat(struct_name_s, "_s");
+            /* Step 3: Keep the struct name as-is (no _s suffix needed) */
+            /* The struct tag and typedef name will be the same */
 
-                /* Replace the identifier with Name_s */
-                free(t3->text);
-                t3->text = struct_name_s;
-                t3->length = strlen(struct_name_s);
-            }
-
-            /* Step 4: After the closing brace, add the typedef name as Name_t */
+            /* Step 4: After the closing brace, add the typedef name */
             /* Look for whitespace and semicolon after closing brace */
             size_t semicolon_idx = 0;
             for (size_t j = closing_brace_idx + 1; j < ast->child_count && j < closing_brace_idx + 5; j++) {
@@ -184,20 +138,17 @@ void transpiler_transform_structs(ASTNode *ast) {
             }
 
             if (semicolon_idx > 0) {
-                /* Insert the typedef name as " Name_t" before the semicolon */
+                /* Insert the typedef name before the semicolon */
                 size_t insert_pos = semicolon_idx;
 
-                /* Create Name_t from struct_name */
-                size_t typedef_name_len = strlen(struct_name);
-                char *typedef_name = malloc(typedef_name_len + 3); /* "_t" + null terminator */
+                /* Use the same name for typedef (no _t suffix) */
+                char *typedef_name = strdup(struct_name);
                 if (!typedef_name) {
                     free(struct_name);
                     continue;
                 }
-                strcpy(typedef_name, struct_name);
-                strcat(typedef_name, "_t");
 
-                /* We need to insert: " Name_t" before the semicolon */
+                /* We need to insert: " Name" before the semicolon */
                 /* Create a new token for the space */
                 ASTNode *space_node = malloc(sizeof(ASTNode));
                 if (space_node) {
@@ -253,13 +204,10 @@ void transpiler_transform_structs(ASTNode *ast) {
                     ast->children[insert_pos + 1] = name_node;
                     ast->child_count += 2;
 
-                    /* Track this struct name for later replacement */
-                    track_struct_name(struct_name);
-
                     /* Skip ahead so we don't process this struct again */
-                    i = semicolon_idx + 2; /* +2 for Name_t we added */
+                    i = semicolon_idx + 2;
 
-                    /* Free struct_name as we've created Name_s and Name_t separately */
+                    /* Free struct_name */
                     free(struct_name);
                 } else {
                     free(struct_name);
@@ -476,64 +424,8 @@ void transpiler_replace_struct_names(ASTNode *ast) {
         return;
     }
 
-    /* Walk through all tokens and replace struct type names */
-    for (size_t i = 0; i < ast->child_count; i++) {
-        if (ast->children[i]->type != AST_TOKEN) {
-            continue;
-        }
-
-        Token *token = &ast->children[i]->token;
-
-        /* Check if this is an identifier that matches a tracked struct type */
-        if (token->type == TOKEN_IDENTIFIER && token->text && is_tracked_struct(token->text)) {
-            /* Check if the previous non-whitespace token is "struct" keyword */
-            int after_struct_keyword = 0;
-            for (size_t j = i; j > 0; j--) {
-                size_t prev_idx = j - 1;
-                if (ast->children[prev_idx]->type == AST_TOKEN) {
-                    Token *prev_token = &ast->children[prev_idx]->token;
-
-                    /* Skip whitespace and comments */
-                    if (prev_token->type == TOKEN_WHITESPACE || prev_token->type == TOKEN_COMMENT) {
-                        continue;
-                    }
-
-                    /* Check if previous token is "struct" */
-                    if (prev_token->type == TOKEN_IDENTIFIER && prev_token->text &&
-                        strcmp(prev_token->text, "struct") == 0) {
-                        after_struct_keyword = 1;
-                    }
-
-                    /* We found a non-whitespace token, stop looking */
-                    break;
-                }
-            }
-
-            /* Replace Name with appropriate suffix */
-            size_t name_len = strlen(token->text);
-            char *new_name;
-
-            if (after_struct_keyword) {
-                /* After "struct", use _s suffix for struct tag */
-                new_name = malloc(name_len + 3); /* "_s" + null terminator */
-                if (new_name) {
-                    strcpy(new_name, token->text);
-                    strcat(new_name, "_s");
-                }
-            } else {
-                /* Otherwise, use _t suffix for typedef */
-                new_name = malloc(name_len + 3); /* "_t" + null terminator */
-                if (new_name) {
-                    strcpy(new_name, token->text);
-                    strcat(new_name, "_t");
-                }
-            }
-
-            if (new_name) {
-                free(token->text);
-                token->text = new_name;
-                token->length = strlen(new_name);
-            }
-        }
-    }
+    /* With the new simpler typedef approach (typedef struct Name {...} Name;),
+     * we don't need to replace struct names anymore since the typedef name
+     * matches the struct tag name. This function is kept for API compatibility
+     * but does nothing. */
 }
