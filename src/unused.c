@@ -11,13 +11,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define ATTRIBUTE_UNUSED "__attribute__((unused))"
+
 /* Counter for generating unique unused variable names */
 static int unused_counter = 0;
 
 /* Transform _ identifier to unique unused variable name */
 char *transpiler_transform_unused_identifier(void) {
     char buffer[64];
-    int written = snprintf(buffer, sizeof(buffer), "_cz_unused_%d __attribute__((unused))", unused_counter++);
+    int written = snprintf(buffer, sizeof(buffer), "_cz_unused_%d "ATTRIBUTE_UNUSED, unused_counter++);
 
     /* Check if snprintf truncated (should never happen with 64 bytes) */
     if (written < 0 || written >= (int)sizeof(buffer)) {

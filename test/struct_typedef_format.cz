@@ -3,15 +3,15 @@
 #include <stdio.h>
 
 /*
- * Test new struct typedef format: typedef struct Name_s { ... } Name_t;
+ * Test new struct typedef format: typedef struct Name { ... } Name;
  * This test verifies:
- * 1. Struct tag is Name_s
- * 2. Typedef is Name_t
- * 3. CZar code uses "Name", C code uses "Name_t"
- * 4. Methods use base name: Name_method (not Name_t_method)
+ * 1. Struct tag is Name (same as typedef)
+ * 2. Typedef is Name (no _t suffix needed)
+ * 3. CZar code uses "Name", C code uses "Name"
+ * 4. Methods use base name: Name_method
  */
 
-/* Define a struct - should generate typedef struct Vec2_s { ... } Vec2_t; */
+/* Define a struct - should generate typedef struct Vec2 { ... } Vec2; */
 struct Vec2 {
     u8 x;
     u8 y;
@@ -23,7 +23,7 @@ u8 Vec2.length() {
 }
 
 int main(void) {
-    /* Test 1: Use Vec2 in CZar (becomes Vec2_t in C) */
+    /* Test 1: Use Vec2 in CZar */
     mut Vec2 v1 = {0};
     v1.x = 3;
     v1.y = 4;
@@ -31,15 +31,15 @@ int main(void) {
     assert(len1 == 7);
     printf("Test 1 passed: Can use Vec2 in CZar code\n");
 
-    /* Test 2: Use Vec2_t explicitly (also becomes Vec2_t in C) */
-    mut Vec2_t v2 = {0};
+    /* Test 2: Use Vec2 explicitly (same as test 1) */
+    mut Vec2 v2 = {0};
     v2.x = 5;
     v2.y = 6;
     u8 len2 = v2.length();
     assert(len2 == 11);
-    printf("Test 2 passed: Can use Vec2_t explicitly\n");
+    printf("Test 2 passed: Vec2 works consistently\n");
 
-    /* Test 3: Method name uses base name (Vec2_length, not Vec2_t_length) */
+    /* Test 3: Method name uses base name (Vec2_length) */
     mut Vec2 v3 = {0};
     v3.x = 2;
     v3.y = 3;

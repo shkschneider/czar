@@ -40,6 +40,6 @@ stat:
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@rm -rvf ./build/
-	@find ./test \( -name "*.c" -o -name "*.h" -o -name "*.o" \) -exec rm -vf {} \;
-	@find ./test -type f -executable -exec rm -vf {} \;
+	@find ./test \( -name "*.cz.h" -o -name "*.cz.c" \) -exec rm -vf {} \;
+	@find ./test -type f \( -name "*.o" -o -executable \) -exec rm -vf {} \;
 .PHONY: stat clean
