@@ -12,10 +12,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Directive name */
+#define DEPRECATED_DIRECTIVE "#deprecated"
+#define DEPRECATED_DIRECTIVE_LEN 11
+
 /* Helper to clear token text and set to empty string */
 static void clear_token_text(Token *token) {
     free(token->text);
     token->text = strdup("");
+    if (!token->text) {
+        /* If strdup fails, set to NULL to indicate empty */
+        token->text = NULL;
+    }
     token->length = 0;
 }
 
@@ -92,7 +100,8 @@ void transpiler_transform_deprecated(ASTNode *ast) {
         Token *tok = &ast->children[i]->token;
         
         /* Check if this is a #deprecated directive */
-        if (tok->length < 11 || strncmp(tok->text, "#deprecated", 11) != 0) {
+        if (tok->length < DEPRECATED_DIRECTIVE_LEN ||
+            strncmp(tok->text, DEPRECATED_DIRECTIVE, DEPRECATED_DIRECTIVE_LEN) != 0) {
             continue;
         }
 
