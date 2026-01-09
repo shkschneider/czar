@@ -10,6 +10,7 @@
 #include "src/autodereference.h"
 #include "src/casts.h"
 #include "src/constants.h"
+#include "src/defer.h"
 #include "src/deprecated.h"
 #include "src/enums.h"
 #include "src/errors.h"
@@ -124,8 +125,12 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform #deprecated directives to __attribute__((deprecated)) */
     transpiler_transform_deprecated(transpiler->ast);
 
+    /* Transform defer statements to cleanup attribute pattern */
+    transpiler_transform_defer(transpiler->ast);
+
     /* First validate the AST for CZar semantic rules */
     transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
+
 
     /* Validate cast expressions */
     transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
