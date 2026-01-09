@@ -18,6 +18,7 @@
 
 /* Helper to clear token text and set to empty string */
 static void clear_token_text(Token *token) {
+    if (!token) return;
     free(token->text);
     token->text = strdup("");
     if (!token->text) {
@@ -66,7 +67,7 @@ static int is_function_declaration(ASTNode **children, size_t count, size_t star
         }
 
         if (tok->type == TOKEN_PUNCTUATION) {
-            if (tok->length == 1 && tok->text[0] == '(') {
+            if (tok->length == 1 && tok->text && tok->text[0] == '(') {
                 if (found_identifier) {
                     found_open_paren = 1;
                     break;
@@ -77,7 +78,7 @@ static int is_function_declaration(ASTNode **children, size_t count, size_t star
         i++;
 
         /* Stop if we hit something that's clearly not a function */
-        if (tok->type == TOKEN_PUNCTUATION &&
+        if (tok->type == TOKEN_PUNCTUATION && tok->text &&
             (tok->text[0] == ';' || tok->text[0] == '{' || tok->text[0] == '}')) {
             break;
         }
