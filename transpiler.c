@@ -372,6 +372,101 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
     emit_node(transpiler->ast, output, transpiler->filename);
 }
 
+/* Helper to check if a token is the "export" keyword */
+static int is_export_keyword(ASTNode *node) {
+    if (!node || node->type != AST_TOKEN) {
+        return 0;
+    }
+    Token *t = &node->token;
+    return (t->type == TOKEN_IDENTIFIER && t->length == 6 && strncmp(t->text, "export", 6) == 0);
+}
+
+/* Helper to check if declaration starting at position i has export keyword */
+static int has_export_keyword(ASTNode **children, size_t start_pos, size_t count) {
+    /* Scan backwards from start_pos to find export keyword before significant tokens */
+    /* We need to go back further to skip over comments and whitespace */
+    size_t search_start = (start_pos > 20) ? (start_pos - 20) : 0;
+    
+    for (size_t i = start_pos; i > search_start; i--) {
+        if (children[i]->type == AST_TOKEN) {
+            Token *t = &children[i]->token;
+            /* Skip whitespace and comments */
+            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
+                continue;
+            }
+            /* Check if we found export keyword */
+            if (is_export_keyword(children[i])) {
+                return 1;
+            }
+            /* If we hit a semicolon or closing brace, we've gone too far back */
+            if (t->type == TOKEN_PUNCTUATION && t->length == 1 && (t->text[0] == ';' || t->text[0] == '}')) {
+                break;
+            }
+        }
+    }
+    
+    /* Also check forward from start_pos (export might be right at the beginning) */
+    for (size_t i = start_pos; i < count && i < start_pos + 10; i++) {
+        if (children[i]->type == AST_TOKEN) {
+            Token *t = &children[i]->token;
+            /* Skip whitespace and comments */
+            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
+                continue;
+            }
+            /* Check if we found export keyword */
+            if (is_export_keyword(children[i])) {
+                return 1;
+            }
+            /* Stop at first significant token that's not export */
+            if (t->type == TOKEN_KEYWORD || t->type == TOKEN_IDENTIFIER) {
+                break;
+            }
+        }
+    }
+    
+    return 0;
+}
+
+/* Helper to find the position of export keyword before a declaration */
+static size_t find_export_keyword_pos(ASTNode **children, size_t start_pos, size_t count) {
+    /* Scan backwards from start_pos to find export keyword */
+    for (size_t i = (start_pos > 0 ? start_pos - 1 : 0); i < start_pos && i < count; i++) {
+        if (is_export_keyword(children[i])) {
+            return i;
+        }
+        if (children[i]->type == AST_TOKEN) {
+            Token *t = &children[i]->token;
+            /* Skip whitespace and comments */
+            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
+                continue;
+            }
+            /* If we hit a semicolon or closing brace, we've gone too far back */
+            if (t->type == TOKEN_PUNCTUATION && t->length == 1 && (t->text[0] == ';' || t->text[0] == '}')) {
+                break;
+            }
+        }
+        if (i == 0) break;
+    }
+    
+    /* Also check forward from start_pos */
+    for (size_t i = start_pos; i < count && i < start_pos + 5; i++) {
+        if (is_export_keyword(children[i])) {
+            return i;
+        }
+        if (children[i]->type == AST_TOKEN) {
+            Token *t = &children[i]->token;
+            /* Skip whitespace and comments */
+            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
+                continue;
+            }
+            /* Stop at first significant token that's not export */
+            break;
+        }
+    }
+    
+    return (size_t)-1;  /* Not found */
+}
+
 /* Helper to check if position i is at the START of a function definition */
 static int is_function_start(ASTNode **children, size_t i, size_t count) {
     /* Position i should be at or near the return type of the function
@@ -391,6 +486,21 @@ static int is_function_start(ASTNode **children, size_t i, size_t count) {
     }
     if (i >= count) return 0;
 
+    /* Skip export keyword if present */
+    if (is_export_keyword(children[i])) {
+        i++;
+        /* Skip whitespace after export */
+        while (i < count && children[i]->type == AST_TOKEN) {
+            Token *t = &children[i]->token;
+            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
+                i++;
+                continue;
+            }
+            break;
+        }
+        if (i >= count) return 0;
+    }
+
     /* Check if we start with a keyword that indicates NOT a function */
     if (children[i]->type == AST_TOKEN) {
         Token *t = &children[i]->token;
@@ -401,7 +511,7 @@ static int is_function_start(ASTNode **children, size_t i, size_t count) {
         }
 
         /* If it starts with struct/union/enum/typedef, not a function */
-        if (t->type == TOKEN_KEYWORD) {
+        if (t->type == TOKEN_IDENTIFIER) {
             if ((t->length == 6 && strncmp(t->text, "struct", 6) == 0) ||
                 (t->length == 5 && strncmp(t->text, "union", 5) == 0) ||
                 (t->length == 4 && strncmp(t->text, "enum", 4) == 0) ||
@@ -441,6 +551,26 @@ static int is_function_start(ASTNode **children, size_t i, size_t count) {
 /* Helper to check if node is a preprocessor directive */
 static int is_preprocessor(ASTNode *node) {
     return node && node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR;
+}
+
+/* Forward declaration */
+static size_t find_brace_block_end(ASTNode **children, size_t start, size_t count);
+
+/* Helper to check if position i is EXACTLY at a struct/enum/union/typedef keyword */
+static int is_at_struct_or_typedef_keyword(ASTNode **children, size_t i, size_t count) {
+    if (i >= count) return 0;
+    
+    if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_IDENTIFIER) {
+        Token *t = &children[i]->token;
+        if ((t->length == 6 && strncmp(t->text, "struct", 6) == 0) ||
+            (t->length == 5 && strncmp(t->text, "union", 5) == 0) ||
+            (t->length == 4 && strncmp(t->text, "enum", 4) == 0) ||
+            (t->length == 7 && strncmp(t->text, "typedef", 7) == 0)) {
+            return 1;
+        }
+    }
+    
+    return 0;
 }
 
 /* Helper to find end of preprocessor line (including #pragma) */
@@ -485,6 +615,17 @@ static size_t find_function_end(ASTNode **children, size_t start, size_t count) 
     return count;
 }
 
+/* Helper to emit nodes in a range, skipping the export keyword */
+static void emit_node_range_skip_export(ASTNode **children, size_t start, size_t end, FILE *output, const char *source_filename) {
+    for (size_t j = start; j < end; j++) {
+        /* Skip the export keyword itself */
+        if (is_export_keyword(children[j])) {
+            continue;
+        }
+        emit_node(children[j], output, source_filename);
+    }
+}
+
 /* Emit transformed AST as C header file (declarations only) */
 void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
     if (!transpiler || !transpiler->ast || !output) {
@@ -505,7 +646,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
     fprintf(output, "#include <string.h>\n");
     fprintf(output, "\n");
 
-    /* Emit everything except function bodies */
+    /* Emit everything except function bodies, and only exported items */
     if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
         ASTNode **children = transpiler->ast->children;
         size_t count = transpiler->ast->child_count;
@@ -522,10 +663,15 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                     continue;
                 }
                 /* Keep other preprocessor directives like #pragma */
+                emit_node(children[i], output, transpiler->filename);
+                continue;
             }
 
             /* Check if this is a function definition (has body) */
             if (is_function_start(children, i, count)) {
+                /* Check if this function has export keyword */
+                int is_exported = has_export_keyword(children, i, count);
+                
                 /* Find where the opening brace is */
                 size_t brace_pos = i;
                 while (brace_pos < count) {
@@ -538,19 +684,78 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                     brace_pos++;
                 }
 
-                /* Emit function signature (up to but not including the opening brace) */
-                for (size_t j = i; j < brace_pos; j++) {
-                    emit_node(children[j], output, transpiler->filename);
-                }
+                if (is_exported) {
+                    /* Emit function signature (up to but not including the opening brace), skip export keyword */
+                    emit_node_range_skip_export(children, i, brace_pos, output, transpiler->filename);
 
-                /* Replace function body with semicolon for declaration */
-                fprintf(output, ";\n");
+                    /* Replace function body with semicolon for declaration */
+                    fprintf(output, ";\n");
+                }
 
                 /* Skip to end of function body */
                 i = find_function_end(children, brace_pos, count);
+            } else if (is_at_struct_or_typedef_keyword(children, i, count)) {
+                /* We're at the struct/typedef/enum/union keyword itself */
+                /* Scan backward to see if there's an export keyword before this */
+                int is_exported = 0;
+                size_t decl_start = i;
+                
+                /* Look backward for export keyword (within last few tokens) */
+                for (size_t j = (i > 10 ? i - 10 : 0); j < i; j++) {
+                    if (is_export_keyword(children[j])) {
+                        is_exported = 1;
+                        decl_start = j;  /* Start from export keyword */
+                        break;
+                    }
+                    /* Stop if we hit a semicolon or brace */
+                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && 
+                        children[j]->token.length == 1 && (children[j]->token.text[0] == ';' || children[j]->token.text[0] == '}')) {
+                        decl_start = j + 1;
+                    }
+                }
+                
+                /* Find the end of this declaration */
+                size_t decl_end = i;
+                for (size_t j = i; j < count; j++) {
+                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && children[j]->token.length == 1) {
+                        if (children[j]->token.text[0] == '{') {
+                            decl_end = find_brace_block_end(children, j, count);
+                            /* Look for semicolon after closing brace (for typedef) */
+                            for (size_t k = decl_end + 1; k < count && k < decl_end + 20; k++) {
+                                if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION && 
+                                    children[k]->token.length == 1 && children[k]->token.text[0] == ';') {
+                                    decl_end = k;
+                                    break;
+                                }
+                                /* Skip whitespace, comments, and identifiers (type name) */
+                                if (children[k]->type == AST_TOKEN && 
+                                    children[k]->token.type != TOKEN_WHITESPACE && 
+                                    children[k]->token.type != TOKEN_COMMENT &&
+                                    children[k]->token.type != TOKEN_IDENTIFIER) {
+                                    break;  /* Stop at other tokens */
+                                }
+                            }
+                            break;
+                        } else if (children[j]->token.text[0] == ';') {
+                            decl_end = j;
+                            break;
+                        }
+                    }
+                }
+                
+                if (is_exported) {
+                    /* Emit the struct/typedef declaration, skip export keyword */
+                    emit_node_range_skip_export(children, decl_start, decl_end + 1, output, transpiler->filename);
+                }
+                
+                /* Skip past this entire declaration */
+                i = decl_end;
             } else {
-                /* Everything else (structs, typedefs, globals, pragmas) - emit as-is */
-                emit_node(children[i], output, transpiler->filename);
+                /* For other tokens (whitespace, comments, etc.), emit as-is */
+                /* But skip standalone export keywords */
+                if (!is_export_keyword(children[i])) {
+                    emit_node(children[i], output, transpiler->filename);
+                }
             }
         }
     } else {
@@ -633,9 +838,9 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     /* Include the generated header */
     fprintf(output, "#include \"%s\"\n", header_name);
 
-    /* Auto-include all other .cz files from the same module (directory) */
-    /* Only do this if the file uses the module system (has #import directives) */
-    if (transpiler->filename && has_import_directives(transpiler->ast)) {
+    /* Auto-include all other .cz.h files from the same module (directory) */
+    /* This is now always done (not just when has_import_directives) */
+    if (transpiler->filename) {
         /* Get directory path */
         char *dir_copy = strdup(transpiler->filename);
         if (!dir_copy) {
@@ -698,28 +903,114 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     fprintf(output, "\n");
 
 emit_functions:
-    /* Emit function definitions only */
+    /* Emit function definitions and non-exported structs/typedefs */
     if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
         ASTNode **children = transpiler->ast->children;
         size_t count = transpiler->ast->child_count;
 
-        /* Scan through tokens looking for function definitions */
+        /* Scan through tokens looking for function definitions and non-exported items */
         for (size_t i = 0; i < count; i++) {
             /* Check if we're at the start of a function definition */
             if (is_function_start(children, i, count)) {
                 /* Find the end of the function body */
                 size_t func_end = find_function_end(children, i, count);
 
-                /* Emit the entire function definition */
-                for (size_t j = i; j <= func_end && j < count; j++) {
-                    emit_node(children[j], output, transpiler->filename);
-                }
+                /* Emit the entire function definition, skip export keyword */
+                emit_node_range_skip_export(children, i, func_end + 1, output, transpiler->filename);
                 fprintf(output, "\n\n");
 
                 /* Skip past the function */
                 i = func_end;
+            } else if (is_at_struct_or_typedef_keyword(children, i, count)) {
+                /* We're at a struct/typedef/enum/union keyword */
+                /* Scan backward to see if there's an export keyword */
+                int is_exported = 0;
+                size_t decl_start = i;
+                
+                for (size_t j = (i > 10 ? i - 10 : 0); j < i; j++) {
+                    if (is_export_keyword(children[j])) {
+                        is_exported = 1;
+                        decl_start = j;
+                        break;
+                    }
+                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && 
+                        children[j]->token.length == 1 && (children[j]->token.text[0] == ';' || children[j]->token.text[0] == '}')) {
+                        decl_start = j + 1;
+                    }
+                }
+                
+                /* Only emit non-exported structs/typedefs in the source file */
+                if (!is_exported) {
+                    /* Find the end of this declaration (semicolon or brace block) */
+                    size_t decl_end = i;
+                    
+                    /* Find the opening brace or semicolon */
+                    for (size_t j = i; j < count; j++) {
+                        if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && children[j]->token.length == 1) {
+                            if (children[j]->token.text[0] == '{') {
+                                decl_end = find_brace_block_end(children, j, count);
+                                /* Look for semicolon after closing brace (for typedef) */
+                                for (size_t k = decl_end + 1; k < count && k < decl_end + 20; k++) {
+                                    if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION && 
+                                        children[k]->token.length == 1 && children[k]->token.text[0] == ';') {
+                                        decl_end = k;
+                                        break;
+                                    }
+                                    /* Skip whitespace, comments, and identifiers (type name) */
+                                    if (children[k]->type == AST_TOKEN && 
+                                        children[k]->token.type != TOKEN_WHITESPACE && 
+                                        children[k]->token.type != TOKEN_COMMENT &&
+                                        children[k]->token.type != TOKEN_IDENTIFIER) {
+                                        break;  /* Stop at other tokens */
+                                    }
+                                }
+                                break;
+                            } else if (children[j]->token.text[0] == ';') {
+                                decl_end = j;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    /* Emit the struct/typedef declaration from decl_start */
+                    for (size_t j = decl_start; j <= decl_end && j < count; j++) {
+                        emit_node(children[j], output, transpiler->filename);
+                    }
+                    fprintf(output, "\n\n");
+                    
+                    i = decl_end;
+                } else {
+                    /* It's exported, skip it (already in header) - find the end and skip past it */
+                    size_t decl_end = i;
+                    for (size_t j = i; j < count; j++) {
+                        if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && children[j]->token.length == 1) {
+                            if (children[j]->token.text[0] == '{') {
+                                decl_end = find_brace_block_end(children, j, count);
+                                for (size_t k = decl_end + 1; k < count && k < decl_end + 20; k++) {
+                                    if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION && 
+                                        children[k]->token.length == 1 && children[k]->token.text[0] == ';') {
+                                        decl_end = k;
+                                        break;
+                                    }
+                                    /* Skip whitespace, comments, and identifiers (type name) */
+                                    if (children[k]->type == AST_TOKEN && 
+                                        children[k]->token.type != TOKEN_WHITESPACE && 
+                                        children[k]->token.type != TOKEN_COMMENT &&
+                                        children[k]->token.type != TOKEN_IDENTIFIER) {
+                                        break;  /* Stop at other tokens */
+                                    }
+                                }
+                                break;
+                            } else if (children[j]->token.text[0] == ';') {
+                                decl_end = j;
+                                break;
+                            }
+                        }
+                    }
+                    i = decl_end;
+                }
             }
-            /* Skip all other tokens - they're in the header */
+            /* Skip all other tokens - they're in the header or are whitespace */
         }
     }
 }
