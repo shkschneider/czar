@@ -606,6 +606,180 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         }
     }
     
+    /* Pass 2.5: Handle global variable declarations */
+    /* Validate that immutable globals don't have dynamic initialization */
+    /* Add const to immutable globals with constant initialization */
+    
+    /* First, scan for global variables (outside any function) */
+    int brace_depth_global = 0;
+    
+    for (size_t i = 0; i < count; i++) {
+        if (children[i]->type != AST_TOKEN) continue;
+        Token *tok = &children[i]->token;
+        
+        /* Track brace depth - globals are at depth 0 */
+        if (tok->type == TOKEN_PUNCTUATION) {
+            if (token_equals(tok, "{")) {
+                brace_depth_global++;
+            } else if (token_equals(tok, "}")) {
+                brace_depth_global--;
+            }
+        }
+        
+        /* Only process at global scope (outside functions) */
+        if (brace_depth_global != 0) continue;
+        
+        /* Look for variable declarations: Type identifier = or Type identifier; */
+        if (tok->type == TOKEN_IDENTIFIER && tok->text && tok->text[0] != '\0') {
+            /* Skip keywords */
+            if (token_equals(tok, "typedef") || token_equals(tok, "struct") || 
+                token_equals(tok, "enum") || token_equals(tok, "union") ||
+                token_equals(tok, "static") || token_equals(tok, "extern") ||
+                token_equals(tok, "inline")) {
+                continue;
+            }
+            
+            size_t next_idx = skip_whitespace(children, count, i + 1);
+            if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
+            Token *next_tok = &children[next_idx]->token;
+            
+            /* Pattern: Type identifier = ... (non-pointer) */
+            if (next_tok->type == TOKEN_IDENTIFIER) {
+                size_t after_name_idx = skip_whitespace(children, count, next_idx + 1);
+                if (after_name_idx >= count || children[after_name_idx]->type != AST_TOKEN) continue;
+                Token *after_name = &children[after_name_idx]->token;
+                
+                /* Check for initialization */
+                if (token_equals(after_name, "=")) {
+                    /* Found global variable with initialization */
+                    int var_is_mutable = is_mutable[i];
+                    
+                    /* Check if RHS has function call (dynamic initialization) */
+                    int has_dynamic_init = 0;
+                    size_t rhs_start = skip_whitespace(children, count, after_name_idx + 1);
+                    
+                    /* Scan RHS until we hit ; or , */
+                    for (size_t j = rhs_start; j < count; j++) {
+                        if (children[j]->type != AST_TOKEN) continue;
+                        Token *rhs_tok = &children[j]->token;
+                        
+                        /* Stop at statement terminators */
+                        if (token_equals(rhs_tok, ";") || token_equals(rhs_tok, ",")) {
+                            break;
+                        }
+                        
+                        /* Check for function call: identifier followed by ( */
+                        if (rhs_tok->type == TOKEN_IDENTIFIER) {
+                            size_t peek_idx = skip_whitespace(children, count, j + 1);
+                            if (peek_idx < count && children[peek_idx]->type == AST_TOKEN &&
+                                token_equals(&children[peek_idx]->token, "(")) {
+                                has_dynamic_init = 1;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    /* Error if immutable global has dynamic initialization */
+                    if (has_dynamic_init && !var_is_mutable) {
+                        char error_msg[256];
+                        snprintf(error_msg, sizeof(error_msg),
+                            "Global variable '%s' has dynamic initialization but is declared immutable. "
+                            "Immutable globals cannot call functions in their initializers. "
+                            "Either declare it as 'mut' or use a constant initializer.",
+                            next_tok->text);
+                        cz_error(filename, source, next_tok->line, error_msg);
+                    }
+                    
+                    /* Add const to immutable globals (will be done in the insertion loop) */
+                    if (!var_is_mutable && !has_dynamic_init) {
+                        /* Skip if already has const */
+                        size_t prev_idx;
+                        int has_const = 0;
+                        if (find_prev_token(children, i, &prev_idx)) {
+                            if (token_equals(&children[prev_idx]->token, "const")) {
+                                has_const = 1;
+                            }
+                        }
+                        
+                        if (!has_const && insertion_count < count * 2) {
+                            insertions[insertion_count].position = i;
+                            insertions[insertion_count].type = INSERT_CONST_BEFORE_TYPE;
+                            insertion_count++;
+                        }
+                    }
+                }
+                /* Also handle immutable globals without initialization */
+                else if (token_equals(after_name, ";")) {
+                    int var_is_mutable = is_mutable[i];
+                    if (!var_is_mutable) {
+                        /* Add const to immutable global */
+                        size_t prev_idx;
+                        int has_const = 0;
+                        if (find_prev_token(children, i, &prev_idx)) {
+                            if (token_equals(&children[prev_idx]->token, "const")) {
+                                has_const = 1;
+                            }
+                        }
+                        
+                        if (!has_const && insertion_count < count * 2) {
+                            insertions[insertion_count].position = i;
+                            insertions[insertion_count].type = INSERT_CONST_BEFORE_TYPE;
+                            insertion_count++;
+                        }
+                    }
+                }
+            }
+            /* Pattern: Type *identifier = ... (pointer) - similar logic */
+            else if (token_equals(next_tok, "*")) {
+                size_t after_star_idx = skip_whitespace(children, count, next_idx + 1);
+                if (after_star_idx >= count || children[after_star_idx]->type != AST_TOKEN) continue;
+                Token *after_star = &children[after_star_idx]->token;
+                
+                if (after_star->type == TOKEN_IDENTIFIER) {
+                    size_t after_name_idx = skip_whitespace(children, count, after_star_idx + 1);
+                    if (after_name_idx >= count || children[after_name_idx]->type != AST_TOKEN) continue;
+                    Token *after_name = &children[after_name_idx]->token;
+                    
+                    if (token_equals(after_name, "=")) {
+                        /* Global pointer with initialization - check for dynamic init */
+                        int var_is_mutable = is_mutable[i] && is_mutable[next_idx];
+                        
+                        int has_dynamic_init = 0;
+                        size_t rhs_start = skip_whitespace(children, count, after_name_idx + 1);
+                        
+                        for (size_t j = rhs_start; j < count; j++) {
+                            if (children[j]->type != AST_TOKEN) continue;
+                            Token *rhs_tok = &children[j]->token;
+                            
+                            if (token_equals(rhs_tok, ";") || token_equals(rhs_tok, ",")) {
+                                break;
+                            }
+                            
+                            if (rhs_tok->type == TOKEN_IDENTIFIER) {
+                                size_t peek_idx = skip_whitespace(children, count, j + 1);
+                                if (peek_idx < count && children[peek_idx]->type == AST_TOKEN &&
+                                    token_equals(&children[peek_idx]->token, "(")) {
+                                    has_dynamic_init = 1;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (has_dynamic_init && !var_is_mutable) {
+                            char error_msg[256];
+                            snprintf(error_msg, sizeof(error_msg),
+                                "Global pointer '%s' has dynamic initialization but is declared immutable. "
+                                "Immutable globals cannot call functions in their initializers. "
+                                "Either declare it as 'mut' or use a constant initializer.",
+                                after_star->text);
+                            cz_error(filename, source, after_star->line, error_msg);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     /* Scan for local variable declarations and mark types for const insertion */
     /* Pattern: Type identifier = ... or Type *identifier = ... inside function bodies */
     int brace_depth = 0;
@@ -618,7 +792,7 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
         /* Track brace depth to know if we're inside a function */
         if (tok->type == TOKEN_PUNCTUATION) {
             if (token_equals(tok, "{")) {
-                brace_depth++;
+                brace_depth_global++;
                 /* Simple heuristic: if we see { after ) then we're entering a function body */
                 size_t prev_idx;
                 if (find_prev_token(children, i, &prev_idx)) {
@@ -627,7 +801,7 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
                     }
                 }
             } else if (token_equals(tok, "}")) {
-                brace_depth--;
+                brace_depth_global--;
                 if (brace_depth == 0) {
                     in_function_body = 0;
                 }
