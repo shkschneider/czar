@@ -5,6 +5,7 @@
  * Handles mutability transformations:
  * - Everything is immutable (const) by default
  * - 'mut' keyword makes things mutable
+ * - 'mut' is transitive - applies to both pointer and data
  * - Transform 'mut Type' to 'Type' (strip mut)
  * - Transform 'Type' to 'const Type' (add const)
  */
