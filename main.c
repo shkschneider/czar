@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "lexer.h"
 #include "parser.h"
 #include "transpiler.h"
