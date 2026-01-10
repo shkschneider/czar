@@ -2,10 +2,9 @@
  * CZar - C semantic authority layer
  * Transpiler defer module (transpiler/defer.c)
  *
- * Handles defer keyword for scope-exit cleanup using cleanup attribute.
- * Transforms: defer free(p)
- * Into: void _cz_defer_cleanup_N(void **arg) { free(*arg); }
- *       void *_cz_defer_N __attribute__((cleanup(_cz_defer_cleanup_N))) = p;
+ * Handles #defer keyword for scope-exit cleanup using cleanup attribute.
+ * Transforms: type var = init() #defer cleanup_func;
+ * Into: __attribute__((cleanup(cleanup_func))) type var = init();
  */
 
 #include "cz.h"
@@ -14,19 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-/* Counter for generating unique defer variable names */
-static int defer_counter = 0;
-
-/* Helper to duplicate a string with length limit */
-static char* safe_strndup(const char *str, size_t len) {
-    if (!str) return NULL;
-    char *result = malloc(len + 1);
-    if (!result) return NULL;
-    memcpy(result, str, len);
-    result[len] = '\0';
-    return result;
-}
 
 /* Helper to check if token text matches a string */
 static int token_matches(Token *tok, const char *str) {
@@ -48,119 +34,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
     return count;
 }
 
-/* Helper to extract function name from defer statement */
-/* Returns newly allocated string or NULL on failure */
-static char* extract_function_name(ASTNode **children, size_t count, size_t start, size_t *end_pos) {
-    if (!children) return NULL;
-    size_t i = start;
-    char *func_name = NULL;
-    
-    /* Find the function identifier */
-    while (i < count) {
-        if (!children[i] || children[i]->type != AST_TOKEN) {
-            i++;
-            continue;
-        }
-        
-        Token *tok = &children[i]->token;
-        
-        if (tok->type == TOKEN_WHITESPACE || tok->type == TOKEN_COMMENT) {
-            i++;
-            continue;
-        }
-        
-        if (tok->type == TOKEN_IDENTIFIER) {
-            func_name = safe_strndup(tok->text, tok->length);
-            i++;
-            break;
-        }
-        
-        /* If we hit something that's not whitespace/comment/identifier, bail */
-        break;
-    }
-    
-    if (end_pos) *end_pos = i;
-    return func_name;
-}
-
-/* Helper to extract argument from defer statement */
-/* Returns newly allocated string or NULL on failure */
-static char* extract_argument(ASTNode **children, size_t count, size_t start, size_t *end_pos) {
-    if (!children) return NULL;
-    size_t i = start;
-    char *arg = NULL;
-    
-    /* Skip to opening parenthesis */
-    i = skip_whitespace(children, count, i);
-    if (i >= count || !children[i] || children[i]->type != AST_TOKEN) {
-        return NULL;
-    }
-    
-    if (!token_matches(&children[i]->token, "(")) {
-        return NULL;
-    }
-    i++;
-    
-    /* Skip whitespace after ( */
-    i = skip_whitespace(children, count, i);
-    if (i >= count || !children[i] || children[i]->type != AST_TOKEN) {
-        return NULL;
-    }
-    
-    /* Get the argument identifier */
-    Token *tok = &children[i]->token;
-    if (tok->type == TOKEN_IDENTIFIER) {
-        arg = safe_strndup(tok->text, tok->length);
-        i++;
-    } else {
-        return NULL;
-    }
-    
-    /* Skip to closing parenthesis */
-    i = skip_whitespace(children, count, i);
-    if (i >= count || !children[i] || children[i]->type != AST_TOKEN) {
-        free(arg);
-        return NULL;
-    }
-    
-    if (token_matches(&children[i]->token, ")")) {
-        i++;
-    } else {
-        free(arg);
-        return NULL;
-    }
-    
-    /* Skip to semicolon */
-    i = skip_whitespace(children, count, i);
-    if (i < count && children[i] && children[i]->type == AST_TOKEN && token_matches(&children[i]->token, ";")) {
-        /* Don't increment i - we want end_pos to point to the semicolon, not after it */
-        /* This way we preserve the semicolon in the output */
-    }
-    
-    if (end_pos) *end_pos = i;
-    return arg;
-}
-
-/* Helper to clear token text (emit function handles NULL text) */
-static void clear_token_text(Token *token) {
-    if (!token) return;
-    free(token->text);
-    token->text = NULL;
-    token->length = 0;
-}
-
-/* Helper to set token text */
-static int set_token_text(Token *token, const char *text) {
-    if (!token || !text) return 0;
-    char *new_text = strdup(text);
-    if (!new_text) return 0;
-    free(token->text);
-    token->text = new_text;
-    token->length = strlen(text);
-    return 1;
-}
-
-/* Transform defer statements to cleanup attribute pattern */
+/* Transform #defer declarations to cleanup attribute pattern */
 void transpiler_transform_defer(ASTNode *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
@@ -170,83 +44,137 @@ void transpiler_transform_defer(ASTNode *ast) {
         return;
     }
     
-    /* Reset defer counter for each translation unit */
-    defer_counter = 0;
     
-    /* Scan for defer patterns */
+    /* Scan for #defer patterns in declarations */
     for (size_t i = 0; i < ast->child_count; i++) {
         if (!ast->children[i]) continue;
         if (ast->children[i]->type != AST_TOKEN) continue;
-        if (ast->children[i]->token.type != TOKEN_IDENTIFIER) continue;
         
         Token *tok = &ast->children[i]->token;
         
-        /* Check if this is "defer" keyword */
-        if (!token_matches(tok, "defer")) {
-            continue;
-        }
+        /* Look for #defer preprocessor directive */
+        if (tok->type != TOKEN_PREPROCESSOR) continue;
+        if (!tok->text) continue;
         
-        /* Found defer keyword */
-        size_t func_end_pos = 0;
-        char *func_name = extract_function_name(ast->children, ast->child_count, i + 1, &func_end_pos);
-        if (!func_name) {
-            /* Invalid defer syntax, just clear the defer keyword */
-            clear_token_text(tok);
-            continue;
-        }
         
-        size_t arg_end_pos = 0;
-        char *arg = extract_argument(ast->children, ast->child_count, func_end_pos, &arg_end_pos);
-        if (!arg) {
-            free(func_name);
-            /* Invalid defer syntax, just clear the defer keyword */
-            clear_token_text(tok);
-            continue;
-        }
+        /* Check for #defer - handle both "#defer" and "#defer " */
+        size_t defer_len = strlen("#defer");
+        if (tok->length < defer_len) continue;
+        if (strncmp(tok->text, "#defer", defer_len) != 0) continue;
         
-        /* Generate the replacement code */
-        /* Transform: defer cleanup_func(var); */
-        /* Into: __attribute__((cleanup(cleanup_func))) void *_cz_defer_N = var; */
-        /* User must provide cleanup_func with signature: void cleanup_func(void **ptr) */
         
-        char buffer[512];
-        int n = snprintf(buffer, sizeof(buffer),
-            "__attribute__((cleanup(%s))) void *_cz_defer_%d = %s",
-            func_name, defer_counter, arg);
-        
-        if (n < 0 || n >= (int)sizeof(buffer)) {
-            /* Buffer overflow, skip this defer */
-            free(func_name);
-            free(arg);
-            clear_token_text(tok);
-            continue;
-        }
-        
-        defer_counter++;
-        
-        /* Replace the defer keyword with the generated code */
-        if (!set_token_text(tok, buffer)) {
-            free(func_name);
-            free(arg);
-            clear_token_text(tok);
-            continue;
-        }
-        
-        /* Clear all tokens from defer keyword to semicolon by replacing with spaces */
-        for (size_t j = i + 1; j < arg_end_pos && j < ast->child_count; j++) {
-            if (ast->children[j] && ast->children[j]->type == AST_TOKEN) {
-                /* Instead of clearing, replace with a space */
-                Token *t = &ast->children[j]->token;
-                if (t->text) {
-                    free(t->text);
-                    t->text = strdup(" ");
-                    t->length = t->text ? 1 : 0;
-                    t->type = TOKEN_WHITESPACE;
-                }
+        /* Check it's exactly #defer, not #defer_something */
+        if (tok->length > defer_len) {
+            char next_char = tok->text[defer_len];
+            if (next_char != ' ' && next_char != '\t' && next_char != '\r' && next_char != '\n') {
+                continue;
             }
         }
         
-        free(func_name);
-        free(arg);
+        /* Extract cleanup function name from the #defer directive */
+        /* The token text is "#defer cleanup_func;" or "#defer cleanup_func" */
+        const char *func_start = tok->text + defer_len;
+        while (*func_start && (*func_start == ' ' || *func_start == '\t')) {
+            func_start++;
+        }
+        
+        if (!*func_start || *func_start == ';' || *func_start == '\n') {
+            /* No function name found */
+            continue;
+        }
+        
+        /* Find the end of the function name */
+        const char *func_end = func_start;
+        while (*func_end && *func_end != ' ' && *func_end != '\t' && *func_end != ';' && *func_end != '\n') {
+            func_end++;
+        }
+        
+        size_t func_len = func_end - func_start;
+        if (func_len == 0) continue;
+        
+        char *cleanup_func = malloc(func_len + 1);
+        if (!cleanup_func) continue;
+        memcpy(cleanup_func, func_start, func_len);
+        cleanup_func[func_len] = '\0';
+        
+        
+        /* Find the type token by scanning backwards from #defer */
+        /* We need to find the first token of the declaration */
+        size_t type_pos = 0;
+        int found = 0;
+        
+        
+        for (size_t j = i; j > 0; j--) {
+            size_t idx = j - 1;
+            if (!ast->children[idx] || ast->children[idx]->type != AST_TOKEN) continue;
+            
+            Token *t = &ast->children[idx]->token;
+            
+            /* Skip whitespace and comments */
+            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) continue;
+            
+            /* If we hit a semicolon or opening brace, the type should be after it */
+            if (t->type == TOKEN_PUNCTUATION) {
+                if (token_matches(t, ";") || token_matches(t, "{")) {
+                    /* Type should be the next non-whitespace token */
+                    type_pos = skip_whitespace(ast->children, ast->child_count, idx + 1);
+                    found = 1;
+                    break;
+                }
+            }
+            
+            /* Keep track of potential type position */
+            type_pos = idx;
+        }
+        
+        
+        /* If we didn't find a ; or {, use the beginning */
+        if (!found && type_pos == 0) {
+            type_pos = skip_whitespace(ast->children, ast->child_count, 0);
+        }
+        
+        if (type_pos >= i || !ast->children[type_pos]) {
+            free(cleanup_func);
+            continue;
+        }
+        
+        /* Insert __attribute__((cleanup(func))) before the type */
+        /* Note: cleanup function must have signature: void func(void **ptr) */
+        char attr_buf[256];
+        int n = snprintf(attr_buf, sizeof(attr_buf), "__attribute__((cleanup(%s))) ", cleanup_func);
+        if (n < 0 || n >= (int)sizeof(attr_buf)) {
+            free(cleanup_func);
+            continue;
+        }
+        
+        /* Prepend the attribute to the type token */
+        Token *type_tok = &ast->children[type_pos]->token;
+        if (!type_tok->text) {
+            free(cleanup_func);
+            continue;
+        }
+        
+        
+        size_t new_len = strlen(attr_buf) + type_tok->length + 1;
+        char *new_text = malloc(new_len);
+        if (!new_text) {
+            free(cleanup_func);
+            continue;
+        }
+        
+        snprintf(new_text, new_len, "%s%s", attr_buf, type_tok->text);
+        free(type_tok->text);
+        type_tok->text = new_text;
+        type_tok->length = strlen(new_text);
+        
+        
+        /* Replace the #defer token with just a semicolon */
+        free(tok->text);
+        tok->text = strdup(";");
+        tok->length = 1;
+        tok->type = TOKEN_PUNCTUATION;
+        
+        free(cleanup_func);
     }
+    
 }

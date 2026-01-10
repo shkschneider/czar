@@ -125,9 +125,6 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform #deprecated directives to __attribute__((deprecated)) */
     transpiler_transform_deprecated(transpiler->ast);
 
-    /* Transform defer statements to cleanup attribute pattern */
-    transpiler_transform_defer(transpiler->ast);
-
     /* First validate the AST for CZar semantic rules */
     transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
 
@@ -179,6 +176,10 @@ void transpiler_transform(Transpiler *transpiler) {
     /* Transform mutability (mut keyword and const insertion) */
     /* Must run after named arguments but before type transformations */
     transpiler_transform_mutability(transpiler->ast, transpiler->filename, transpiler->source);
+
+    /* Transform defer statements to cleanup attribute pattern */
+    /* Must run after mutability so mut is already transformed */
+    transpiler_transform_defer(transpiler->ast);
 
     /* Then apply transformations */
     transform_node(transpiler->ast);
