@@ -193,6 +193,7 @@ bool transpile(const char *input_file) {
     fprintf(stdout, "%s %s\n", header_file, source_file);
 
     /* Clean up */
+    transpiler_cleanup(&transpiler);
     ast_node_free(ast);
     free(input_buffer);
     free(header_file);

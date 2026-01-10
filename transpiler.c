@@ -26,6 +26,7 @@
 #include "src/unused.h"
 #include "src/validation.h"
 #include "src/warnings.h"
+#include "src/features.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -50,6 +51,17 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
     transpiler_parse_pragmas(ast, &transpiler->pragma_ctx);
     /* Reset unused counter for each translation unit */
     transpiler_reset_unused_counter();
+    /* Initialize feature registry and register all features */
+    feature_registry_init(&transpiler->registry);
+    register_all_features(&transpiler->registry);
+}
+
+/* Clean up transpiler resources */
+void transpiler_cleanup(Transpiler *transpiler) {
+    if (!transpiler) {
+        return;
+    }
+    feature_registry_free(&transpiler->registry);
 }
 
 /* Transform AST node recursively */
@@ -124,69 +136,16 @@ void transpiler_transform(Transpiler *transpiler) {
         return;
     }
 
-    /* Transform #deprecated directives to __attribute__((deprecated)) */
-    transpiler_transform_deprecated(transpiler->ast);
-
-    /* First validate the AST for CZar semantic rules */
-    transpiler_validate(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Validate cast expressions */
-    transpiler_validate_casts(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Validate enum declarations and switch exhaustiveness */
-    transpiler_validate_enums(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Validate function declarations (empty parameter lists) */
-    transpiler_validate_functions(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Transform function declarations (main return type, empty parameter lists to void) */
-    transpiler_transform_functions(transpiler->ast);
-
-    /* Add warn_unused_result to non-void functions */
-    transpiler_add_warn_unused_result(transpiler->ast);
-
-    /* Add pure attribute to functions with no params or only immutable params */
-    transpiler_add_pure(transpiler->ast);
-
-    /* Transform named structs to typedef structs */
-    transpiler_transform_structs(transpiler->ast);
-
-    /* Transform struct initialization syntax */
-    transpiler_transform_struct_init(transpiler->ast);
-
-    /* Transform struct methods (before autodereference) */
-    transpiler_transform_methods(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Replace struct names with _t variants in generated C code */
-    /* Must be AFTER method transformations to preserve base names in methods */
-    transpiler_replace_struct_names(transpiler->ast);
-
-    /* Transform member access operators (. to -> for pointers) */
-    transpiler_transform_autodereference(transpiler->ast);
-
-    /* Transform enums (add default: inline unreachable if needed) */
-    transpiler_transform_enums(transpiler->ast, transpiler->filename);
-
-    /* Expand runtime function calls inline with .cz file location (before transforming identifiers) */
-    transpiler_expand_unreachable(transpiler->ast, transpiler->filename);
-    transpiler_expand_todo(transpiler->ast, transpiler->filename);
-    transpiler_expand_fixme(transpiler->ast, transpiler->filename);
-
-    /* Transform named arguments (strip labels) - must run before type transformations */
-    transpiler_transform_named_arguments(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Transform mutability (mut keyword and const insertion) */
-    /* Must run after named arguments but before type transformations */
-    transpiler_transform_mutability(transpiler->ast, transpiler->filename, transpiler->source);
-
-    /* Transform defer statements to cleanup attribute pattern */
-    /* Must run after mutability so mut is already transformed */
-    transpiler_transform_defer(transpiler->ast);
-
-    /* Then apply transformations */
+    /* Execute validation phase for all enabled features */
+    feature_registry_validate(&transpiler->registry, transpiler->ast, transpiler->filename, transpiler->source);
+    
+    /* Execute transformation phase for all enabled features */
+    feature_registry_transform(&transpiler->registry, transpiler->ast, transpiler->filename, transpiler->source);
+    
+    /* Apply identifier transformations (types, constants, unused) */
     transform_node(transpiler->ast);
-
-    /* Transform cast expressions */
+    
+    /* Transform cast expressions (must be after types are transformed) */
     transpiler_transform_casts(transpiler->ast);
 }
 
@@ -887,8 +846,8 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
     /* Include the generated header */
     fprintf(output, "#include \"%s\"\n", header_name);
     
-    /* Emit generated defer cleanup functions */
-    transpiler_emit_defer_functions(output);
+    /* Emit code from enabled features (e.g., defer cleanup functions) */
+    feature_registry_emit(&transpiler->registry, output);
 
     /* Auto-include all other .cz.h files from the same module (directory) */
     /* This happens unconditionally for module directories */

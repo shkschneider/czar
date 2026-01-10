@@ -9,18 +9,23 @@
 
 #include "parser.h"
 #include "src/pragma.h"
+#include "src/feature.h"
 #include <stdio.h>
 
 /* Transpiler structure */
-typedef struct {
+typedef struct Transpiler {
     ASTNode *ast;
     const char *filename;
     const char *source;
     PragmaContext pragma_ctx;  /* Pragma settings */
+    FeatureRegistry registry;  /* Feature registry */
 } Transpiler;
 
 /* Initialize transpiler with AST */
 void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename, const char *source);
+
+/* Clean up transpiler resources */
+void transpiler_cleanup(Transpiler *transpiler);
 
 /* Transform AST (apply CZar-specific transformations) */
 void transpiler_transform(Transpiler *transpiler);
