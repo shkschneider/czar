@@ -459,6 +459,18 @@ void transpiler_transform_defer(ASTNode *ast) {
             tok->text = strdup(";");
             tok->length = 1;
             tok->type = TOKEN_PUNCTUATION;
+            
+            /* Remove tokens from i+1 to end_token_idx (inclusive) - these are the { cleanup_code } tokens */
+            if (end_token_idx > i) {
+                for (size_t j = i + 1; j <= end_token_idx && j < ast->child_count; j++) {
+                    if (ast->children[j] && ast->children[j]->type == AST_TOKEN) {
+                        Token *t = &ast->children[j]->token;
+                        free(t->text);
+                        t->text = strdup("");
+                        t->length = 0;
+                    }
+                }
+            }
         
         free(cleanup_code);
         free(var_name);
