@@ -16,6 +16,13 @@
 bool transpile(const char *input_file) {
     /* Generate output file names */
     size_t input_len = strlen(input_file);
+    
+    /* Check for overflow: input_len + 3 should not overflow */
+    if (input_len > SIZE_MAX - 3) {
+        cz_error(NULL, NULL, 0, "Input filename too long");
+        return false;
+    }
+    
     char *header_file = malloc(input_len + 3);  /* .cz + .h + \0 */
     char *source_file = malloc(input_len + 3);  /* .cz + .c + \0 */
 
@@ -23,7 +30,7 @@ bool transpile(const char *input_file) {
         cz_error(NULL, NULL, 0, ERR_MEMORY_ALLOCATION_FAILED);
         free(header_file);
         free(source_file);
-        return 1;
+        return false;
     }
 
     snprintf(header_file, input_len + 3, "%s.h", input_file);
@@ -32,14 +39,24 @@ bool transpile(const char *input_file) {
     /* Extract just the filename for the include directive */
     const char *filename_only = strrchr(input_file, '/');
     filename_only = filename_only ? filename_only + 1 : input_file;
-    char *header_name = malloc(strlen(filename_only) + 3);
+    size_t filename_len = strlen(filename_only);
+    
+    /* Check for overflow: filename_len + 3 should not overflow */
+    if (filename_len > SIZE_MAX - 3) {
+        cz_error(NULL, NULL, 0, "Filename too long");
+        free(header_file);
+        free(source_file);
+        return false;
+    }
+    
+    char *header_name = malloc(filename_len + 3);
     if (!header_name) {
         cz_error(NULL, NULL, 0, ERR_MEMORY_ALLOCATION_FAILED);
         free(header_file);
         free(source_file);
-        return 1;
+        return false;
     }
-    snprintf(header_name, strlen(filename_only) + 3, "%s.h", filename_only);
+    snprintf(header_name, filename_len + 3, "%s.h", filename_only);
 
     /* Open input file */
     FILE *input = fopen(input_file, "r");
@@ -50,21 +67,27 @@ bool transpile(const char *input_file) {
         free(header_file);
         free(source_file);
         free(header_name);
-        return 1;
+        return false;
     }
 
     /* Read entire input file into memory */
     if (fseek(input, 0, SEEK_END) != 0) {
         cz_error(NULL, NULL, 0, ERR_FAILED_TO_SEEK_INPUT_FILE);
         fclose(input);
-        return 1;
+        free(header_file);
+        free(source_file);
+        free(header_name);
+        return false;
     }
 
     long input_size = ftell(input);
     if (input_size < 0) {
         cz_error(NULL, NULL, 0, ERR_FAILED_TO_GET_INPUT_FILE_SIZE);
         fclose(input);
-        return 1;
+        free(header_file);
+        free(source_file);
+        free(header_name);
+        return false;
     }
 
     /* Handle empty input file */
@@ -87,7 +110,7 @@ bool transpile(const char *input_file) {
         free(header_file);
         free(source_file);
         free(header_name);
-        return 1;
+        return false;
     }
 
     char *input_buffer = malloc(input_size + 1);
@@ -97,7 +120,7 @@ bool transpile(const char *input_file) {
         free(header_file);
         free(source_file);
         free(header_name);
-        return 1;
+        return false;
     }
 
     size_t bytes_read = fread(input_buffer, 1, input_size, input);
@@ -120,7 +143,7 @@ bool transpile(const char *input_file) {
         free(header_file);
         free(source_file);
         free(header_name);
-        return 1;
+        return false;
     }
 
     /* Initialize transpiler */
@@ -141,7 +164,7 @@ bool transpile(const char *input_file) {
         free(header_file);
         free(source_file);
         free(header_name);
-        return 1;
+        return false;
     }
 
     /* Emit header file */
@@ -159,7 +182,7 @@ bool transpile(const char *input_file) {
         free(header_file);
         free(source_file);
         free(header_name);
-        return 1;
+        return false;
     }
 
     /* Emit source file */
@@ -174,6 +197,8 @@ bool transpile(const char *input_file) {
     free(header_file);
     free(source_file);
     free(header_name);
+
+    return true;
 }
 
 int main(int argc, char *argv[]) {
@@ -183,7 +208,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (uint32_t i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         transpile(argv[i]);
     }
 
