@@ -27,6 +27,7 @@
 #include "src/validation.h"
 #include "src/warnings.h"
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -220,7 +221,16 @@ static char* resolve_module_path(const char *source_filename, const char *module
     }
 
     /* Build full path: source_dir/module_path */
-    size_t full_path_len = strlen(source_dir_copy) + strlen(module_path) + 2; /* +2 for / and \0 */
+    size_t dir_len = strlen(source_dir_copy);
+    size_t mod_len = strlen(module_path);
+    
+    /* Check for overflow: dir_len + mod_len + 2 should not overflow */
+    if (dir_len > SIZE_MAX - mod_len - 2) {
+        free(source_dir_copy);
+        return NULL;
+    }
+    
+    size_t full_path_len = dir_len + mod_len + 2; /* +2 for / and \0 */
     char *full_path = malloc(full_path_len);
     if (!full_path) {
         free(source_dir_copy);
