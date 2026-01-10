@@ -436,8 +436,10 @@ void transpiler_transform_casts(ASTNode *ast) {
                             /* Buffer would overflow - stop concatenating */
                             break;
                         }
-                        strcat(value_text, children[k]->token.text);
+                        /* Use memcpy instead of strcat for better safety and performance */
+                        memcpy(value_text + value_text_len, children[k]->token.text, token_len);
                         value_text_len += token_len;
+                        value_text[value_text_len] = '\0';
                     }
                 }
 
