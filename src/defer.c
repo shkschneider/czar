@@ -17,6 +17,10 @@
 /* Counter for generating unique cleanup function names */
 static int defer_counter = 0;
 
+/* Buffer to store generated cleanup functions */
+static char *generated_defer_functions = NULL;
+static size_t generated_defer_functions_size = 0;
+
 /* Helper to check if token text matches a string */
 static int token_matches(Token *tok, const char *str) {
     if (!tok || !tok->text || !str) return 0;
@@ -96,12 +100,11 @@ void transpiler_transform_defer(ASTNode *ast) {
         return;
     }
     
-    /* Buffer to accumulate generated cleanup functions */
-    char *generated_functions = NULL;
-    size_t gen_funcs_size = 0;
-    
-    /* Reset defer counter for each translation unit */
+    /* Reset defer counter and clear previous generated functions */
     defer_counter = 0;
+    free(generated_defer_functions);
+    generated_defer_functions = NULL;
+    generated_defer_functions_size = 0;
     
     /* Scan for #defer patterns in declarations */
     for (size_t i = 0; i < ast->child_count; i++) {
@@ -230,18 +233,18 @@ void transpiler_transform_defer(ASTNode *ast) {
             continue;
         }
         
-        /* Add to generated functions buffer */
+        /* Add to global generated functions buffer */
         size_t func_len = strlen(func_buf);
-        char *new_gen_funcs = realloc(generated_functions, gen_funcs_size + func_len + 1);
+        char *new_gen_funcs = realloc(generated_defer_functions, generated_defer_functions_size + func_len + 1);
         if (!new_gen_funcs) {
             free(cleanup_code);
             free(var_name);
             continue;
         }
-        generated_functions = new_gen_funcs;
-        memcpy(generated_functions + gen_funcs_size, func_buf, func_len);
-        gen_funcs_size += func_len;
-        generated_functions[gen_funcs_size] = '\0';
+        generated_defer_functions = new_gen_funcs;
+        memcpy(generated_defer_functions + generated_defer_functions_size, func_buf, func_len);
+        generated_defer_functions_size += func_len;
+        generated_defer_functions[generated_defer_functions_size] = '\0';
         
         defer_counter++;
         
@@ -322,38 +325,11 @@ void transpiler_transform_defer(ASTNode *ast) {
         free(cleanup_code);
         free(var_name);
     }
-    
-    /* Prepend generated functions to the AST */
-    if (generated_functions && gen_funcs_size > 0) {
-        /* Insert the generated functions at the beginning of the file */
-        /* We need to insert a new token at the start */
-        if (ast->child_count > 0 && ast->children[0]) {
-            /* Find the first non-whitespace token */
-            size_t insert_pos = 0;
-            for (size_t i = 0; i < ast->child_count; i++) {
-                if (!ast->children[i] || ast->children[i]->type != AST_TOKEN) continue;
-                Token *t = &ast->children[i]->token;
-                if (t->type != TOKEN_WHITESPACE && t->type != TOKEN_COMMENT) {
-                    insert_pos = i;
-                    break;
-                }
-            }
-            
-            /* Prepend to the first non-whitespace token */
-            if (insert_pos < ast->child_count && ast->children[insert_pos]) {
-                Token *first_tok = &ast->children[insert_pos]->token;
-                if (first_tok->text) {
-                    size_t new_len = strlen(generated_functions) + first_tok->length + 2;
-                    char *new_text = malloc(new_len);
-                    if (new_text) {
-                        snprintf(new_text, new_len, "%s\n%s", generated_functions, first_tok->text);
-                        free(first_tok->text);
-                        first_tok->text = new_text;
-                        first_tok->length = strlen(new_text);
-                    }
-                }
-            }
-        }
-        free(generated_functions);
+}
+
+/* Emit generated defer cleanup functions to output */
+void transpiler_emit_defer_functions(FILE *output) {
+    if (generated_defer_functions && generated_defer_functions_size > 0) {
+        fprintf(output, "%s\n", generated_defer_functions);
     }
 }
