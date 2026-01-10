@@ -425,11 +425,19 @@ void transpiler_transform_casts(ASTNode *ast) {
                 /* Extract the value expression as a string (for re-injection) */
                 /* This is a workaround for token duplication - we'll reconstruct the value text */
                 char value_text[1024] = "";
+                size_t value_text_len = 0;
                 size_t value_start = open_paren + 1;
                 for (size_t k = value_start; k < comma_pos && k < count; k++) {
                     if (children[k]->type == AST_TOKEN && children[k]->token.text &&
                         children[k]->token.length > 0) {
+                        size_t token_len = children[k]->token.length;
+                        /* Check if adding this token would overflow the buffer */
+                        if (value_text_len + token_len + 1 > sizeof(value_text)) {
+                            /* Buffer would overflow - stop concatenating */
+                            break;
+                        }
                         strcat(value_text, children[k]->token.text);
+                        value_text_len += token_len;
                     }
                 }
 
