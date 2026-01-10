@@ -1,6 +1,6 @@
 /*
  * Test defer functionality
- * Tests: defer keyword with cleanup attribute
+ * Tests: #defer keyword with cleanup attribute
  */
 
 #include <stdlib.h>
@@ -17,8 +17,7 @@ void cleanup_free(void **ptr) {
 
 int main(void) {
     /* Test 1: Simple defer with malloc/free */
-    void *p = malloc(100);
-    defer cleanup_free(p);
+    mut void *p = malloc(100) #defer cleanup_free;
     printf("Allocated: %p\n", p);
     printf("After defer\n");
     
