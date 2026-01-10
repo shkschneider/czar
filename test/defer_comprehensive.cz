@@ -6,25 +6,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* Cleanup functions */
-void cleanup_free(mut void **ptr) {
-    if (*ptr) {
-        printf("Freeing: %p\n", *ptr);
-        free(*ptr);
-        *ptr = NULL;
-    }
-}
-
 int main(void) {
     printf("Testing CZar defer functionality\n");
     
     /* Test 1: Multiple defers - execute in reverse order (LIFO) */
     {
         printf("\n=== Test: Multiple defers ===\n");
-        mut void *p1 = malloc(50) #defer cleanup_free;
+        mut void *p1 = malloc(50) #defer { printf("Freeing p1: %p\n", p1); free(p1); };
         printf("Allocated p1: %p\n", p1);
         
-        mut void *p2 = malloc(100) #defer cleanup_free;
+        mut void *p2 = malloc(100) #defer { printf("Freeing p2: %p\n", p2); free(p2); };
         printf("Allocated p2: %p\n", p2);
         
         printf("Defers will execute in reverse order (LIFO) when scope exits\n");
@@ -33,11 +24,11 @@ int main(void) {
     /* Test 2: Nested scope */
     {
         printf("\n=== Test: Nested scope ===\n");
-        mut void *outer = malloc(200) #defer cleanup_free;
+        mut void *outer = malloc(200) #defer { printf("Freeing outer: %p\n", outer); free(outer); };
         printf("Allocated outer: %p\n", outer);
         
         {
-            mut void *inner = malloc(50) #defer cleanup_free;
+            mut void *inner = malloc(50) #defer { printf("Freeing inner: %p\n", inner); free(inner); };
             printf("Allocated inner: %p\n", inner);
             printf("Inner defer will fire when this block ends\n");
         }
