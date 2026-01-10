@@ -875,6 +875,9 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
 
     /* Include the generated header */
     fprintf(output, "#include \"%s\"\n", header_name);
+    
+    /* Emit generated defer cleanup functions */
+    transpiler_emit_defer_functions(output);
 
     /* Auto-include all other .cz.h files from the same module (directory) */
     /* This happens unconditionally for module directories */
