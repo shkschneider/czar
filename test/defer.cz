@@ -8,9 +8,11 @@
 
 /* User-provided cleanup function for free */
 void cleanup_free(void **ptr) {
-    printf("Cleaning up: %p\n", *ptr);
-    free(*ptr);
-    *ptr = NULL;
+    if (ptr && *ptr) {
+        printf("Cleaning up: %p\n", *ptr);
+        free(*ptr);
+        *ptr = NULL;
+    }
 }
 
 int main(void) {
