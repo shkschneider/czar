@@ -54,6 +54,13 @@ static char* extract_variable_name(ASTNode **children, size_t count __attribute_
         /* Skip whitespace */
         if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) continue;
         
+        /* If we hit a statement boundary (;, {, }) before finding =, it's standalone */
+        if (t->type == TOKEN_PUNCTUATION) {
+            if (token_matches(t, ";") || token_matches(t, "{") || token_matches(t, "}")) {
+                /* No assignment on this statement, it's standalone defer */
+                return NULL;
+            }
+        }
         
         /* If we hit an equals sign, the identifier should be before it */
         if (t->type == TOKEN_OPERATOR || t->type == TOKEN_PUNCTUATION) {
@@ -132,67 +139,182 @@ void transpiler_transform_defer(ASTNode *ast) {
             }
         }
         
-        
         /* Extract the code block from the #defer directive */
-        /* The token text is "#defer { code };" or "#defer { code }" */
+        /* The block might span multiple tokens if it's multiline */
+        
+        /* First, check if the opening brace is in this token */
         const char *block_start = tok->text + defer_len;
         while (*block_start && (*block_start == ' ' || *block_start == '\t')) {
             block_start++;
         }
         
+        int brace_in_token = (*block_start == '{');
+        char *cleanup_code = NULL;
+        size_t end_token_idx = i;
         
-        if (*block_start != '{') {
-            /* Not a code block, skip */
-            continue;
+        if (brace_in_token && tok->length > (size_t)(block_start - tok->text + 1)) {
+            /* Opening brace is in this token, try to find closing brace within token */
+            int brace_count = 0;
+            const char *code_start = block_start + 1;
+            const char *block_end = code_start;
+            
+            for (const char *p = block_start; *p; p++) {
+                if (*p == '{') brace_count++;
+                if (*p == '}') {
+                    brace_count--;
+                    if (brace_count == 0) {
+                        block_end = p;
+                        break;
+                    }
+                }
+            }
+            
+            if (brace_count == 0) {
+                /* Complete block in single token */
+                size_t code_len = block_end - code_start;
+                cleanup_code = malloc(code_len + 1);
+                if (!cleanup_code) continue;
+                memcpy(cleanup_code, code_start, code_len);
+                cleanup_code[code_len] = '\0';
+            }
         }
         
-        
-        /* Find matching closing brace */
-        int brace_count = 0;
-        const char *code_start = block_start + 1;
-        const char *block_end = code_start;
-        
-        for (const char *p = block_start; *p; p++) {
-            if (*p == '{') brace_count++;
-            if (*p == '}') {
-                brace_count--;
-                if (brace_count == 0) {
-                    block_end = p;
+        if (!cleanup_code) {
+            /* Block spans multiple tokens - collect them */
+            /* Find opening brace first */
+            size_t brace_start_idx = i;
+            int found_open_brace = brace_in_token;
+            
+            if (!found_open_brace) {
+                /* Look forward for opening brace */
+                for (size_t j = i + 1; j < ast->child_count; j++) {
+                    if (!ast->children[j] || ast->children[j]->type != AST_TOKEN) continue;
+                    Token *t = &ast->children[j]->token;
+                    if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) continue;
+                    if (t->type == TOKEN_PUNCTUATION && token_matches(t, "{")) {
+                        brace_start_idx = j;
+                        found_open_brace = 1;
+                        break;
+                    }
+                    /* If we hit something else, not a defer block */
                     break;
                 }
+            }
+            
+            if (!found_open_brace) {
+                /* Not a code block defer */
+                continue;
+            }
+            
+            /* Now collect tokens until we find matching closing brace */
+            int brace_count = 1;
+            size_t code_buffer_size = 1024;
+            cleanup_code = malloc(code_buffer_size);
+            if (!cleanup_code) continue;
+            cleanup_code[0] = '\0';
+            size_t code_len = 0;
+            
+            for (size_t j = brace_start_idx + 1; j < ast->child_count && brace_count > 0; j++) {
+                if (!ast->children[j] || ast->children[j]->type != AST_TOKEN) continue;
+                Token *t = &ast->children[j]->token;
+                
+                /* Check for braces */
+                if (t->type == TOKEN_PUNCTUATION) {
+                    if (token_matches(t, "{")) brace_count++;
+                    else if (token_matches(t, "}")) {
+                        brace_count--;
+                        if (brace_count == 0) {
+                            end_token_idx = j;
+                            break;
+                        }
+                    }
+                }
+                
+                /* Append token text to cleanup_code */
+                if (t->text) {
+                    size_t needed = code_len + t->length + 1;
+                    if (needed > code_buffer_size) {
+                        code_buffer_size = needed * 2;
+                        char *new_buf = realloc(cleanup_code, code_buffer_size);
+                        if (!new_buf) {
+                            free(cleanup_code);
+                            cleanup_code = NULL;
+                            break;
+                        }
+                        cleanup_code = new_buf;
+                    }
+                    memcpy(cleanup_code + code_len, t->text, t->length);
+                    code_len += t->length;
+                    cleanup_code[code_len] = '\0';
+                }
+                end_token_idx = j;
+            }
+            
+            if (!cleanup_code || brace_count != 0) {
+                free(cleanup_code);
+                continue;
             }
         }
         
         
-        if (brace_count != 0) {
-            /* Mismatched braces */
-            continue;
-        }
-        
-        /* Extract the code between braces */
-        size_t code_len = block_end - code_start;
-        char *cleanup_code = malloc(code_len + 1);
-        if (!cleanup_code) continue;
-        memcpy(cleanup_code, code_start, code_len);
-        cleanup_code[code_len] = '\0';
-        
-        
         /* Extract variable name from the declaration */
         char *var_name = extract_variable_name(ast->children, ast->child_count, i);
-        if (!var_name) {
-            free(cleanup_code);
-            continue;
+        int is_standalone = (var_name == NULL);
+        
+        /* For standalone defer, create a dummy variable name */
+        if (is_standalone) {
+            var_name = malloc(64);
+            if (!var_name) {
+                free(cleanup_code);
+                continue;
+            }
+            snprintf(var_name, 64, "_cz_defer_%d", defer_counter);
         }
         
         
         
         /* Generate cleanup function name */
         char cleanup_func_name[128];
-        snprintf(cleanup_func_name, sizeof(cleanup_func_name), "_cz_cleanup_%s_%d", var_name, defer_counter);
+        snprintf(cleanup_func_name, sizeof(cleanup_func_name), "_cz_cleanup_%s", var_name);
         
+        defer_counter++;
+        
+        if (is_standalone) {
+            /* For standalone defer, use nested function to access outer scope variables */
+            char standalone_code[2048];
+            snprintf(standalone_code, sizeof(standalone_code),
+                "{ void %s(int *_cz_defer_var __attribute__((unused))) { %s } "
+                "int __attribute__((cleanup(%s))) %s __attribute__((unused)) = 0; }",
+                cleanup_func_name, cleanup_code, cleanup_func_name, var_name);
+            
+            free(tok->text);
+            tok->text = strdup(standalone_code);
+            tok->length = strlen(standalone_code);
+            tok->type = TOKEN_IDENTIFIER;
+            
+            /* Remove tokens from i+1 to end_token_idx (inclusive) */
+            if (end_token_idx > i) {
+                for (size_t j = i + 1; j <= end_token_idx && j < ast->child_count; j++) {
+                    if (ast->children[j] && ast->children[j]->type == AST_TOKEN) {
+                        Token *t = &ast->children[j]->token;
+                        free(t->text);
+                        t->text = strdup("");
+                        t->length = 0;
+                    }
+                }
+            }
+            
+            free(cleanup_code);
+            free(var_name);
+            continue; /* Skip to next defer - no static function needed */
+        }
+        
+        /* For declaration defer, generate static cleanup function and apply attribute */
         /* Generate the cleanup function */
-        /* The function receives void **{varname} and the code uses *{varname} */
-        /* We need to replace {var} with (*{var}) in the cleanup code */
+        char func_buf[2048];
+        int n;
+        
+        /* For declaration defer, replace var_name with (*var_name) */
         char modified_cleanup_code[2048];
         char *mod_code = modified_cleanup_code;
         const char *src = cleanup_code;
@@ -220,8 +342,7 @@ void transpiler_transform_defer(ASTNode *ast) {
         }
         *mod_code = '\0';
         
-        char func_buf[2048];
-        int n = snprintf(func_buf, sizeof(func_buf),
+        n = snprintf(func_buf, sizeof(func_buf),
             "static void %s(void **%s) {\n"
             "    %s\n"
             "}\n",
@@ -246,81 +367,80 @@ void transpiler_transform_defer(ASTNode *ast) {
         generated_defer_functions_size += func_len;
         generated_defer_functions[generated_defer_functions_size] = '\0';
         
-        defer_counter++;
-        
-        /* Find the type token by scanning backwards from #defer */
-        size_t type_pos = 0;
-        int found = 0;
-        
-        for (size_t j = i; j > 0; j--) {
-            size_t idx = j - 1;
-            if (!ast->children[idx] || ast->children[idx]->type != AST_TOKEN) continue;
+        /* For declaration defer, find the type token and prepend attribute */
+            /* Find the type token by scanning backwards from #defer */
+            size_t type_pos = 0;
+            int found = 0;
             
-            Token *t = &ast->children[idx]->token;
-            
-            /* Skip whitespace and comments */
-            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) continue;
-            
-            /* If we hit a semicolon or opening brace, the type should be after it */
-            if (t->type == TOKEN_PUNCTUATION) {
-                if (token_matches(t, ";") || token_matches(t, "{")) {
-                    /* Type should be the next non-whitespace token */
-                    type_pos = skip_whitespace(ast->children, ast->child_count, idx + 1);
-                    found = 1;
-                    break;
+            for (size_t j = i; j > 0; j--) {
+                size_t idx = j - 1;
+                if (!ast->children[idx] || ast->children[idx]->type != AST_TOKEN) continue;
+                
+                Token *t = &ast->children[idx]->token;
+                
+                /* Skip whitespace and comments */
+                if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) continue;
+                
+                /* If we hit a semicolon or opening brace, the type should be after it */
+                if (t->type == TOKEN_PUNCTUATION) {
+                    if (token_matches(t, ";") || token_matches(t, "{")) {
+                        /* Type should be the next non-whitespace token */
+                        type_pos = skip_whitespace(ast->children, ast->child_count, idx + 1);
+                        found = 1;
+                        break;
+                    }
                 }
+                
+                /* Keep track of potential type position */
+                type_pos = idx;
             }
             
-            /* Keep track of potential type position */
-            type_pos = idx;
-        }
-        
-        /* If we didn't find a ; or {, use the beginning */
-        if (!found && type_pos == 0) {
-            type_pos = skip_whitespace(ast->children, ast->child_count, 0);
-        }
-        
-        if (type_pos >= i || !ast->children[type_pos]) {
-            free(cleanup_code);
-            free(var_name);
-            continue;
-        }
-        
-        /* Insert __attribute__((cleanup(func))) before the type */
-        char attr_buf[256];
-        n = snprintf(attr_buf, sizeof(attr_buf), "__attribute__((cleanup(%s))) ", cleanup_func_name);
-        if (n < 0 || n >= (int)sizeof(attr_buf)) {
-            free(cleanup_code);
-            free(var_name);
-            continue;
-        }
-        
-        /* Prepend the attribute to the type token */
-        Token *type_tok = &ast->children[type_pos]->token;
-        if (!type_tok->text) {
-            free(cleanup_code);
-            free(var_name);
-            continue;
-        }
-        
-        size_t new_len = strlen(attr_buf) + type_tok->length + 1;
-        char *new_text = malloc(new_len);
-        if (!new_text) {
-            free(cleanup_code);
-            free(var_name);
-            continue;
-        }
-        
-        snprintf(new_text, new_len, "%s%s", attr_buf, type_tok->text);
-        free(type_tok->text);
-        type_tok->text = new_text;
-        type_tok->length = strlen(new_text);
-        
-        /* Replace the #defer token with just a semicolon */
-        free(tok->text);
-        tok->text = strdup(";");
-        tok->length = 1;
-        tok->type = TOKEN_PUNCTUATION;
+            /* If we didn't find a ; or {, use the beginning */
+            if (!found && type_pos == 0) {
+                type_pos = skip_whitespace(ast->children, ast->child_count, 0);
+            }
+            
+            if (type_pos >= i || !ast->children[type_pos]) {
+                free(cleanup_code);
+                free(var_name);
+                continue;
+            }
+            
+            /* Insert __attribute__((cleanup(func))) before the type */
+            char attr_buf[256];
+            n = snprintf(attr_buf, sizeof(attr_buf), "__attribute__((cleanup(%s))) ", cleanup_func_name);
+            if (n < 0 || n >= (int)sizeof(attr_buf)) {
+                free(cleanup_code);
+                free(var_name);
+                continue;
+            }
+            
+            /* Prepend the attribute to the type token */
+            Token *type_tok = &ast->children[type_pos]->token;
+            if (!type_tok->text) {
+                free(cleanup_code);
+                free(var_name);
+                continue;
+            }
+            
+            size_t new_len = strlen(attr_buf) + type_tok->length + 1;
+            char *new_text = malloc(new_len);
+            if (!new_text) {
+                free(cleanup_code);
+                free(var_name);
+                continue;
+            }
+            
+            snprintf(new_text, new_len, "%s%s", attr_buf, type_tok->text);
+            free(type_tok->text);
+            type_tok->text = new_text;
+            type_tok->length = strlen(new_text);
+            
+            /* Replace the #defer token with just a semicolon */
+            free(tok->text);
+            tok->text = strdup(";");
+            tok->length = 1;
+            tok->type = TOKEN_PUNCTUATION;
         
         free(cleanup_code);
         free(var_name);
