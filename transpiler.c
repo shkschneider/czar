@@ -28,6 +28,7 @@
 #include "src/warnings.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 #include <ctype.h>
 #include <dirent.h>

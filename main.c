@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include "lexer.h"
 #include "parser.h"
@@ -23,8 +24,8 @@ bool transpile(const char *input_file) {
         return false;
     }
     
-    char *header_file = malloc(input_len + 3);  /* .cz + .h + \0 */
-    char *source_file = malloc(input_len + 3);  /* .cz + .c + \0 */
+    char *header_file = malloc(input_len + 3);  /* input_file + .h + \0 */
+    char *source_file = malloc(input_len + 3);  /* input_file + .c + \0 */
 
     if (!header_file || !source_file) {
         cz_error(NULL, NULL, 0, ERR_MEMORY_ALLOCATION_FAILED);
