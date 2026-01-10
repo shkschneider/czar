@@ -24,7 +24,7 @@ test: test/app $(TESTS:.cz=)
 	@echo "All tests passed."
 test/app: $(OUT)
 	@echo "- $@"
-	$(MAKE) -C $@
+	@$(MAKE) -C $@ >/dev/null
 test/%: test/%.cz $(OUT)
 	@echo "- $@"
 	@./$(OUT) $< >/dev/null
@@ -35,8 +35,9 @@ test/%: test/%.cz $(OUT)
 
 # Cleanup
 stat:
-	@find ./src -type f -name "*.c" | xargs wc -l | cut -c2- | sort -n
-	@grep -Ro ';' *.c ./src/ | wc -l | xargs -I{} printf '%5d statements\n' "{}"
+	@find $(SOURCES) | xargs wc -l | cut -c2- | sort -n
+	@grep -o ';' $(SOURCES) | wc -l | xargs -I{} printf '%5d statements\n' "{}"
+	@ctags -x --c-types=f $(SOURCES) | cut -d' ' -f1 | sort -u | wc -l | xargs -I{} printf '%5d functions\n' "{}"
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@rm -rvf ./build/
