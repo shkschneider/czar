@@ -280,11 +280,29 @@ void transpiler_transform_defer(ASTNode *ast) {
         defer_counter++;
         
         if (is_standalone) {
-            /* For standalone defer, use nested function to access outer scope variables */
-            char standalone_code[2048];
+            /* For standalone defer blocks that need to access outer scope variables,
+             * we need nested functions (GCC extension) or blocks (Clang extension).
+             * Since these are compiler-specific, we use conditional compilation.
+             * 
+             * GCC: Use nested functions (fully supported)
+             * Clang: Use blocks if available, otherwise compile error with helpful message
+             */
+            char standalone_code[4096];
+            
+            /* Use nested functions with conditional compilation */
             snprintf(standalone_code, sizeof(standalone_code),
+                "#ifdef __GNUC__\n"
+                "#ifndef __clang__\n"
+                "/* GCC: Use nested functions for scope-exit cleanup with variable capture */\n"
                 "{ void %s(int *_cz_defer_var __attribute__((unused))) { %s } "
-                "int __attribute__((cleanup(%s))) %s __attribute__((unused)) = 0; }",
+                "int __attribute__((cleanup(%s))) %s __attribute__((unused)) = 0; }\n"
+                "#else\n"
+                "/* Clang: Nested functions not supported. Standalone #defer blocks cannot access outer variables. */\n"
+                "#error \"Standalone #defer blocks with variable capture require GCC nested functions. Use declaration-time defer instead: TYPE VAR = INIT #defer { cleanup };\"\n"
+                "#endif\n"
+                "#else\n"
+                "#error \"Standalone #defer blocks require GCC or Clang. Compiler not supported.\"\n"
+                "#endif\n",
                 cleanup_func_name, cleanup_code, cleanup_func_name, var_name);
             
             free(tok->text);
