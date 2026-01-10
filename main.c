@@ -6,20 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "lexer.h"
 #include "parser.h"
 #include "transpiler.h"
 #include "src/errors.h"
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <input_file.cz>\n", argv[0]);
-        fprintf(stderr, "Generates <input_file.cz.h> and <input_file.cz.c>\n");
-        return 1;
-    }
-
-    const char *input_file = argv[1];
-
+bool transpile(const char *input_file) {
     /* Generate output file names */
     size_t input_len = strlen(input_file);
     char *header_file = malloc(input_len + 3);  /* .cz + .h + \0 */
@@ -180,6 +173,18 @@ int main(int argc, char *argv[]) {
     free(header_file);
     free(source_file);
     free(header_name);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <input_file.cz ...>\n", argv[0]);
+        fprintf(stderr, "Generates .cz.h and .cz.c files\n");
+        return 1;
+    }
+
+    for (uint32_t i = 1; i < argc; i++) {
+        transpile(argv[i]);
+    }
 
     return 0;
 }
