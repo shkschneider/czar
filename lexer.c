@@ -193,11 +193,18 @@ static Token lex_number(Lexer *lexer) {
         if (is_binary && clean_length > 2) {
             unsigned long long value = 0;
             const char *binary_digits = token.text + 2; /* Skip "0b" */
+            int bit_count = 0;
 
-            /* Calculate decimal value */
+            /* Calculate decimal value with overflow check */
             while (*binary_digits && (*binary_digits == '0' || *binary_digits == '1')) {
+                /* Check if we're about to overflow (more than 64 bits) */
+                if (bit_count >= 64) {
+                    /* Too many bits - keep original token text */
+                    break;
+                }
                 value = (value << 1) | (*binary_digits - '0');
                 binary_digits++;
+                bit_count++;
             }
 
             /* Convert to decimal string and append suffix - buffer sized for max u64 + suffix */
