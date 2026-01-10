@@ -8,12 +8,9 @@
 
 int main(void) {
     /* Test 1: Simple defer with malloc/free */
-    mut void *p = malloc(100);
+    mut void *p = malloc(100) #defer { free(p); };
     printf("Allocated: %p\n", p);
     printf("After defer\n");
-    #defer {
-        printf("Exit\n");
-        free(p);
-    }
+    
     return 0;
 }
