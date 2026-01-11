@@ -15,5 +15,13 @@ int main(void) {
         printf("  %.1f\n", v);
     }
     
+    /* Test with mut value */
+    int mutable_numbers[] = {10, 20, 30};
+    printf("Array with mut value:\n");
+    for (_, mut int x : mutable_numbers) {
+        x = x * 2;
+        printf("  %d\n", x);
+    }
+    
     return 0;
 }
