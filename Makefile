@@ -16,7 +16,8 @@ LIB_OBJ = $(patsubst %.c,build/%.o,$(LIB_SRC))
 TESTS   = $(wildcard test/*.cz)
 
 all: bin lib
-.PHONY: all
+dist: bin lib
+.PHONY: all dist
 
 # Binary
 bin: $(BIN)
@@ -34,21 +35,26 @@ lib: $(LIB_A) $(LIB_SO)
 build/lib/%.o: lib/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
-$(LIB_A): $(LIB_OBJ)
+$(LIB_A): $(LIB_OBJ) dist/cz.h
 	@mkdir -p $(@D)
-	ar rcs $@ $^
+	ar rcs $@ $(LIB_OBJ)
 	ranlib $@
 	@echo -n "[CZ] " ; file $@
-$(LIB_SO): $(LIB_OBJ)
+$(LIB_SO): $(LIB_OBJ) dist/cz.h
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -shared $^ -o $@
+	$(CC) $(CFLAGS) -shared $(LIB_OBJ) -o $@
 	@echo -n "[CZ] " ; file $@
+dist/cz.h: lib/cz.h
+	cp -v lib/cz.h dist/ >/dev/null
 .PHONY: lib
 
 # Tests
-test: test/app $(TESTS:.cz=)
+test: test/app test/lib $(TESTS:.cz=)
 	@echo "All tests passed."
 test/app: $(BIN)
+	@echo "- $@"
+	@$(MAKE) -C $@ >/dev/null
+test/lib:
 	@echo "- $@"
 	@$(MAKE) -C $@ >/dev/null
 test/%: test/%.cz $(BIN)
