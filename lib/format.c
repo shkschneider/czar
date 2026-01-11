@@ -15,7 +15,7 @@ char* cz_format_impl(const char *fmt, int argc, cz_any_t *argv) {
         if (empty) empty[0] = '\0';
         return empty;
     }
-    
+
     /* Estimate buffer size */
     size_t estimated_size = strlen(fmt) + argc * 64 + 1;
     char *result = malloc(estimated_size);
@@ -24,11 +24,11 @@ char* cz_format_impl(const char *fmt, int argc, cz_any_t *argv) {
         if (empty) empty[0] = '\0';
         return empty;
     }
-    
+
     char *out = result;
     int arg_idx = 0;
     const char *p = fmt;
-    
+
     while (*p) {
         if (*p == '{' && *(p+1) == '}') {
             /* Handle {} placeholder */

@@ -22,10 +22,10 @@ void cz_log(cz_log_level_t level, const char *message) {
     if (level < g_log_level) {
         return; /* Suppress messages below threshold */
     }
-    
+
     const char *level_str;
     FILE *out;
-    
+
     switch (level) {
         case CZ_LOG_DEBUG:
             level_str = "DEBUG";
@@ -48,11 +48,11 @@ void cz_log(cz_log_level_t level, const char *message) {
             out = stdout;
             break;
     }
-    
+
     /* Get elapsed time since program start */
     unsigned long long elapsed_ns = cz_monotonic_timer_ns();
     double elapsed_s = elapsed_ns / 1000000000.0;
-    
+
     fprintf(out, "[CZAR] %.2fs %s %s\n", elapsed_s, level_str, message ? message : "");
     fflush(out);
 }

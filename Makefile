@@ -18,18 +18,12 @@ TESTS   = $(wildcard test/*.cz)
 all: bin lib
 .PHONY: all
 
-build/%.o: %.c
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Library objects need -fPIC for shared library
-build/lib/%.o: lib/%.c
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -fPIC -c $< -o $@
-
 # Binary
 bin: $(BIN)
 	@echo -n "[CZ] " ; file $<
+build/%.o: %.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
 $(BIN): $(BIN_OBJ)
 	@mkdir -p $(@D)
 	$(CC) $^ $(LDFLAGS) -o $@
@@ -37,6 +31,9 @@ $(BIN): $(BIN_OBJ)
 
 # Library
 lib: $(LIB_A) $(LIB_SO)
+build/lib/%.o: lib/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
 $(LIB_A): $(LIB_OBJ)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
