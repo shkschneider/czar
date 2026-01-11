@@ -1,17 +1,8 @@
 /*
- * CZar - C semantic authority layer
- * Log transpiler module header (transpiler/log.h)
- *
- * Handles emission of runtime logging support in generated C code.
+ * CZar Runtime Library
+ * Log header (deprecated - use cz.h instead)
  */
 
 #pragma once
 
-#include "../parser.h"
-#include <stdio.h>
-
-/* Emit Log runtime support to output */
-void runtime_emit_log(FILE *output, int debug_mode);
-
-/* Expand Log calls to include correct source location via #line directives */
-void transpiler_expand_log_calls(ASTNode *ast, const char *filename);
+#include "cz.h"

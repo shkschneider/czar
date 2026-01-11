@@ -22,6 +22,11 @@ build/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Library objects need -fPIC for shared library
+build/lib/%.o: lib/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
 # Binary
 bin: $(BIN)
 	@echo -n "[CZ] " ; file $<
