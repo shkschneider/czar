@@ -76,7 +76,7 @@ static const char* get_typedef_name(const char *original) {
 }
 
 /* Transform named struct declarations into typedef structs */
-void transpiler_transform_structs(ASTNode *ast) {
+void transpiler_transform_structs(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -90,9 +90,9 @@ void transpiler_transform_structs(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *n1 = ast->children[i];
-        ASTNode *n2 = ast->children[i + 1];
-        ASTNode *n3 = ast->children[i + 2];
+        ASTNode_t *n1 = ast->children[i];
+        ASTNode_t *n2 = ast->children[i + 1];
+        ASTNode_t *n3 = ast->children[i + 2];
 
         if (n1->type != AST_TOKEN || n2->type != AST_TOKEN || n3->type != AST_TOKEN) {
             continue;
@@ -222,7 +222,7 @@ void transpiler_transform_structs(ASTNode *ast) {
 
                 /* We need to insert: " Name" before the semicolon */
                 /* Create a new token for the space */
-                ASTNode *space_node = malloc(sizeof(ASTNode));
+                ASTNode_t *space_node = malloc(sizeof(ASTNode_t));
                 if (space_node) {
                     space_node->type = AST_TOKEN;
                     space_node->token.type = TOKEN_WHITESPACE;
@@ -236,7 +236,7 @@ void transpiler_transform_structs(ASTNode *ast) {
                 }
 
                 /* Create a new token for the typedef name (Name_t) */
-                ASTNode *name_node = malloc(sizeof(ASTNode));
+                ASTNode_t *name_node = malloc(sizeof(ASTNode_t));
                 if (name_node) {
                     name_node->type = AST_TOKEN;
                     name_node->token.type = TOKEN_IDENTIFIER;
@@ -253,7 +253,7 @@ void transpiler_transform_structs(ASTNode *ast) {
                     size_t new_count = ast->child_count + 2;
                     if (new_count > ast->child_capacity) {
                         size_t new_capacity = new_count * 2;
-                        ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                        ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
                         if (new_children) {
                             ast->children = new_children;
                             ast->child_capacity = new_capacity;
@@ -299,7 +299,7 @@ void transpiler_transform_structs(ASTNode *ast) {
  * - MyStruct s = MyStruct {} -> MyStruct s = {0}
  * - MyStruct s = MyStruct {0} -> MyStruct s = {0}
  */
-void transpiler_transform_struct_init(ASTNode *ast) {
+void transpiler_transform_struct_init(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -310,7 +310,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *n1 = ast->children[i];
+        ASTNode_t *n1 = ast->children[i];
         if (n1->type != AST_TOKEN || n1->token.type != TOKEN_OPERATOR ||
             !n1->token.text || strcmp(n1->token.text, "=") != 0) {
             continue;
@@ -328,7 +328,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *next = ast->children[next_idx];
+        ASTNode_t *next = ast->children[next_idx];
         if (next->type != AST_TOKEN) {
             continue;
         }
@@ -350,7 +350,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
                 ast->children[close_idx]->token.text &&
                 strcmp(ast->children[close_idx]->token.text, "}") == 0) {
                 /* Insert 0 between { and } */
-                ASTNode *zero_node = malloc(sizeof(ASTNode));
+                ASTNode_t *zero_node = malloc(sizeof(ASTNode_t));
                 if (zero_node) {
                     zero_node->type = AST_TOKEN;
                     zero_node->token.type = TOKEN_NUMBER;
@@ -369,7 +369,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
 
                         if (new_count > ast->child_capacity) {
                             size_t new_capacity = new_count * 2;
-                            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                            ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
                             if (new_children) {
                                 ast->children = new_children;
                                 ast->child_capacity = new_capacity;
@@ -439,7 +439,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
                 /* If empty, add 0 */
                 if (is_empty) {
 
-                    ASTNode *zero_node = malloc(sizeof(ASTNode));
+                    ASTNode_t *zero_node = malloc(sizeof(ASTNode_t));
                     if (zero_node) {
                         zero_node->type = AST_TOKEN;
                         zero_node->token.type = TOKEN_NUMBER;
@@ -458,7 +458,7 @@ void transpiler_transform_struct_init(ASTNode *ast) {
 
                             if (new_count > ast->child_capacity) {
                                 size_t new_capacity = new_count * 2;
-                                ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                                ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
                                 if (new_children) {
                                     ast->children = new_children;
                                     ast->child_capacity = new_capacity;
@@ -585,7 +585,7 @@ static int parse_header_for_typedefs(const char *source_filename, const char *he
 /* Scan the AST for #import directives and parse the corresponding .cz.h files
  * to extract typedef information
  */
-static void scan_imports_for_typedefs(ASTNode *ast, const char *source_filename) {
+static void scan_imports_for_typedefs(ASTNode_t *ast, const char *source_filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT || !source_filename) {
         return;
     }
@@ -670,7 +670,7 @@ static void scan_imports_for_typedefs(ASTNode *ast, const char *source_filename)
  * Pattern: typedef struct Name_s { ... } Name_t;
  * We want to track: Name -> Name_t
  */
-static void scan_existing_typedefs(ASTNode *ast) {
+static void scan_existing_typedefs(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -784,7 +784,7 @@ static void scan_existing_typedefs(ASTNode *ast) {
  * This ensures the generated C code uses the typedef names consistently
  * Special case: "struct Name" stays as "struct Name_s" (uses struct tag)
  */
-void transpiler_replace_struct_names(ASTNode *ast, const char *filename) {
+void transpiler_replace_struct_names(ASTNode_t *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }

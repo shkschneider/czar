@@ -11,4 +11,4 @@
 #include "../parser.h"
 
 /* Expand FIXME() calls inline with .cz file location */
-void transpiler_expand_fixme(ASTNode *ast, const char *filename);
+void transpiler_expand_fixme(ASTNode_t *ast, const char *filename);

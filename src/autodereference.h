@@ -11,4 +11,4 @@
 #include "../parser.h"
 
 /* Transform member access operators (. to -> for pointers) */
-void transpiler_transform_autodereference(ASTNode *ast);
+void transpiler_transform_autodereference(ASTNode_t *ast);

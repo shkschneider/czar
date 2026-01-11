@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 /* Forward declaration */
-typedef struct Transpiler Transpiler;
+typedef struct Transpiler_s Transpiler_t;
 
 /* Feature phase - determines when the feature runs */
 typedef enum {
@@ -24,10 +24,10 @@ typedef enum {
 } FeaturePhase;
 
 /* Feature function signature for validation */
-typedef void (*FeatureValidateFunc)(ASTNode *ast, const char *filename, const char *source);
+typedef void (*FeatureValidateFunc)(ASTNode_t *ast, const char *filename, const char *source);
 
 /* Feature function signature for transformation */
-typedef void (*FeatureTransformFunc)(ASTNode *ast, const char *filename, const char *source);
+typedef void (*FeatureTransformFunc)(ASTNode_t *ast, const char *filename, const char *source);
 
 /* Feature function signature for emission */
 typedef void (*FeatureEmitFunc)(FILE *output);
@@ -71,10 +71,10 @@ Feature *feature_registry_get(FeatureRegistry *registry, const char *name);
 void feature_registry_set_enabled(FeatureRegistry *registry, const char *name, bool enabled);
 
 /* Execute all enabled features in the validation phase */
-void feature_registry_validate(FeatureRegistry *registry, ASTNode *ast, const char *filename, const char *source);
+void feature_registry_validate(FeatureRegistry *registry, ASTNode_t *ast, const char *filename, const char *source);
 
 /* Execute all enabled features in the transformation phase */
-void feature_registry_transform(FeatureRegistry *registry, ASTNode *ast, const char *filename, const char *source);
+void feature_registry_transform(FeatureRegistry *registry, ASTNode_t *ast, const char *filename, const char *source);
 
 /* Execute all enabled features in the emission phase */
 void feature_registry_emit(FeatureRegistry *registry, FILE *output);

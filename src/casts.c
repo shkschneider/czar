@@ -105,7 +105,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Skip whitespace and comment tokens */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -121,7 +121,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 }
 
 /* Check for C-style cast pattern: (Type)value */
-static void check_c_style_casts(ASTNode **children, size_t count) {
+static void check_c_style_casts(ASTNode_t **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
 
@@ -181,7 +181,7 @@ static void check_c_style_casts(ASTNode **children, size_t count) {
 }
 
 /* Extract type name from template-like syntax: func<Type> */
-static char *extract_template_type(ASTNode **children, size_t count, size_t start, size_t *out_end) {
+static char *extract_template_type(ASTNode_t **children, size_t count, size_t start, size_t *out_end) {
     size_t i = skip_whitespace(children, count, start);
 
     /* Expect < */
@@ -218,7 +218,7 @@ static char *extract_template_type(ASTNode **children, size_t count, size_t star
 }
 
 /* Check for cast function calls and validate them */
-static void check_cast_functions(ASTNode **children, size_t count) {
+static void check_cast_functions(ASTNode_t **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
 
@@ -305,7 +305,7 @@ static void check_cast_functions(ASTNode **children, size_t count) {
 }
 
 /* Validate casts in AST */
-void transpiler_validate_casts(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_validate_casts(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -314,7 +314,7 @@ void transpiler_validate_casts(ASTNode *ast, const char *filename, const char *s
     g_filename = filename;
     g_source = source;
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Check for C-style casts */
@@ -325,12 +325,12 @@ void transpiler_validate_casts(ASTNode *ast, const char *filename, const char *s
 }
 
 /* Transform cast expressions to C equivalents */
-void transpiler_transform_casts(ASTNode *ast) {
+void transpiler_transform_casts(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     for (size_t i = 0; i < count; i++) {

@@ -140,7 +140,7 @@ bool transpile(const char *input_file) {
     parser_init(&parser, &lexer);
 
     /* Parse input into AST */
-    ASTNode *ast = parser_parse(&parser);
+    ASTNode_t *ast = parser_parse(&parser);
     if (!ast) {
         cz_error(NULL, NULL, 0, ERR_FAILED_TO_PARSE_INPUT);
         free(input_buffer);
@@ -151,7 +151,7 @@ bool transpile(const char *input_file) {
     }
 
     /* Initialize transpiler */
-    Transpiler transpiler;
+    Transpiler_t transpiler;
     transpiler_init(&transpiler, ast, input_file, input_buffer);
 
     /* Transform AST */

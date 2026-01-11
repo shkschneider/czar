@@ -27,7 +27,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Find the current function name by scanning backwards from current position */
-static const char *find_current_function(ASTNode **children, size_t count, size_t current) {
+static const char *find_current_function(ASTNode_t **children, size_t count, size_t current) {
     /* Look backwards for a function declaration pattern: type name(...) { */
     int brace_depth = 0;
     const char *function_name = NULL;
@@ -113,7 +113,7 @@ static int is_aggregate_keyword(const char *text) {
 }
 
 /* Skip whitespace and comment tokens */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -129,7 +129,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 }
 
 /* Check if we're in a function scope (not in struct/union/enum body) */
-static int in_function_scope(ASTNode **children, size_t count, size_t current) {
+static int in_function_scope(ASTNode_t **children, size_t count, size_t current) {
     int brace_depth = 0;
     size_t last_open_brace_index = 0;
     int found_open_brace = 0;
@@ -194,12 +194,12 @@ static int in_function_scope(ASTNode **children, size_t count, size_t current) {
 }
 
 /* Validate variable declarations for zero-initialization */
-static void validate_variable_declarations(ASTNode *ast) {
+static void validate_variable_declarations(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     for (size_t i = 0; i < count; i++) {
@@ -350,7 +350,7 @@ static void validate_variable_declarations(ASTNode *ast) {
 }
 
 /* Validate AST for CZar semantic rules */
-void transpiler_validate(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_validate(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast) {
         return;
     }

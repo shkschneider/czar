@@ -43,7 +43,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Skip whitespace and comment tokens */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -117,7 +117,7 @@ static int is_type_token(Token *token) {
 }
 
 /* Scan for function declarations and register parameter names */
-static void scan_function_declarations(ASTNode **children, size_t count) {
+static void scan_function_declarations(ASTNode_t **children, size_t count) {
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
@@ -205,7 +205,7 @@ static void scan_function_declarations(ASTNode **children, size_t count) {
 }
 
 /* Transform named arguments in a function call */
-static void transform_function_call(ASTNode **children, size_t count, size_t call_pos) {
+static void transform_function_call(ASTNode_t **children, size_t count, size_t call_pos) {
     /* call_pos points to the function name */
     if (call_pos >= count) return;
     if (children[call_pos]->type != AST_TOKEN) return;
@@ -383,7 +383,7 @@ static void transform_function_call(ASTNode **children, size_t count, size_t cal
 }
 
 /* Transform named arguments by stripping labels */
-void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_transform_named_arguments(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -392,7 +392,7 @@ void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, co
     g_source = source;
     g_function_count = 0;
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* First pass: scan for function declarations */
