@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <ctype.h>
 
+/* Maximum size for temporary token text buffers */
+#define MAX_TOKEN_BUFFER_SIZE 256
+
 /* Helper: Check if token equals string */
 static int token_equals(const Token *tok, const char *str) {
     return tok && tok->text && strcmp(tok->text, str) == 0;
@@ -84,7 +87,10 @@ static void insert_nodes_after(ASTNode_t *ast, size_t pos, ASTNode_t **new_nodes
             new_capacity = required_capacity;
         }
         ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t*));
-        if (!new_children) return;
+        if (!new_children) {
+            /* Memory allocation failed - cannot proceed with insertion */
+            return;
+        }
         ast->children = new_children;
         ast->child_capacity = new_capacity;
     }
@@ -260,7 +266,7 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
             if (!has_mut && type_idx < count) {
                 ASTNode_t *mut_nodes[2];
                 Token *ref_tok = &children[type_idx]->token;
-                mut_nodes[0] = create_token_node("mut", TOKEN_IDENTIFIER, ref_tok->line, ref_tok->column);
+                mut_nodes[0] = create_token_node("mut", TOKEN_KEYWORD, ref_tok->line, ref_tok->column);
                 mut_nodes[1] = create_token_node(" ", TOKEN_WHITESPACE, ref_tok->line, ref_tok->column);
                 insert_nodes_after(ast, type_idx - 1, mut_nodes, 2);
                 
@@ -303,7 +309,7 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
                 
                 if (found_range) {
                     char *var_name = children[var_idx]->token.text;
-                    char buf[256];
+                    char buf[MAX_TOKEN_BUFFER_SIZE];
                     
                     /* Replace first . with ; and space */
                     replace_token_text(&children[i]->token, "; ");
@@ -311,9 +317,14 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
                     /* Handle the second token based on its format */
                     if (children[i + 1]->token.text && children[i + 1]->token.text[0] == '.') {
                         /* It's .N, need to replace with "var <= N" */
-                        snprintf(buf, sizeof(buf), "%s <= %s", 
-                                var_name ? var_name : "i",
-                                &children[i + 1]->token.text[1]); /* Skip the leading . */
+                        const char *end_val = &children[i + 1]->token.text[1]; /* Skip the leading . */
+                        /* Use snprintf and check return value to ensure no truncation */
+                        int written = snprintf(buf, sizeof(buf), "%s <= %s", 
+                                var_name ? var_name : "i", end_val);
+                        /* If truncated, use fallback (should not happen with reasonable identifier names) */
+                        if (written < 0 || (size_t)written >= sizeof(buf)) {
+                            snprintf(buf, sizeof(buf), "i <= %s", end_val);
+                        }
                     } else {
                         /* It's a second ., need to replace with "var <= " */
                         snprintf(buf, sizeof(buf), "%s <= ", var_name ? var_name : "i");
@@ -325,13 +336,12 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
                     int line = before_close->line;
                     int col = before_close->column;
                     
-                    ASTNode_t *new_nodes[3];
+                    ASTNode_t *new_nodes[2];
                     new_nodes[0] = create_token_node("; ", TOKEN_PUNCTUATION, line, col);
                     snprintf(buf, sizeof(buf), "%s++", var_name ? var_name : "i");
                     new_nodes[1] = create_token_node(buf, TOKEN_IDENTIFIER, line, col);
-                    new_nodes[2] = create_token_node("", TOKEN_WHITESPACE, line, col);
                     
-                    insert_nodes_after(ast, close_paren_idx - 1, new_nodes, 3);
+                    insert_nodes_after(ast, close_paren_idx - 1, new_nodes, 2);
                     break;
                 }
             }
@@ -356,7 +366,7 @@ void transpiler_transform_foreach(ASTNode_t *ast, const char *filename, const ch
     /* Find all for loops and check if they use foreach syntax */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type == AST_TOKEN && 
-            children[i]->token.type == TOKEN_IDENTIFIER &&
+            children[i]->token.type == TOKEN_KEYWORD &&
             token_equals(&children[i]->token, "for")) {
             
             /* Check if this is a foreach pattern */
