@@ -396,11 +396,21 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
             size_t val_type_end = val_var_idx;
             
             /* Copy value type to a buffer NOW, before we mark tokens for deletion */
+            /* Also check if the value type has 'mut' keyword */
             char val_type_buf[MAX_TOKEN_BUFFER_SIZE] = {0};
             size_t val_type_len = 0;
+            int val_has_mut = 0;
+            
             for (size_t i = val_type_start; i < val_type_end && val_type_len < MAX_TOKEN_BUFFER_SIZE - 2; i++) {
                 if (children[i]->type == AST_TOKEN && children[i]->token.text &&
                     children[i]->token.text[0] != '\0') {
+                    /* Check if this is the 'mut' keyword - if so, skip it */
+                    if ((children[i]->token.type == TOKEN_KEYWORD || children[i]->token.type == TOKEN_IDENTIFIER) &&
+                        strcmp(children[i]->token.text, "mut") == 0) {
+                        val_has_mut = 1;
+                        continue; /* Skip copying 'mut' */
+                    }
+                    
                     size_t tok_len = strlen(children[i]->token.text);
                     if (val_type_len + tok_len < MAX_TOKEN_BUFFER_SIZE - 2) {
                         memcpy(val_type_buf + val_type_len, children[i]->token.text, tok_len);
@@ -566,6 +576,14 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
                     /* Add newline and indentation for readability */
                     val_decl_tokens[val_decl_count++] = create_token_node("\n        ", TOKEN_WHITESPACE,
                                                                           brace_tok->line, brace_tok->column);
+                    
+                    /* Add 'mut' keyword if the value type had it */
+                    if (val_has_mut) {
+                        val_decl_tokens[val_decl_count++] = create_token_node("mut", TOKEN_KEYWORD,
+                                                                              brace_tok->line, brace_tok->column);
+                        val_decl_tokens[val_decl_count++] = create_token_node(" ", TOKEN_WHITESPACE,
+                                                                              brace_tok->line, brace_tok->column);
+                    }
                     
                     /* Add the value type */
                     val_decl_tokens[val_decl_count++] = create_token_node(val_type_buf, TOKEN_IDENTIFIER,
