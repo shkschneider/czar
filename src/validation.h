@@ -11,4 +11,4 @@
 #include "../parser.h"
 
 /* Validate AST for CZar semantic rules */
-void transpiler_validate(ASTNode *ast, const char *filename, const char *source);
+void transpiler_validate(ASTNode_t *ast, const char *filename, const char *source);

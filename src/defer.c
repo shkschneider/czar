@@ -30,7 +30,7 @@ static int token_matches(Token *tok, const char *str) {
 }
 
 /* Helper to skip whitespace and comments */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t start) {
     if (!children) return count;
     for (size_t i = start; i < count; i++) {
         if (!children[i] || children[i]->type != AST_TOKEN) continue;
@@ -43,7 +43,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
 }
 
 /* Extract variable name from declaration by scanning backwards */
-static char* extract_variable_name(ASTNode **children, size_t count __attribute__((unused)), size_t defer_pos) {
+static char* extract_variable_name(ASTNode_t **children, size_t count __attribute__((unused)), size_t defer_pos) {
 
     /* Scan backwards to find the variable identifier */
     for (size_t j = defer_pos; j > 0; j--) {
@@ -99,7 +99,7 @@ static char* extract_variable_name(ASTNode **children, size_t count __attribute_
 }
 
 /* Transform #defer declarations to cleanup attribute pattern */
-void transpiler_transform_defer(ASTNode *ast) {
+void transpiler_transform_defer(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }

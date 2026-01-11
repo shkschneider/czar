@@ -23,7 +23,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Skip whitespace and comment tokens */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -39,7 +39,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 }
 
 /* Validate that each case in a switch has explicit control flow */
-static void validate_switch_case_control_flow_internal(ASTNode **children, size_t count, size_t switch_pos) {
+static void validate_switch_case_control_flow_internal(ASTNode_t **children, size_t count, size_t switch_pos) {
     /* Find the switch body */
     size_t i = skip_whitespace(children, count, switch_pos + 1);
 
@@ -205,7 +205,7 @@ static void validate_switch_case_control_flow_internal(ASTNode **children, size_
 }
 
 /* Validate switch case control flow */
-void transpiler_validate_switch_case_control_flow(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_validate_switch_case_control_flow(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -213,7 +213,7 @@ void transpiler_validate_switch_case_control_flow(ASTNode *ast, const char *file
     g_filename = filename;
     g_source = source;
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Scan for switch statements */
@@ -230,12 +230,12 @@ void transpiler_validate_switch_case_control_flow(ASTNode *ast, const char *file
 }
 
 /* Transform continue in switch cases to fallthrough */
-void transpiler_transform_switch_continue_to_fallthrough(ASTNode *ast) {
+void transpiler_transform_switch_continue_to_fallthrough(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Track if we're inside a switch (not inside a loop) */
@@ -282,8 +282,8 @@ void transpiler_transform_switch_continue_to_fallthrough(ASTNode *ast) {
 }
 
 /* Helper to create a new AST token node */
-static ASTNode *create_token_node(TokenType type, const char *text, int line, int column) {
-    ASTNode *node = malloc(sizeof(ASTNode));
+static ASTNode_t *create_token_node(TokenType type, const char *text, int line, int column) {
+    ASTNode_t *node = malloc(sizeof(ASTNode_t));
     if (!node) return NULL;
 
     node->type = AST_TOKEN;
@@ -304,7 +304,7 @@ static ASTNode *create_token_node(TokenType type, const char *text, int line, in
 }
 
 /* Helper to insert a child at a specific position in an AST node */
-static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
+static int ast_insert_child(ASTNode_t *parent, size_t position, ASTNode_t *child) {
     if (!parent || !child || position > parent->child_count) {
         return 0;
     }
@@ -312,7 +312,7 @@ static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
     /* Grow children array if needed */
     if (parent->child_count >= parent->child_capacity) {
         size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
-        ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
+        ASTNode_t **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode_t *));
         if (!new_children) {
             return 0;
         }
@@ -331,7 +331,7 @@ static int ast_insert_child(ASTNode *parent, size_t position, ASTNode *child) {
 }
 
 /* Find the function name containing this position */
-static const char *find_function_name(ASTNode **children, size_t count, size_t current_pos) {
+static const char *find_function_name(ASTNode_t **children, size_t count, size_t current_pos) {
     int brace_depth = 0;
     const char *function_name = NULL;
     const char *last_function_name = NULL;
@@ -413,12 +413,12 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
 }
 
 /* Insert default cases into switches that lack them */
-void transpiler_insert_switch_default_cases(ASTNode *ast, const char *filename) {
+void transpiler_insert_switch_default_cases(ASTNode_t *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     for (size_t i = 0; i < count; i++) {
@@ -501,7 +501,7 @@ void transpiler_insert_switch_default_cases(ASTNode *ast, const char *filename) 
 
                 /* Insert: default: { fprintf(stderr, "file:line: func: Unreachable code reached: \n"); abort(); } */
                 /* Build nodes in forward order */
-                ASTNode *nodes[20];
+                ASTNode_t *nodes[20];
                 int node_count = 0;
 
                 nodes[node_count++] = create_token_node(TOKEN_WHITESPACE, "\n    ", line, 0);

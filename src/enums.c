@@ -47,7 +47,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Skip whitespace and comment tokens */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -207,7 +207,7 @@ static EnumInfo *find_enum(const char *enum_name) {
 }
 
 /* Parse enum declaration and register it */
-static void parse_enum_declaration(ASTNode **children, size_t count, size_t enum_pos) {
+static void parse_enum_declaration(ASTNode_t **children, size_t count, size_t enum_pos) {
     size_t i = skip_whitespace(children, count, enum_pos + 1);
 
     /* Get enum name (optional) */
@@ -315,7 +315,7 @@ static void parse_enum_declaration(ASTNode **children, size_t count, size_t enum
 }
 
 /* Check if a variable is of enum type */
-static EnumInfo *get_variable_enum_type(ASTNode **children, size_t count, const char *var_name) {
+static EnumInfo *get_variable_enum_type(ASTNode_t **children, size_t count, const char *var_name) {
     /* Search forward through AST for variable declaration
      * Note: This implementation has limitations - it may not detect:
      * - typedef'd enum types
@@ -384,7 +384,7 @@ static EnumInfo *get_variable_enum_type(ASTNode **children, size_t count, const 
 }
 
 /* Validate switch statement for exhaustiveness and default case */
-static void validate_switch_exhaustiveness(ASTNode **children, size_t count, size_t switch_pos) {
+static void validate_switch_exhaustiveness(ASTNode_t **children, size_t count, size_t switch_pos) {
     /* Find the switch expression */
     size_t i = skip_whitespace(children, count, switch_pos + 1);
 
@@ -561,12 +561,12 @@ static void validate_switch_exhaustiveness(ASTNode **children, size_t count, siz
 }
 
 /* Scan AST for enum declarations */
-static void scan_enum_declarations(ASTNode *ast) {
+static void scan_enum_declarations(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     for (size_t i = 0; i < count; i++) {
@@ -583,12 +583,12 @@ static void scan_enum_declarations(ASTNode *ast) {
 }
 
 /* Scan AST for switch statements and validate enum exhaustiveness */
-static void scan_switch_statements(ASTNode *ast) {
+static void scan_switch_statements(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     for (size_t i = 0; i < count; i++) {
@@ -606,7 +606,7 @@ static void scan_switch_statements(ASTNode *ast) {
 }
 
 /* Validate enum declarations and switch statements for exhaustiveness */
-void transpiler_validate_enums(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_validate_enums(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast) {
         return;
     }
@@ -635,12 +635,12 @@ void transpiler_validate_enums(ASTNode *ast, const char *filename, const char *s
 }
 
 /* Remove enum prefix from scoped case labels (EnumName.MEMBER -> MEMBER) */
-static void strip_enum_prefixes(ASTNode *ast) {
+static void strip_enum_prefixes(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Strip EnumName. prefix from all scoped enum references */
@@ -704,12 +704,12 @@ static void strip_enum_prefixes(ASTNode *ast) {
 
 
 /* Prefix enum members in declarations and update all references */
-static void prefix_enum_members(ASTNode *ast) {
+static void prefix_enum_members(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* First pass: Transform enum declarations to use prefixed names */
@@ -847,7 +847,7 @@ static void prefix_enum_members(ASTNode *ast) {
 }
 
 /* Transform switch statements on enums to add default: UNREACHABLE() if missing */
-void transpiler_transform_enums(ASTNode *ast, const char *filename) {
+void transpiler_transform_enums(ASTNode_t *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }

@@ -29,7 +29,7 @@ static void clear_token_text(Token *token) {
 }
 
 /* Skip whitespace and comments */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t start) {
     for (size_t i = start; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         TokenType type = children[i]->token.type;
@@ -41,7 +41,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
 }
 
 /* Check if this position is the start of a function declaration/definition */
-static int is_function_declaration(ASTNode **children, size_t count, size_t start) {
+static int is_function_declaration(ASTNode_t **children, size_t count, size_t start) {
     size_t i = start;
     int found_identifier = 0;
     int found_open_paren = 0;
@@ -86,7 +86,7 @@ static int is_function_declaration(ASTNode **children, size_t count, size_t star
 }
 
 /* Transform #deprecated directives to __attribute__((deprecated)) */
-void transpiler_transform_deprecated(ASTNode *ast) {
+void transpiler_transform_deprecated(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }

@@ -28,30 +28,30 @@
 /* Wrapper functions to adapt existing functions to feature interface */
 
 /* Validation wrappers */
-static void validate_general(ASTNode *ast, const char *filename, const char *source) {
+static void validate_general(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_validate(ast, filename, source);
 }
 
-static void validate_casts(ASTNode *ast, const char *filename, const char *source) {
+static void validate_casts(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_validate_casts(ast, filename, source);
 }
 
-static void validate_enums(ASTNode *ast, const char *filename, const char *source) {
+static void validate_enums(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_validate_enums(ast, filename, source);
 }
 
-static void validate_functions(ASTNode *ast, const char *filename, const char *source) {
+static void validate_functions(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_validate_functions(ast, filename, source);
 }
 
 /* Transform wrappers */
-static void transform_deprecated(ASTNode *ast, const char *filename, const char *source) {
+static void transform_deprecated(ASTNode_t *ast, const char *filename, const char *source) {
     (void)filename;
     (void)source;
     transpiler_transform_deprecated(ast);
 }
 
-static void transform_functions(ASTNode *ast, const char *filename, const char *source) {
+static void transform_functions(ASTNode_t *ast, const char *filename, const char *source) {
     (void)filename;
     (void)source;
     transpiler_transform_functions(ast);
@@ -59,63 +59,63 @@ static void transform_functions(ASTNode *ast, const char *filename, const char *
     transpiler_add_pure(ast);
 }
 
-static void transform_structs(ASTNode *ast, const char *filename, const char *source) {
+static void transform_structs(ASTNode_t *ast, const char *filename, const char *source) {
     (void)filename;
     (void)source;
     transpiler_transform_structs(ast);
     transpiler_transform_struct_init(ast);
 }
 
-static void transform_methods(ASTNode *ast, const char *filename, const char *source) {
+static void transform_methods(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_transform_methods(ast, filename, source);
 }
 
-static void transform_struct_names(ASTNode *ast, const char *filename, const char *source) {
+static void transform_struct_names(ASTNode_t *ast, const char *filename, const char *source) {
     (void)source;
     transpiler_replace_struct_names(ast, filename);
 }
 
-static void transform_autodereference(ASTNode *ast, const char *filename, const char *source) {
+static void transform_autodereference(ASTNode_t *ast, const char *filename, const char *source) {
     (void)filename;
     (void)source;
     transpiler_transform_autodereference(ast);
 }
 
-static void transform_enums(ASTNode *ast, const char *filename, const char *source) {
+static void transform_enums(ASTNode_t *ast, const char *filename, const char *source) {
     (void)source;
     transpiler_transform_enums(ast, filename);
 }
 
-static void transform_unreachable(ASTNode *ast, const char *filename, const char *source) {
+static void transform_unreachable(ASTNode_t *ast, const char *filename, const char *source) {
     (void)source;
     transpiler_expand_unreachable(ast, filename);
 }
 
-static void transform_todo(ASTNode *ast, const char *filename, const char *source) {
+static void transform_todo(ASTNode_t *ast, const char *filename, const char *source) {
     (void)source;
     transpiler_expand_todo(ast, filename);
 }
 
-static void transform_fixme(ASTNode *ast, const char *filename, const char *source) {
+static void transform_fixme(ASTNode_t *ast, const char *filename, const char *source) {
     (void)source;
     transpiler_expand_fixme(ast, filename);
 }
 
-static void transform_arguments(ASTNode *ast, const char *filename, const char *source) {
+static void transform_arguments(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_transform_named_arguments(ast, filename, source);
 }
 
-static void transform_mutability(ASTNode *ast, const char *filename, const char *source) {
+static void transform_mutability(ASTNode_t *ast, const char *filename, const char *source) {
     transpiler_transform_mutability(ast, filename, source);
 }
 
-static void transform_defer(ASTNode *ast, const char *filename, const char *source) {
+static void transform_defer(ASTNode_t *ast, const char *filename, const char *source) {
     (void)filename;
     (void)source;
     transpiler_transform_defer(ast);
 }
 
-static void transform_types_and_constants(ASTNode *ast, const char *filename, const char *source) {
+static void transform_types_and_constants(ASTNode_t *ast, const char *filename, const char *source) {
     (void)ast;
     (void)filename;
     (void)source;

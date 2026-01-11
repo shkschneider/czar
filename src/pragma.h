@@ -19,4 +19,4 @@ typedef struct {
 void pragma_context_init(PragmaContext *ctx);
 
 /* Parse and apply #pragma czar directives from AST */
-void transpiler_parse_pragmas(ASTNode *ast, PragmaContext *ctx);
+void transpiler_parse_pragmas(ASTNode_t *ast, PragmaContext *ctx);

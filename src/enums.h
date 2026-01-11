@@ -30,10 +30,10 @@
 #include "../parser.h"
 
 /* Validate enum declarations and switch statements for exhaustiveness */
-void transpiler_validate_enums(ASTNode *ast, const char *filename, const char *source);
+void transpiler_validate_enums(ASTNode_t *ast, const char *filename, const char *source);
 
 /* Transform switch statements on enums:
  * - Strips enum prefixes from scoped case labels (EnumName.MEMBER -> MEMBER)
  * - Transforms continue to fallthrough attributes in switch cases
  * - Inserts default cases where missing */
-void transpiler_transform_enums(ASTNode *ast, const char *filename);
+void transpiler_transform_enums(ASTNode_t *ast, const char *filename);

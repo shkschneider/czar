@@ -43,7 +43,7 @@ const char *g_filename = NULL;
 const char *g_source = NULL;
 
 /* Initialize transpiler with AST */
-void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename, const char *source) {
+void transpiler_init(Transpiler_t *transpiler, ASTNode_t *ast, const char *filename, const char *source) {
     transpiler->ast = ast;
     transpiler->filename = filename;
     transpiler->source = source;
@@ -59,7 +59,7 @@ void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename,
 }
 
 /* Clean up transpiler resources */
-void transpiler_cleanup(Transpiler *transpiler) {
+void transpiler_cleanup(Transpiler_t *transpiler) {
     if (!transpiler) {
         return;
     }
@@ -67,7 +67,7 @@ void transpiler_cleanup(Transpiler *transpiler) {
 }
 
 /* Transform AST node recursively */
-static void transform_node(ASTNode *node) {
+static void transform_node(ASTNode_t *node) {
     if (!node) {
         return;
     }
@@ -133,7 +133,7 @@ static void transform_node(ASTNode *node) {
 }
 
 /* Transform AST (apply CZar-specific transformations) */
-void transpiler_transform(Transpiler *transpiler) {
+void transpiler_transform(Transpiler_t *transpiler) {
     if (!transpiler || !transpiler->ast) {
         return;
     }
@@ -259,7 +259,7 @@ static void emit_module_includes(const char *source_filename, const char *module
 }
 
 /* Emit AST node recursively */
-static void emit_node(ASTNode *node, FILE *output, const char *source_filename) {
+static void emit_node(ASTNode_t *node, FILE *output, const char *source_filename) {
     if (!node) {
         return;
     }
@@ -317,7 +317,7 @@ static void emit_node(ASTNode *node, FILE *output, const char *source_filename) 
 }
 
 /* Emit transformed AST as C code to output file */
-void transpiler_emit(Transpiler *transpiler, FILE *output) {
+void transpiler_emit(Transpiler_t *transpiler, FILE *output) {
     if (!transpiler || !transpiler->ast || !output) {
         return;
     }
@@ -336,7 +336,7 @@ void transpiler_emit(Transpiler *transpiler, FILE *output) {
 }
 
 /* Helper to check if a token is the "export" keyword */
-static int is_export_keyword(ASTNode *node) {
+static int is_export_keyword(ASTNode_t *node) {
     if (!node || node->type != AST_TOKEN) {
         return 0;
     }
@@ -345,7 +345,7 @@ static int is_export_keyword(ASTNode *node) {
 }
 
 /* Helper to check if declaration starting at position i has export keyword */
-static int has_export_keyword(ASTNode **children, size_t start_pos, size_t count) {
+static int has_export_keyword(ASTNode_t **children, size_t start_pos, size_t count) {
     /* Scan backwards from start_pos to find export keyword before significant tokens */
     /* We need to go back further to skip over comments and whitespace */
     size_t search_start = (start_pos > 20) ? (start_pos - 20) : 0;
@@ -391,7 +391,7 @@ static int has_export_keyword(ASTNode **children, size_t start_pos, size_t count
 }
 
 /* Helper to check if position i is at the START of a function definition */
-static int is_function_start(ASTNode **children, size_t i, size_t count) {
+static int is_function_start(ASTNode_t **children, size_t i, size_t count) {
     /* Position i should be at or near the return type of the function
      * Pattern: [type] identifier ( ... ) {
      * But NOT: struct/union/enum/typedef ... {
@@ -472,15 +472,15 @@ static int is_function_start(ASTNode **children, size_t i, size_t count) {
 }
 
 /* Helper to check if node is a preprocessor directive */
-static int is_preprocessor(ASTNode *node) {
+static int is_preprocessor(ASTNode_t *node) {
     return node && node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR;
 }
 
 /* Forward declaration */
-static size_t find_brace_block_end(ASTNode **children, size_t start, size_t count);
+static size_t find_brace_block_end(ASTNode_t **children, size_t start, size_t count);
 
 /* Helper to check if position i is EXACTLY at a struct/enum/union/typedef keyword */
-static int is_at_struct_or_typedef_keyword(ASTNode **children, size_t i, size_t count) {
+static int is_at_struct_or_typedef_keyword(ASTNode_t **children, size_t i, size_t count) {
     if (i >= count) return 0;
 
     if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_IDENTIFIER) {
@@ -497,7 +497,7 @@ static int is_at_struct_or_typedef_keyword(ASTNode **children, size_t i, size_t 
 }
 
 /* Helper to find end of preprocessor line (including #pragma) */
-static size_t find_preprocessor_end(ASTNode **children, size_t start, size_t count) {
+static size_t find_preprocessor_end(ASTNode_t **children, size_t start, size_t count) {
     for (size_t i = start; i < count; i++) {
         if (children[i]->type == AST_TOKEN) {
             Token *t = &children[i]->token;
@@ -515,7 +515,7 @@ static size_t find_preprocessor_end(ASTNode **children, size_t start, size_t cou
 }
 
 /* Helper to find the end of a function body */
-static size_t find_function_end(ASTNode **children, size_t start, size_t count) {
+static size_t find_function_end(ASTNode_t **children, size_t start, size_t count) {
     int brace_depth = 0;
     int started = 0;
 
@@ -539,7 +539,7 @@ static size_t find_function_end(ASTNode **children, size_t start, size_t count) 
 }
 
 /* Helper to emit nodes in a range, skipping the export keyword */
-static void emit_node_range_skip_export(ASTNode **children, size_t start, size_t end, FILE *output, const char *source_filename) {
+static void emit_node_range_skip_export(ASTNode_t **children, size_t start, size_t end, FILE *output, const char *source_filename) {
     for (size_t j = start; j < end; j++) {
         /* Skip the export keyword itself */
         if (is_export_keyword(children[j])) {
@@ -550,7 +550,7 @@ static void emit_node_range_skip_export(ASTNode **children, size_t start, size_t
 }
 
 /* Emit transformed AST as C header file (declarations only) */
-void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
+void transpiler_emit_header(Transpiler_t *transpiler, FILE *output) {
     if (!transpiler || !transpiler->ast || !output) {
         return;
     }
@@ -571,7 +571,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
 
     /* Emit everything except function bodies, and only exported items */
     if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
-        ASTNode **children = transpiler->ast->children;
+        ASTNode_t **children = transpiler->ast->children;
         size_t count = transpiler->ast->child_count;
 
         for (size_t i = 0; i < count; i++) {
@@ -687,7 +687,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
 }
 
 /* Helper to find end of any brace block */
-static size_t find_brace_block_end(ASTNode **children, size_t start, size_t count) {
+static size_t find_brace_block_end(ASTNode_t **children, size_t start, size_t count) {
     int brace_depth = 0;
     int started = 0;
 
@@ -716,7 +716,7 @@ static size_t find_brace_block_end(ASTNode **children, size_t start, size_t coun
 }
 
 /* Emit transformed AST as C source file (implementations only) */
-void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *header_name) {
+void transpiler_emit_source(Transpiler_t *transpiler, FILE *output, const char *header_name) {
     if (!transpiler || !transpiler->ast || !output) {
         return;
     }
@@ -853,7 +853,7 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
 emit_functions:
     /* Emit function definitions and non-exported structs/typedefs */
     if (transpiler->ast->type == AST_TRANSLATION_UNIT) {
-        ASTNode **children = transpiler->ast->children;
+        ASTNode_t **children = transpiler->ast->children;
         size_t count = transpiler->ast->child_count;
 
         /* Scan through tokens looking for function definitions and non-exported items */

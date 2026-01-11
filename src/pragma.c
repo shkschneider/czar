@@ -69,7 +69,7 @@ static void parse_pragma_czar(const char *pragma_text, PragmaContext *ctx) {
 }
 
 /* Parse and apply #pragma czar directives from AST */
-void transpiler_parse_pragmas(ASTNode *ast, PragmaContext *ctx) {
+void transpiler_parse_pragmas(ASTNode_t *ast, PragmaContext *ctx) {
     if (!ast || !ctx) return;
 
     /* Only process translation unit nodes */
@@ -77,7 +77,7 @@ void transpiler_parse_pragmas(ASTNode *ast, PragmaContext *ctx) {
 
     /* Scan all tokens looking for preprocessor directives */
     for (size_t i = 0; i < ast->child_count; i++) {
-        ASTNode *child = ast->children[i];
+        ASTNode_t *child = ast->children[i];
         if (!child || child->type != AST_TOKEN) continue;
 
         Token *token = &child->token;

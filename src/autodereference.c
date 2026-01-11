@@ -94,7 +94,7 @@ static int token_is_pointer_type(const Token *token) {
 }
 
 /* Scan AST to track pointer declarations and parameters */
-static void scan_for_pointers(ASTNode *node) {
+static void scan_for_pointers(ASTNode_t *node) {
     if (!node) {
         return;
     }
@@ -109,7 +109,7 @@ static void scan_for_pointers(ASTNode *node) {
         /* Only track pointer parameters from function declarations */
 
         for (size_t i = 0; i < node->child_count; i++) {
-            ASTNode *child = node->children[i];
+            ASTNode_t *child = node->children[i];
             if (child->type != AST_TOKEN) continue;
 
             Token *tok = &child->token;
@@ -132,7 +132,7 @@ static void scan_for_pointers(ASTNode *node) {
                     if (i > 0 && brace_depth == 0) {
                         /* Skip back over whitespace */
                         for (int j = (int)i - 1; j >= 0 && j >= (int)i - TOKEN_SEARCH_WINDOW; j--) {
-                            ASTNode *prev = node->children[j];
+                            ASTNode_t *prev = node->children[j];
                             if (prev->type != AST_TOKEN) continue;
                             Token *prevtok = &prev->token;
                             if (prevtok->type == TOKEN_WHITESPACE) continue;
@@ -157,7 +157,7 @@ static void scan_for_pointers(ASTNode *node) {
                 if (tok->type == TOKEN_OPERATOR && token_is_pointer_type(tok)) {
                     /* Look ahead for identifier, skipping whitespace */
                     for (size_t j = i + 1; j < node->child_count && j < i + TOKEN_SEARCH_WINDOW; j++) {
-                        ASTNode *next_node = node->children[j];
+                        ASTNode_t *next_node = node->children[j];
                         if (next_node->type != AST_TOKEN) continue;
 
                         Token *next = &next_node->token;
@@ -177,7 +177,7 @@ static void scan_for_pointers(ASTNode *node) {
 }
 
 /* Transform member access operators */
-static void transform_autodereference_node(ASTNode *node) {
+static void transform_autodereference_node(ASTNode_t *node) {
     if (!node || node->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -188,9 +188,9 @@ static void transform_autodereference_node(ASTNode *node) {
             continue; /* Need at least 3 tokens for member access */
         }
 
-        ASTNode *left_node = node->children[i];
-        ASTNode *op_node = node->children[i + 1];
-        ASTNode *right_node = node->children[i + 2];
+        ASTNode_t *left_node = node->children[i];
+        ASTNode_t *op_node = node->children[i + 1];
+        ASTNode_t *right_node = node->children[i + 2];
 
         /* Check if this is a member access pattern */
         if (left_node->type == AST_TOKEN && op_node->type == AST_TOKEN && right_node->type == AST_TOKEN) {
@@ -222,7 +222,7 @@ static void transform_autodereference_node(ASTNode *node) {
 }
 
 /* Main entry point for member access transformation */
-void transpiler_transform_autodereference(ASTNode *ast) {
+void transpiler_transform_autodereference(ASTNode_t *ast) {
     if (!ast) {
         return;
     }

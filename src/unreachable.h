@@ -11,4 +11,4 @@
 #include "../parser.h"
 
 /* Expand UNREACHABLE() calls inline with .cz file location */
-void transpiler_expand_unreachable(ASTNode *ast, const char *filename);
+void transpiler_expand_unreachable(ASTNode_t *ast, const char *filename);
