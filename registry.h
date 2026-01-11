@@ -13,8 +13,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-/* Forward declaration */
-typedef struct Transpiler_s Transpiler_t;
+/* Forward declaration - removed to avoid C99 typedef redefinition error */
+/* The full Transpiler_t definition is in transpiler.h */
 
 /* Feature phase - determines when the feature runs */
 typedef enum {
