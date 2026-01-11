@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "feature.h"
+#include "registry.h"
 
 /* Register all built-in features with the registry */
 void register_all_features(FeatureRegistry *registry);

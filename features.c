@@ -6,23 +6,23 @@
  */
 
 #include "features.h"
-#include "deprecated.h"
-#include "validation.h"
-#include "casts.h"
-#include "enums.h"
-#include "functions.h"
-#include "structs.h"
-#include "methods.h"
-#include "autodereference.h"
-#include "unreachable.h"
-#include "todo.h"
-#include "fixme.h"
-#include "arguments.h"
-#include "mutability.h"
-#include "defer.h"
-#include "types.h"
-#include "constants.h"
-#include "unused.h"
+#include "src/deprecated.h"
+#include "src/validation.h"
+#include "src/casts.h"
+#include "src/enums.h"
+#include "src/functions.h"
+#include "src/structs.h"
+#include "src/methods.h"
+#include "src/autodereference.h"
+#include "src/unreachable.h"
+#include "src/todo.h"
+#include "src/fixme.h"
+#include "src/arguments.h"
+#include "src/mutability.h"
+#include "src/defer.h"
+#include "src/types.h"
+#include "src/constants.h"
+#include "src/unused.h"
 
 /* Wrapper functions to adapt existing functions to feature interface */
 
@@ -302,14 +302,14 @@ void register_all_features(FeatureRegistry *registry) {
     if (!registry) {
         return;
     }
-    
+
     /* Register features in the order they should be executed */
     /* Validation phase features */
     feature_registry_register(registry, &feature_validation);
     feature_registry_register(registry, &feature_casts);
     feature_registry_register(registry, &feature_enums);
     feature_registry_register(registry, &feature_functions);
-    
+
     /* Transform phase features (order matters!) */
     feature_registry_register(registry, &feature_deprecated);
     feature_registry_register(registry, &feature_structs);
@@ -323,7 +323,7 @@ void register_all_features(FeatureRegistry *registry) {
     feature_registry_register(registry, &feature_mutability);
     feature_registry_register(registry, &feature_defer);
     feature_registry_register(registry, &feature_types_constants);
-    
+
     /* Note: functions transform is registered but includes multiple operations */
     /* casts validation and transform are already registered */
     /* enums validation and transform are already registered */

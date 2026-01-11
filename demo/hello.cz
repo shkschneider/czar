@@ -1,5 +1,0 @@
-#include <stdio.h>
-
-void hello(const char* name) {
-    fprintf(stdout, "Ave, %s!\n", name);
-}

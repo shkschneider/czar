@@ -5,7 +5,7 @@
  * Implements the feature registry system for managing transpiler features.
  */
 
-#include "feature.h"
+#include "registry.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,7 +21,7 @@ void feature_registry_register(FeatureRegistry *registry, Feature *feature) {
     if (!registry || !feature) {
         return;
     }
-    
+
     /* Grow array if needed */
     if (registry->count >= registry->capacity) {
         size_t new_capacity = registry->capacity == 0 ? 8 : registry->capacity * 2;
@@ -32,7 +32,7 @@ void feature_registry_register(FeatureRegistry *registry, Feature *feature) {
         registry->features = new_features;
         registry->capacity = new_capacity;
     }
-    
+
     registry->features[registry->count++] = feature;
 }
 
@@ -41,13 +41,13 @@ Feature *feature_registry_get(FeatureRegistry *registry, const char *name) {
     if (!registry || !name) {
         return NULL;
     }
-    
+
     for (size_t i = 0; i < registry->count; i++) {
         if (registry->features[i] && strcmp(registry->features[i]->name, name) == 0) {
             return registry->features[i];
         }
     }
-    
+
     return NULL;
 }
 
@@ -64,20 +64,20 @@ static bool check_dependencies(FeatureRegistry *registry, Feature *feature, bool
     if (!feature->dependencies) {
         return true; /* No dependencies */
     }
-    
+
     /* Check for circular dependencies */
     if (visited[feature_idx]) {
         return false; /* Circular dependency detected */
     }
-    
+
     visited[feature_idx] = true;
-    
+
     for (size_t i = 0; feature->dependencies[i] != NULL; i++) {
         Feature *dep = feature_registry_get(registry, feature->dependencies[i]);
         if (!dep) {
             return false; /* Dependency not found */
         }
-        
+
         /* Find dependency index */
         size_t dep_idx = 0;
         for (dep_idx = 0; dep_idx < registry->count; dep_idx++) {
@@ -85,14 +85,14 @@ static bool check_dependencies(FeatureRegistry *registry, Feature *feature, bool
                 break;
             }
         }
-        
+
         if (dep_idx < registry->count) {
             if (!check_dependencies(registry, dep, visited, dep_idx)) {
                 return false;
             }
         }
     }
-    
+
     visited[feature_idx] = false;
     return true;
 }
@@ -102,12 +102,12 @@ void feature_registry_validate(FeatureRegistry *registry, ASTNode *ast, const ch
     if (!registry || !ast) {
         return;
     }
-    
+
     bool *visited = calloc(registry->count, sizeof(bool));
     if (!visited) {
         return;
     }
-    
+
     for (size_t i = 0; i < registry->count; i++) {
         Feature *feature = registry->features[i];
         if (feature && feature->enabled && feature->validate) {
@@ -117,7 +117,7 @@ void feature_registry_validate(FeatureRegistry *registry, ASTNode *ast, const ch
             }
         }
     }
-    
+
     free(visited);
 }
 
@@ -126,12 +126,12 @@ void feature_registry_transform(FeatureRegistry *registry, ASTNode *ast, const c
     if (!registry || !ast) {
         return;
     }
-    
+
     bool *visited = calloc(registry->count, sizeof(bool));
     if (!visited) {
         return;
     }
-    
+
     for (size_t i = 0; i < registry->count; i++) {
         Feature *feature = registry->features[i];
         if (feature && feature->enabled && feature->transform) {
@@ -141,7 +141,7 @@ void feature_registry_transform(FeatureRegistry *registry, ASTNode *ast, const c
             }
         }
     }
-    
+
     free(visited);
 }
 
@@ -150,7 +150,7 @@ void feature_registry_emit(FeatureRegistry *registry, FILE *output) {
     if (!registry || !output) {
         return;
     }
-    
+
     for (size_t i = 0; i < registry->count; i++) {
         Feature *feature = registry->features[i];
         if (feature && feature->enabled && feature->emit) {
@@ -164,7 +164,7 @@ void feature_registry_free(FeatureRegistry *registry) {
     if (!registry) {
         return;
     }
-    
+
     free(registry->features);
     registry->features = NULL;
     registry->count = 0;

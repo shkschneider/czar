@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../parser.h"
+#include "parser.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -36,16 +36,16 @@ typedef struct {
     const char *name;                    /* Feature name (e.g., "mutability", "enums") */
     const char *description;             /* Short description of the feature */
     bool enabled;                        /* Whether this feature is enabled */
-    
+
     /* Validation function (optional) */
     FeatureValidateFunc validate;
-    
+
     /* Transformation function (optional) */
     FeatureTransformFunc transform;
-    
+
     /* Emission function (optional) */
     FeatureEmitFunc emit;
-    
+
     /* Dependencies - NULL-terminated array of feature names that must run before this one */
     const char **dependencies;
 } Feature;
