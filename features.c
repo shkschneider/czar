@@ -71,9 +71,8 @@ static void transform_methods(ASTNode *ast, const char *filename, const char *so
 }
 
 static void transform_struct_names(ASTNode *ast, const char *filename, const char *source) {
-    (void)filename;
     (void)source;
-    transpiler_replace_struct_names(ast);
+    transpiler_replace_struct_names(ast, filename);
 }
 
 static void transform_autodereference(ASTNode *ast, const char *filename, const char *source) {

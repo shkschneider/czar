@@ -17,4 +17,4 @@ void transpiler_transform_structs(ASTNode *ast);
 void transpiler_transform_struct_init(ASTNode *ast);
 
 /* Replace all uses of struct names with their _t variants */
-void transpiler_replace_struct_names(ASTNode *ast);
+void transpiler_replace_struct_names(ASTNode *ast, const char *filename);
