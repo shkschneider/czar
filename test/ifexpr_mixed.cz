@@ -1,0 +1,37 @@
+#include <stdio.h>
+#include <assert.h>
+#include <stdint.h>
+
+/*
+ * Test that regular if statements are NOT transformed:
+ * - if (...) { ... } should remain as-is
+ * - Only if-expressions without braces should be transformed
+ */
+
+int main(void) {
+    /* Regular if statement - should NOT be transformed */
+    mut u8 x = 0;
+    if (1 == 1) {
+        x = 10;
+    } else {
+        x = 20;
+    }
+    printf("Regular if: x = %u (expected 10)\n", x);
+    assert(x == 10);
+    
+    /* If-expression - SHOULD be transformed */
+    u8 y = if (1 == 1) 10 else 20;
+    printf("If-expression: y = %u (expected 10)\n", y);
+    assert(y == 10);
+    
+    /* Regular if without else - should NOT be transformed */
+    mut u8 z = 5;
+    if (1 == 0) {
+        z = 15;
+    }
+    printf("Regular if without else: z = %u (expected 5)\n", z);
+    assert(z == 5);
+    
+    printf("Mixed if/if-expression test passed!\n");
+    return 0;
+}

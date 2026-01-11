@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <assert.h>
+#include <stdint.h>
+#include <stddef.h>
+
+/*
+ * Comprehensive test for if-expressions:
+ * - Nested if-expressions
+ * - If-expressions with function calls
+ * - If-expressions in complex expressions
+ */
+
+int max(int a, int b) {
+    return if (a > b) a else b;
+}
+
+int min(int a, int b) {
+    return if (a < b) a else b;
+}
+
+int main(void) {
+    /* Test 1: Simple if-expression */
+    u8 x = if (1 == 1) 10 else 20;
+    printf("Test 1: x = %u (expected 10)\n", x);
+    assert(x == 10);
+    
+    /* Test 2: If-expression with function call return */
+    int m = max(a = 5, b = 10);
+    printf("Test 2: max(5, 10) = %d (expected 10)\n", m);
+    assert(m == 10);
+    
+    int n = min(a = 5, b = 10);
+    printf("Test 2: min(5, 10) = %d (expected 5)\n", n);
+    assert(n == 5);
+    
+    /* Test 3: If-expression in arithmetic */
+    int result = (if (1 > 0) 5 else 10) + 3;
+    printf("Test 3: (if (1 > 0) 5 else 10) + 3 = %d (expected 8)\n", result);
+    assert(result == 8);
+    
+    /* Test 4: Nested if-expressions */
+    int nested = if (1 > 0) (if (2 > 1) 100 else 200) else 300;
+    printf("Test 4: nested = %d (expected 100)\n", nested);
+    assert(nested == 100);
+    
+    /* Test 5: If-expression with comparison in condition */
+    u8 compare = if (10 > 5) 1 else 0;
+    printf("Test 5: compare = %u (expected 1)\n", compare);
+    assert(compare == 1);
+    
+    /* Test 6: If-expression with negative numbers */
+    i32 neg = if (0 > 1) -5 else -10;
+    printf("Test 6: neg = %d (expected -10)\n", neg);
+    assert(neg == -10);
+    
+    printf("All comprehensive if-expression tests passed!\n");
+    return 0;
+}
