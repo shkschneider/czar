@@ -29,6 +29,9 @@
 /* Maximum size for temporary token text buffers */
 #define MAX_TOKEN_BUFFER_SIZE 256
 
+/* Default loop variable name when var name is unavailable */
+#define DEFAULT_LOOP_VAR "i"
+
 /* Helper: Check if token equals string */
 static int token_equals(const Token *tok, const char *str) {
     return tok && tok->text && strcmp(tok->text, str) == 0;
@@ -52,7 +55,8 @@ static char *strdup_safe(const char *str) {
     size_t len = strlen(str);
     char *dup = malloc(len + 1);
     if (dup) {
-        strcpy(dup, str);
+        memcpy(dup, str, len);
+        dup[len] = '\0';
     }
     return dup;
 }
@@ -320,14 +324,14 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
                         const char *end_val = &children[i + 1]->token.text[1]; /* Skip the leading . */
                         /* Use snprintf and check return value to ensure no truncation */
                         int written = snprintf(buf, sizeof(buf), "%s <= %s", 
-                                var_name ? var_name : "i", end_val);
+                                var_name ? var_name : DEFAULT_LOOP_VAR, end_val);
                         /* If truncated, use fallback (should not happen with reasonable identifier names) */
                         if (written < 0 || (size_t)written >= sizeof(buf)) {
-                            snprintf(buf, sizeof(buf), "i <= %s", end_val);
+                            snprintf(buf, sizeof(buf), "%s <= %s", DEFAULT_LOOP_VAR, end_val);
                         }
                     } else {
                         /* It's a second ., need to replace with "var <= " */
-                        snprintf(buf, sizeof(buf), "%s <= ", var_name ? var_name : "i");
+                        snprintf(buf, sizeof(buf), "%s <= ", var_name ? var_name : DEFAULT_LOOP_VAR);
                     }
                     replace_token_text(&children[i + 1]->token, buf);
                     
@@ -338,7 +342,7 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
                     
                     ASTNode_t *new_nodes[2];
                     new_nodes[0] = create_token_node("; ", TOKEN_PUNCTUATION, line, col);
-                    snprintf(buf, sizeof(buf), "%s++", var_name ? var_name : "i");
+                    snprintf(buf, sizeof(buf), "%s++", var_name ? var_name : DEFAULT_LOOP_VAR);
                     new_nodes[1] = create_token_node(buf, TOKEN_IDENTIFIER, line, col);
                     
                     insert_nodes_after(ast, close_paren_idx - 1, new_nodes, 2);
@@ -366,7 +370,7 @@ void transpiler_transform_foreach(ASTNode_t *ast, const char *filename, const ch
     /* Find all for loops and check if they use foreach syntax */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type == AST_TOKEN && 
-            children[i]->token.type == TOKEN_KEYWORD &&
+            (children[i]->token.type == TOKEN_KEYWORD || children[i]->token.type == TOKEN_IDENTIFIER) &&
             token_equals(&children[i]->token, "for")) {
             
             /* Check if this is a foreach pattern */
