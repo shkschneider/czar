@@ -3,15 +3,15 @@
 #include <stdio.h>
 
 /*
- * Test new struct typedef format: typedef struct Name { ... } Name;
+ * Test C99-compatible struct typedef format: typedef struct Name_s { ... } Name_t;
  * This test verifies:
- * 1. Struct tag is Name (same as typedef)
- * 2. Typedef is Name (no _t suffix needed)
- * 3. CZar code uses "Name", C code uses "Name"
- * 4. Methods use base name: Name_method
+ * 1. Struct tag uses _s suffix: Name_s
+ * 2. Typedef uses _t suffix: Name_t
+ * 3. CZar code uses "Name", C code uses "Name_t"
+ * 4. Methods use base name: Name_method (not Name_t_method)
  */
 
-/* Define a struct - should generate typedef struct Vec2 { ... } Vec2; */
+/* Define a struct - should generate typedef struct Vec2_s { ... } Vec2_t; */
 struct Vec2 {
     u8 x;
     u8 y;
