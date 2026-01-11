@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler TODO expansion module (transpiler/todo.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles inline expansion of TODO() calls without macros.
  */

@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler arguments module (transpiler/arguments.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles named arguments (labels only) transformation.
  */

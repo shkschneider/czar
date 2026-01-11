@@ -1,4 +1,6 @@
 # Build system for CZar C semantic authority layer
+# MIT License Copyright (c) 2026 ShkSchneider
+# https://github.com/shkschneider/czar
 CC     ?= cc -v
 STD    ?= c11
 OPT    ?= O2

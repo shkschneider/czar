@@ -1,5 +1,7 @@
 /*
- * CZar - C semantic authority layer
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  */
 
 #pragma once

@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Feature interface (src/feature.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Provides a standardized interface for CZar transpiler features.
  * Each feature can provide validation and/or transformation functions.

@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Lexer header (lexer.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Tokenizes C source code into a stream of tokens.
  */

@@ -1,5 +1,8 @@
 /*
- * CZar Runtime Library
+ * libCZar - empowering runtime library
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
+ *
  * Main header file for CZar runtime features
  */
 

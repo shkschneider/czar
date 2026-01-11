@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler deprecated module (transpiler/deprecated.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles #deprecated compiler extension directive.
  * Transforms #deprecated into __attribute__((deprecated)) for GCC/Clang.

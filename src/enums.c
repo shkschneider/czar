@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler enums module (transpiler/enums.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles enum validation and exhaustiveness checking for switch statements.
  */

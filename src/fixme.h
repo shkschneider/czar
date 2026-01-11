@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler FIXME expansion module (transpiler/fixme.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles inline expansion of FIXME() calls without macros.
  */

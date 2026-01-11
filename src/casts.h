@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Cast handling header (transpiler/casts.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles cast validation and transformation.
  */

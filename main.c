@@ -1,5 +1,8 @@
 /*
- * CZar - C semantic authority layer
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
+ *
  * Main entry point for the cz tool
  */
 
@@ -17,13 +20,13 @@
 bool transpile(const char *input_file) {
     /* Generate output file names */
     size_t input_len = strlen(input_file);
-    
+
     /* Check for overflow: input_len + 3 should not overflow */
     if (input_len > SIZE_MAX - 3) {
         cz_error(NULL, NULL, 0, "Input filename too long");
         return false;
     }
-    
+
     char *header_file = malloc(input_len + 3);  /* input_file + .h + \0 */
     char *source_file = malloc(input_len + 3);  /* input_file + .c + \0 */
 
@@ -41,7 +44,7 @@ bool transpile(const char *input_file) {
     const char *filename_only = strrchr(input_file, '/');
     filename_only = filename_only ? filename_only + 1 : input_file;
     size_t filename_len = strlen(filename_only);
-    
+
     /* Check for overflow: filename_len + 3 should not overflow */
     if (filename_len > SIZE_MAX - 3) {
         cz_error(NULL, NULL, 0, "Filename too long");
@@ -49,7 +52,7 @@ bool transpile(const char *input_file) {
         free(source_file);
         return false;
     }
-    
+
     char *header_name = malloc(filename_len + 3);
     if (!header_name) {
         cz_error(NULL, NULL, 0, ERR_MEMORY_ALLOCATION_FAILED);

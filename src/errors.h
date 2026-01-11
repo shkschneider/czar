@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Centralized Error Definitions (errors.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * All error messages used by the CZar transpiler.
  * Each error has an UPPER_CASE_ID and a descriptive message.

@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Features registration (src/features.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Registers all CZar transpiler features with the registry.
  */

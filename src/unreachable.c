@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler unreachable expansion module (transpiler/unreachable.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles inline expansion of UNREACHABLE() calls without macros.
  * Replaces UNREACHABLE("msg") with direct fprintf+abort using .cz file location.

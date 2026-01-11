@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler constants module (transpiler/constants.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles CZar constant to C constant transformations.
  */

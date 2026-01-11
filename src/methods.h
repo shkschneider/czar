@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Struct methods transformation header (transpiler/methods.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles transformation of struct methods:
  * - Method declarations: RetType StructName.method() -> RetType StructName_method(StructName* self)

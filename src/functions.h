@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler functions module (transpiler/functions.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles function-related transformations and validations.
  */
