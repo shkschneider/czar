@@ -1,5 +1,8 @@
+/*
+ * CZar Runtime Library
+ * Assert header (deprecated - use cz.h instead)
+ */
+
 #pragma once
 
-#include <stdio.h>
-
-void runtime_emit_assert(FILE*);
+#include "cz.h"

@@ -1,14 +1,8 @@
 /*
- * CZar - C semantic authority layer
- * Format transpiler module header (runtime/format.h)
- *
- * Handles emission of runtime print support in generated C code.
+ * CZar Runtime Library
+ * Format header (deprecated - use cz.h instead)
  */
 
 #pragma once
 
-#include "../parser.h"
-#include <stdio.h>
-
-/* Emit Format runtime support to output */
-void runtime_emit_format(FILE *output);
+#include "cz.h"
