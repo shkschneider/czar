@@ -15,7 +15,7 @@ jobs:
       matrix:
         cc: [ gcc, clang, musl-gcc ]
         std: [ c99, c11, c17, c2x ]
-    continue-on-error: ${{ matrix.std == 'c99' || matrix.std == 'c2x' }}
+    continue-on-error: ${{ matrix.std == 'c2x' }}
     steps:
       - name: Install
         run: |

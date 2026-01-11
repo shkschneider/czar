@@ -99,7 +99,7 @@ static bool check_dependencies(FeatureRegistry *registry, Feature *feature, bool
 }
 
 /* Execute all enabled features in the validation phase */
-void feature_registry_validate(FeatureRegistry *registry, ASTNode *ast, const char *filename, const char *source) {
+void feature_registry_validate(FeatureRegistry *registry, ASTNode_t *ast, const char *filename, const char *source) {
     if (!registry || !ast) {
         return;
     }
@@ -123,7 +123,7 @@ void feature_registry_validate(FeatureRegistry *registry, ASTNode *ast, const ch
 }
 
 /* Execute all enabled features in the transformation phase */
-void feature_registry_transform(FeatureRegistry *registry, ASTNode *ast, const char *filename, const char *source) {
+void feature_registry_transform(FeatureRegistry *registry, ASTNode_t *ast, const char *filename, const char *source) {
     if (!registry || !ast) {
         return;
     }

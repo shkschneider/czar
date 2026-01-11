@@ -11,4 +11,4 @@
 #include "../parser.h"
 
 /* Transform #deprecated directives to __attribute__((deprecated)) */
-void transpiler_transform_deprecated(ASTNode *ast);
+void transpiler_transform_deprecated(ASTNode_t *ast);

@@ -136,7 +136,7 @@ static void clear_tracking(void) {
 }
 
 /* Helper: Skip whitespace and comments in token stream */
-static size_t skip_whitespace(ASTNode *ast, size_t start, size_t max) {
+static size_t skip_whitespace(ASTNode_t *ast, size_t start, size_t max) {
     for (size_t i = start; i < ast->child_count && i < max; i++) {
         if (ast->children[i]->type == AST_TOKEN) {
             Token *t = &ast->children[i]->token;
@@ -149,7 +149,7 @@ static size_t skip_whitespace(ASTNode *ast, size_t start, size_t max) {
 }
 
 /* Helper: Find the next non-whitespace token */
-static ASTNode* get_next_non_ws_node(ASTNode *ast, size_t start, size_t *out_idx) {
+static ASTNode_t* get_next_non_ws_node(ASTNode_t *ast, size_t start, size_t *out_idx) {
     size_t idx = skip_whitespace(ast, start, ast->child_count);
     if (out_idx) *out_idx = idx;
     if (idx < ast->child_count) {
@@ -159,7 +159,7 @@ static ASTNode* get_next_non_ws_node(ASTNode *ast, size_t start, size_t *out_idx
 }
 
 /* First pass: Scan for struct definitions to track struct types */
-static void scan_struct_definitions(ASTNode *ast) {
+static void scan_struct_definitions(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -177,7 +177,7 @@ static void scan_struct_definitions(ASTNode *ast) {
 
             /* Get next non-whitespace token (struct name) */
             size_t name_idx;
-            ASTNode *name_node = get_next_non_ws_node(ast, i + 1, &name_idx);
+            ASTNode_t *name_node = get_next_non_ws_node(ast, i + 1, &name_idx);
             if (!name_node || name_node->type != AST_TOKEN) {
                 continue;
             }
@@ -186,7 +186,7 @@ static void scan_struct_definitions(ASTNode *ast) {
             if (name_token->type == TOKEN_IDENTIFIER && name_token->text) {
                 /* Check if followed by { to ensure it's a definition */
                 size_t brace_idx;
-                ASTNode *brace_node = get_next_non_ws_node(ast, name_idx + 1, &brace_idx);
+                ASTNode_t *brace_node = get_next_non_ws_node(ast, name_idx + 1, &brace_idx);
                 if (brace_node && brace_node->type == AST_TOKEN) {
                     Token *brace_token = &brace_node->token;
                     if (brace_token->type == TOKEN_PUNCTUATION && brace_token->text &&
@@ -229,7 +229,7 @@ static void scan_struct_definitions(ASTNode *ast) {
                         /* Check for typedef name after closing brace */
                         if (closing_brace_idx > 0) {
                             size_t typedef_name_idx;
-                            ASTNode *typedef_name_node = get_next_non_ws_node(ast, closing_brace_idx + 1, &typedef_name_idx);
+                            ASTNode_t *typedef_name_node = get_next_non_ws_node(ast, closing_brace_idx + 1, &typedef_name_idx);
                             if (typedef_name_node && typedef_name_node->type == AST_TOKEN) {
                                 Token *typedef_name_token = &typedef_name_node->token;
                                 if (typedef_name_token->type == TOKEN_IDENTIFIER && typedef_name_token->text) {
@@ -257,7 +257,7 @@ static void scan_struct_definitions(ASTNode *ast) {
 }
 
 /* Second pass: Transform method declarations */
-static void transform_method_declarations(ASTNode *ast) {
+static void transform_method_declarations(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -269,7 +269,7 @@ static void transform_method_declarations(ASTNode *ast) {
         }
 
         /* Look for identifier followed by . */
-        ASTNode *n1 = ast->children[i];
+        ASTNode_t *n1 = ast->children[i];
         if (n1->type != AST_TOKEN || n1->token.type != TOKEN_IDENTIFIER) {
             continue;
         }
@@ -280,7 +280,7 @@ static void transform_method_declarations(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *dot_node = ast->children[dot_idx];
+        ASTNode_t *dot_node = ast->children[dot_idx];
         if (dot_node->type != AST_TOKEN ||
             (dot_node->token.type != TOKEN_PUNCTUATION && dot_node->token.type != TOKEN_OPERATOR) ||
             !dot_node->token.text || strcmp(dot_node->token.text, ".") != 0) {
@@ -293,7 +293,7 @@ static void transform_method_declarations(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *method_node = ast->children[method_idx];
+        ASTNode_t *method_node = ast->children[method_idx];
         if (method_node->type != AST_TOKEN || method_node->token.type != TOKEN_IDENTIFIER) {
             continue;
         }
@@ -304,7 +304,7 @@ static void transform_method_declarations(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *paren_node = ast->children[paren_idx];
+        ASTNode_t *paren_node = ast->children[paren_idx];
         if (paren_node->type != AST_TOKEN || paren_node->token.type != TOKEN_PUNCTUATION ||
             !paren_node->token.text || strcmp(paren_node->token.text, "(") != 0) {
             continue;
@@ -351,7 +351,7 @@ static void transform_method_declarations(ASTNode *ast) {
         /* Check if there's a function body after the closing paren */
         /* Look for { after the ) */
         size_t brace_idx;
-        ASTNode *brace_node = get_next_non_ws_node(ast, close_paren_idx + 1, &brace_idx);
+        ASTNode_t *brace_node = get_next_non_ws_node(ast, close_paren_idx + 1, &brace_idx);
         if (!brace_node || brace_node->type != AST_TOKEN ||
             brace_node->token.type != TOKEN_PUNCTUATION ||
             !brace_node->token.text || strcmp(brace_node->token.text, "{") != 0) {
@@ -399,7 +399,7 @@ static void transform_method_declarations(ASTNode *ast) {
         /* Step 2: Add self parameter */
 
         /* Create struct name token */
-        ASTNode *struct_name_node = malloc(sizeof(ASTNode));
+        ASTNode_t *struct_name_node = malloc(sizeof(ASTNode_t));
         if (!struct_name_node) {
             free(struct_name_copy);
             free(method_name_copy);
@@ -416,7 +416,7 @@ static void transform_method_declarations(ASTNode *ast) {
         struct_name_node->child_capacity = 0;
 
         /* Create pointer token */
-        ASTNode *ptr_node = malloc(sizeof(ASTNode));
+        ASTNode_t *ptr_node = malloc(sizeof(ASTNode_t));
         if (!ptr_node) {
             free(struct_name_node);
             free(method_name_copy);
@@ -433,7 +433,7 @@ static void transform_method_declarations(ASTNode *ast) {
         ptr_node->child_capacity = 0;
 
         /* Create space token */
-        ASTNode *space_node = malloc(sizeof(ASTNode));
+        ASTNode_t *space_node = malloc(sizeof(ASTNode_t));
         if (!space_node) {
             free(struct_name_node);
             free(ptr_node);
@@ -451,7 +451,7 @@ static void transform_method_declarations(ASTNode *ast) {
         space_node->child_capacity = 0;
 
         /* Create self token */
-        ASTNode *self_node = malloc(sizeof(ASTNode));
+        ASTNode_t *self_node = malloc(sizeof(ASTNode_t));
         if (!self_node) {
             free(struct_name_node);
             free(ptr_node);
@@ -470,10 +470,10 @@ static void transform_method_declarations(ASTNode *ast) {
         self_node->child_capacity = 0;
 
         /* If there are existing params, add "," and " " after self */
-        ASTNode *comma_node = NULL;
-        ASTNode *comma_space_node = NULL;
+        ASTNode_t *comma_node = NULL;
+        ASTNode_t *comma_space_node = NULL;
         if (has_params) {
-            comma_node = malloc(sizeof(ASTNode));
+            comma_node = malloc(sizeof(ASTNode_t));
             if (!comma_node) {
                 free(struct_name_node);
                 free(ptr_node);
@@ -492,7 +492,7 @@ static void transform_method_declarations(ASTNode *ast) {
             comma_node->child_count = 0;
             comma_node->child_capacity = 0;
 
-            comma_space_node = malloc(sizeof(ASTNode));
+            comma_space_node = malloc(sizeof(ASTNode_t));
             if (!comma_space_node) {
                 free(struct_name_node);
                 free(ptr_node);
@@ -520,7 +520,7 @@ static void transform_method_declarations(ASTNode *ast) {
 
         if (new_count > ast->child_capacity) {
             size_t new_capacity = new_count * 2;
-            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+            ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
             if (new_children) {
                 ast->children = new_children;
                 ast->child_capacity = new_capacity;
@@ -561,7 +561,7 @@ static void transform_method_declarations(ASTNode *ast) {
 }
 
 /* Third pass: Transform method calls */
-static void transform_method_calls(ASTNode *ast) {
+static void transform_method_calls(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -573,7 +573,7 @@ static void transform_method_calls(ASTNode *ast) {
         }
 
         /* Look for identifier followed by . */
-        ASTNode *n1 = ast->children[i];
+        ASTNode_t *n1 = ast->children[i];
         if (n1->type != AST_TOKEN || n1->token.type != TOKEN_IDENTIFIER) {
             continue;
         }
@@ -584,7 +584,7 @@ static void transform_method_calls(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *dot_node = ast->children[dot_idx];
+        ASTNode_t *dot_node = ast->children[dot_idx];
         if (dot_node->type != AST_TOKEN ||
             (dot_node->token.type != TOKEN_PUNCTUATION && dot_node->token.type != TOKEN_OPERATOR) ||
             !dot_node->token.text || strcmp(dot_node->token.text, ".") != 0) {
@@ -597,7 +597,7 @@ static void transform_method_calls(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *method_node = ast->children[method_idx];
+        ASTNode_t *method_node = ast->children[method_idx];
         if (method_node->type != AST_TOKEN || method_node->token.type != TOKEN_IDENTIFIER) {
             continue;
         }
@@ -608,7 +608,7 @@ static void transform_method_calls(ASTNode *ast) {
             continue;
         }
 
-        ASTNode *paren_node = ast->children[paren_idx];
+        ASTNode_t *paren_node = ast->children[paren_idx];
         if (paren_node->type != AST_TOKEN || paren_node->token.type != TOKEN_PUNCTUATION ||
             !paren_node->token.text || strcmp(paren_node->token.text, "(") != 0) {
             continue;
@@ -742,7 +742,7 @@ static void transform_method_calls(ASTNode *ast) {
 
         /* Create &instance as separate tokens */
         /* Create & token */
-        ASTNode *addr_node = malloc(sizeof(ASTNode));
+        ASTNode_t *addr_node = malloc(sizeof(ASTNode_t));
         if (!addr_node) {
             free(instance_name_copy);
             continue;
@@ -758,7 +758,7 @@ static void transform_method_calls(ASTNode *ast) {
         addr_node->child_capacity = 0;
 
         /* Create instance token */
-        ASTNode *instance_node = malloc(sizeof(ASTNode));
+        ASTNode_t *instance_node = malloc(sizeof(ASTNode_t));
         if (!instance_node) {
             free(addr_node);
             free(instance_name_copy);
@@ -775,10 +775,10 @@ static void transform_method_calls(ASTNode *ast) {
         instance_node->child_capacity = 0;
 
         /* If there are existing args, add "," and " " after instance */
-        ASTNode *comma_node = NULL;
-        ASTNode *comma_space_node = NULL;
+        ASTNode_t *comma_node = NULL;
+        ASTNode_t *comma_space_node = NULL;
         if (has_args) {
-            comma_node = malloc(sizeof(ASTNode));
+            comma_node = malloc(sizeof(ASTNode_t));
             if (!comma_node) {
                 free(addr_node);
                 free(instance_node);
@@ -794,7 +794,7 @@ static void transform_method_calls(ASTNode *ast) {
             comma_node->child_count = 0;
             comma_node->child_capacity = 0;
 
-            comma_space_node = malloc(sizeof(ASTNode));
+            comma_space_node = malloc(sizeof(ASTNode_t));
             if (!comma_space_node) {
                 free(addr_node);
                 free(instance_node);
@@ -819,7 +819,7 @@ static void transform_method_calls(ASTNode *ast) {
 
         if (new_count > ast->child_capacity) {
             size_t new_capacity = new_count * 2;
-            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+            ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
             if (new_children) {
                 ast->children = new_children;
                 ast->child_capacity = new_capacity;
@@ -852,7 +852,7 @@ static void transform_method_calls(ASTNode *ast) {
 }
 
 /* Transform struct method declarations and calls */
-void transpiler_transform_methods(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_transform_methods(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }

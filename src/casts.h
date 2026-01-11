@@ -11,7 +11,7 @@
 #include "../parser.h"
 
 /* Validate and transform casts in AST */
-void transpiler_validate_casts(ASTNode *ast, const char *filename, const char *source);
+void transpiler_validate_casts(ASTNode_t *ast, const char *filename, const char *source);
 
 /* Transform cast expressions to C equivalents */
-void transpiler_transform_casts(ASTNode *ast);
+void transpiler_transform_casts(ASTNode_t *ast);

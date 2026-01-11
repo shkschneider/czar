@@ -15,4 +15,4 @@
 #include "../parser.h"
 
 /* Transform named arguments in function calls by stripping labels */
-void transpiler_transform_named_arguments(ASTNode *ast, const char *filename, const char *source);
+void transpiler_transform_named_arguments(ASTNode_t *ast, const char *filename, const char *source);

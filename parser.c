@@ -21,8 +21,8 @@ void parser_init(Parser *parser, Lexer *lexer) {
 }
 
 /* Create new AST node */
-static ASTNode *ast_node_create(ASTNodeType type) {
-    ASTNode *node = malloc(sizeof(ASTNode));
+static ASTNode_t *ast_node_create(ASTNodeType type) {
+    ASTNode_t *node = malloc(sizeof(ASTNode_t));
     if (!node) {
         return NULL;
     }
@@ -43,7 +43,7 @@ static ASTNode *ast_node_create(ASTNodeType type) {
 }
 
 /* Add child to AST node */
-static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
+static void ast_node_add_child(ASTNode_t *parent, ASTNode_t *child) {
     if (!parent || !child) {
         return;
     }
@@ -51,7 +51,7 @@ static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
     /* Grow children array if needed */
     if (parent->child_count >= parent->child_capacity) {
         size_t new_capacity = parent->child_capacity == 0 ? 8 : parent->child_capacity * 2;
-        ASTNode **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode *));
+        ASTNode_t **new_children = realloc(parent->children, new_capacity * sizeof(ASTNode_t *));
         if (!new_children) {
             /* Memory allocation failed - this is a fatal error */
             cz_error(NULL, NULL, 0, ERR_MEMORY_ALLOCATION_FAILED_IN_AST_NODE);
@@ -65,7 +65,7 @@ static void ast_node_add_child(ASTNode *parent, ASTNode *child) {
 }
 
 /* Free AST node and all children */
-void ast_node_free(ASTNode *node) {
+void ast_node_free(ASTNode_t *node) {
     if (!node) {
         return;
     }
@@ -85,9 +85,9 @@ void ast_node_free(ASTNode *node) {
 }
 
 /* Parse input into AST */
-ASTNode *parser_parse(Parser *parser) {
+ASTNode_t *parser_parse(Parser *parser) {
     /* Create root node (translation unit) */
-    ASTNode *root = ast_node_create(AST_TRANSLATION_UNIT);
+    ASTNode_t *root = ast_node_create(AST_TRANSLATION_UNIT);
     if (!root) {
         return NULL;
     }
@@ -103,7 +103,7 @@ ASTNode *parser_parse(Parser *parser) {
         }
 
         /* Create token node */
-        ASTNode *token_node = ast_node_create(AST_TOKEN);
+        ASTNode_t *token_node = ast_node_create(AST_TOKEN);
         if (!token_node) {
             token_free(&token);
             ast_node_free(root);

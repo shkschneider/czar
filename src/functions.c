@@ -25,7 +25,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Skip whitespace and comment tokens */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -41,7 +41,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 }
 
 /* Validate and transform function declarations */
-void transpiler_validate_functions(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_validate_functions(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
@@ -49,7 +49,7 @@ void transpiler_validate_functions(ASTNode *ast, const char *filename, const cha
     g_filename = filename;
     g_source = source;
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Scan for function declarations */
@@ -140,12 +140,12 @@ void transpiler_validate_functions(ASTNode *ast, const char *filename, const cha
 }
 
 /* Transform function declarations (main return type, empty parameter lists) */
-void transpiler_transform_functions(ASTNode *ast) {
+void transpiler_transform_functions(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Scan for function declarations */
@@ -238,7 +238,7 @@ void transpiler_transform_functions(ASTNode *ast) {
                         /* If empty parameter list, insert 'void' */
                         if (!has_content) {
                             /* Create new nodes for 'void' */
-                            ASTNode *void_node = malloc(sizeof(ASTNode));
+                            ASTNode_t *void_node = malloc(sizeof(ASTNode_t));
                             if (void_node) {
                                 void_node->type = AST_TOKEN;
                                 void_node->token.type = TOKEN_KEYWORD;
@@ -254,7 +254,7 @@ void transpiler_transform_functions(ASTNode *ast) {
                                 /* Grow array if needed */
                                 if (ast->child_count >= ast->child_capacity) {
                                     size_t new_capacity = ast->child_capacity == 0 ? 8 : ast->child_capacity * 2;
-                                    ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                                    ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
                                     if (new_children) {
                                         ast->children = new_children;
                                         ast->child_capacity = new_capacity;
@@ -289,12 +289,12 @@ void transpiler_transform_functions(ASTNode *ast) {
 }
 
 /* Add warn_unused_result attribute to non-void functions */
-void transpiler_add_warn_unused_result(ASTNode *ast) {
+void transpiler_add_warn_unused_result(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Scan for function declarations */
@@ -379,7 +379,7 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
         if (has_warn_unused_result) continue; /* Already has the attribute */
 
         /* Insert __attribute__((warn_unused_result)) before the return type */
-        ASTNode *attr_node = malloc(sizeof(ASTNode));
+        ASTNode_t *attr_node = malloc(sizeof(ASTNode_t));
         if (!attr_node) continue;
 
         attr_node->type = AST_TOKEN;
@@ -399,7 +399,7 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
         /* Grow array if needed */
         if (ast->child_count >= ast->child_capacity) {
             size_t new_capacity = ast->child_capacity == 0 ? 8 : ast->child_capacity * 2;
-            ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+            ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
             if (new_children) {
                 ast->children = new_children;
                 ast->child_capacity = new_capacity;
@@ -428,12 +428,12 @@ void transpiler_add_warn_unused_result(ASTNode *ast) {
 }
 
 /* Add pure attribute to functions with no parameters or only immutable parameters */
-void transpiler_add_pure(ASTNode *ast) {
+void transpiler_add_pure(ASTNode_t *ast) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Scan for function declarations */
@@ -580,7 +580,7 @@ void transpiler_add_pure(ASTNode *ast) {
         /* Only add pure if function has no parameters */
         if (!has_params) {
             /* Insert __attribute__((pure)) before the return type */
-            ASTNode *attr_node = malloc(sizeof(ASTNode));
+            ASTNode_t *attr_node = malloc(sizeof(ASTNode_t));
             if (!attr_node) continue;
 
             attr_node->type = AST_TOKEN;
@@ -600,7 +600,7 @@ void transpiler_add_pure(ASTNode *ast) {
             /* Grow array if needed */
             if (ast->child_count >= ast->child_capacity) {
                 size_t new_capacity = ast->child_capacity == 0 ? 8 : ast->child_capacity * 2;
-                ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+                ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
                 if (new_children) {
                     ast->children = new_children;
                     ast->child_capacity = new_capacity;

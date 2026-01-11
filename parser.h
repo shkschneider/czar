@@ -18,13 +18,13 @@ typedef enum {
 } ASTNodeType;
 
 /* AST Node structure */
-typedef struct ASTNode {
+typedef struct ASTNode_s {
     ASTNodeType type;
     Token token;              /* Token data (for AST_TOKEN nodes) */
-    struct ASTNode **children; /* Child nodes */
+    struct ASTNode_s **children; /* Child nodes */
     size_t child_count;       /* Number of children */
     size_t child_capacity;    /* Capacity of children array */
-} ASTNode;
+} ASTNode_t;
 
 /* Parser structure */
 typedef struct {
@@ -36,7 +36,7 @@ typedef struct {
 void parser_init(Parser *parser, Lexer *lexer);
 
 /* Parse input into AST */
-ASTNode *parser_parse(Parser *parser);
+ASTNode_t *parser_parse(Parser *parser);
 
 /* Free AST node and all children */
-void ast_node_free(ASTNode *node);
+void ast_node_free(ASTNode_t *node);

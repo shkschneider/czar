@@ -20,7 +20,7 @@ static int token_text_equals(Token *token, const char *text) {
 }
 
 /* Skip whitespace and comments */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t start) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t start) {
     for (size_t i = start; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
         TokenType type = children[i]->token.type;
@@ -48,7 +48,7 @@ static char *extract_string_content(const char *str_with_quotes) {
 }
 
 /* Find the function name containing this position */
-static const char *find_function_name(ASTNode **children, size_t count, size_t current_pos) {
+static const char *find_function_name(ASTNode_t **children, size_t count, size_t current_pos) {
     int brace_depth = 0;
     const char *function_name = NULL;
 
@@ -100,7 +100,7 @@ static const char *find_function_name(ASTNode **children, size_t count, size_t c
 }
 
 /* Expand FIXME() calls inline */
-void transpiler_expand_fixme(ASTNode *ast, const char *filename) {
+void transpiler_expand_fixme(ASTNode_t *ast, const char *filename) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT || !filename) {
         return;
     }

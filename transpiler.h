@@ -14,29 +14,29 @@
 #include <stdio.h>
 
 /* Transpiler structure */
-typedef struct Transpiler {
-    ASTNode *ast;
+typedef struct Transpiler_s {
+    ASTNode_t *ast;
     const char *filename;
     const char *source;
     PragmaContext pragma_ctx;  /* Pragma settings */
     FeatureRegistry registry;  /* Feature registry */
-} Transpiler;
+} Transpiler_t;
 
 /* Initialize transpiler with AST */
-void transpiler_init(Transpiler *transpiler, ASTNode *ast, const char *filename, const char *source);
+void transpiler_init(Transpiler_t *transpiler, ASTNode_t *ast, const char *filename, const char *source);
 
 /* Clean up transpiler resources */
-void transpiler_cleanup(Transpiler *transpiler);
+void transpiler_cleanup(Transpiler_t *transpiler);
 
 /* Transform AST (apply CZar-specific transformations) */
-void transpiler_transform(Transpiler *transpiler);
+void transpiler_transform(Transpiler_t *transpiler);
 
 /* Emit transformed AST as C code to output file */
-void transpiler_emit(Transpiler *transpiler, FILE *output);
+void transpiler_emit(Transpiler_t *transpiler, FILE *output);
 
 /* Emit transformed AST as C header file (declarations only) */
-void transpiler_emit_header(Transpiler *transpiler, FILE *output);
+void transpiler_emit_header(Transpiler_t *transpiler, FILE *output);
 
 /* Emit transformed AST as C source file (implementations only) */
-void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *header_name);
+void transpiler_emit_source(Transpiler_t *transpiler, FILE *output, const char *header_name);
 

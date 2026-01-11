@@ -64,7 +64,7 @@ static int is_type_keyword(const char *text) {
 
 /* Check if token is a type identifier (keyword or struct name) */
 /* Skip whitespace and comments */
-static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
+static size_t skip_whitespace(ASTNode_t **children, size_t count, size_t i) {
     while (i < count) {
         if (children[i]->type != AST_TOKEN) {
             i++;
@@ -80,7 +80,7 @@ static size_t skip_whitespace(ASTNode **children, size_t count, size_t i) {
 }
 
 /* Look backward skipping whitespace */
-static int find_prev_token(ASTNode **children, size_t current, size_t *result) {
+static int find_prev_token(ASTNode_t **children, size_t current, size_t *result) {
     if (current == 0) return 0;
 
     for (int i = (int)current - 1; i >= 0; i--) {
@@ -94,8 +94,8 @@ static int find_prev_token(ASTNode **children, size_t current, size_t *result) {
 }
 
 /* Create a new token node */
-static ASTNode *create_token_node(const char *text, TokenType type) {
-    ASTNode *node = malloc(sizeof(ASTNode));
+static ASTNode_t *create_token_node(const char *text, TokenType type) {
+    ASTNode_t *node = malloc(sizeof(ASTNode_t));
     if (!node) return NULL;
 
     node->type = AST_TOKEN;
@@ -140,7 +140,7 @@ static int compare_insertions(const void *a, const void *b) {
 }
 
 /* Insert a node at position in AST children */
-static int insert_node_at(ASTNode *ast, size_t pos, ASTNode *new_node) {
+static int insert_node_at(ASTNode_t *ast, size_t pos, ASTNode_t *new_node) {
     if (!ast || !new_node || pos > ast->child_count) {
         return 0;
     }
@@ -148,7 +148,7 @@ static int insert_node_at(ASTNode *ast, size_t pos, ASTNode *new_node) {
     /* Ensure capacity */
     if (ast->child_count >= ast->child_capacity) {
         size_t new_capacity = ast->child_capacity == 0 ? 16 : ast->child_capacity * 2;
-        ASTNode **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode *));
+        ASTNode_t **new_children = realloc(ast->children, new_capacity * sizeof(ASTNode_t *));
         if (!new_children) {
             return 0;
         }
@@ -169,7 +169,7 @@ static int insert_node_at(ASTNode *ast, size_t pos, ASTNode *new_node) {
 }
 
 /* Mark a token for deletion by replacing its text with empty string */
-static void mark_for_deletion(ASTNode *node) {
+static void mark_for_deletion(ASTNode_t *node) {
     if (node && node->type == AST_TOKEN && node->token.text) {
         free(node->token.text);
         node->token.text = strdup("");
@@ -178,12 +178,12 @@ static void mark_for_deletion(ASTNode *node) {
 }
 
 /* Transform mutability in AST */
-void transpiler_transform_mutability(ASTNode *ast, const char *filename, const char *source) {
+void transpiler_transform_mutability(ASTNode_t *ast, const char *filename, const char *source) {
     if (!ast || ast->type != AST_TRANSLATION_UNIT) {
         return;
     }
 
-    ASTNode **children = ast->children;
+    ASTNode_t **children = ast->children;
     size_t count = ast->child_count;
 
     /* Pass 0: Error on const usage (everything is const by default, use mut for mutable) */
@@ -1001,8 +1001,8 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
 
         if (ins.type == INSERT_CONST_BEFORE_TYPE) {
             /* Insert "const " before type */
-            ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
-            ASTNode *space_node = create_token_node(" ", TOKEN_WHITESPACE);
+            ASTNode_t *const_node = create_token_node("const", TOKEN_KEYWORD);
+            ASTNode_t *space_node = create_token_node(" ", TOKEN_WHITESPACE);
 
             if (const_node && space_node) {
                 insert_node_at(ast, ins.position, const_node);
@@ -1028,9 +1028,9 @@ void transpiler_transform_mutability(ASTNode *ast, const char *filename, const c
             }
 
             /* Always insert: space + const + space */
-            ASTNode *space1_node = create_token_node(" ", TOKEN_WHITESPACE);
-            ASTNode *const_node = create_token_node("const", TOKEN_KEYWORD);
-            ASTNode *space2_node = create_token_node(" ", TOKEN_WHITESPACE);
+            ASTNode_t *space1_node = create_token_node(" ", TOKEN_WHITESPACE);
+            ASTNode_t *const_node = create_token_node("const", TOKEN_KEYWORD);
+            ASTNode_t *space2_node = create_token_node(" ", TOKEN_WHITESPACE);
 
             if (space1_node && const_node && space2_node) {
                 insert_node_at(ast, ins.position + 1, space1_node);
