@@ -1,16 +1,18 @@
 # Build system for CZar C semantic authority layer
 # MIT License Copyright (c) 2026 ShkSchneider
 # https://github.com/shkschneider/czar
+
 CC     ?= cc -v
 STD    ?= c11
 OPT    ?= O2
-CFLAGS := -std=$(STD) -Wall -Wextra -Werror -$(OPT)\
--Wno-unknown-pragmas -Wno-unused-command-line-argument
+CFLAGS := $(strip -std=$(STD) -Wall -Wextra -Werror -$(OPT)\
+		-Wno-unknown-pragmas -Wno-unused-command-line-argument)
 LDFLAGS = -static -lc
 OUT     = cz
-BIN    ?= dist/$(OUT)
-LIB_A  ?= dist/lib$(OUT)ar.a
-LIB_SO ?= dist/lib$(OUT)ar.so
+BIN     = dist/$(OUT)
+LIB_A   = dist/lib$(OUT)ar.a
+LIB_SO  = dist/lib$(OUT)ar.so
+$(if $(shell command -v $(CC) 2>/dev/null),,$(error "[CZ] $(CC): command not found"))
 
 BIN_SRC = $(wildcard *.c) $(wildcard src/*.c)
 BIN_OBJ = $(patsubst %.c,build/%.o,$(BIN_SRC))
@@ -32,7 +34,7 @@ $(BIN): $(BIN_OBJ)
 	@echo "[CZ] $@"
 	@mkdir -p $(@D)
 	$(CC) $^ $(LDFLAGS) -o $@
-.PHONY: bin
+.PHONY: bin $(BIN)
 
 # Library
 lib: $(LIB_A) $(LIB_SO) dist/$(OUT).h
@@ -42,8 +44,9 @@ build/lib/%.o: lib/%.c
 $(LIB_A): $(LIB_OBJ) dist/$(OUT).h
 	@echo "[CZ] $@"
 	@mkdir -p $(@D)
+	$(if $(shell command -v ar 2>/dev/null),,$(error "[CZ] ar: command not found"))
 	ar rcs $@ $(LIB_OBJ)
-	ranlib $@
+	$(if $(shell command -v ranlib 2>/dev/null),ranlib $@,)
 	@echo -n "[CZ] " ; file $@
 $(LIB_SO): $(LIB_OBJ) dist/$(OUT).h
 	@echo "[CZ] $@"
@@ -53,7 +56,7 @@ $(LIB_SO): $(LIB_OBJ) dist/$(OUT).h
 dist/$(OUT).h: lib/$(OUT).h
 	@echo "[CZ] $@"
 	@cp -v $< $(@D)/
-.PHONY: lib
+.PHONY: lib $(LIB_A) $(LIB_SO) dist/$(OUT).h
 
 # Tests
 test: test/app test/lib $(TESTS:.cz=)
@@ -70,14 +73,21 @@ test/%: test/%.cz $(BIN)
 	@$(CC) $(CFLAGS) -c $<.c -o $<.o
 	@$(CC) $(CFLAGS) $<.o $(LDFLAGS) -o $@
 	@./$@ >/dev/null 2>/dev/null
-.PHONY: test test/app $(TESTS)
+.PHONY: test test/app test/lib $(TESTS)
 
-# Cleanup
+# Miscellaneous
+format:
+	$(if $(shell command -v clang-format 2>/dev/null), \
+		find . -type f -name "*.c" -exec clang-format -i {} \;, \
+		$(error "clang-format: command not found") \
+	)
 stat:
 	@echo "[CZ] stat"
 	@find $(BIN_SRC) | xargs wc -l | cut -c2- | sort -n
 	@grep -o ';' $(BIN_SRC) | wc -l | xargs -I{} printf '%5d statements\n' "{}"
-	@ctags -x --c-types=f $(BIN_SRC) | cut -d' ' -f1 | sort -u | wc -l | xargs -I{} printf '%5d functions\n' "{}"
+	$(if $(shell command -v ctags 2>/dev/null), \
+		@ctags -x --c-types=f $(BIN_SRC) | cut -d' ' -f1 | sort -u | wc -l | xargs -I{} printf '%5d functions\n' "{}", \
+	)
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
 	@echo "[CZ] clean"
@@ -90,4 +100,4 @@ clean:
 distclean: clean
 	@echo "[CZ] distclean"
 	@rm -rvf $(BIN) $(LIB_A) $(LIB_SO) dist/$(OUT).h
-.PHONY: stat clean distclean
+.PHONY: format stat clean distclean
