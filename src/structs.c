@@ -20,6 +20,11 @@
 #include <dirent.h>
 #include <unistd.h>
 
+/* Maximum struct name lengths */
+#define MAX_STRUCT_NAME_LEN 509  /* Leave room for "_t" suffix and null terminator */
+#define MAX_TYPEDEF_NAME_LEN 512 /* MAX_STRUCT_NAME_LEN + "_t" (2) + null (1) */
+#define MAX_PATH_LEN 600
+
 /* Maximum number of struct names we can track */
 #define MAX_STRUCT_NAMES 256
 
@@ -551,7 +556,7 @@ static int parse_header_for_typedefs(const char *source_filename, const char *he
         }
         
         /* Extract base name (without _s) */
-        char base_name[509];  /* Leave room for "_t" and null terminator */
+        char base_name[MAX_STRUCT_NAME_LEN];
         if (tag_len - 2 >= sizeof(base_name)) continue;
         memcpy(base_name, tag_start, tag_len - 2);
         base_name[tag_len - 2] = '\0';
@@ -565,7 +570,7 @@ static int parse_header_for_typedefs(const char *source_filename, const char *he
         char *typedef_loc = strstr(p, typedef_pattern);
         if (typedef_loc) {
             /* Found a match - track this mapping */
-            char typedef_name[512];  /* base_name (max 508) + "_t" (2) + null (1) = 511 */
+            char typedef_name[MAX_TYPEDEF_NAME_LEN];
             snprintf(typedef_name, sizeof(typedef_name), "%s_t", base_name);
             track_struct_name(base_name, typedef_name);
         }
@@ -634,8 +639,12 @@ static void scan_imports_for_typedefs(ASTNode *ast, const char *source_filename)
                         /* Check if file ends with .cz.h */
                         size_t name_len = strlen(entry->d_name);
                         if (name_len > 5 && strcmp(entry->d_name + name_len - 5, ".cz.h") == 0) {
+                            /* Validate path length before constructing */
+                            if (strlen(module_path) + 1 + name_len + 1 > MAX_PATH_LEN) {
+                                continue; /* Path too long, skip this file */
+                            }
                             /* Parse this header file */
-                            char header_path[600];
+                            char header_path[MAX_PATH_LEN];
                             snprintf(header_path, sizeof(header_path), "%s/%s", module_path, entry->d_name);
                             parse_header_for_typedefs(source_filename, header_path);
                         }
@@ -643,8 +652,12 @@ static void scan_imports_for_typedefs(ASTNode *ast, const char *source_filename)
                     closedir(dir);
                 }
             } else {
+                /* Validate path length before constructing */
+                if (strlen(module_path) + 5 + 1 > MAX_PATH_LEN) {
+                    continue; /* Path too long, skip */
+                }
                 /* Try single file: module_path.cz.h */
-                char header_path[600];
+                char header_path[MAX_PATH_LEN];
                 snprintf(header_path, sizeof(header_path), "%s.cz.h", module_path);
                 parse_header_for_typedefs(source_filename, header_path);
             }
@@ -809,6 +822,7 @@ void transpiler_replace_struct_names(ASTNode *ast, const char *filename) {
                                 continue;
                             }
                             /* Found a non-whitespace token */
+                            /* Note: "typedef struct" is a single token created during transformation */
                             if (prev->type == TOKEN_IDENTIFIER && prev->text && 
                                 (strcmp(prev->text, "struct") == 0 || strcmp(prev->text, "typedef struct") == 0)) {
                                 preceded_by_struct = 1;
