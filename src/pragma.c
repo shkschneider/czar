@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Pragma parser implementation (transpiler/pragma.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Parses and handles #pragma czar directives.
  */

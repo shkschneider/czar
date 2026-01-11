@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler defer module (transpiler/defer.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles defer keyword for scope-exit cleanup using cleanup attribute.
  */

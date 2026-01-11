@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Warning reporting implementation (transpiler/warning.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles warning reporting with source code context.
  */

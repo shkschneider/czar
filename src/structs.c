@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Struct typedef transformation implementation (transpiler/structs.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles automatic typedef generation for named structs.
  * Transforms: struct Name { ... }; into typedef struct Name_s { ... } Name_t;

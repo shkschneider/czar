@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Parser header (parser.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Parses tokens into an Abstract Syntax Tree (AST).
  */

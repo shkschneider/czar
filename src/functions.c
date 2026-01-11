@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler functions module (transpiler/functions.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles function-related transformations and validations.
  */
@@ -452,7 +453,7 @@ void transpiler_add_pure(ASTNode *ast) {
             if (children[k]->type != AST_TOKEN) continue;
             if (children[k]->token.type == TOKEN_WHITESPACE ||
                 children[k]->token.type == TOKEN_COMMENT) continue;
-            
+
             if (children[k]->token.type == TOKEN_PUNCTUATION &&
                 children[k]->token.text &&
                 strcmp(children[k]->token.text, ".") == 0) {
@@ -535,9 +536,9 @@ void transpiler_add_pure(ASTNode *ast) {
 
         for (size_t k = paren_start + 1; k < count && paren_depth > 0; k++) {
             if (children[k]->type != AST_TOKEN) continue;
-            
+
             Token *tok = &children[k]->token;
-            
+
             /* Track parentheses depth */
             if (tok->type == TOKEN_PUNCTUATION && tok->text) {
                 if (strcmp(tok->text, "(") == 0) {
@@ -558,14 +559,14 @@ void transpiler_add_pure(ASTNode *ast) {
 
             /* Count non-trivial tokens */
             token_count++;
-            
+
             /* Check if it's just "void" */
-            if (token_count == 1 && tok->type == TOKEN_KEYWORD && tok->text && 
+            if (token_count == 1 && tok->type == TOKEN_KEYWORD && tok->text &&
                 strcmp(tok->text, "void") == 0) {
                 /* First token is void - might be (void) which means no params */
                 continue;
             }
-            
+
             /* Found actual parameter content (not just void) */
             has_params = 1;
             break;

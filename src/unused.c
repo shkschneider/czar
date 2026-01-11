@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler unused variable module (transpiler/unused.c)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles special _ variable to suppress unused warnings.
  */

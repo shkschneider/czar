@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Member access transformation header (transpiler/autodereference.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles auto-dereference of pointers when using . operator.
  */

@@ -25,7 +25,7 @@ CZar:
 
 ## What It Is
 
-- a C-to-C semantic transformer
+- a C-to-C semantic transformer (c99/c11/c17/c2x)
 - a way to add features to C without changing C
 - incrementally adoptable in existing C codebases
 - reversible
@@ -83,7 +83,9 @@ APIs and rules may evolve before 1.0.
 
 ## License
 
-MIT [LICENSE](LICENSE)
+MIT [LICENSE](LICENSE) &copy; 2026 ShkSchneider
+
+https://github.com/shkschneider/czar
 
 ---
 

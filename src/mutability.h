@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler mutability module (transpiler/mutability.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles mutability transformations:
  * - Everything is immutable (const) by default

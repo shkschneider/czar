@@ -1,6 +1,7 @@
 /*
- * CZar - C semantic authority layer
- * Transpiler switches module (transpiler/switches.h)
+ * CZar - semantic authority layer for C
+ * MIT License Copyright (c) 2026 ShkSchneider
+ * https://github.com/shkschneider/czar
  *
  * Handles generic switch statement transformations and validation.
  */
