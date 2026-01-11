@@ -6,10 +6,12 @@
  * Transforms foreach-like syntax to portable C for loops.
  *
  * Supported patterns:
- * - for (type var : collection)        - iterate over collection
+ * - for (type var : start..end)        - range-based iteration (IMPLEMENTED)
+ *
+ * Planned patterns (TODO):
+ * - for (char c : string)              - iterate over string characters
+ * - for (_, type val : array)          - iterate over array without explicit index
  * - for (type idx, type val : array)   - iterate with index and value
- * - for (_, var : collection)          - iterate without explicit index variable
- * - for (type var : start..end)        - range-based iteration
  */
 
 #pragma once

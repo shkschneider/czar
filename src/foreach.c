@@ -5,11 +5,18 @@
  *
  * Transforms foreach-like syntax to portable C for loops.
  *
- * This transformation supports:
- * 1. String iteration: for (c : str) → for (size_t _i = 0; str[_i] != '\0'; _i++) { char c = str[_i]; ... }
- * 2. Array iteration: for (_, item : array) → for (size_t _i = 0; _i < sizeof(array)/sizeof(array[0]); _i++)
- * 3. Array with index: for (idx, val : array) → for (size_t idx = 0; idx < ...; idx++) { type val = array[idx]; ... }
- * 4. Range iteration: for (i : 0..9) → for (type i = 0; i <= 9; i++)
+ * Currently implemented:
+ * - Range iteration: for (type var : start..end) → for (mut type var = start; var <= end; var++)
+ *
+ * Planned (TODO):
+ * - String iteration: for (char c : str) → for (size_t _i = 0; str[_i] != '\0'; _i++) { char c = str[_i]; ... }
+ * - Array iteration: for (_, type item : array) → for (size_t _i = 0; _i < sizeof(array)/sizeof(array[0]); _i++) { type item = array[_i]; ... }
+ * - Array with index: for (type idx, type val : array) → for (type idx = 0; idx < sizeof(array)/sizeof(array[0]); idx++) { type val = array[idx]; ... }
+ *
+ * Notes:
+ * - The lexer parses "0..9" as three tokens: "0", ".", ".9" (where ".9" is treated as a decimal)
+ * - Range variables are automatically marked as `mut` since they need to be incremented
+ * - Works with both CZar types (u8, u32, etc.) and standard C types (int, char, etc.)
  */
 
 #include "foreach.h"
