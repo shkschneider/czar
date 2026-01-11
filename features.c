@@ -24,6 +24,7 @@
 #include "src/types.h"
 #include "src/constants.h"
 #include "src/unused.h"
+#include "src/ifexpr.h"
 
 /* Wrapper functions to adapt existing functions to feature interface */
 
@@ -113,6 +114,12 @@ static void transform_defer(ASTNode_t *ast, const char *filename, const char *so
     (void)filename;
     (void)source;
     transpiler_transform_defer(ast);
+}
+
+static void transform_ifexpr(ASTNode_t *ast, const char *filename, const char *source) {
+    (void)filename;
+    (void)source;
+    transpiler_transform_ifexpr(ast);
 }
 
 static void transform_types_and_constants(ASTNode_t *ast, const char *filename, const char *source) {
@@ -297,6 +304,16 @@ static Feature feature_types_constants = {
     .dependencies = NULL
 };
 
+static Feature feature_ifexpr = {
+    .name = "ifexpr",
+    .description = "Transform if-expressions to ternary operators",
+    .enabled = true,
+    .validate = NULL,
+    .transform = transform_ifexpr,
+    .emit = NULL,
+    .dependencies = NULL
+};
+
 /* Register all built-in features with the registry */
 void register_all_features(FeatureRegistry *registry) {
     if (!registry) {
@@ -322,6 +339,7 @@ void register_all_features(FeatureRegistry *registry) {
     feature_registry_register(registry, &feature_arguments);
     feature_registry_register(registry, &feature_mutability);
     feature_registry_register(registry, &feature_defer);
+    feature_registry_register(registry, &feature_ifexpr);
     feature_registry_register(registry, &feature_types_constants);
 
     /* Note: functions transform is registered but includes multiple operations */
