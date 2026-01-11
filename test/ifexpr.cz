@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <assert.h>
+#include <stdint.h>
+#include <stddef.h>
+
+/*
+ * Test if-expression functionality:
+ * - return if (condition) value1 else value2;
+ * - u8 i = if (condition) value1 else value2;
+ * - Both should transpile to ternary operators in valid C
+ */
+
+int get_value(int flag) {
+    return if (flag == 1) 42 else 0;
+}
+
+int main(void) {
+    /* Test 1: if-expression in return statement */
+    int result1 = get_value(1);
+    printf("Test 1 - if-expression in return: %d\n", result1);
+    assert(result1 == 42);
+    
+    int result2 = get_value(0);
+    printf("Test 1 - if-expression in return (false): %d\n", result2);
+    assert(result2 == 0);
+    
+    /* Test 2: if-expression in variable assignment */
+    u8 i = if (1 == 1) 0 else 1;
+    printf("Test 2 - if-expression in assignment: %u\n", i);
+    assert(i == 0);
+    
+    /* Test 3: if-expression with complex condition */
+    u8 j = if (2 > 1) 5 else 10;
+    printf("Test 3 - if-expression with condition: %u\n", j);
+    assert(j == 5);
+    
+    /* Test 4: if-expression with false condition */
+    u8 k = if (1 > 2) 5 else 10;
+    printf("Test 4 - if-expression with false condition: %u\n", k);
+    assert(k == 10);
+    
+    printf("All if-expression tests passed!\n");
+    return 0;
+}
