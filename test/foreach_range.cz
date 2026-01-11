@@ -1,0 +1,18 @@
+#include <stdio.h>
+
+int main(void) {
+    /* Test range-based for loop: for (type var : start..end) */
+    printf("Range 0..9:\n");
+    for (u8 i : 0..9) {
+        printf("%u ", i);
+    }
+    printf("\n");
+
+    printf("Range 5..10:\n");
+    for (u32 j : 5..10) {
+        printf("%u ", j);
+    }
+    printf("\n");
+
+    return 0;
+}
