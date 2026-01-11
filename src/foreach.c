@@ -7,16 +7,19 @@
  *
  * Currently implemented:
  * - Range iteration: for (type var : start..end) → for (mut type var = start; var <= end; var++)
+ * - Array with index: for (type idx, type val : array) → for (mut type idx = 0; idx < sizeof(array)/sizeof(array[0]); idx++) { type val = array[idx]; ... }
+ * - Array without index: for (_, type val : array) → for (mut size_t _cz_idx = 0; _cz_idx < sizeof(array)/sizeof(array[0]); _cz_idx++) { type val = array[_cz_idx]; ... }
  *
  * Planned (TODO):
  * - String iteration: for (char c : str) → for (size_t _i = 0; str[_i] != '\0'; _i++) { char c = str[_i]; ... }
- * - Array iteration: for (_, type item : array) → for (size_t _i = 0; _i < sizeof(array)/sizeof(array[0]); _i++) { type item = array[_i]; ... }
- * - Array with index: for (type idx, type val : array) → for (type idx = 0; idx < sizeof(array)/sizeof(array[0]); idx++) { type val = array[idx]; ... }
+ * - Single variable array: for (type val : array) → similar to (_, type val : array)
  *
  * Notes:
  * - The lexer parses "0..9" as three tokens: "0", ".", ".9" (where ".9" is treated as a decimal)
  * - Range variables are automatically marked as `mut` since they need to be incremented
+ * - Array index variables are automatically marked as `mut`
  * - Works with both CZar types (u8, u32, etc.) and standard C types (int, char, etc.)
+ * - The user explicitly provides the value type, so no type inference is needed
  */
 
 #include "foreach.h"
@@ -59,6 +62,15 @@ static char *strdup_safe(const char *str) {
         dup[len] = '\0';
     }
     return dup;
+}
+
+/* Helper: Mark a token for deletion by replacing its text with empty string */
+static void mark_for_deletion(ASTNode_t *node) {
+    if (node && node->type == AST_TOKEN && node->token.text) {
+        free(node->token.text);
+        node->token.text = strdup_safe("");
+        node->token.length = 0;
+    }
 }
 
 /* Helper: Create a new token with specific text */
@@ -351,10 +363,241 @@ static void transform_foreach_loop(ASTNode_t *ast, size_t for_idx, const char *f
             }
         }
     } else {
-        /* Collection-based loop - not yet implemented */
-        /* For now, leave as-is to avoid breaking compilation */
-        (void)filename;
-        (void)source;
+        /* Collection-based loop: for (idx, val : array) or for (_, val : array) */
+        /* Check if left side has a comma - indicating index/value pattern */
+        int has_comma = 0;
+        size_t comma_idx = 0;
+        for (size_t i = left_start; i < left_end; i++) {
+            if (children[i]->type == AST_TOKEN && token_equals(&children[i]->token, ",")) {
+                has_comma = 1;
+                comma_idx = i;
+                break;
+            }
+        }
+        
+        if (has_comma) {
+            /* Pattern: for (idx_type idx, val_type val : array) */
+            /* Parse index variable (before comma) */
+            size_t idx_var_idx = comma_idx - 1;
+            while (idx_var_idx > left_start && children[idx_var_idx]->type == AST_TOKEN &&
+                   children[idx_var_idx]->token.type == TOKEN_WHITESPACE) {
+                idx_var_idx--;
+            }
+            
+            /* Parse value variable (after comma, before colon) */
+            size_t val_var_idx = left_end - 1;
+            while (val_var_idx > comma_idx && children[val_var_idx]->type == AST_TOKEN &&
+                   children[val_var_idx]->token.type == TOKEN_WHITESPACE) {
+                val_var_idx--;
+            }
+            
+            /* Parse value type (between comma and value variable) */
+            size_t val_type_start = skip_whitespace(children, count, comma_idx + 1);
+            size_t val_type_end = val_var_idx;
+            
+            /* Copy value type to a buffer NOW, before we mark tokens for deletion */
+            char val_type_buf[MAX_TOKEN_BUFFER_SIZE] = {0};
+            size_t val_type_len = 0;
+            for (size_t i = val_type_start; i < val_type_end && val_type_len < MAX_TOKEN_BUFFER_SIZE - 2; i++) {
+                if (children[i]->type == AST_TOKEN && children[i]->token.text &&
+                    children[i]->token.text[0] != '\0') {
+                    size_t tok_len = strlen(children[i]->token.text);
+                    if (val_type_len + tok_len < MAX_TOKEN_BUFFER_SIZE - 2) {
+                        memcpy(val_type_buf + val_type_len, children[i]->token.text, tok_len);
+                        val_type_len += tok_len;
+                    }
+                }
+            }
+            val_type_buf[val_type_len] = '\0';
+            
+            /* Check if index is _ (underscore - meaning we don't want the index variable) */
+            int skip_index = 0;
+            if (children[idx_var_idx]->type == AST_TOKEN &&
+                token_equals(&children[idx_var_idx]->token, "_")) {
+                skip_index = 1;
+            }
+            
+            if (children[idx_var_idx]->type == AST_TOKEN &&
+                children[idx_var_idx]->token.type == TOKEN_IDENTIFIER &&
+                children[val_var_idx]->type == AST_TOKEN &&
+                children[val_var_idx]->token.type == TOKEN_IDENTIFIER) {
+                
+                /* Copy variable names NOW before marking for deletion */
+                char idx_var_name_buf[MAX_TOKEN_BUFFER_SIZE] = {0};
+                char val_var_name_buf[MAX_TOKEN_BUFFER_SIZE] = {0};
+                
+                if (!skip_index && children[idx_var_idx]->token.text) {
+                    strncpy(idx_var_name_buf, children[idx_var_idx]->token.text, MAX_TOKEN_BUFFER_SIZE - 1);
+                }
+                if (children[val_var_idx]->token.text) {
+                    strncpy(val_var_name_buf, children[val_var_idx]->token.text, MAX_TOKEN_BUFFER_SIZE - 1);
+                }
+                
+                char *idx_var_name = skip_index ? NULL : idx_var_name_buf;
+                char *val_var_name = val_var_name_buf;
+                char buf[MAX_TOKEN_BUFFER_SIZE];
+                
+                /* Get the collection name (right side of colon) */
+                size_t collection_start = right_start;
+                size_t collection_end = close_paren_idx;
+                /* Skip backwards to find last non-whitespace */
+                while (collection_end > collection_start && children[collection_end - 1]->type == AST_TOKEN &&
+                       children[collection_end - 1]->token.type == TOKEN_WHITESPACE) {
+                    collection_end--;
+                }
+                
+                /* Build collection name by concatenating tokens */
+                char collection_name[MAX_TOKEN_BUFFER_SIZE] = {0};
+                size_t coll_len = 0;
+                for (size_t i = collection_start; i < collection_end && coll_len < MAX_TOKEN_BUFFER_SIZE - 1; i++) {
+                    if (children[i]->type == AST_TOKEN && children[i]->token.text) {
+                        size_t tok_len = strlen(children[i]->token.text);
+                        if (coll_len + tok_len < MAX_TOKEN_BUFFER_SIZE - 1) {
+                            memcpy(collection_name + coll_len, children[i]->token.text, tok_len);
+                            coll_len += tok_len;
+                        }
+                    }
+                }
+                collection_name[coll_len] = '\0';
+                
+                /* Use a loop index variable - either the specified one or generate one */
+                const char *loop_idx_var = skip_index ? "_cz_idx" : idx_var_name;
+                
+                /* Transform the for header */
+                /* Build new tokens FIRST, then delete old ones */
+                
+                /* Build the new tokens */
+                Token *ref_tok = &children[paren_idx]->token;
+                int line = ref_tok->line;
+                int col = ref_tok->column;
+                
+                ASTNode_t **new_tokens = malloc(sizeof(ASTNode_t*) * 50); /* Allocate enough space */
+                size_t new_token_count = 0;
+                
+                if (!new_tokens) {
+                    return; /* Out of memory */
+                }
+                
+                /* Add: mut */
+                if (!skip_index) {
+                    /* Add mut keyword */
+                    new_tokens[new_token_count++] = create_token_node("mut", TOKEN_KEYWORD, line, col);
+                    new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                    
+                    /* Copy the index type and variable tokens */
+                    for (size_t i = left_start; i < comma_idx; i++) {
+                        if (children[i]->type == AST_TOKEN && children[i]->token.text &&
+                            children[i]->token.text[0] != '\0') {
+                            /* Clone the token */
+                            ASTNode_t *clone = create_token_node(children[i]->token.text,
+                                                                 children[i]->token.type,
+                                                                 line, col);
+                            if (clone) {
+                                new_tokens[new_token_count++] = clone;
+                            }
+                        }
+                    }
+                } else {
+                    /* Generate: mut size_t _cz_idx */
+                    new_tokens[new_token_count++] = create_token_node("mut", TOKEN_KEYWORD, line, col);
+                    new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                    new_tokens[new_token_count++] = create_token_node("size_t", TOKEN_IDENTIFIER, line, col);
+                    new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                    new_tokens[new_token_count++] = create_token_node("_cz_idx", TOKEN_IDENTIFIER, line, col);
+                }
+                
+                /* Add: = 0; */
+                new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                new_tokens[new_token_count++] = create_token_node("=", TOKEN_OPERATOR, line, col);
+                new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                new_tokens[new_token_count++] = create_token_node("0", TOKEN_NUMBER, line, col);
+                new_tokens[new_token_count++] = create_token_node(";", TOKEN_PUNCTUATION, line, col);
+                new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                
+                /* Add: loop_idx_var < sizeof(collection)/sizeof(collection[0]); */
+                new_tokens[new_token_count++] = create_token_node(loop_idx_var, TOKEN_IDENTIFIER, line, col);
+                new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                new_tokens[new_token_count++] = create_token_node("<", TOKEN_OPERATOR, line, col);
+                new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                snprintf(buf, sizeof(buf), "sizeof(%s)/sizeof(%s[0])", collection_name, collection_name);
+                new_tokens[new_token_count++] = create_token_node(buf, TOKEN_IDENTIFIER, line, col);
+                new_tokens[new_token_count++] = create_token_node(";", TOKEN_PUNCTUATION, line, col);
+                new_tokens[new_token_count++] = create_token_node(" ", TOKEN_WHITESPACE, line, col);
+                
+                /* Add: loop_idx_var++ */
+                snprintf(buf, sizeof(buf), "%s++", loop_idx_var);
+                new_tokens[new_token_count++] = create_token_node(buf, TOKEN_IDENTIFIER, line, col);
+                
+                /* Now mark all tokens between ( and ) for deletion */
+                for (size_t i = paren_idx + 1; i < close_paren_idx; i++) {
+                    if (children[i]->type == AST_TOKEN) {
+                        mark_for_deletion(children[i]);
+                    }
+                }
+                
+                /* Insert all new tokens after opening paren */
+                insert_nodes_after(ast, paren_idx, new_tokens, new_token_count);
+                free(new_tokens);
+                
+                /* Update indices after insertion */
+                close_paren_idx += new_token_count;
+                count = ast->child_count;
+                children = ast->children;
+                
+                /* Now find the loop body and insert the value variable declaration */
+                /* The loop body starts after the closing paren */
+                size_t body_start = skip_whitespace(children, count, close_paren_idx + 1);
+                
+                /* Check if body is a block { } or a single statement */
+                if (body_start < count && children[body_start]->type == AST_TOKEN &&
+                    token_equals(&children[body_start]->token, "{")) {
+                    
+                    /* Insert after the opening brace */
+                    /* Build: val_type val = collection[loop_idx_var]; */
+                    ASTNode_t **val_decl_tokens = malloc(sizeof(ASTNode_t*) * 30);
+                    size_t val_decl_count = 0;
+                    
+                    if (!val_decl_tokens) {
+                        return; /* Out of memory */
+                    }
+                    
+                    Token *brace_tok = &children[body_start]->token;
+                    
+                    /* Add newline and indentation for readability */
+                    val_decl_tokens[val_decl_count++] = create_token_node("\n        ", TOKEN_WHITESPACE,
+                                                                          brace_tok->line, brace_tok->column);
+                    
+                    /* Add the value type */
+                    val_decl_tokens[val_decl_count++] = create_token_node(val_type_buf, TOKEN_IDENTIFIER,
+                                                                          brace_tok->line, brace_tok->column);
+                    
+                    /* Add: val = collection[loop_idx_var]; */
+                    val_decl_tokens[val_decl_count++] = create_token_node(" ", TOKEN_WHITESPACE,
+                                                                          brace_tok->line, brace_tok->column);
+                    val_decl_tokens[val_decl_count++] = create_token_node(val_var_name, TOKEN_IDENTIFIER,
+                                                                          brace_tok->line, brace_tok->column);
+                    val_decl_tokens[val_decl_count++] = create_token_node(" ", TOKEN_WHITESPACE,
+                                                                          brace_tok->line, brace_tok->column);
+                    val_decl_tokens[val_decl_count++] = create_token_node("=", TOKEN_OPERATOR,
+                                                                          brace_tok->line, brace_tok->column);
+                    val_decl_tokens[val_decl_count++] = create_token_node(" ", TOKEN_WHITESPACE,
+                                                                          brace_tok->line, brace_tok->column);
+                    snprintf(buf, sizeof(buf), "%s[%s]", collection_name, loop_idx_var);
+                    val_decl_tokens[val_decl_count++] = create_token_node(buf, TOKEN_IDENTIFIER,
+                                                                          brace_tok->line, brace_tok->column);
+                    val_decl_tokens[val_decl_count++] = create_token_node(";", TOKEN_PUNCTUATION,
+                                                                          brace_tok->line, brace_tok->column);
+                    
+                    /* Insert after the opening brace */
+                    insert_nodes_after(ast, body_start, val_decl_tokens, val_decl_count);
+                    free(val_decl_tokens);
+                }
+            }
+        } else {
+            /* Single variable: for (type var : collection) - not yet implemented */
+            (void)filename;
+            (void)source;
+        }
     }
 }
 
@@ -377,6 +620,10 @@ void transpiler_transform_foreach(ASTNode_t *ast, const char *filename, const ch
             size_t colon_pos = 0;
             if (is_foreach_pattern(children, count, i, &colon_pos)) {
                 transform_foreach_loop(ast, i, filename, source);
+                
+                /* Update children and count after transformation */
+                children = ast->children;
+                count = ast->child_count;
             }
         }
         

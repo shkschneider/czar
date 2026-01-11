@@ -1,0 +1,19 @@
+#include <stdio.h>
+
+int main(void) {
+    /* Test array with index and value */
+    int numbers[] = {1, 2, 3, 4, 5};
+    printf("Array with index:\n");
+    for (size_t idx, int val : numbers) {
+        printf("  [%zu] = %d\n", idx, val);
+    }
+    
+    /* Test array without index (underscore) */
+    float values[] = {1.1f, 2.2f, 3.3f};
+    printf("Array without index:\n");
+    for (_, float v : values) {
+        printf("  %.1f\n", v);
+    }
+    
+    return 0;
+}

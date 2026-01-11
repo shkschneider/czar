@@ -7,11 +7,12 @@
  *
  * Supported patterns:
  * - for (type var : start..end)        - range-based iteration (IMPLEMENTED)
+ * - for (type idx, type val : array)   - array iteration with index (IMPLEMENTED)
+ * - for (_, type val : array)          - array iteration without explicit index (IMPLEMENTED)
  *
  * Planned patterns (TODO):
  * - for (char c : string)              - iterate over string characters
- * - for (_, type val : array)          - iterate over array without explicit index
- * - for (type idx, type val : array)   - iterate with index and value
+ * - for (type val : array)             - single variable array iteration
  */
 
 #pragma once

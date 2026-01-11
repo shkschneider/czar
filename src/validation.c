@@ -216,6 +216,38 @@ static void validate_variable_declarations(ASTNode_t *ast) {
         if (!is_type_keyword(token->text) && !is_aggregate_keyword(token->text)) {
             continue;
         }
+        
+        /* Skip foreach patterns: for (type var : ...) or for (type var1, type var2 : ...) */
+        /* Look backwards for 'for (' and forward for ':' before ';' or ')' */
+        int in_foreach = 0;
+        for (size_t k = i; k > 0 && k > (i > 20 ? i - 20 : 0); k--) {
+            if (children[k]->type == AST_TOKEN) {
+                if ((children[k]->token.type == TOKEN_IDENTIFIER || children[k]->token.type == TOKEN_KEYWORD) &&
+                    strcmp(children[k]->token.text, "for") == 0) {
+                    /* Found 'for', now look forward for ':' before ';' or ')' at depth 1 */
+                    int paren_depth = 0;
+                    for (size_t m = k; m < count && m < k + 50; m++) {
+                        if (children[m]->type == AST_TOKEN) {
+                            if (token_text_equals(&children[m]->token, "(")) {
+                                paren_depth++;
+                            } else if (token_text_equals(&children[m]->token, ")")) {
+                                paren_depth--;
+                                if (paren_depth == 0) break;
+                            } else if (paren_depth == 1 && token_text_equals(&children[m]->token, ":")) {
+                                in_foreach = 1;
+                                break;
+                            } else if (paren_depth == 1 && token_text_equals(&children[m]->token, ";")) {
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        if (in_foreach) {
+            continue;
+        }
 
         /* Check if we're in a function scope */
         if (!in_function_scope(children, count, i)) {
