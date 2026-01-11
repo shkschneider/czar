@@ -25,6 +25,7 @@
 #include "src/constants.h"
 #include "src/unused.h"
 #include "src/ifexpr.h"
+#include "src/foreach.h"
 
 /* Wrapper functions to adapt existing functions to feature interface */
 
@@ -120,6 +121,10 @@ static void transform_ifexpr(ASTNode_t *ast, const char *filename, const char *s
     (void)filename;
     (void)source;
     transpiler_transform_ifexpr(ast);
+}
+
+static void transform_foreach(ASTNode_t *ast, const char *filename, const char *source) {
+    transpiler_transform_foreach(ast, filename, source);
 }
 
 static void transform_types_and_constants(ASTNode_t *ast, const char *filename, const char *source) {
@@ -314,6 +319,16 @@ static Feature feature_ifexpr = {
     .dependencies = NULL
 };
 
+static Feature feature_foreach = {
+    .name = "foreach",
+    .description = "Transform foreach-like syntax to standard C for loops",
+    .enabled = true,
+    .validate = NULL,
+    .transform = transform_foreach,
+    .emit = NULL,
+    .dependencies = NULL
+};
+
 /* Register all built-in features with the registry */
 void register_all_features(FeatureRegistry *registry) {
     if (!registry) {
@@ -329,6 +344,7 @@ void register_all_features(FeatureRegistry *registry) {
 
     /* Transform phase features (order matters!) */
     feature_registry_register(registry, &feature_deprecated);
+    feature_registry_register(registry, &feature_foreach);
     feature_registry_register(registry, &feature_structs);
     feature_registry_register(registry, &feature_methods);
     feature_registry_register(registry, &feature_struct_names);
