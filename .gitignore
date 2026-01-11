@@ -1,8 +1,8 @@
 /build
+/dist
 *.o
 *.out
 test/*
 !test/*.cz
 !test/*/*.cz
 _codeql_detected_source_root
-

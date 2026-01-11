@@ -5,7 +5,7 @@
  * Emits runtime logging support in generated C code.
  */
 
-#include "../cz.h"
+#include "cz.h"
 #include "log.h"
 #include <stdlib.h>
 #include <string.h>

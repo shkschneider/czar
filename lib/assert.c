@@ -1,4 +1,4 @@
-#include "../cz.h"
+#include "cz.h"
 #include "assert.h"
 
 void runtime_emit_assert(FILE* output) {

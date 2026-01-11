@@ -5,6 +5,7 @@
  * Transforms AST by applying CZar-specific transformations.
  */
 
+#include "src/cz.h"
 #include "transpiler.h"
 #include "src/arguments.h"
 #include "src/autodereference.h"
@@ -26,7 +27,7 @@
 #include "src/unused.h"
 #include "src/validation.h"
 #include "src/warnings.h"
-#include "src/features.h"
+#include "features.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -138,13 +139,13 @@ void transpiler_transform(Transpiler *transpiler) {
 
     /* Execute validation phase for all enabled features */
     feature_registry_validate(&transpiler->registry, transpiler->ast, transpiler->filename, transpiler->source);
-    
+
     /* Execute transformation phase for all enabled features */
     feature_registry_transform(&transpiler->registry, transpiler->ast, transpiler->filename, transpiler->source);
-    
+
     /* Apply identifier transformations (types, constants, unused) */
     transform_node(transpiler->ast);
-    
+
     /* Transform cast expressions (must be after types are transformed) */
     transpiler_transform_casts(transpiler->ast);
 }
@@ -183,13 +184,13 @@ static char* resolve_module_path(const char *source_filename, const char *module
     /* Build full path: source_dir/module_path */
     size_t dir_len = strlen(source_dir_copy);
     size_t mod_len = strlen(module_path);
-    
+
     /* Check for overflow: dir_len + mod_len + 2 should not overflow */
     if (dir_len > SIZE_MAX - mod_len - 2) {
         free(source_dir_copy);
         return NULL;
     }
-    
+
     size_t full_path_len = dir_len + mod_len + 2; /* +2 for / and \0 */
     char *full_path = malloc(full_path_len);
     if (!full_path) {
@@ -255,53 +256,6 @@ static void emit_module_includes(const char *source_filename, const char *module
         fprintf(output, "/* Warning: no .cz files found in module: %s */", module_path);
     }
 }
-
-/* Helper function to check if AST contains any #import directives */
-static int has_import_directives(ASTNode *node) {
-    if (!node) {
-        return 0;
-    }
-
-    /* Check if this node is an #import directive */
-    if (node->type == AST_TOKEN && node->token.type == TOKEN_PREPROCESSOR) {
-        if (node->token.length >= 7 && strncmp(node->token.text, "#import", 7) == 0) {
-            return 1;
-        }
-    }
-
-    /* Recursively check children */
-    for (size_t i = 0; i < node->child_count; i++) {
-        if (has_import_directives(node->children[i])) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-/* Check if AST contains any export keywords */
-static int has_export_declarations(ASTNode *node) {
-    if (!node) {
-        return 0;
-    }
-
-    /* Check if this node is an export keyword */
-    if (node->type == AST_TOKEN && node->token.type == TOKEN_IDENTIFIER) {
-        if (node->token.length == 6 && strncmp(node->token.text, "export", 6) == 0) {
-            return 1;
-        }
-    }
-
-    /* Recursively check children */
-    for (size_t i = 0; i < node->child_count; i++) {
-        if (has_export_declarations(node->children[i])) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
 
 /* Emit AST node recursively */
 static void emit_node(ASTNode *node, FILE *output, const char *source_filename) {
@@ -394,7 +348,7 @@ static int has_export_keyword(ASTNode **children, size_t start_pos, size_t count
     /* Scan backwards from start_pos to find export keyword before significant tokens */
     /* We need to go back further to skip over comments and whitespace */
     size_t search_start = (start_pos > 20) ? (start_pos - 20) : 0;
-    
+
     for (size_t i = start_pos; i > search_start; i--) {
         if (children[i]->type == AST_TOKEN) {
             Token *t = &children[i]->token;
@@ -412,7 +366,7 @@ static int has_export_keyword(ASTNode **children, size_t start_pos, size_t count
             }
         }
     }
-    
+
     /* Also check forward from start_pos (export might be right at the beginning) */
     for (size_t i = start_pos; i < count && i < start_pos + 10; i++) {
         if (children[i]->type == AST_TOKEN) {
@@ -431,48 +385,8 @@ static int has_export_keyword(ASTNode **children, size_t start_pos, size_t count
             }
         }
     }
-    
-    return 0;
-}
 
-/* Helper to find the position of export keyword before a declaration */
-static size_t find_export_keyword_pos(ASTNode **children, size_t start_pos, size_t count) {
-    /* Scan backwards from start_pos to find export keyword */
-    for (size_t i = (start_pos > 0 ? start_pos - 1 : 0); i < start_pos && i < count; i++) {
-        if (is_export_keyword(children[i])) {
-            return i;
-        }
-        if (children[i]->type == AST_TOKEN) {
-            Token *t = &children[i]->token;
-            /* Skip whitespace and comments */
-            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
-                continue;
-            }
-            /* If we hit a semicolon or closing brace, we've gone too far back */
-            if (t->type == TOKEN_PUNCTUATION && t->length == 1 && (t->text[0] == ';' || t->text[0] == '}')) {
-                break;
-            }
-        }
-        if (i == 0) break;
-    }
-    
-    /* Also check forward from start_pos */
-    for (size_t i = start_pos; i < count && i < start_pos + 5; i++) {
-        if (is_export_keyword(children[i])) {
-            return i;
-        }
-        if (children[i]->type == AST_TOKEN) {
-            Token *t = &children[i]->token;
-            /* Skip whitespace and comments */
-            if (t->type == TOKEN_WHITESPACE || t->type == TOKEN_COMMENT) {
-                continue;
-            }
-            /* Stop at first significant token that's not export */
-            break;
-        }
-    }
-    
-    return (size_t)-1;  /* Not found */
+    return 0;
 }
 
 /* Helper to check if position i is at the START of a function definition */
@@ -567,7 +481,7 @@ static size_t find_brace_block_end(ASTNode **children, size_t start, size_t coun
 /* Helper to check if position i is EXACTLY at a struct/enum/union/typedef keyword */
 static int is_at_struct_or_typedef_keyword(ASTNode **children, size_t i, size_t count) {
     if (i >= count) return 0;
-    
+
     if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_IDENTIFIER) {
         Token *t = &children[i]->token;
         if ((t->length == 6 && strncmp(t->text, "struct", 6) == 0) ||
@@ -577,7 +491,7 @@ static int is_at_struct_or_typedef_keyword(ASTNode **children, size_t i, size_t 
             return 1;
         }
     }
-    
+
     return 0;
 }
 
@@ -679,7 +593,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
             if (is_function_start(children, i, count)) {
                 /* Check if this function has export keyword */
                 int is_exported = has_export_keyword(children, i, count);
-                
+
                 /* Find where the opening brace is */
                 size_t brace_pos = i;
                 while (brace_pos < count) {
@@ -707,7 +621,7 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                 /* Scan backward to see if there's an export keyword before this */
                 int is_exported = 0;
                 size_t decl_start = i;
-                
+
                 /* Look backward for export keyword (within last few tokens) */
                 for (size_t j = (i > 10 ? i - 10 : 0); j < i; j++) {
                     if (is_export_keyword(children[j])) {
@@ -716,12 +630,12 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                         break;
                     }
                     /* Stop if we hit a semicolon or brace */
-                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && 
+                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION &&
                         children[j]->token.length == 1 && (children[j]->token.text[0] == ';' || children[j]->token.text[0] == '}')) {
                         decl_start = j + 1;
                     }
                 }
-                
+
                 /* Find the end of this declaration */
                 size_t decl_end = i;
                 for (size_t j = i; j < count; j++) {
@@ -730,14 +644,14 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                             decl_end = find_brace_block_end(children, j, count);
                             /* Look for semicolon after closing brace (for typedef) */
                             for (size_t k = decl_end + 1; k < count && k < decl_end + 20; k++) {
-                                if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION && 
+                                if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION &&
                                     children[k]->token.length == 1 && children[k]->token.text[0] == ';') {
                                     decl_end = k;
                                     break;
                                 }
                                 /* Skip whitespace, comments, and identifiers (type name) */
-                                if (children[k]->type == AST_TOKEN && 
-                                    children[k]->token.type != TOKEN_WHITESPACE && 
+                                if (children[k]->type == AST_TOKEN &&
+                                    children[k]->token.type != TOKEN_WHITESPACE &&
                                     children[k]->token.type != TOKEN_COMMENT &&
                                     children[k]->token.type != TOKEN_IDENTIFIER) {
                                     break;  /* Stop at other tokens */
@@ -750,12 +664,12 @@ void transpiler_emit_header(Transpiler *transpiler, FILE *output) {
                         }
                     }
                 }
-                
+
                 if (is_exported) {
                     /* Emit the struct/typedef declaration, skip export keyword */
                     emit_node_range_skip_export(children, decl_start, decl_end + 1, output, transpiler->filename);
                 }
-                
+
                 /* Skip past this entire declaration */
                 i = decl_end;
             } else {
@@ -800,43 +714,6 @@ static size_t find_brace_block_end(ASTNode **children, size_t start, size_t coun
     return count;
 }
 
-/* Helper to find the start of a statement/declaration (scan backwards to previous semicolon or start) */
-static size_t find_statement_start(ASTNode **children, size_t pos, size_t count) {
-    /* Scan backwards to find the previous semicolon, closing brace, or start of file */
-    for (size_t i = (pos > 0 ? pos - 1 : 0); ; i--) {
-        if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_PUNCTUATION && children[i]->token.length == 1) {
-            char c = children[i]->token.text[0];
-            if (c == ';' || c == '}') {
-                return i + 1;  /* Start after the semicolon or brace */
-            }
-        }
-        if (i == 0) {
-            return 0;  /* Start of file */
-        }
-    }
-}
-
-/* Helper to find the end of a statement (scan forward to next semicolon or closing brace at depth 0) */
-static size_t find_statement_end(ASTNode **children, size_t start, size_t count) {
-    int brace_depth = 0;
-    for (size_t i = start; i < count; i++) {
-        if (children[i]->type == AST_TOKEN && children[i]->token.type == TOKEN_PUNCTUATION && children[i]->token.length == 1) {
-            char c = children[i]->token.text[0];
-            if (c == '{') {
-                brace_depth++;
-            } else if (c == '}') {
-                brace_depth--;
-                if (brace_depth <= 0) {
-                    return i;
-                }
-            } else if (c == ';' && brace_depth == 0) {
-                return i;
-            }
-        }
-    }
-    return count;
-}
-
 /* Emit transformed AST as C source file (implementations only) */
 void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *header_name) {
     if (!transpiler || !transpiler->ast || !output) {
@@ -845,7 +722,7 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
 
     /* Include the generated header */
     fprintf(output, "#include \"%s\"\n", header_name);
-    
+
     /* Emit code from enabled features (e.g., defer cleanup functions) */
     feature_registry_emit(&transpiler->registry, output);
 
@@ -859,7 +736,7 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
         if (dir_copy_test) {
             char *dir_result_test = dirname(dir_copy_test);
             char *base_dir_name = basename(dir_result_test);
-            
+
             /* Skip auto-include for "test" directories (but not subdirectories like "test/app") */
             if (strcmp(base_dir_name, "test") == 0) {
                 /* Count .cz files - if many, it's likely a test collection */
@@ -883,13 +760,13 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
             }
             free(dir_copy_test);
         }
-        
+
         if (skip_auto_include) {
             fprintf(output, "\n");
             goto emit_functions;
         }
     }
-    
+
     if (transpiler->filename) {
         /* Get directory path */
         char *dir_copy = strdup(transpiler->filename);
@@ -927,11 +804,11 @@ void transpiler_emit_source(Transpiler *transpiler, FILE *output, const char *he
         DIR *dir = opendir(dir_path);
         if (dir) {
             struct dirent *entry;
-            
+
             /* Determine if we need a directory prefix for includes */
             /* If dir_path is "." we don't need a prefix, otherwise we do */
             int need_prefix = (strcmp(dir_path, ".") != 0);
-            
+
             /* Extract directory name for prefix if needed */
             char *dir_prefix = NULL;
             if (need_prefix) {
@@ -996,24 +873,24 @@ emit_functions:
                 /* Scan backward to see if there's an export keyword */
                 int is_exported = 0;
                 size_t decl_start = i;
-                
+
                 for (size_t j = (i > 10 ? i - 10 : 0); j < i; j++) {
                     if (is_export_keyword(children[j])) {
                         is_exported = 1;
                         decl_start = j;
                         break;
                     }
-                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && 
+                    if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION &&
                         children[j]->token.length == 1 && (children[j]->token.text[0] == ';' || children[j]->token.text[0] == '}')) {
                         decl_start = j + 1;
                     }
                 }
-                
+
                 /* Only emit non-exported structs/typedefs in the source file */
                 if (!is_exported) {
                     /* Find the end of this declaration (semicolon or brace block) */
                     size_t decl_end = i;
-                    
+
                     /* Find the opening brace or semicolon */
                     for (size_t j = i; j < count; j++) {
                         if (children[j]->type == AST_TOKEN && children[j]->token.type == TOKEN_PUNCTUATION && children[j]->token.length == 1) {
@@ -1021,14 +898,14 @@ emit_functions:
                                 decl_end = find_brace_block_end(children, j, count);
                                 /* Look for semicolon after closing brace (for typedef) */
                                 for (size_t k = decl_end + 1; k < count && k < decl_end + 20; k++) {
-                                    if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION && 
+                                    if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION &&
                                         children[k]->token.length == 1 && children[k]->token.text[0] == ';') {
                                         decl_end = k;
                                         break;
                                     }
                                     /* Skip whitespace, comments, and identifiers (type name) */
-                                    if (children[k]->type == AST_TOKEN && 
-                                        children[k]->token.type != TOKEN_WHITESPACE && 
+                                    if (children[k]->type == AST_TOKEN &&
+                                        children[k]->token.type != TOKEN_WHITESPACE &&
                                         children[k]->token.type != TOKEN_COMMENT &&
                                         children[k]->token.type != TOKEN_IDENTIFIER) {
                                         break;  /* Stop at other tokens */
@@ -1041,13 +918,13 @@ emit_functions:
                             }
                         }
                     }
-                    
+
                     /* Emit the struct/typedef declaration from decl_start */
                     for (size_t j = decl_start; j <= decl_end && j < count; j++) {
                         emit_node(children[j], output, transpiler->filename);
                     }
                     fprintf(output, "\n\n");
-                    
+
                     i = decl_end;
                 } else {
                     /* It's exported, skip it (already in header) - find the end and skip past it */
@@ -1057,14 +934,14 @@ emit_functions:
                             if (children[j]->token.text[0] == '{') {
                                 decl_end = find_brace_block_end(children, j, count);
                                 for (size_t k = decl_end + 1; k < count && k < decl_end + 20; k++) {
-                                    if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION && 
+                                    if (children[k]->type == AST_TOKEN && children[k]->token.type == TOKEN_PUNCTUATION &&
                                         children[k]->token.length == 1 && children[k]->token.text[0] == ';') {
                                         decl_end = k;
                                         break;
                                     }
                                     /* Skip whitespace, comments, and identifiers (type name) */
-                                    if (children[k]->type == AST_TOKEN && 
-                                        children[k]->token.type != TOKEN_WHITESPACE && 
+                                    if (children[k]->type == AST_TOKEN &&
+                                        children[k]->token.type != TOKEN_WHITESPACE &&
                                         children[k]->token.type != TOKEN_COMMENT &&
                                         children[k]->token.type != TOKEN_IDENTIFIER) {
                                         break;  /* Stop at other tokens */

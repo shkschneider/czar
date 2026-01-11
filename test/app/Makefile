@@ -1,4 +1,4 @@
-CZ      ?= ../../build/cz
+CZ      ?= ../../dist/cz
 CC      ?= cc
 CFLAGS  ?= -std=c11 -O2 -Wall -I.
 LDFLAGS ?= -lc

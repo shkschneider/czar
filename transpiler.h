@@ -9,7 +9,7 @@
 
 #include "parser.h"
 #include "src/pragma.h"
-#include "src/feature.h"
+#include "registry.h"
 #include <stdio.h>
 
 /* Transpiler structure */

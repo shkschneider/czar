@@ -450,7 +450,7 @@ void transpiler_transform_casts(ASTNode *ast) {
                 char ternary_cond_end[512];
                 snprintf(ternary_cond_end, sizeof(ternary_cond_end), ") > %s ? (", type_max);
 
-                char ternary_false_start[1024];
+                char ternary_false_start[1025+64];
                 snprintf(ternary_false_start, sizeof(ternary_false_start),
                          ") : (%s)(%s))", type_name, value_text);
 
