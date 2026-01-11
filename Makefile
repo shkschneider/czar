@@ -2,23 +2,23 @@
 # MIT License Copyright (c) 2026 ShkSchneider
 # https://github.com/shkschneider/czar
 
-CC     ?= cc -v
-STD    ?= c11
-OPT    ?= O2
-CFLAGS := $(strip -std=$(STD) -Wall -Wextra -Werror -$(OPT)\
-		-Wno-unknown-pragmas -Wno-unused-command-line-argument)
-LDFLAGS = -static -lc
-OUT     = cz
-BIN     = dist/$(OUT)
-LIB_A   = dist/lib$(OUT)ar.a
-LIB_SO  = dist/lib$(OUT)ar.so
+CC      ?= cc -v
 $(if $(shell command -v $(CC) 2>/dev/null),,$(error "[CZ] $(CC): command not found"))
+STD     ?= c11
+OPT     ?= O2
+CFLAGS  := $(strip -std=$(STD) -Wall -Wextra -Werror -$(OPT)\
+		-Wno-unknown-pragmas -Wno-unused-command-line-argument)
+LDFLAGS := -static -lc
+OUT      = cz
+BIN      = dist/$(OUT)
+LIB_A    = dist/lib$(OUT)ar.a
+LIB_SO   = dist/lib$(OUT)ar.so
 
-BIN_SRC = $(wildcard *.c) $(wildcard src/*.c)
-BIN_OBJ = $(patsubst %.c,build/%.o,$(BIN_SRC))
-LIB_SRC = $(wildcard lib/*.c)
-LIB_OBJ = $(patsubst %.c,build/%.o,$(LIB_SRC))
-TESTS   = $(wildcard test/*.cz)
+BIN_SRC  = $(wildcard *.c) $(wildcard src/*.c)
+BIN_OBJ  = $(patsubst %.c,build/%.o,$(BIN_SRC))
+LIB_SRC  = $(wildcard lib/*.c)
+LIB_OBJ  = $(patsubst %.c,build/%.o,$(LIB_SRC))
+TESTS    = $(wildcard test/*.cz)
 
 all: bin lib
 dist: bin lib
@@ -42,17 +42,19 @@ build/lib/%.o: lib/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
 $(LIB_A): $(LIB_OBJ) dist/$(OUT).h
-	@echo "[CZ] $@"
 	@mkdir -p $(@D)
 	$(if $(shell command -v ar 2>/dev/null),,$(error "[CZ] ar: command not found"))
 	ar rcs $@ $(LIB_OBJ)
 	$(if $(shell command -v ranlib 2>/dev/null),ranlib $@,)
-	@echo -n "[CZ] " ; file $@
+	$(if $(shell command -v nm 2>/dev/null), \
+		@echo -n "[CZ] $@: "; nm -gU $@ | grep cz_ | rev | cut -d' ' -f1 | rev | xargs, \
+		@echo -n "[CZ] "; file $@)
 $(LIB_SO): $(LIB_OBJ) dist/$(OUT).h
-	@echo "[CZ] $@"
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -shared $(LIB_OBJ) -o $@
-	@echo -n "[CZ] " ; file $@
+	$(if $(shell command -v objdump 2>/dev/null), \
+		@echo -n "[CZ] $@: "; objdump -t $@ | grep cz_ | rev | cut -d' ' -f1 | rev | xargs, \
+		@echo -n "[CZ] "; file $@)
 dist/$(OUT).h: lib/$(OUT).h
 	@echo "[CZ] $@"
 	@cp -v $< $(@D)/
