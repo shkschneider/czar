@@ -4,7 +4,8 @@
 CC     ?= cc -v
 STD    ?= c11
 OPT    ?= O2
-CFLAGS := -std=$(STD) -Wall -Wextra -Werror -Wno-unknown-pragmas -$(OPT)
+CFLAGS := -std=$(STD) -Wall -Wextra -Werror -$(OPT)\
+-Wno-unknown-pragmas -Wno-unused-command-line-argument
 LDFLAGS = -static -lc
 OUT     = cz
 BIN    ?= dist/$(OUT)
@@ -28,26 +29,30 @@ build/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BIN): $(BIN_OBJ)
+	@echo "[CZ] $@"
 	@mkdir -p $(@D)
 	$(CC) $^ $(LDFLAGS) -o $@
 .PHONY: bin
 
 # Library
-lib: $(LIB_A) $(LIB_SO)
+lib: $(LIB_A) $(LIB_SO) dist/$(OUT).h
 build/lib/%.o: lib/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
-$(LIB_A): $(LIB_OBJ) dist/cz.h
+$(LIB_A): $(LIB_OBJ) dist/$(OUT).h
+	@echo "[CZ] $@"
 	@mkdir -p $(@D)
 	ar rcs $@ $(LIB_OBJ)
 	ranlib $@
 	@echo -n "[CZ] " ; file $@
-$(LIB_SO): $(LIB_OBJ) dist/cz.h
+$(LIB_SO): $(LIB_OBJ) dist/$(OUT).h
+	@echo "[CZ] $@"
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -shared $(LIB_OBJ) -o $@
 	@echo -n "[CZ] " ; file $@
-dist/cz.h: lib/cz.h
-	cp -v lib/cz.h dist/ >/dev/null
+dist/$(OUT).h: lib/$(OUT).h
+	@echo "[CZ] $@"
+	@cp -v $< $(@D)/
 .PHONY: lib
 
 # Tests
@@ -69,15 +74,20 @@ test/%: test/%.cz $(BIN)
 
 # Cleanup
 stat:
+	@echo "[CZ] stat"
 	@find $(BIN_SRC) | xargs wc -l | cut -c2- | sort -n
 	@grep -o ';' $(BIN_SRC) | wc -l | xargs -I{} printf '%5d statements\n' "{}"
 	@ctags -x --c-types=f $(BIN_SRC) | cut -d' ' -f1 | sort -u | wc -l | xargs -I{} printf '%5d functions\n' "{}"
 	@find ./test -type f -name "*.cz" | wc -l | xargs -I{} printf '%5d tests/*.cz\n' "{}"
 clean:
+	@echo "[CZ] clean"
 	@rm -rf ./build/
 	@find ./test \( -name "*.cz.h" -o -name "*.cz.c" \) -exec rm -vf {} \;
 	@find ./test -type f \( -name "*.o" -o -executable \) -exec rm -vf {} \;
 	@find ./test -type f \( -name "*.a" -o -name "*.so" \) -exec rm -vf {} \;
+	@$(MAKE) -C test/app clean
+	@$(MAKE) -C test/lib clean
 distclean: clean
-	@rm -rvf $(BIN) $(LIB_A) $(LIB_SO)
+	@echo "[CZ] distclean"
+	@rm -rvf $(BIN) $(LIB_A) $(LIB_SO) dist/$(OUT).h
 .PHONY: stat clean distclean

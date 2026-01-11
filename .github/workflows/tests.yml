@@ -9,20 +9,21 @@ on:
 jobs:
   build-and-test:
     name: ${{ matrix.cc }} -std=${{ matrix.std }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: true
       matrix:
-        cc: [ gcc, clang, musl-gcc ]
-        std: [ c99, c11, c17, c2x ]
-    continue-on-error: ${{ matrix.std == 'c99' || matrix.std == 'c2x' }}
+        os: [ ubuntu ] # macos windows
+        cc: [ gcc, clang ]
+        std: [ c99, c11, c17, c2x ] # c2y
+    continue-on-error: false # ${{ matrix.std == 'c2y' }}
     steps:
-      - name: Install
-        run: |
-          sudo apt update -y
-          sudo apt install -y build-essential gcc clang musl-tools
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install
+        uses: rlalik/setup-cpp-compiler@master
+        with:
+          compiler: ${{ matrix.cc }}-latest
       - name: Building
         run: make bin lib CC=${{ matrix.cc }} STD=${{ matrix.std }}
       - name: Testing
