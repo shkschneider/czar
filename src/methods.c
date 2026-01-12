@@ -172,7 +172,7 @@ static void scan_struct_definitions(ASTNode_t *ast) {
         Token *t = &ast->children[i]->token;
 
         /* Look for: struct StructName { or typedef struct StructName { */
-        if (t->type == TOKEN_IDENTIFIER && t->text &&
+        if ((t->type == TOKEN_IDENTIFIER || t->type == TOKEN_KEYWORD) && t->text &&
             (strcmp(t->text, "struct") == 0 || strcmp(t->text, "typedef struct") == 0)) {
 
             /* Get next non-whitespace token (struct name) */
@@ -183,7 +183,8 @@ static void scan_struct_definitions(ASTNode_t *ast) {
             }
 
             Token *name_token = &name_node->token;
-            if (name_token->type == TOKEN_IDENTIFIER && name_token->text) {
+            if ((name_token->type == TOKEN_IDENTIFIER || name_token->type == TOKEN_KEYWORD) && 
+                name_token->text) {
                 /* Check if followed by { to ensure it's a definition */
                 size_t brace_idx;
                 ASTNode_t *brace_node = get_next_non_ws_node(ast, name_idx + 1, &brace_idx);
@@ -232,7 +233,9 @@ static void scan_struct_definitions(ASTNode_t *ast) {
                             ASTNode_t *typedef_name_node = get_next_non_ws_node(ast, closing_brace_idx + 1, &typedef_name_idx);
                             if (typedef_name_node && typedef_name_node->type == AST_TOKEN) {
                                 Token *typedef_name_token = &typedef_name_node->token;
-                                if (typedef_name_token->type == TOKEN_IDENTIFIER && typedef_name_token->text) {
+                                if ((typedef_name_token->type == TOKEN_IDENTIFIER || 
+                                     typedef_name_token->type == TOKEN_KEYWORD) && 
+                                    typedef_name_token->text) {
                                     /* Track the typedef name too, stripping _t suffix if present */
                                     char *typedef_base = strdup(typedef_name_token->text);
                                     if (!typedef_base) {
@@ -270,7 +273,8 @@ static void transform_method_declarations(ASTNode_t *ast) {
 
         /* Look for identifier followed by . */
         ASTNode_t *n1 = ast->children[i];
-        if (n1->type != AST_TOKEN || n1->token.type != TOKEN_IDENTIFIER) {
+        if (n1->type != AST_TOKEN || 
+            (n1->token.type != TOKEN_IDENTIFIER && n1->token.type != TOKEN_KEYWORD)) {
             continue;
         }
 
@@ -294,7 +298,8 @@ static void transform_method_declarations(ASTNode_t *ast) {
         }
 
         ASTNode_t *method_node = ast->children[method_idx];
-        if (method_node->type != AST_TOKEN || method_node->token.type != TOKEN_IDENTIFIER) {
+        if (method_node->type != AST_TOKEN || 
+            (method_node->token.type != TOKEN_IDENTIFIER && method_node->token.type != TOKEN_KEYWORD)) {
             continue;
         }
 
@@ -574,7 +579,8 @@ static void transform_method_calls(ASTNode_t *ast) {
 
         /* Look for identifier followed by . */
         ASTNode_t *n1 = ast->children[i];
-        if (n1->type != AST_TOKEN || n1->token.type != TOKEN_IDENTIFIER) {
+        if (n1->type != AST_TOKEN || 
+            (n1->token.type != TOKEN_IDENTIFIER && n1->token.type != TOKEN_KEYWORD)) {
             continue;
         }
 
@@ -598,7 +604,8 @@ static void transform_method_calls(ASTNode_t *ast) {
         }
 
         ASTNode_t *method_node = ast->children[method_idx];
-        if (method_node->type != AST_TOKEN || method_node->token.type != TOKEN_IDENTIFIER) {
+        if (method_node->type != AST_TOKEN || 
+            (method_node->token.type != TOKEN_IDENTIFIER && method_node->token.type != TOKEN_KEYWORD)) {
             continue;
         }
 
