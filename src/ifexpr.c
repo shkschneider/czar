@@ -54,7 +54,8 @@ void transpiler_transform_ifexpr(ASTNode_t *ast) {
         Token *token = &children[i]->token;
 
         /* Look for 'if' keyword that's not followed by a statement block */
-        if (token->type == TOKEN_IDENTIFIER && token_text_equals(token, "if")) {
+        if ((token->type == TOKEN_IDENTIFIER || token->type == TOKEN_KEYWORD) && 
+            token_text_equals(token, "if")) {
             
             /* Skip whitespace */
             size_t j = skip_whitespace(children, count, i + 1);
@@ -125,7 +126,8 @@ void transpiler_transform_ifexpr(ASTNode_t *ast) {
                     }
                     
                     /* Look for 'else' keyword at depth 0 */
-                    if (depth == 0 && t->type == TOKEN_IDENTIFIER && token_text_equals(t, "else")) {
+                    if (depth == 0 && (t->type == TOKEN_IDENTIFIER || t->type == TOKEN_KEYWORD) && 
+                        token_text_equals(t, "else")) {
                         else_pos = j;
                         break;
                     }

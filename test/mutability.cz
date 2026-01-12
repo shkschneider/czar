@@ -81,7 +81,7 @@ int main(void) {
     test_mutable_struct();
     test_func_immutable_param(42);
     
-    Point p = {0};
+    mut Point p = {0};
     test_func_immutable_ptr(&p);
     
     mut Point p2 = {0};

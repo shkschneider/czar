@@ -168,6 +168,12 @@ static void scan_function_declarations(ASTNode_t **children, size_t count) {
             if (paren_depth == 1 && children[j]->type == AST_TOKEN) {
                 Token *t = &children[j]->token;
 
+                /* Skip 'mut' keyword if present */
+                if (t->type == TOKEN_KEYWORD && strcmp(t->text, "mut") == 0) {
+                    j++;
+                    continue;
+                }
+
                 /* If we see a type, look ahead for the parameter name */
                 if (is_type_token(t)) {
                     const char *param_type = t->text;
@@ -182,7 +188,8 @@ static void scan_function_declarations(ASTNode_t **children, size_t count) {
 
                     /* Get parameter name */
                     if (k < count && children[k]->type == AST_TOKEN &&
-                        children[k]->token.type == TOKEN_IDENTIFIER) {
+                        (children[k]->token.type == TOKEN_IDENTIFIER || 
+                         children[k]->token.type == TOKEN_KEYWORD)) {
                         params[param_count].name = children[k]->token.text;
                         params[param_count].type = strdup(param_type);
                         if (!params[param_count].type) {
@@ -251,7 +258,7 @@ static void transform_function_call(ASTNode_t **children, size_t count, size_t c
         }
 
         /* Check if this argument has a label */
-        if (paren_depth == 1 && t->type == TOKEN_IDENTIFIER) {
+        if (paren_depth == 1 && (t->type == TOKEN_IDENTIFIER || t->type == TOKEN_KEYWORD)) {
             size_t k = skip_whitespace(children, count, scan_j + 1);
             if (k < count && children[k]->type == AST_TOKEN &&
                 children[k]->token.type == TOKEN_OPERATOR &&
@@ -317,7 +324,7 @@ static void transform_function_call(ASTNode_t **children, size_t count, size_t c
         }
 
         /* Look for pattern: identifier = value */
-        if (paren_depth == 1 && t->type == TOKEN_IDENTIFIER) {
+        if (paren_depth == 1 && (t->type == TOKEN_IDENTIFIER || t->type == TOKEN_KEYWORD)) {
             size_t k = skip_whitespace(children, count, j + 1);
             if (k < count && children[k]->type == AST_TOKEN &&
                 children[k]->token.type == TOKEN_OPERATOR &&

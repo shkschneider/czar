@@ -89,6 +89,43 @@ static Token make_token(Lexer *lexer, TokenType type, size_t start, size_t lengt
     return token;
 }
 
+/* Check if a string is a C or CZar keyword */
+static int is_keyword(const char *text) {
+    if (!text) return 0;
+    
+    /* C keywords */
+    static const char *c_keywords[] = {
+        "auto", "break", "case", "char", "const", "continue", "default", "do",
+        "double", "else", "enum", "extern", "float", "for", "goto", "if",
+        "inline", "int", "long", "register", "restrict", "return", "short", "signed",
+        "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void",
+        "volatile", "while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex",
+        "_Generic", "_Imaginary", "_Noreturn", "_Static_assert", "_Thread_local",
+        NULL
+    };
+    
+    /* CZar keywords */
+    static const char *czar_keywords[] = {
+        "mut", "defer", "unreachable", "todo", "fixme",
+        NULL
+    };
+    
+    /* Check C keywords */
+    for (int i = 0; c_keywords[i] != NULL; i++) {
+        if (strcmp(text, c_keywords[i]) == 0) {
+            return 1;
+        }
+    }
+    
+    /* Check CZar keywords */
+    for (int i = 0; czar_keywords[i] != NULL; i++) {
+        if (strcmp(text, czar_keywords[i]) == 0) {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
 
 
 /* Lex identifier or keyword */
@@ -105,6 +142,11 @@ static Token lex_identifier(Lexer *lexer) {
     Token token = make_token(lexer, TOKEN_IDENTIFIER, start, length);
     token.line = start_line;
     token.column = start_column;
+    
+    /* Check if this identifier is actually a keyword */
+    if (token.text && is_keyword(token.text)) {
+        token.type = TOKEN_KEYWORD;
+    }
 
     return token;
 }

@@ -189,7 +189,9 @@ void transpiler_transform_mutability(ASTNode_t *ast, const char *filename, const
     /* Pass 0: Error on const usage (everything is const by default, use mut for mutable) */
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
+        /* const is now TOKEN_KEYWORD, but keep checking TOKEN_IDENTIFIER for backward compatibility */
+        if (children[i]->token.type != TOKEN_IDENTIFIER && 
+            children[i]->token.type != TOKEN_KEYWORD) continue;
 
         Token *tok = &children[i]->token;
 
@@ -216,7 +218,9 @@ void transpiler_transform_mutability(ASTNode_t *ast, const char *filename, const
 
     for (size_t i = 0; i < count; i++) {
         if (children[i]->type != AST_TOKEN) continue;
-        if (children[i]->token.type != TOKEN_IDENTIFIER) continue;
+        /* mut is now TOKEN_KEYWORD, but keep checking TOKEN_IDENTIFIER for backward compatibility */
+        if (children[i]->token.type != TOKEN_IDENTIFIER && 
+            children[i]->token.type != TOKEN_KEYWORD) continue;
 
         Token *tok = &children[i]->token;
 
@@ -228,7 +232,8 @@ void transpiler_transform_mutability(ASTNode_t *ast, const char *filename, const
         if (j >= count) continue;
 
         if (children[j]->type == AST_TOKEN &&
-            children[j]->token.type == TOKEN_IDENTIFIER) {
+            (children[j]->token.type == TOKEN_IDENTIFIER ||
+             (children[j]->token.type == TOKEN_KEYWORD && is_type_keyword(children[j]->token.text)))) {
             /* Mark the type at position j as mutable */
             is_mutable[j] = 1;
 
@@ -440,11 +445,8 @@ void transpiler_transform_mutability(ASTNode_t *ast, const char *filename, const
         if (!in_function_body_val || brace_depth_val == 0) continue;
 
         /* Look for variable declarations: Type identifier = or Type *identifier = */
-        if (tok->type == TOKEN_IDENTIFIER && !token_equals(tok, "return") &&
-            !token_equals(tok, "if") && !token_equals(tok, "else") &&
-            !token_equals(tok, "while") && !token_equals(tok, "for") &&
-            !token_equals(tok, "do") && !token_equals(tok, "switch") &&
-            !token_equals(tok, "sizeof") && tok->text && tok->text[0] != '\0') {
+        /* Only process identifiers, not keywords */
+        if (tok->type == TOKEN_IDENTIFIER && tok->text && tok->text[0] != '\0') {
 
             size_t next_idx = skip_whitespace(children, count, i + 1);
             if (next_idx >= count || children[next_idx]->type != AST_TOKEN) continue;
@@ -871,16 +873,8 @@ void transpiler_transform_mutability(ASTNode_t *ast, const char *filename, const
                 continue;
             }
 
-            /* Skip keywords that aren't types */
-            if (token_equals(tok, "return") || token_equals(tok, "if") ||
-                token_equals(tok, "else") || token_equals(tok, "while") ||
-                token_equals(tok, "for") || token_equals(tok, "do") ||
-                token_equals(tok, "switch") || token_equals(tok, "case") ||
-                token_equals(tok, "break") || token_equals(tok, "continue") ||
-                token_equals(tok, "goto") || token_equals(tok, "sizeof") ||
-                token_equals(tok, "typedef") || token_equals(tok, "static") ||
-                token_equals(tok, "extern") || token_equals(tok, "auto") ||
-                token_equals(tok, "register") || token_equals(tok, "inline")) {
+            /* Skip non-type keywords (now properly marked as TOKEN_KEYWORD) */
+            if (tok->type == TOKEN_KEYWORD && !is_type_keyword(tok->text)) {
                 continue;
             }
 

@@ -103,7 +103,8 @@ void transpiler_transform_structs(ASTNode_t *ast) {
         Token *t3 = &n3->token;
 
         /* Check for: struct <whitespace> identifier */
-        if (t1->type == TOKEN_IDENTIFIER && t1->text && strcmp(t1->text, "struct") == 0 &&
+        if ((t1->type == TOKEN_IDENTIFIER || t1->type == TOKEN_KEYWORD) && 
+            t1->text && strcmp(t1->text, "struct") == 0 &&
             t2->type == TOKEN_WHITESPACE &&
             t3->type == TOKEN_IDENTIFIER) {
 
@@ -684,7 +685,8 @@ static void scan_existing_typedefs(ASTNode_t *ast) {
         Token *t = &ast->children[i]->token;
         
         /* Look for "typedef struct" */
-        if (t->type == TOKEN_IDENTIFIER && t->text && strcmp(t->text, "typedef struct") == 0) {
+        if ((t->type == TOKEN_IDENTIFIER || t->type == TOKEN_KEYWORD) && 
+            t->text && strcmp(t->text, "typedef struct") == 0) {
             /* Find the struct tag name (should end with _s) */
             size_t tag_idx = i + 1;
             while (tag_idx < ast->child_count && ast->children[tag_idx]->type == AST_TOKEN &&
@@ -823,7 +825,8 @@ void transpiler_replace_struct_names(ASTNode_t *ast, const char *filename) {
                             }
                             /* Found a non-whitespace token */
                             /* Note: "typedef struct" is a single token created during transformation */
-                            if (prev->type == TOKEN_IDENTIFIER && prev->text && 
+                            if ((prev->type == TOKEN_IDENTIFIER || prev->type == TOKEN_KEYWORD) && 
+                                prev->text && 
                                 (strcmp(prev->text, "struct") == 0 || strcmp(prev->text, "typedef struct") == 0)) {
                                 preceded_by_struct = 1;
                             }
