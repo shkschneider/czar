@@ -66,7 +66,7 @@ test: test/app test/lib $(TESTS:.cz=)
 test/app: $(BIN)
 	@echo "- $@"
 	@$(MAKE) -C $@ >/dev/null
-test/lib:
+test/lib: dist/$(OUT).h
 	@echo "- $@"
 	@$(MAKE) -C $@ >/dev/null
 test/%: test/%.cz $(BIN)
