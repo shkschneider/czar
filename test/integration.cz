@@ -111,8 +111,8 @@ int main(void) {
 
     /* Test 1: Color struct with bounds checking */
     printf("Test 1: Color struct\n");
-    Color red = make_color(255, 0, 0, 255);
-    Color overflow = make_color(300, 400, 500, 255);  /* Values clamped */
+    mut Color red = make_color(255, 0, 0, 255);
+    mut Color overflow = make_color(300, 400, 500, 255);  /* Values clamped */
     validate_color(&red);
     validate_color(&overflow);
     printf("  red: rgba(%u, %u, %u, %u)\n", red.r, red.g, red.b, red.a);
